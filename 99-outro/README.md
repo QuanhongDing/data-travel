@@ -1,0 +1,63 @@
+# 后记 · 趋势与思考
+
+> **本章定位**：在六个章节主体之外，对「数据服务正在向何处去」做一次宏观收尾。
+
+## 基本信息
+
+- **难度**：★★☆☆☆
+- **推荐角色**：全员
+- **建议**：读完主体章节后阅读
+
+## 几个值得关注的趋势
+
+### 1. 自治数据库与自优化系统
+
+- Self-driving Database：参数自动调优、索引推荐、查询改写
+- 代表方向：Oracle Autonomous、Microsoft SQL Server 的 IQP、OpenGauss / PolarDB 的自治能力
+
+### 2. AI 原生数据栈
+
+- 从「LLM 调 SQL」到「AI 原生数据库」（如 PG + pgvector 一体）
+- 向量检索成为一等公民，而非外挂能力
+- 推理与查询融合：例如 AI Function 在 SQL 中直接调用
+
+### 3. 语义层（Semantic Layer）的崛起
+
+- 指标平台从「内部工具」走向「Agent 工具」
+- Headless BI 不再只是 BI 团队的语义层，而是 AI 系统的「事实来源」
+- 与 DataAgent 形成强耦合：语义层降低 Agent 出错概率
+
+### 4. Data Mesh 在中国落地
+
+- 去中心化所有权（Federated Ownership）
+- 自服务数据平台（Self-serve Platform）
+- 计算治理联邦（Computational Governance）
+- 国内实践往往演化为「统一指标平台 + 联邦查询」的混合形态
+
+### 5. 可观测 × 治理 × 安全 一体化
+
+- 血缘从「事后追溯」走向「实时阻断」
+- 行级安全 + 列权限 + Agent 权限成为标配
+- 数据可观测（Data Observability）补齐应用可观测的最后一公里
+
+## 写给读者的话
+
+- **不要追求一步到位**：现代数据栈非常复杂，建议从一个垂直场景（BI / 检索 / 问数）切入
+- **把数据当产品，而不是项目**：指标平台、向量湖、DataAgent 都是产品，需要持续运营
+- **拥抱「语义层」**：让 Agent 不再直接面对底层表
+- **关注可治理性**：没有治理的 AI 系统，只会把数据混乱放大 10 倍
+
+## 后续更新计划
+
+本书将持续更新，作者计划：
+
+- 每年对各章做一次较大版本更新，跟进主要技术演进
+- 新增案例章节（按需），覆盖典型行业实践
+- 在 [序章 · 术语表](../00-introduction/README.md#术语表) 中持续追加新术语
+
+## 反馈与贡献
+
+- 仓库：[github.com/QuanhongDing/data-travel](https://github.com/QuanhongDing/data-travel)
+- 欢迎提 Issue / PR
+
+—— 祝你在数据的海洋里「travel」愉快。
