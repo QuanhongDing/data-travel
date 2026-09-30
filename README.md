@@ -86,7 +86,7 @@ flowchart LR
 
 ## 许可
 
-本仓库采用 [MIT 协议](LICENSE)。
+本仓库采用 [Apache License 2.0](LICENSE)。
 
 ## 作者与联系方式
 
