@@ -31,7 +31,7 @@
 
 ## 子主题
 
-- [ ] **[Data Agent](./01-data-agent/README.md)**：面向数据分析的智能体（Text2SQL + 数据可视化 + 指标解读），AI 时代数据架构师的核心交付物
+- [ ] **[Data Agent](./01-data-agent.md)**：面向数据分析的智能体（Text2SQL + 数据可视化 + 指标解读），AI 时代数据架构师的核心交付物
 
 > 文件命名建议：`data-agent.md` / `agent-architecture.md` / `langchain-framework.md` / `mcp-protocol.md` / `multi-agent-orchestration.md` / `function-calling.md` / `prompt-engineering.md` / `reliability-and-observability.md` / `hands-on.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 

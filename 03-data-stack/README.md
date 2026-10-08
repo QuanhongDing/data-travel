@@ -31,20 +31,20 @@
 
 ## 子主题
 
-- [ ] **[数据仓库](./01-data-warehouse/README.md)**：传统数仓（Greenplum / ClickHouse / Doris），分层（ODS / DWD / DWS / ADS）
-- [ ] **[数据湖](./02-data-lake/README.md)**：HDFS / S3 / OSS 上的开放格式，Schema-on-Read
-- [ ] **[Lakehouse](./03-lakehouse/README.md)**：Iceberg / Hudi / Paimon / Delta Lake——融合湖与仓的优势
-- [ ] **[流式存储](./04-streaming-store/README.md)**：Kafka / Pulsar / RocketMQ——消息中间件与流式存储
-- [ ] **[冷热分层](./05-cold-hot-tiering/README.md)**：OSS 冷热分层、生命周期管理、成本与性能平衡
-- [ ] **[Schema 与 Time Travel](./06-schema-and-time-travel/README.md)**：Schema Evolution、版本回滚、Time Travel 查询
-- [ ] **[架构决策](./07-architecture-decisions/README.md)**：Lambda / Kappa / 湖仓一体的架构选型方法论
-- [ ] **[离线计算](./08-offline-compute/README.md)**：Spark / Hive / MapReduce——批处理核心引擎
-- [ ] **[实时计算](./09-realtime-compute/README.md)**：Flink / Spark Streaming——流处理核心引擎
-- [ ] **[流批一体](./10-stream-batch-unified/README.md)**：Flink + Iceberg / Hudi——一套代码、一份存储
+- [ ] **[数据仓库](./01-data-warehouse.md)**：传统数仓（Greenplum / ClickHouse / Doris），分层（ODS / DWD / DWS / ADS）
+- [ ] **[数据湖](./02-data-lake.md)**：HDFS / S3 / OSS 上的开放格式，Schema-on-Read
+- [ ] **[Lakehouse](./03-lakehouse.md)**：Iceberg / Hudi / Paimon / Delta Lake——融合湖与仓的优势
+- [ ] **[流式存储](./04-streaming-store.md)**：Kafka / Pulsar / RocketMQ——消息中间件与流式存储
+- [ ] **[冷热分层](./05-cold-hot-tiering.md)**：OSS 冷热分层、生命周期管理、成本与性能平衡
+- [ ] **[Schema 与 Time Travel](./06-schema-and-time-travel.md)**：Schema Evolution、版本回滚、Time Travel 查询
+- [ ] **[架构决策](./07-architecture-decisions.md)**：Lambda / Kappa / 湖仓一体的架构选型方法论
+- [ ] **[离线计算](./08-offline-compute.md)**：Spark / Hive / MapReduce——批处理核心引擎
+- [ ] **[实时计算](./09-realtime-compute.md)**：Flink / Spark Streaming——流处理核心引擎
+- [ ] **[流批一体](./10-stream-batch-unified.md)**：Flink + Iceberg / Hudi——一套代码、一份存储
 - [ ] **[OLAP 引擎](./11-olap-engine/README.md)**：ClickHouse / Doris / StarRocks / Trino——多维分析与即席查询
-- [ ] **[调度系统](./12-scheduler/README.md)**：Airflow / DolphinScheduler / 阿里 DataWorks——DAG 编排与依赖管理
-- [ ] **[查询引擎](./13-query-engine/README.md)**：Trino / Presto / Impala——跨源联邦查询
-- [ ] **[查询优化器](./14-optimizer/README.md)**：CBO / RBO、统计信息、代价模型——慢查询治理
+- [ ] **[调度系统](./12-scheduler.md)**：Airflow / DolphinScheduler / 阿里 DataWorks——DAG 编排与依赖管理
+- [ ] **[查询引擎](./13-query-engine.md)**：Trino / Presto / Impala——跨源联邦查询
+- [ ] **[查询优化器](./14-optimizer.md)**：CBO / RBO、统计信息、代价模型——慢查询治理
 - [ ] **[OneData 思想](./15-one-data/README.md)**：阿里中台统一数据标准与模型方法论
 
 > 文件命名建议：`data-warehouse.md` / `data-lake.md` / `lakehouse.md` / `streaming-store.md` / `cold-hot-tiering.md` / `schema-and-time-travel.md` / `architecture-decisions.md` / `offline-compute.md` / `realtime-compute.md` / `stream-batch-unified.md` / `olap-engine.md` / `scheduler.md` / `query-engine.md` / `optimizer.md` / `one-data.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。

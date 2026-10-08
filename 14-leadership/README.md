@@ -63,8 +63,8 @@
 
 ## 子主题
 
-- [ ] **[团队组建与人才招聘](./01-team-formation/README.md)**：人才画像、结构化面试、面试官培养
-- [ ] **[人才梯队建设](./02-talent-ladder/README.md)**：P5-资深架构师 培养路径、晋升辅导、离职面谈
+- [ ] **[团队组建与人才招聘](./01-team-formation.md)**：人才画像、结构化面试、面试官培养
+- [ ] **[人才梯队建设](./02-talent-ladder.md)**：P5-资深架构师 培养路径、晋升辅导、离职面谈
 - [ ] **[绩效管理](./03-performance-management/README.md)**：KPI / OKR 设计、绩效面谈、末位淘汰、激励组合
 - [ ] **[跨团队协作](./04-cross-team-collaboration/README.md)**：跨 BU 数据共享、冲突解决、同盟构建
 - [ ] **[技术布道与影响力](./05-tech-evangelism/README.md)**：让业务方主动用你的平台

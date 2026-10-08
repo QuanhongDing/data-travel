@@ -32,7 +32,7 @@
 ## 子主题
 
 - [ ] **[Embedding 与检索](./01-embedding-and-retrieval/README.md)**：Embedding 模型选型（OpenAI / BGE / M3E）、向量检索与重排
-- [ ] **[LLM in SQL](./02-llm-in-sql/README.md)**：在 SQL 引擎中嵌入 LLM（MotherDuck / Snowflake Cortex / Databricks AI Functions）——让数据不出仓
+- [ ] **[LLM in SQL](./02-llm-in-sql.md)**：在 SQL 引擎中嵌入 LLM（MotherDuck / Snowflake Cortex / Databricks AI Functions）——让数据不出仓
 
 > 文件命名建议：`embedding-and-retrieval.md` / `llm-in-sql.md` / `unified-model-gateway.md` / `routing-strategy.md` / `function-calling.md` / `prompt-engineering.md` / `cost-control.md` / `model-evaluation.md` / `hands-on.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 

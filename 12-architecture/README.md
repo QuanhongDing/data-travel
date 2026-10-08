@@ -36,14 +36,14 @@
 
 ## 子主题
 
-- [ ] **[单元化架构](./01-cell-based-architecture/README.md)**：业务域切分、单元数据、单元间协同
-- [ ] **[异地多活](./02-multi-region/README.md)**：数据同步（CDC、binlog、双向同步）、冲突解决、流量调度
+- [ ] **[单元化架构](./01-cell-based-architecture.md)**：业务域切分、单元数据、单元间协同
+- [ ] **[异地多活](./02-multi-region.md)**：数据同步（CDC、binlog、双向同步）、冲突解决、流量调度
 - [ ] **[大促保障](./03-large-event-readiness/README.md)**：全链路压测、限流降级、应急预案、值班机制
-- [ ] **[容量规划](./04-capacity-planning/README.md)**：数据增长预测、计算资源预测、存储资源预测
-- [ ] **[性能工程](./05-performance-engineering/README.md)**：关键路径分析、慢查询治理、资源利用率优化
-- [ ] **[混沌工程](./06-chaos-engineering/README.md)**：故障注入、演练平台、恢复预案
-- [ ] **[容灾设计](./07-disaster-recovery/README.md)**：RPO / RTO、同城双活、两地三中心
-- [ ] **[数据一致性](./08-data-consistency/README.md)**：强一致 vs 最终一致、CAP 权衡、Paxos / Raft 工程实践
+- [ ] **[容量规划](./04-capacity-planning.md)**：数据增长预测、计算资源预测、存储资源预测
+- [ ] **[性能工程](./05-performance-engineering.md)**：关键路径分析、慢查询治理、资源利用率优化
+- [ ] **[混沌工程](./06-chaos-engineering.md)**：故障注入、演练平台、恢复预案
+- [ ] **[容灾设计](./07-disaster-recovery.md)**：RPO / RTO、同城双活、两地三中心
+- [ ] **[数据一致性](./08-data-consistency.md)**：强一致 vs 最终一致、CAP 权衡、Paxos / Raft 工程实践
 - [ ] **[灰度与回滚](./09-gray-and-rollback/README.md)**：数据迁移灰度、模型灰度、查询灰度
 
 > 文件命名建议：`cell-based-architecture.md` / `multi-region.md` / `large-event-readiness.md` / `capacity-planning.md` / `performance-engineering.md` / `chaos-engineering.md` / `disaster-recovery.md` / `data-consistency.md` / `gray-and-rollback.md` / `case-study.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。

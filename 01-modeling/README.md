@@ -32,8 +32,8 @@
 
 ## 子主题列表
 
-- [ ] **[业务过程建模](./01-business-process-modeling/README.md)**：业务架构→数据架构的映射方法（事件→事实→维度）
-- [ ] **[维度建模（Kimball）](./02-dimensional-modeling/README.md)**：事实表、维度表、星型 / 雪花 / 星座模型
+- [ ] **[业务过程建模](./01-business-process-modeling.md)**：业务架构→数据架构的映射方法（事件→事实→维度）
+- [ ] **[维度建模（Kimball）](./02-dimensional-modeling.md)**：事实表、维度表、星型 / 雪花 / 星座模型
 - [ ] **[Data Vault](./03-data-vault/README.md)**：Hub-Link-Satellite 三件套，敏捷数仓的另一种选择
 - [ ] **[Anchor Modeling](./04-anchor-modeling/README.md)**：高度可演化的第 6 范式
 - [ ] **[本体建模（Ontology）](./05-ontology-modeling/README.md)**：RDF / OWL、概念体系、属性约束、多源实体统一
@@ -43,7 +43,7 @@
 - [ ] **[OneID 主数据](./09-one-id/README.md)**：跨域用户打通、ID-Mapping 算法（设备 ID、手机号、身份证等）
 - [ ] **[指标体系设计](./10-metric-system/README.md)**：原子指标 + 时间周期 + 业务修饰 = 派生指标
 - [ ] **[数据模型管理](./11-model-management/README.md)**：命名规范、版本管理、Owner 制度、模型评审
-- [ ] **[DataWorks / 阿里中台工具链实战](./12-hands-on/README.md)**
+- [ ] **[DataWorks / 阿里中台工具链实战](./12-hands-on.md)**
 
 > 文件命名建议（不强制）：`business-process-modeling.md` / `dimensional-modeling.md` / `data-vault.md` / `anchor-modeling.md` / `ontology-modeling.md` / `knowledge-graph.md` / `graph-reasoning.md` / `one-data.md` / `one-id.md` / `metric-system.md` / `model-management.md` / `hands-on.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 

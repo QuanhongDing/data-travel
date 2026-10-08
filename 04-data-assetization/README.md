@@ -35,10 +35,10 @@
 - [ ] **[向量湖](./02-vector-lake/README.md)**：Iceberg + 向量列 / Milvus 集群——向量数据的湖仓化
 - [ ] **[AI 原生数据库](./03-ai-native-db/README.md)**：PostgreSQL + pgvector / DuckDB VSS / TiDB Vector——把向量当成一等公民
 - [ ] **[混合检索](./04-hybrid-search/README.md)**：BM25 + 向量 + 知识图谱——多路召回与精排
-- [ ] **[RAG 架构](./05-rag-architecture/README.md)**：朴素 RAG / 高级 RAG / Agentic RAG——端到端检索增强生成
-- [ ] **[OneService 数据服务化](./06-one-service/README.md)**：阿里中台 OneService 思想——指标 / 标签 / API 的统一服务
-- [ ] **[数据 API 网关](./07-data-api-gateway/README.md)**：限流 / 鉴权 / 计量 / 缓存——数据 API 的统一入口
-- [ ] **[数据目录](./08-data-catalog/README.md)**：DataHub / Atlas / DataWorks——资产的可发现与可理解
+- [ ] **[RAG 架构](./05-rag-architecture.md)**：朴素 RAG / 高级 RAG / Agentic RAG——端到端检索增强生成
+- [ ] **[OneService 数据服务化](./06-one-service.md)**：阿里中台 OneService 思想——指标 / 标签 / API 的统一服务
+- [ ] **[数据 API 网关](./07-data-api-gateway.md)**：限流 / 鉴权 / 计量 / 缓存——数据 API 的统一入口
+- [ ] **[数据目录](./08-data-catalog.md)**：DataHub / Atlas / DataWorks——资产的可发现与可理解
 - [ ] **[统一查询网关](./09-unified-query-gateway/README.md)**：跨源联邦查询（Trino / Presto + 向量库 + 图库）
 - [ ] **[指标平台](./10-metric-platform/README.md)**：原子指标 / 派生指标 / 指标服务化——数据资产化的核心载体
 
