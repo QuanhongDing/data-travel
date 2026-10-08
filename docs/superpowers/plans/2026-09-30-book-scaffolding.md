@@ -1,5 +1,34 @@
 # Book Scaffolding Implementation Plan
 
+> ## ⚠️ 本文档已 SUPERSEDED ⚠️
+>
+> 本计划是 **2026-09-30 初版脚手架**的实施方案（针对 6 章「技术演进时间线」结构：数仓 / 数据湖 / 多模态 / 向量湖 / 数据服务平台 / DataAgent），**已于 2026-10-08 被重构取代**（commit `f1aa559`：`refactor!: restructure to P9-aligned 10-chapter layout with team management`）。
+>
+> **当前项目结构**已改为 **10 章 P9 能力分层**：
+>
+> | 章节 | 主题 |
+> | --- | --- |
+> | 01-modeling | 建模方法论 |
+> | 02-storage | 存储范式 |
+> | 03-compute | 计算范式 |
+> | 04-data-mesh-and-middleware | 数据中台与服务化 |
+> | 05-ai-native-data-stack | AI 原生数据栈 |
+> | 06-cross-cutting-engineering | 横切工程 |
+> | 07-architecture-and-reliability | 架构与高可用 |
+> | 08-decision-and-tradeoff | 决策与权衡 |
+> | 09-team-and-leadership | 团队管理与领导力 |
+> | 10-case-studies | 案例库 |
+>
+> **当前真相**请查阅：
+>
+> - 项目门面：[README.md](../../../README.md)
+> - 设计规格（已同步更新到 10 章结构）：[2026-09-30-data-services-book-design.md](../specs/2026-09-30-data-services-book-design.md)
+> - 章节导读：`0X-<slug>/README.md`
+>
+> 本计划作为**历史实施记录**保留，**不再被执行**。
+>
+> ---
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 在 `data-travel` 仓库中建立「数据服务的方方面面」书籍型文章的目录骨架与 README 文件，使仓库具备可发布、可阅读、可贡献的初始形态。
