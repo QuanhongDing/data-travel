@@ -67,7 +67,7 @@
 
 ```mermaid
 flowchart LR
-  A["Ch1<br/>建模"] --> B["Ch2<br/>存储"]
+  Z["00<br/>序章"] --> A["Ch1<br/>建模"] --> B["Ch2<br/>存储"]
   B --> C["Ch3<br/>计算"]
   C --> D["Ch4<br/>中台"]
   D --> E["Ch5<br/>AI"]
@@ -76,6 +76,7 @@ flowchart LR
   G --> H["Ch8<br/>决策"]
   H --> I["Ch9<br/>团队"]
   I --> J["Ch10<br/>案例"]
+  J --> Y["99<br/>后记"]
 ```
 
 > 主线：「**建模 → 引擎 → 服务化 → AI → 工程 → 架构 → 决策 → 团队 → 案例**」。
@@ -94,7 +95,8 @@ flowchart LR
 
 - [docs/interview/](docs/interview/) — P9 面试题库（系统设计、选型决策、案例分析）
 - [docs/career/](docs/career/) — P7→P8→P9 成长路径与能力模型
-- [docs/superpowers/specs/](docs/superpowers/specs/) — 项目设计文档
+- [docs/superpowers/specs/](docs/superpowers/specs/) — 项目设计文档（10 章 P9 能力分层结构规格）
+- [docs/superpowers/plans/](docs/superpowers/plans/) — 历史实施计划（含已 superseded 的初版脚手架）
 
 ## 术语表
 

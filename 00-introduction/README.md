@@ -50,6 +50,8 @@ flowchart TB
   subgraph 领导层["领导层 · 决策与组织"]
     H["Ch8 决策与权衡<br/>选型/ADR/技术战略"]
     I["Ch9 团队与领导力<br/>梯队/绩效/文化/向上管理"]
+  end
+  subgraph 案例层["案例层 · 工业级实践"]
     J["Ch10 案例库<br/>阿里/字节/Netflix"]
   end
   A --> B --> C --> D --> E

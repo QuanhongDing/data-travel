@@ -40,8 +40,8 @@
 
 ## 推荐学习路径
 
-- 配套阅读 [Ch9 · 团队与领导力](../09-team-and-leadership/)
-- 配套阅读 [Ch8 · 决策与权衡](../08-decision-and-tradeoff/)
+- 配套阅读 [Ch9 · 团队与领导力](../../09-team-and-leadership/)
+- 配套阅读 [Ch8 · 决策与权衡](../../08-decision-and-tradeoff/)
 - 配套阅读 [docs/interview/](../interview/) 准备晋升答辩
 
 ## 推荐阅读
