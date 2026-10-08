@@ -32,7 +32,7 @@
 
 ## 子主题
 
-- [ ] **[多模态 AI](./multimodal-ai/README.md)**：文 / 图 / 音 / 视频 / 3D——多模态理解与生成的工程化
+- [ ] **[多模态 AI](./01-multimodal-ai/README.md)**：文 / 图 / 音 / 视频 / 3D——多模态理解与生成的工程化
 
 > 文件命名建议：`multimodal-ai.md` / `industry-intelligence-agent.md` / `code-intelligence-assistant.md` / `office-automation.md` / `industry-knowledge-graph.md` / `industry-prompt-engineering.md` / `industry-evaluation.md` / `multi-agent-collaboration.md` / `hands-on.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 

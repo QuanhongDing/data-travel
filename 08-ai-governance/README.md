@@ -32,7 +32,7 @@
 
 ## 子主题
 
-- [ ] **[AI 数据治理](./ai-data-governance/README.md)**：AI 资产分类分级 / 脱敏 / 加密 / 权限 / 审计——AI 治理的核心载体
+- [ ] **[AI 数据治理](./01-ai-data-governance/README.md)**：AI 资产分类分级 / 脱敏 / 加密 / 权限 / 审计——AI 治理的核心载体
 
 > 文件命名建议：`ai-data-governance.md` / `data-classification.md` / `desensitization-and-encryption.md` / `fine-grained-permission.md` / `prompt-injection-defense.md` / `dlp-and-output-filter.md` / `deng-bao-compliance.md` / `audit-and-traceability.md` / `hands-on.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 

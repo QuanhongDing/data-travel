@@ -33,15 +33,15 @@
 
 ## 子主题
 
-- [ ] **[数据质量](./data-quality/README.md)**：DQC（Data Quality Center）、监控告警、SLA 体系、异常检测
-- [ ] **[数据安全](./data-security/README.md)**：分类分级、脱敏、加密、访问控制、审计、GDPR / 个保法合规
-- [ ] **[数据成本与 FinOps](./data-cost-finops/README.md)**：存储优化（冷热分层、压缩）、计算优化（小文件、Compaction）、查询优化、资源利用率
-- [ ] **[数据可观测性](./observability/README.md)**：监控指标（新鲜度、完整性、准确性）、告警分级、链路追踪
-- [ ] **[数据血缘](./lineage-and-impact/README.md)**：元数据采集、血缘图谱、影响分析、根因分析
-- [ ] **[数据资产化](./data-assetization/README.md)**：数据盘点、估值、ROI 评估
-- [ ] **[审计与合规](./audit-and-compliance/README.md)**：操作审计、访问审计、监管报送
-- [ ] **[隐私计算](./privacy-computing/README.md)**：联邦学习、安全多方计算、可信执行环境
-- [ ] **[数据血缘（迁移）](./data-lineage/README.md)**：从原目录迁移而来的血缘主题（与 lineage-and-impact 互为补充）
+- [ ] **[数据质量](./01-data-quality/README.md)**：DQC（Data Quality Center）、监控告警、SLA 体系、异常检测
+- [ ] **[数据安全](./02-data-security/README.md)**：分类分级、脱敏、加密、访问控制、审计、GDPR / 个保法合规
+- [ ] **[数据成本与 FinOps](./03-data-cost-finops/README.md)**：存储优化（冷热分层、压缩）、计算优化（小文件、Compaction）、查询优化、资源利用率
+- [ ] **[数据可观测性](./04-observability/README.md)**：监控指标（新鲜度、完整性、准确性）、告警分级、链路追踪
+- [ ] **[数据血缘](./05-lineage-and-impact/README.md)**：元数据采集、血缘图谱、影响分析、根因分析
+- [ ] **[数据资产化](./06-data-assetization/README.md)**：数据盘点、估值、ROI 评估
+- [ ] **[审计与合规](./07-audit-and-compliance/README.md)**：操作审计、访问审计、监管报送
+- [ ] **[隐私计算](./08-privacy-computing/README.md)**：联邦学习、安全多方计算、可信执行环境
+- [ ] **[数据血缘（迁移）](./09-data-lineage/README.md)**：从原目录迁移而来的血缘主题（与 lineage-and-impact 互为补充）
 
 > 文件命名建议：`data-quality.md` / `data-security.md` / `data-cost-finops.md` / `observability.md` / `lineage-and-impact.md` / `data-assetization.md` / `audit-and-compliance.md` / `privacy-computing.md` / `data-lineage.md` / `hands-on.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 

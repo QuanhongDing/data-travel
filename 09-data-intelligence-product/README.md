@@ -32,9 +32,9 @@
 
 ## 子主题
 
-- [ ] **[AI 计算平台](./ai-compute/README.md)**：训练 / 推理 / 模型市场——AI 能力的产品化
-- [ ] **[决策智能](./decision-intelligence/README.md)**：规则引擎 / ML 模型 / LLM Agent——预测决策系统的设计与实现
-- [ ] **[数据网格（Data Mesh）](./data-mesh/README.md)**：领域驱动的数据所有权 / 自助式数据平台 / 联邦治理
+- [ ] **[AI 计算平台](./01-ai-compute/README.md)**：训练 / 推理 / 模型市场——AI 能力的产品化
+- [ ] **[决策智能](./02-decision-intelligence/README.md)**：规则引擎 / ML 模型 / LLM Agent——预测决策系统的设计与实现
+- [ ] **[数据网格（Data Mesh）](./03-data-mesh/README.md)**：领域驱动的数据所有权 / 自助式数据平台 / 联邦治理
 
 > 文件命名建议：`ai-compute.md` / `decision-intelligence.md` / `data-mesh.md` / `intelligent-tagging.md` / `intelligent-bi-nl2sql.md` / `operation-platform.md` / `hands-on.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 

@@ -30,13 +30,13 @@
 
 ## 子主题
 
-- [ ] **[Feature Store](./feature-store/README.md)**：特征平台搭建（Feast / Tecton / 阿里 FeatureDB），离线/在线一致性
-- [ ] **[分类算法](./classification/README.md)**：LR / GBDT / XGBoost / DeepFM——CTR / 风控 / 反欺诈的核心
-- [ ] **[聚类算法](./clustering/README.md)**：KMeans / DBSCAN / 谱聚类——用户分群、异常检测、标签发现
-- [ ] **[回归算法](./regression/README.md)**：Linear / Ridge / DNN 回归——销量、评分、时序基线
-- [ ] **[推荐算法](./recommendation/README.md)**：协同过滤 / 双塔 / DeepFM / DIN——电商 / 内容 / 广告的共同底座
-- [ ] **[强化学习](./rl/README.md)**：DQN / PPO / Bandit——动态定价、营销策略、Agent 工具调度
-- [ ] **[效果评估与 A/B 实验](./eval/README.md)**：离线指标 + 在线 A/B + 因果推断——ML 工程化闭环最后一公里
+- [ ] **[Feature Store](./01-feature-store/README.md)**：特征平台搭建（Feast / Tecton / 阿里 FeatureDB），离线/在线一致性
+- [ ] **[分类算法](./02-classification/README.md)**：LR / GBDT / XGBoost / DeepFM——CTR / 风控 / 反欺诈的核心
+- [ ] **[聚类算法](./03-clustering/README.md)**：KMeans / DBSCAN / 谱聚类——用户分群、异常检测、标签发现
+- [ ] **[回归算法](./04-regression/README.md)**：Linear / Ridge / DNN 回归——销量、评分、时序基线
+- [ ] **[推荐算法](./05-recommendation/README.md)**：协同过滤 / 双塔 / DeepFM / DIN——电商 / 内容 / 广告的共同底座
+- [ ] **[强化学习](./06-rl/README.md)**：DQN / PPO / Bandit——动态定价、营销策略、Agent 工具调度
+- [ ] **[效果评估与 A/B 实验](./07-eval/README.md)**：离线指标 + 在线 A/B + 因果推断——ML 工程化闭环最后一公里
 
 > 文件命名建议：`feature-store.md` / `classification.md` / `clustering.md` / `regression.md` / `recommendation.md` / `rl.md` / `eval.md` / `hands-on.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 

@@ -32,10 +32,10 @@
 
 ## 子主题
 
-- [ ] **[长期记忆](./long-term-memory/README.md)**：组织级 / 个人级 Agent 长期记忆——让 AI 越用越懂业务、越用越懂人
-- [ ] **[反馈闭环](./feedback-loop/README.md)**：用户反馈 / 业务结果 / 人工标注回流——把线上数据变成模型迭代的燃料
-- [ ] **[资产管理](./asset-management/README.md)**：Prompt / Skill / Tool / Agent / Model 的全生命周期管理——AI 资产的"ERP 系统"
-- [ ] **[Agent 技能提取](./agent-skill-extraction/README.md)**：从优秀会话中自动提取可复用的 Skills——让组织能力沉淀为 Agent 能力
+- [ ] **[长期记忆](./01-long-term-memory/README.md)**：组织级 / 个人级 Agent 长期记忆——让 AI 越用越懂业务、越用越懂人
+- [ ] **[反馈闭环](./02-feedback-loop/README.md)**：用户反馈 / 业务结果 / 人工标注回流——把线上数据变成模型迭代的燃料
+- [ ] **[资产管理](./03-asset-management/README.md)**：Prompt / Skill / Tool / Agent / Model 的全生命周期管理——AI 资产的"ERP 系统"
+- [ ] **[Agent 技能提取](./04-agent-skill-extraction/README.md)**：从优秀会话中自动提取可复用的 Skills——让组织能力沉淀为 Agent 能力
 
 > 文件命名建议：`long-term-memory.md` / `feedback-loop.md` / `asset-management.md` / `agent-skill-extraction.md` / `rlhf-and-rlaif.md` / `ab-experiment-platform.md` / `knowledge-graph-evolution.md` / `hands-on.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 

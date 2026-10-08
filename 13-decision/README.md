@@ -37,15 +37,15 @@
 
 ## 子主题
 
-- [ ] **[ADR（架构决策记录）](./adr/README.md)**：模板、流程、组织级 vs 团队级
-- [ ] **[选型决策框架](./tradeoff-frameworks/README.md)**：性能 / 成本 / 团队匹配度 / 生态 / 可治理性 / 风险
-- [ ] **[自研 vs 采购](./build-vs-buy/README.md)**：决策矩阵、伪自研陷阱、ROI 评估
-- [ ] **[风险评估](./risk-assessment/README.md)**：FMEA（失效模式分析）、故障树、根因分析（5 Whys）
-- [ ] **[技术战略与路线图](./tech-strategy/README.md)**：3-5 年规划、技术雷达（Hype Cycle）
-- [ ] **[技术债管理](./tech-debt/README.md)**：识别、量化、优先级、还债节奏
-- [ ] **[架构评审](./architecture-review/README.md)**：流程、清单、反模式案例
-- [ ] **[决策心理学](./decision-psychology/README.md)**：锚定效应、确认偏误、沉没成本、群体思维
-- [ ] **[跨团队技术决策](./cross-team-decision/README.md)**：共识构建、RFC 流程、委员会机制
+- [ ] **[ADR（架构决策记录）](./01-adr/README.md)**：模板、流程、组织级 vs 团队级
+- [ ] **[选型决策框架](./02-tradeoff-frameworks/README.md)**：性能 / 成本 / 团队匹配度 / 生态 / 可治理性 / 风险
+- [ ] **[自研 vs 采购](./03-build-vs-buy/README.md)**：决策矩阵、伪自研陷阱、ROI 评估
+- [ ] **[风险评估](./04-risk-assessment/README.md)**：FMEA（失效模式分析）、故障树、根因分析（5 Whys）
+- [ ] **[技术战略与路线图](./05-tech-strategy/README.md)**：3-5 年规划、技术雷达（Hype Cycle）
+- [ ] **[技术债管理](./06-tech-debt/README.md)**：识别、量化、优先级、还债节奏
+- [ ] **[架构评审](./07-architecture-review/README.md)**：流程、清单、反模式案例
+- [ ] **[决策心理学](./08-decision-psychology/README.md)**：锚定效应、确认偏误、沉没成本、群体思维
+- [ ] **[跨团队技术决策](./09-cross-team-decision/README.md)**：共识构建、RFC 流程、委员会机制
 
 > 文件命名建议：`adr.md` / `tradeoff-frameworks.md` / `build-vs-buy.md` / `risk-assessment.md` / `tech-strategy.md` / `tech-debt.md` / `architecture-review.md` / `decision-psychology.md` / `cross-team-decision.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 

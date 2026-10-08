@@ -63,18 +63,18 @@
 
 ## 子主题
 
-- [ ] **[团队组建与人才招聘](./team-formation/README.md)**：人才画像、结构化面试、面试官培养
-- [ ] **[人才梯队建设](./talent-ladder/README.md)**：P5-资深架构师 培养路径、晋升辅导、离职面谈
-- [ ] **[绩效管理](./performance-management/README.md)**：KPI / OKR 设计、绩效面谈、末位淘汰、激励组合
-- [ ] **[跨团队协作](./cross-team-collaboration/README.md)**：跨 BU 数据共享、冲突解决、同盟构建
-- [ ] **[技术布道与影响力](./tech-evangelism/README.md)**：让业务方主动用你的平台
-- [ ] **[故障复盘文化](./postmortem-culture/README.md)**：无指责、根因分析、行动项跟踪
-- [ ] **[辅导与成长](./mentorship/README.md)**：1:1、OJT、IDP（个人发展计划）
-- [ ] **[向上管理](./upward-management/README.md)**：老板期望管理、资源争取、汇报技巧
-- [ ] **[远程团队管理](./remote-team/README.md)**：异步沟通、远程 1:1、信任建立
-- [ ] **[团队节奏与会议](./team-rhythm/README.md)**：周会、双月会、季度复盘、年度规划
-- [ ] **[团队拓扑设计](./team-topology/README.md)**：Team Topologies、流式对齐、认知负荷
-- [ ] **[团队文化建设](./culture-building/README.md)**：技术分享、代码评审、知识沉淀
+- [ ] **[团队组建与人才招聘](./01-team-formation/README.md)**：人才画像、结构化面试、面试官培养
+- [ ] **[人才梯队建设](./02-talent-ladder/README.md)**：P5-资深架构师 培养路径、晋升辅导、离职面谈
+- [ ] **[绩效管理](./03-performance-management/README.md)**：KPI / OKR 设计、绩效面谈、末位淘汰、激励组合
+- [ ] **[跨团队协作](./04-cross-team-collaboration/README.md)**：跨 BU 数据共享、冲突解决、同盟构建
+- [ ] **[技术布道与影响力](./05-tech-evangelism/README.md)**：让业务方主动用你的平台
+- [ ] **[故障复盘文化](./06-postmortem-culture/README.md)**：无指责、根因分析、行动项跟踪
+- [ ] **[辅导与成长](./07-mentorship/README.md)**：1:1、OJT、IDP（个人发展计划）
+- [ ] **[向上管理](./08-upward-management/README.md)**：老板期望管理、资源争取、汇报技巧
+- [ ] **[远程团队管理](./09-remote-team/README.md)**：异步沟通、远程 1:1、信任建立
+- [ ] **[团队节奏与会议](./10-team-rhythm/README.md)**：周会、双月会、季度复盘、年度规划
+- [ ] **[团队拓扑设计](./11-team-topology/README.md)**：Team Topologies、流式对齐、认知负荷
+- [ ] **[团队文化建设](./12-culture-building/README.md)**：技术分享、代码评审、知识沉淀
 
 > 文件命名建议：`team-formation.md` / `talent-ladder.md` / `performance-management.md` / `cross-team-collaboration.md` / `tech-evangelism.md` / `postmortem-culture.md` / `mentorship.md` / `upward-management.md` / `remote-team.md` / `team-rhythm.md` / `team-topology.md` / `culture-building.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 
