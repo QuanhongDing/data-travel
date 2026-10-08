@@ -1,3 +1,858 @@
+# 架构评审（Architecture Review）
+
+> **一句话定位**：流程 + 清单 + 反模式案例——让架构评审从「走过场」变成「真把关」。
+
+> 本文是 data-travel 项目 [Ch13 · 决策与权衡](../../README.md) 的子章节（**07 架构评审**）。覆盖 R6 工程能力（决策维度）中「**架构评审流程 + 评审清单 + 反模式**」相关的理论、方法、流程与 AI 时代演进。
+
+---
+
+## 0. 本章速读地图
+
+| 你将解决的问题 | 直接跳到 |
+| --- | --- |
+| 架构评审为什么常常走过场？ | §1.2 / §3.3 |
+| 架构评审的标准流程是什么？ | §4 |
+| 评审 Checklist 怎么写？ | §4.3 / §4.4 |
+| 反模式案例有哪些？ | §3.3 / §6.2 |
+| AI 时代如何做架构评审？ | §5 |
+
+---
+
+## 1. 概念与定位
+
+### 1.1 是什么
+
+**学术定义**：架构评审（Architecture Review）是对软件 / 数据架构设计进行系统性、专家级审查的过程，确保架构满足业务需求、技术约束、质量标准、可治理性与可演化性。其前身可追溯到 1970s 的 Design Review，2000s 后演化出多种方法论：ATAM（Architecture Tradeoff Analysis Method, SEI 2000）、CBAM（Cost Benefit Analysis Method）、Active Reviews for Intermediate Designs（ARID, 2005）。
+
+**工程定义**：在数据架构师手里，架构评审是「**在编码 / 实施前，对架构决策进行集体把关的工程仪式**」，包含五个核心要素：
+
+1. **评审对象**：方案 / 设计 / 决策（RFC / ADR / Design Doc）。
+2. **评审流程**：提报 → 预审 → 正式评审 → 决议 → 跟进。
+3. **评审清单（Checklist）**：标准化的检查项。
+4. **评审会议**：多人参与的结构化会议。
+5. **评审产出**：评审意见 + 决策（接受 / 修订 / 拒绝）。
+
+### 1.2 为什么需要
+
+**业务 / 工程痛点**：
+
+- **「架构腐烂」**：方案看起来 OK，但扩展性 / 治理 / 安全有问题——编码后才发现。
+- **「一言堂」**：某架构师个人拍板，团队无人挑战——后续实施才发现问题。
+- **「走过场评审」**：评审会只是流程，无人真正评估——Reviewer 不写实质意见。
+- **「评审标准不一」**：每个 Reviewer 标准不同，方案无所适从。
+- **「评审滞后」**：实施到一半才发现架构问题——返工成本巨大。
+- **「跨团队盲区」**：方案只在自己团队评审，跨团队影响未识别。
+- **「没有决策」**：评审讨论很多，但无明确决议。
+
+**为什么是「资深架构师」核心能力**：
+
+- P5/P6：写代码——关注「代码正确」。
+- P7：模块——关注「模块设计合理」。
+- P8：系统——关注「系统稳定」。
+- **资深架构师 / 准资深架构师：关注「组织级架构治理 + 评审把关」——这是架构评审的本质**。
+
+### 1.3 在 AI 时代数据架构中的位置
+
+```
+       ┌─────── Ch13 · 决策与权衡 ───────┐
+       │                                  │
+       │  ADR(01) ←── 架构评审(07)        │
+       │   ↓           ↓                  │
+       │ 选型(02) ←─ 架构评审(07)         │
+       │   ↓           ↓                  │
+       │ 跨团队(09) ←─ 架构评审(07)       │
+       │                                  │
+       └──────────────────────────────────┘
+                       ↓
+            架构评审是「决策的集体把关」
+```
+
+**与其他子主题的关系**：
+
+- **ADR（01）**：架构评审的产物往往是 ADR（接受 / 修订 / supersede）。
+- **选型框架（02）**：架构评审会用 Decision Matrix 评估方案。
+- **风险评估（04）**：架构评审包含 FMEA / 风险评估环节。
+- **跨团队决策（09）**：架构评审是跨团队决策的载体（Architecture Board）。
+- **决策心理学（08）**：架构评审要对抗群体思维、权威偏误。
+
+**一句话判断**：**「不做架构评审是 P7，做但走过场是 P8，做且真把关是资深架构师——架构评审是个人决策升级为组织决策的关键仪式」**。
+
+### 1.4 演进历程
+
+- **1970s**：Design Review 在硬件 / 航天领域成熟（NASA / 国防部）。
+- **1990s**：软件 Design Review 在企业 IT 普及。
+- **2000**：ATAM（SEI）成为架构评审标准方法。
+- **2005**：ARID（Active Reviews for Intermediate Designs）出现。
+- **2010s**：架构评审纳入敏捷 / DevOps 实践（Continuous Review）。
+- **2014**：AWS Well-Architected Review 成为云架构评审标杆。
+- **2018**：CNCF TAG App Delivery 推动跨团队架构评审标准化。
+- **2020-2024**：AI / 智能体架构评审成熟（LLM 引入评审）。
+- **2024-2025**：AI 辅助架构评审（GitHub Copilot / Claude / 智能体辅助）成为新趋势。
+
+---
+
+## 2. 核心原理
+
+### 2.1 关键概念定义
+
+- **Architecture Review（架构评审）**：对架构设计进行集体评估的过程。
+- **Design Review**：更广义的「设计评审」（含代码 / 数据库设计）。
+- **ATAM（Architecture Tradeoff Analysis Method）**：SEI 提出的架构评审方法，识别质量属性 + 权衡。
+- **CBAM（Cost Benefit Analysis Method）**：基于成本的架构评审。
+- **ARID（Active Reviews for Intermediate Designs）**：在设计中进行的「主动评审」。
+- **Lightweight Review**：轻量级评审（异步 / PR / Checklist）。
+- **Formal Review**：正式评审（会议 / 多人 / 投票）。
+- **Architecture Board**：架构评审委员会（跨团队）。
+- **Tech Radar**：技术雷达（组织级选型指南）。
+- **Checklist**：评审清单——结构化的检查项。
+- **Quality Attributes（质量属性）**：性能 / 可用性 / 安全 / 可维护性 / 可扩展性 / 可演化性。
+- **Stakeholder**：评审中的利益相关方（业务 / 工程 / 安全 / 合规 / 运维）。
+- **Reviewer**：评审人（架构师 / 资深工程师 / 业务代表 / 安全）。
+- **Approver**：批准人（最终决策权）。
+- **Pre-Mortem**：事前验尸（详见 §08）。
+- **Decision Outcome**：评审决议（接受 / 修订 / 拒绝 / 推迟）。
+- **Follow-up Action**：评审后续行动项。
+- **ADR**：架构评审后的决策记录（详见 §01）。
+- **Living Architecture Review**：持续架构评审（伴随架构生命周期）。
+- **AI-assisted Review**：AI 辅助架构评审。
+- **GenAI Code Review**：AI 生成的代码评审（GitHub Copilot PR Review）。
+- **Lightweight ADR + Living Review**：轻量级 ADR + 持续评审。
+
+### 2.2 数学 / 形式化基础
+
+**ATAM 评估方法**：
+
+```
+Utility = Σ w_i × Score_i（质量属性加权打分）
+其中：
+- w_i = 第 i 个质量属性的权重（来自 Stakeholder 共识）
+- Score_i = 第 i 个质量属性的评分（1-5）
+```
+
+**架构决策净收益**：
+
+```
+Net Benefit = Σ_i (Benefit_i - Cost_i) × Discount_i
+其中 Discount_i 反映时间折现。
+```
+
+**评审会议效率**：
+
+```
+Review Efficiency = Decisions per Hour
+Review Coverage = (# Quality Attributes covered) / (# Total Quality Attributes)
+Review Depth = Average Discussion Time per Question
+```
+
+**评审 Checklist 覆盖率**：
+
+```
+Checklist Coverage = (# Items with concrete feedback) / (# Total Items)
+```
+
+### 2.3 关键算法 / 方法
+
+1. **ATAM（Architecture Tradeoff Analysis Method）**——质量属性 + 权衡。
+2. **CBAM（Cost Benefit Analysis Method）**——成本收益。
+3. **ARID**——设计阶段的主动评审。
+4. **Lightweight Review（PR Review）**——异步、轻量。
+5. **Formal Review（评审会议）**——正式、多人。
+6. **Architecture Review Board**——跨团队治理。
+7. **AWS Well-Architected Review**——云架构评审。
+8. **Continuous Review**——持续评审（伴随架构生命周期）。
+9. **Pre-Mortem**——事前验尸（详见 §08）。
+10. **Red Team / Blue Team**——对抗性评审（详见 §08）。
+11. **Scenario-based Review**——场景驱动评审。
+12. **AI-assisted Review**——AI 辅助评审。
+
+### 2.4 与相邻概念的关系
+
+- **架构评审 vs 选型决策**：选型是「选哪个」，评审是「这个好不好」。
+- **架构评审 vs 风险评估**：评审包含风险评估，但更广（含质量 / 治理）。
+- **架构评审 vs ADR**：评审是「过程」，ADR 是「产物」。
+- **架构评审 vs Code Review**：Code Review 关注代码，架构评审关注架构 / 设计。
+- **架构评审 vs 架构治理**：治理是「长期机制」，评审是「单次活动」。
+
+---
+
+## 3. 设计模式与范式
+
+### 3.1 主要模式
+
+**模式 1：ATAM（Architecture Tradeoff Analysis Method）**
+
+SEI 2000 提出的经典架构评审方法，9 步：
+
+1. 介绍 ATAM（30 分钟）。
+2. 介绍业务动机（30 分钟）。
+3. 介绍架构（60 分钟）。
+4. 识别架构方法（30 分钟）。
+5. 生成质量属性效用树（60 分钟）。
+6. 分析架构方法（120 分钟）。
+7. 头脑风暴场景（60 分钟）。
+8. 分析场景（60 分钟）。
+9. 总结结果（30 分钟）。
+
+**适用**：战略级 / 大型项目（首次架构评估）。
+
+**模式 2：Lightweight Review（轻量评审）**
+
+```
+PR / Merge Request
+  ↓
+异步评审（Reviewer 在 PR 上写评论）
+  ↓
+Author 修改 → 重新评审
+  ↓
+合并
+```
+
+- **优点**：快速、低成本、可持续。
+- **缺点**：缺乏深度、适合不复杂变更。
+- **适用**：日常开发 / 小变更。
+
+**模式 3：Formal Review（正式评审）**
+
+```
+架构师提报方案（RFC / Design Doc）
+  ↓
+预审（资深架构师 Review）
+  ↓
+正式评审会议（2 小时，5-8 人）
+  ↓
+决议（接受 / 修订 / 拒绝）
+  ↓
+ADR 归档
+```
+
+- **优点**：深度、多视角、可决策。
+- **缺点**：耗时、低频。
+- **适用**：重大变更 / 战略级。
+
+**模式 4：AWS Well-Architected Review**
+
+按 6 根支柱评审（Operation Excellence / Security / Reliability / Performance Efficiency / Cost Optimization / Sustainability）：
+
+- 每个支柱用 Checklist 评审。
+- 识别高风险项（High Risk Items, HRIs）。
+- 输出改进建议。
+
+**模式 5：Continuous Review（持续评审）**
+
+把评审嵌入到架构生命周期：
+
+```
+架构设计 → RFC 评审 → 实施 Review（PR 级）→ 上线评审（Go-Live Review）→ 运营 Review（Postmortem / 季度评审）
+```
+
+- **优点**：覆盖全生命周期。
+- **缺点**：流程重。
+- **适用**：大型组织 / 关键系统。
+
+**模式 6：Scenario-based Review（场景驱动评审）**
+
+构造关键场景（如「双 11 大促」「数据库故障」「供应商宕机」），评审方案在场景下的表现。
+
+- **优点**：实战导向。
+- **缺点**：场景构造主观。
+- **适用**：高可用 / 高一致性系统。
+
+**模式 7：Pre-Mortem Review**
+
+评审会议开始时，先做 Pre-Mortem：
+
+- 假设 6 个月后方案失败。
+- 所有参与者独立列举失败原因。
+- 评估哪些可预防，修订方案。
+
+**模式 8：Architecture Review Board**
+
+跨团队架构委员会：
+
+- 5-10 名资深架构师（含安全 / 数据 / 业务代表）。
+- 每月 / 双周评审重大方案。
+- 输出：架构白皮书、技术雷达、ADR 审批。
+
+**模式 9：Lightweight ADR + Living Review**
+
+把 ADR 与 PR Review 融合：
+
+- ADR 是 RFC 的「轻量化版本」。
+- PR Review 时检查 ADR 一致性。
+- 持续 Review（Living）。
+
+**模式 10：AI-assisted Review**
+
+AI 辅助评审：
+
+- LLM 自动检查 Checklist 完整性。
+- LLM 识别常见反模式。
+- AI 红队对抗攻击。
+- 人类 Reviewer 把关。
+
+### 3.2 适用场景决策表
+
+| 评审类型 | 推荐方法 | 理由 |
+| --- | --- | --- |
+| 日常开发 | Lightweight Review（PR） | 快速 |
+| 中型变更 | Formal Review + Checklist | 深度 |
+| 战略级 / 大型 | ATAM | 完整 |
+| 云架构 | AWS Well-Architected | 标准化 |
+| 高可用系统 | Scenario-based Review | 实战 |
+| 跨团队 | Architecture Board | 治理 |
+| AI 智能体 | AI-assisted Review + Pre-Mortem | AI 特有 |
+
+### 3.3 反模式与陷阱
+
+1. **「走过场」**：评审只是流程，无人真评。**强制 Reviewer 写实质意见**。
+2. **「一言堂」**：某权威定调，无人挑战。**强制 Devil's Advocate + 匿名投票**。
+3. **「标准不一」**：每个 Reviewer 标准不同。**标准化 Checklist**。
+4. **「评审滞后」**：实施到一半才评审。**评审前置到 RFC 阶段**。
+5. **「无决议」**：讨论很多但无决策。**强制决议（接受 / 修订 / 拒绝）**。
+6. **「无人跟进」**：评审意见无 Follow-up。**Follow-up Action 强制 Owner + 截止日期**。
+7. **「群体思维」**：评审会无人异议。**强制反对意见**。
+8. **「业务方缺席」**：纯技术评审，忽略业务。**强制业务方 Reviewer**。
+9. **「AI 滥用」**：AI 自动通过所有评审。**AI 辅助 + 人类把关**。
+10. **「形式主义 Checklist」**：Checklist 走过场。**强制每项有结论**。
+
+---
+
+## 4. 工程实现
+
+### 4.1 落地步骤
+
+**Step 1：定义评审对象 + 类型**
+
+- 日常变更：Lightweight Review（PR）。
+- 中型变更：Formal Review（评审会议）。
+- 战略级：ATAM。
+
+**Step 2：建立评审流程**
+
+```
+方案起草 → 提交（RFC / Design Doc）
+  ↓
+预审（资深架构师，30 分钟 / 项）
+  ↓
+正式评审（2 小时，5-8 人）
+  ↓
+决议 + Follow-up Action
+  ↓
+ADR 归档（接受 / 修订 / 拒绝）
+  ↓
+实施 + 复盘
+```
+
+**Step 3：建立评审 Checklist**
+
+按质量属性 + 业务场景 + 反模式：
+
+- 性能 / 可用性 / 安全 / 可扩展性 / 可维护性 / 可治理性。
+- 业务：性能 / 成本 / 时间。
+- 反模式：单点 / 过度耦合 / 无降级 / 无监控。
+
+**Step 4：建立评审委员会**
+
+- 5-10 人：架构师 + 安全 + 数据 + 业务代表。
+- 每月 / 双周会议。
+- 输出：架构白皮书 + ADR 审批。
+
+**Step 5：建立 ADR 闭环**
+
+- 评审接受 → ADR 归档。
+- 评审修订 → Author 修改 → 重新评审。
+- 评审拒绝 → 不实施。
+- Supersede → 旧 ADR 标记 Superseded。
+
+**Step 6：建立 Follow-up 机制**
+
+- 每条 Follow-up Action 有 Owner + 截止日期。
+- Jira / GitHub Issue 跟踪。
+- 季度复盘：Follow-up 闭环率。
+
+**Step 7：建立 AI 辅助评审**
+
+- LLM 自动检查 Checklist。
+- LLM 识别反模式。
+- 人类 Reviewer 把关。
+
+**Step 8：建立持续评审**
+
+- PR 级 Review（Lightweight）。
+- 上线评审（Go-Live Review）。
+- 季度架构评审（Architecture Board）。
+- 年度架构 Review（Strategic Review）。
+
+### 4.2 关键技术点
+
+1. **RFC / Design Doc 模板**——标准化评审输入。
+2. **ADR 模板**——标准化评审输出（详见 §01）。
+3. **评审 Checklist 模板**——按质量属性 / 反模式分类。
+4. **评审会议管理**——议程、纪要、决议、Follow-up。
+5. **评审工具**：GitHub / GitLab PR、Atlassian Confluence、Notion。
+6. **评审日历**——定期评审会议。
+7. **评审 Dashboard**——评审数量 / 通过率 / Follow-up 闭环率。
+8. **AI 辅助评审工具**：GitHub Copilot PR Review、Claude Code Review。
+9. **评审 Checklist 自动化**：AI 自动检查 Checklist 完整性。
+10. **评审历史**——所有评审归档，便于未来回溯。
+
+### 4.3 工具链与平台
+
+**RFC / Design Doc 平台**：
+
+- **GitHub / GitLab PR**——主流方式。
+- **Confluence + Markdown**——传统企业。
+- **Notion Database**——结构化。
+- **Google Docs**——轻量。
+- **Backstage ADR Plugin**（Spotify）。
+
+**评审 Checklist**：
+
+- **Atlassian Confluence Template**——结构化。
+- **Notion Checklist Database**——可搜索。
+- **Excel / Google Sheets**——轻量。
+- **GitHub Issue Template**——PR 级。
+- **AWS Well-Architected Tool**——云架构。
+
+**评审会议管理**：
+
+- **Jira + Architecture Theme**——决策跟踪。
+- **Asana / Linear**——Follow-up 跟踪。
+- **Slack / Teams Channel**——实时沟通。
+- **Miro / FigJam**——可视化白板。
+
+**评审 Dashboard**：
+
+- **Grafana**——自定义评审 Dashboard。
+- **Jira Dashboard**——评审 + Follow-up 闭环率。
+- **Atlassian Compass**（2024）——开发者体验 + 架构健康。
+- **Linear / Height**——团队级评审跟踪。
+
+**AI 辅助（2024-2025）**：
+
+- **GitHub Copilot PR Review**——AI 代码评审。
+- **Claude Code Review**——AI 架构评审。
+- **CodiumAI / Coderabbit**——AI Code Review 平台。
+- **Sourcery**——AI 代码质量。
+- **Anthropic Constitutional AI**——AI 决策「宪法」。
+
+**架构治理**：
+
+- **AWS Well-Architected Tool**——云架构评审。
+- **Azure Well-Architected Assessment**——微软云评审。
+- **Google Cloud Architecture Framework**——谷歌云评审。
+
+### 4.4 代码 / 示例
+
+**示例 1：架构评审 Checklist（数据架构）**
+
+```markdown
+## 架构评审 Checklist：数据平台方案
+
+### 1. 功能性
+- [ ] 业务需求覆盖度：所有业务场景是否覆盖？
+- [ ] 数据模型：是否建模正确（OneData / 维度 / KG）？
+- [ ] ETL / ELT：数据流转是否可追溯？
+
+### 2. 性能
+- [ ] QPS 预估：是否满足业务 QPS 需求？
+- [ ] 延迟要求：P99 延迟是否满足？
+- [ ] 吞吐：峰值吞吐是否满足？
+- [ ] 数据倾斜：是否有数据倾斜风险？
+
+### 3. 可用性
+- [ ] SLA：是否满足 99.9% / 99.99%？
+- [ ] 单点故障：是否有 SPOF？
+- [ ] 容灾：多活 / 双活方案？
+- [ ] 降级 / 限流：故障降级方案？
+
+### 4. 安全
+- [ ] 数据加密：传输 + 存储加密？
+- [ ] 访问控制：RBAC / ABAC？
+- [ ] 数据脱敏：PII 脱敏方案？
+- [ ] 审计：操作审计 + 链路追踪？
+
+### 5. 可扩展性
+- [ ] 水平扩展：是否支持水平扩展？
+- [ ] 弹性伸缩：自动伸缩方案？
+- [ ] 容量规划：3-5 年容量预估？
+
+### 6. 可维护性
+- [ ] 可观测性：监控 / 告警 / 日志？
+- [ ] 可治理性：权限 / 审批 / 变更管理？
+- [ ] 可演进性：未来 3-5 年演进路径？
+
+### 7. 成本
+- [ ] TCO 3-5 年：TCO 计算？
+- [ ] ROI：投入产出比？
+- [ ] 资源利用率：CPU / 内存 / 存储利用率？
+
+### 8. 团队匹配度
+- [ ] 团队能力：团队是否能维护？
+- [ ] 学习曲线：学习成本？
+- [ ] 招聘：是否能招聘到对应人才？
+
+### 9. 合规
+- [ ] 数据隐私：GDPR / 个保法 / 数据安全法？
+- [ ] 行业合规：等保 2.0 / 3.0？
+- [ ] AI 合规：AI 治理框架？
+
+### 10. 风险
+- [ ] 技术风险：新技术风险？
+- [ ] 供应商风险：供应商锁定？
+- [ ] 业务风险：业务中断风险？
+
+### 反模式检查
+- [ ] 无单点故障？
+- [ ] 无过度设计？
+- [ ] 无过度耦合？
+- [ ] 无硬编码？
+- [ ] 无未经评审的依赖？
+
+### Follow-up Actions
+| # | 议题 | Owner | 截止日期 | 状态 |
+| --- | --- | --- | --- | --- |
+| 1 | 容量预估 | @张三 | 2025-12-01 | 待开始 |
+| 2 | 安全评审 | @李四 | 2025-12-15 | 待开始 |
+```
+
+**示例 2：评审会议模板**
+
+```markdown
+## 评审会议：{方案名}
+
+### 会议信息
+- 时间：2025-11-15 14:00-16:00
+- 主持人：@王架构
+- 评审人：@张三、@李四、@王五、@赵六、@钱七
+- 缺席：@孙八（请假）
+
+### 议程
+1. 方案介绍（30 分钟，@王架构）
+2. 质量属性评审（45 分钟）
+   - 性能（@李四）
+   - 安全（@王五）
+   - 可扩展性（@赵六）
+3. 反模式检查（15 分钟）
+4. Pre-Mortem（15 分钟）
+5. 决议 + Follow-up（15 分钟）
+
+### 评审记录
+#### 性能
+- @李四：QPS 预估偏低，建议 2 倍
+- 决议：Author 补充性能压测报告
+
+#### 安全
+- @王五：缺少 PII 脱敏
+- 决议：补全 PII 脱敏方案
+
+### Pre-Mortem
+- 假设 6 个月后失败，Top 3 原因：
+  1. Kafka 限流
+  2. AI 成本失控
+  3. 数据延迟
+
+### 决议
+- 决议：**修订后接受**（Author 修订 Follow-up 后无需重新评审）
+- ADR：ADR-0015
+
+### Follow-up Actions
+| # | 议题 | Owner | 截止日期 |
+| --- | --- | --- | --- |
+| 1 | 性能压测报告 | @王架构 | 2025-11-30 |
+| 2 | PII 脱敏方案 | @王架构 | 2025-12-05 |
+| 3 | Kafka 多供应商 | @李四 | 2025-12-15 |
+```
+
+**示例 3：ATAM 简化版（质量属性效用树）**
+
+```
+目标：业务连续
+├── 高可用
+│   ├── 可用性 ≥ 99.95%
+│   ├── RTO ≤ 30 分钟
+│   └── RPO ≤ 5 分钟
+├── 可扩展
+│   ├── 支持 10x 流量
+│   └── 支持 100x 数据量
+├── 安全
+│   ├── 数据加密
+│   ├── 权限隔离
+│   └── 审计追溯
+└── 性能
+    ├── P99 延迟 ≤ 1s
+    └── QPS ≥ 10,000
+```
+
+**示例 4：架构反模式清单**
+
+| 反模式 | 描述 | 检测 |
+| --- | --- | --- |
+| 单点故障 | 关键组件无冗余 | FMEA + Chaos Engineering |
+| 过度耦合 | 服务间强耦合 | 依赖图分析 |
+| 大泥球 | 单一巨型服务 | 代码静态分析 |
+| 烟囱系统 | 重复建设的独立系统 | 数据流分析 |
+| 无监控 | 关键路径无监控 | 监控覆盖率 |
+| 无降级 | 故障无降级方案 | Chaos 测试 |
+| 无审计 | 操作无审计日志 | 安全审计 |
+| 无版本管理 | 模型 / Prompt 无版本 | AI Tech Debt 检测 |
+
+**示例 5：AWS Well-Architected Review（6 根支柱）**
+
+| 支柱 | 关键问题 | 评分 |
+| --- | --- | --- |
+| Operational Excellence | 监控 / 自动化 / 变更管理 | 4/5 |
+| Security | 身份 / 认证 / 加密 / 审计 | 3/5 |
+| Reliability | 容错 / 备份 / 恢复 | 4/5 |
+| Performance Efficiency | 资源选型 / 监控 / 演进 | 4/5 |
+| Cost Optimization | 成本可见 / 优化 / 治理 | 3/5 |
+| Sustainability | 碳排放 / 资源利用率 | 3/5 |
+
+→ 评分 ≤ 3 → 高风险项（HRIs）→ 必须改进。
+
+**示例 6：AI 辅助架构评审（Python / Claude）**
+
+```python
+import anthropic
+import os
+
+client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+def ai_review_architecture(design_doc: str, checklist: list[str]) -> str:
+    """基于 Design Doc + Checklist，让 Claude 辅助评审。"""
+    prompt = f"""你是一名资深数据架构师，请评审以下架构方案。
+
+## 架构方案
+{design_doc}
+
+## 评审 Checklist
+{chr(10).join(f"- [ ] {item}" for item in checklist)}
+
+请按 Checklist 逐项评审：
+1. 每项给出「通过 / 部分通过 / 不通过」+ 理由 + 改进建议。
+2. 列出 Top 5 风险（含概率 / 影响 / 缓解）。
+3. Pre-Mortem：假设 6 个月后失败，列举 Top 3 失败原因。
+4. 总体评分（1-5）+ 决议（接受 / 修订 / 拒绝）。
+
+输出 Markdown 报告。"""
+
+    msg = client.messages.create(
+        model="claude-3-5-sonnet-20241022",
+        max_tokens=4000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return msg.content[0].text
+
+# 使用
+review = ai_review_architecture(
+    design_doc="""
+我们计划迁移所有 AI 应用从单模型 GPT-4 到 Claude + GPT-4o + 通义千问多模型路由。
+涉及成本优化、合规达标、风险分散三个目标。
+技术方案：基于 LangChain 实现 Model Router，支持按任务类型、地域、数据敏感度路由。
+    """,
+    checklist=[
+        "性能：路由增加 P99 延迟是否 ≤ 200ms？",
+        "成本：多模型是否真的降低总成本？",
+        "安全：模型 API Key 如何管理？",
+        "合规：国内业务是否合规？",
+        "可扩展：能否接入新模型？",
+        "可维护：团队是否能维护多模型？",
+        "可观测：路由决策是否可观测？",
+        "降级：单模型宕机是否降级？",
+    ],
+)
+print(review)
+```
+
+---
+
+## 5. 前沿演进（AI 时代）
+
+### 5.1 LLM/Agent 时代的演进方向
+
+- **AI 辅助架构评审**：LLM 自动检查 Checklist + 识别反模式 + Pre-Mortem。
+- **AI 架构 Review Board**：AI 作为 Reviewer 之一（与人类 Reviewer 互补）。
+- **AI Code Review**：GitHub Copilot / Cursor 自动 PR Review。
+- **AI 红队**：AI 对抗攻击测试。
+- **AI 评审历史**：所有评审建成 KG，跨组织复用。
+- **AI Constitutional Review**：AI 用「宪法」约束评审标准。
+- **持续 AI 评审**：AI 自动监测架构偏离（如新依赖、新风险）。
+- **AI 评审 Dashboard**：AI 自动汇总评审状态 + Follow-up 闭环率。
+
+### 5.2 与 RAG / 向量库 / GraphRAG 的结合
+
+- **评审历史 + RAG**：评审时 RAG 检索类似历史方案 + 评审意见。
+- **评审 Checklist + 向量库**：所有 Checklist 向量化，自动匹配。
+- **评审 + KG**：评审对象、评审人、决议、Follow-up 建成 KG——可推理「类似方案的历史评审意见」。
+- **评审 + GraphRAG**：跨系统评审推理（如「数据架构评审同时考虑 AI / 安全 / 业务影响」）。
+
+### 5.3 学术与工业最新进展（2024-2025）
+
+- **2024**：GitHub Copilot PR Review 自动代码评审。
+- **2024**：Coderabbit / CodiumAI 等 AI Code Review 平台兴起。
+- **2024**：Atlassian Compass 推出架构健康 Dashboard。
+- **2024-2025**：AWS / Azure / GCP Well-Architected 工具全面 AI 化。
+- **2025**：AI 辅助架构评审成为组织级标准实践。
+
+### 5.4 未来 3-5 年趋势
+
+- **AI 主导评审**：从「人类评审 + AI 辅助」到「AI 评审 + 人类把关」。
+- **Continuous AI Review**：AI 持续监测架构偏离。
+- **Architecture Review as Code**：评审规则 DSL 化、自动化。
+- **AI 评审历史图谱**：组织级评审 KG + RAG。
+- **Constitutional AI 评审**：用「宪法」约束评审标准（如「必须开源」「必须支持中文」）。
+- **AI Governance Review**：AI 系统评审纳入 AI RMF。
+
+---
+
+## 6. 落地实践
+
+### 6.1 真实案例
+
+**案例 1：Amazon 的 Bar Raiser Review**
+
+Amazon 的 Bar Raiser Review 是业界著名的架构评审实践：
+
+- 每个重要决策必须 Bar Raiser Reviewer（资深员工，独立于团队）。
+- Reviewer 用 Amazon Leadership Principles + 技术原则评估。
+- Reviewer 有权拒绝（即使团队同意）。
+- 关键：Reviewer 独立性 + 严格标准。
+
+**案例 2：Google 的 Design Review**
+
+Google 的 Design Review 实践：
+
+- 大型项目必须经过 2-3 轮 Design Review。
+- Reviewer 包括架构师 + 安全 + SRE + 业务代表。
+- 必须 ADR 记录。
+- 关键：多轮 + 多角色 + ADR。
+
+**案例 3：阿里巴巴的 521 架构评审**
+
+阿里在大促前的架构评审：
+
+- 大促前 3 个月：所有架构变更必须通过架构评审。
+- 评审委员会 5-10 人，含资深架构师 + 业务代表。
+- 评审 Checklist 含 521 项检查点。
+- 关键：强制性 + 标准化 + 业务驱动。
+
+**案例 4：Microsoft 的 Architecture Review Board**
+
+微软 Azure 的 ARB：
+
+- 所有 Azure 服务必须 ARB Review。
+- Reviewer 跨团队（架构师 + 安全 + SRE + 业务）。
+- 输出：架构白皮书 + 最佳实践。
+- 关键：跨团队 + 标准化 + 持续治理。
+
+### 6.2 踩坑与经验
+
+1. **「走过场」**：评审只是流程。**强制 Reviewer 写实质意见**。
+2. **「一言堂」**：权威定调。**强制 Devil's Advocate + 匿名投票**。
+3. **「标准不一」**：Reviewer 标准不同。**标准化 Checklist**。
+4. **「评审滞后」**：实施到一半。**评审前置到 RFC**。
+5. **「无决议」**：讨论多无决策。**强制决议（接受 / 修订 / 拒绝）**。
+6. **「无人跟进」**：Follow-up 无主。**强制 Owner + 截止日期**。
+7. **「群体思维」**：评审无人异议。**强制反对意见**。
+8. **「业务方缺席」**：纯技术评审。**强制业务方 Reviewer**。
+9. **「AI 滥用」**：AI 自动通过。**AI 辅助 + 人类把关**。
+10. **「形式主义 Checklist」**：走过场。**强制每项有结论**。
+
+### 6.3 落地路径（0→1, 1→10, 10→100）
+
+**0→1（10 人以下团队）**：
+
+- Lightweight Review（PR）；
+- 评审 Checklist 入门；
+- ADR 强制。
+
+**1→10（10-50 人）**：
+
+- Formal Review 流程；
+- 评审委员会（月度）；
+- AI 辅助评审（GitHub Copilot PR Review）；
+- Pre-Mortem 集成。
+
+**10→100（50+ 人）**：
+
+- ATAM（战略级）；
+- Architecture Review Board；
+- AI 辅助 + 持续评审；
+- 评审历史 KG；
+- 季度架构评审（Architecture Board）。
+
+### 6.4 ROI 评估
+
+**直接收益**：
+
+- 架构腐烂减少：40-60%；
+- 重大事故减少：30-50%；
+- 跨团队对齐效率：50%+；
+- 决策可被未来质疑（ADR）。
+
+**间接收益**：
+
+- 组织架构治理能力沉淀；
+- 团队架构能力提升；
+- 跨团队协作文化；
+- 战略对齐。
+
+**成本**：
+
+- 流程成本：每次评审 +1-2 小时；
+- 工具成本：低（GitHub / Confluence 已足够）；
+- 培训成本：内部 Workshop。
+
+---
+
+## 7. 与其他方法对比
+
+### 7.1 对比维度（评分 1-5）
+
+| 维度 | 不评审 | Lightweight | Formal | ATAM | AI 辅助 |
+| --- | --- | --- | --- | --- | --- |
+| 评审深度 | 1 | 2 | 4 | **5** | 4 |
+| 评审速度 | **5** | 4 | 3 | 1 | 4 |
+| 跨团队对齐 | 1 | 2 | 4 | **5** | 4 |
+| 反模式识别 | 1 | 2 | 3 | 4 | **5** |
+| 适用规模 | 任意 | 小 | 中 | 大 | 任意 |
+| AI 友好度 | 1 | 3 | 3 | 3 | **5** |
+
+### 7.2 决策树
+
+```
+你需要做架构评审
+        │
+        ├── 日常变更？
+        │       └── 是 → Lightweight Review（PR）
+        │
+        ├── 中型变更？
+        │       └── 是 → Formal Review + Checklist
+        │
+        ├── 战略级 / 大型？
+        │       └── 是 → ATAM
+        │
+        ├── 云架构？
+        │       └── 是 → AWS Well-Architected Review
+        │
+        ├── AI 智能体？
+        │       └── 是 → AI-assisted Review + Pre-Mortem
+        │
+        └── 想用 AI 加速？
+                └── 是 → LLM Checklist + 反模式识别 + 人类把关
+```
+
+### 7.3 组合使用
+
+- **Lightweight + Formal**：日常 + 重大分层。
+- **ATAM + Pre-Mortem**：战略 + 风险预防。
+- **AWS Well-Architected + Checklist**：云架构标准化。
+- **AI 辅助 + 人类 Reviewer**：AI 加速 + 工程师把关。
+- **Architecture Review Board + ADR**：治理 + 归档。
+- **评审历史 + KG**：跨组织评审经验复用。
+
+---
+
 # architecture-review 面试真题集
 
 > **一句话定位**：流程、清单、反模式案例。
@@ -10,7 +865,7 @@
 > 本节整合 6 个原 PDF 子章节、共 34 道真题。下表按原 PDF 主题汇总。
 
 | 原 PDF §N.M | 主题 | 题号范围 | 收录题数 | 主/辅 |
-| --- | --- | --- | :---: | :---: |
+| --- | --- | --- | --- | :---: |
 | §7.5 | 企业级选型、迁移策略与最佳实践 | 7.5.1 ~ 7.5.6（共 6） | 6 | 主 |
 | §15.5 | 多云环境下的集群统⼀调度 | 15.5.1 ~ 15.5.7（共 7） | 7 | 辅 |
 | §19.1 | ⼤数据平台基础架构理解 | 19.1.1, 19.1.2, 19.1.3, 19.1.4 | 4 | 主 |
@@ -43,7 +898,7 @@
 - **§7.5.2**：请阐述在迁移过程中，如何设计⼀个最⼩化业务中断的灰度发布⽅案，并说明关键
 - **§7.5.3**：在迁移完成后，如何确保基于Hudi/Delta Lake/Iceberg的新数据平台在数据⼀致
 - **§7.5.4**：请简要说明在从传统数据仓库迁移到基于Hudi、Delta Lake或Iceberg的现代数据
-- **§7.5.5**：在规划数据迁移策略时，如何评估现有数据仓库中的表结构和ETL流程，以便顺利
+- **§.5.5**：在规划数据迁移策略时，如何评估现有数据仓库中的表结构和ETL流程，以便顺利
 - **§7.5.6**：⾯对企业中存在多种数据湖表格式（如Hudi、Delta Lake、Iceberg）共存的场
 
 ### 2.2 §15 超⼤规模集群的命名空间、⽹络与调度挑战 > 本主题涵盖 1 个子节、7 道题。

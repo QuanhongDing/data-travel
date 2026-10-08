@@ -61,7 +61,51 @@
 
 ## 推荐资料
 
-> 本节在章正文写作时补充。
+> 本节整理 Ch1 推荐阅读：经典书 + 工业白皮书 + 2024–2025 学术/工程前沿。
+> 配合各子章「前沿演进」一节使用，先骨架再前沿。
+
+### 经典书目（建模方法论基石）
+
+| 书 | 作者 | 重点章节 | 阅读建议 |
+| --- | --- | --- | --- |
+| *The Data Warehouse Toolkit*（3rd Ed.） | Ralph Kimball | 全书 | 维度建模圣经，星型 / 缓慢变化维的源头 |
+| *Building the Data Warehouse* | Bill Inmon | 全书 | 自顶向下 ER 数仓的源头 |
+| *Modeling the Agile Data Warehouse with Data Vault* | Dan Linstedt | 全书 | Data Vault 2.0 标准教材 |
+| *Anchor Modeling: Agile modeling for Big Data* | Olle Regardt | 全书 | 第 6 范式 / Anchor Modeling |
+| *A Semantic Web Primer*（3rd Ed.） | Grigoris Antoniou | Ch.2–6 | RDF / OWL / SPARQL 入门 |
+| *Ontology Engineering* | Valentina Presutti | 全书 | 本体工程方法论 |
+| *Knowledge Graphs: Fundamentals, Techniques, and Applications* | Hogan et al. | 全书 | KG 系统综述（免费在线） |
+| *Graph Neural Networks: Foundations, Frontiers, and Applications* | Wu et al. | 全书 | GNN 综述（中文版亦有） |
+| *Designing Data-Intensive Applications* | Martin Kleppmann | Ch.2–5 | 不在 Ch1 但建模底层思想互补 |
+
+### 工业白皮书 / 公开资料
+
+- *《阿里大数据之路》*（阿里数据团队，2017 / 2021 修订版）：OneData / OneID / OneService 的工业化范式
+- *《数据中台架构：企业级数据资产化方法论与实践》*（机械工业，2020）
+- *Databricks Lakehouse Platform 白皮书*（2021 / 2023 修订）：湖仓一体与 Data Lakehouse
+- *Snowflake / Iceberg / Apache Hudi 官方文档*：表格式（table format）的设计哲学对比
+- *Neo4j / NebulaGraph / TigerGraph 官方白皮书*：图数据库三大流派
+- *Microsoft GraphRAG 论文与代码库*（2024）：GraphRAG 工程化里程碑
+- *Google Knowledge Graph Search API 文档*：工业级 KG 案例
+
+### 2024–2025 前沿（论文 / 产品 / 开源）
+
+- *Graph Foundation Models（GFM）* 系列论文（2024–2025）：跨图统一预训练
+- *Microsoft GraphRAG*（2024）：基于 KG 增强的 RAG 检索
+- *Neo4j LLM Knowledge Graph Builder*（2024）：自然语言 → KG 一键构建
+- *Apache Jena / RDF4J / OWL API*：本体建模工具链
+- *dbt Semantic Layer / Cube / Airbnb Minerva*：Metric 语义层
+- *OpenMetadata / DataHub / Unity Catalog*：AI 时代的模型与资产目录
+- *OWL 2 Profiles（RL / EL / QL）*：大规模本体推理
+- *OpenAI Structured Outputs / Anthropic Tool Use*：LLM 输出结构化建模
+
+### 学习路径建议
+
+1. **入门（1–2 周）**：Kimball《Toolkit》Ch.1–5 + 本章 `02-dimensional-modeling.md` + `01-business-process-modeling.md`
+2. **进阶（3–4 周）**：Inmon + Data Vault + Anchor Modeling 三本书互参；本章 `03-data-vault.md` / `04-anchor-modeling.md`
+3. **本体与 KG（4–6 周）**：Antoniou + Hogan + Neo4j 实操；本章 `05–07` 三篇
+4. **中台与指标（2 周）**：阿里《大数据之路》+ dbt Semantic Layer 文档；本章 `08–10` 三篇
+5. **治理与前沿（持续）**：跟踪 OpenMetadata / GraphRAG / GFM 进展；本章 `11-model-management.md`
 
 ## 下一步
 

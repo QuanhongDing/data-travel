@@ -1,3 +1,738 @@
+# 单元化架构（Cell-Based Architecture）
+
+> **一句话定位**：把系统按业务域切分为独立"单元"（Cell），每个单元自包含（DB + Cache + MQ），单单元故障不影响全局——是阿里双11、字节春晚红包等大型场景的核心架构形态。
+
+> 本文是 data-travel 项目 [Ch12 · 架构与高可用](../../README.md) 的子章节（**01 单元化架构**）。覆盖 R6 工程能力 + 大规模场景 相关的**单元化（Cell）架构**。
+
+---
+
+## 0. 本章速读地图
+
+| 你将解决的问题 | 直接跳到 |
+| --- | --- |
+| 老板问"机房挂了怎么办"如何回答？ | §1.2、§3.1 |
+| 单元化 vs 微服务 vs 多活的区别？ | §1.1、§3.2 |
+| 单元（Cell）如何设计？路由规则是什么？ | §4.1、§4.2 |
+| 流量染色 / 单元化路由如何实现？ | §4.2 |
+| AI 时代单元化有什么新变化？ | §5 |
+| 真实案例：阿里 / 字节 / eBay 单元化 | §6.1 |
+
+---
+
+## 1. 概念与定位
+
+### 1.1 是什么
+
+**单元化架构（Cell-Based Architecture）**是**把系统按业务域（用户、订单、商品）切分为 N 个独立的"单元"（Cell）**，每个 Cell 自包含完整的应用 + 数据（DB + Cache + MQ），单 Cell 故障不影响其他 Cell 的高可用架构形态。
+
+它由四个要素组成：
+
+1. **业务域切分**：按业务（用户 ID / 订单 ID / 区域）切分到不同 Cell。
+2. **单元自包含**：每个 Cell 包含完整的应用 + DB + Cache + MQ。
+3. **单元化路由**：按特定规则（Hash、地域）把请求路由到固定 Cell。
+4. **单元间协同**：跨 Cell 调用需要特殊处理（如消息中心、配置中心）。
+
+**与微服务、多活的关系**：
+
+| 维度 | 微服务 | 多活 | 单元化 |
+| --- | --- | --- | --- |
+| 切分维度 | 业务能力 | 地理区域 | 业务域 + 地理 |
+| 单元数量 | 10-100 个服务 | 2-5 个 Region | 12-100 个 Cell |
+| 数据归属 | 共享 DB | 多份 DB | 每 Cell 一份 DB |
+| 故障隔离 | 服务级 | 地域级 | Cell 级 |
+| 路由方式 | 服务发现 | DNS / GSLB | 一致性 Hash |
+
+### 1.2 为什么需要
+
+**业务驱动力**：
+
+- **单机房是单点**：地震、火灾、断电、光缆故障。
+- **大促流量集中**：双11 期间单机房的容量瓶颈。
+- **故障爆炸半径大**：一个 DB 故障影响所有用户。
+- **异地多活的演进**：从 Active-Passive 到 Active-Active，需要更细粒度切分。
+- **AI 时代的扩展性**：智能体、推理服务的算力增长，需要弹性扩展。
+
+**痛点**：
+
+1. **DB 单点**：所有用户共享一个 DB，DB 故障 = 全站不可用。
+2. **水平扩展受限**：单机柜 / 机房容量有上限。
+3. **故障扩散**：一个服务故障可能拖垮整个系统。
+4. **异地多活的复杂度**：Active-Active 的数据冲突难解决。
+5. **AI 算力瓶颈**：GPU 资源稀缺，单元化可实现 GPU 池化。
+
+### 1.3 在 AI 时代数据架构中的位置
+
+**在架构演进中的位置**：
+
+```
+[单体] → [微服务] → [单元化] → [单元化 + AI]
+```
+
+**与其他章的关系**：
+
+- **Ch11 横切工程**：可观测性需要支持单元化维度。
+- **Ch12 §02 异地多活**：单元化是异地多活的最佳实现方式。
+- **Ch12 §03 大促保障**：单元化让大促流量分摊到多个 Cell。
+- **Ch12 §06 混沌工程**：单元化让混沌实验的爆炸半径可控。
+- **Ch12 §09 灰度与回滚**：单元化让灰度可以按 Cell 切分。
+
+### 1.4 演进历程
+
+**起源（2008-2014）**：
+
+- 2008：eBay 提出"Cell-Based Architecture"概念。
+- 2012：阿里开始单元化探索（"五彩石"项目）。
+- 2013：阿里"两地三中心"上线。
+
+**大规模落地（2015-2020）**：
+
+- 2015：阿里双11首次大规模应用单元化（12 个 Cell）。
+- 2017：字节跳动春晚红包使用单元化。
+- 2018：阿里"三地五中心"实现异地多活。
+
+**AI 时代（2020+）**：
+
+- 2020：单元化扩展到 AI 推理服务。
+- 2022：GPU 单元化（每 Cell 独立 GPU 池）。
+- 2024：智能体单元化（每 Cell 独立 Agent 集群）。
+- 2025+：AI 主导的 Cell 调度。
+
+---
+
+## 2. 核心原理
+
+### 2.1 关键概念定义
+
+- **Cell（单元）**：自包含的应用 + 数据（DB + Cache + MQ）部署单元。
+- **Set（分组）**：多个 Cell 的逻辑分组（如 4 个 Cell 为一组）。
+- **Zone（区域）**：物理机房的划分。
+- **单元化路由（Cell Routing）**：按规则把请求路由到固定 Cell。
+- **流量染色（Traffic Coloring）**：在请求中打标（userId / region），用于路由。
+- **逻辑单元 vs 物理单元**：逻辑单元指路由规则，物理单元指实际部署。
+- **机房级容灾**：Cell 故障时，其他机房承接流量。
+- **异地多活**：Cell 部署在多个 Region，同时提供服务。
+- **单元间调用**：跨 Cell 的服务调用，需要特殊处理。
+- **单元化 ID 设计**：用于路由的唯一 ID（如 userId、orderId）。
+- **一致性 Hash**：路由算法，保证同一用户总命中同一 Cell。
+- **双倍资源**：单元化通常需要双倍资源（Cell 互备）。
+- **容量评估**：每 Cell 的容量 = 总容量 / Cell 数。
+- **流量调度**：在 Cell 之间动态调整流量。
+- **数据库水平切分**：DB 按业务键水平切分到不同 Cell。
+- **单元化发布**：按 Cell 灰度发布。
+
+### 2.2 数学 / 形式化基础
+
+**单元化路由公式（一致性 Hash）**：
+
+```
+CellID = Hash(UID) mod N_Cells
+
+例：
+- UID = 12345
+- Hash(12345) = 12345 (假设)
+- N_Cells = 12
+- CellID = 12345 mod 12 = 9
+
+→ 该用户总是路由到 Cell 9
+```
+
+**容量公式**：
+
+```
+每 Cell 容量 = 总容量 / Cell 数
+
+例：
+- 总 QPS = 100 万
+- Cell 数 = 12
+- 每 Cell QPS = 8.3 万
+
+每 Cell 资源 = 总资源 / Cell 数 + 冗余
+例：每 Cell = 100 台 + 20% 冗余 = 120 台
+```
+
+**数据切分公式**：
+
+```
+每 Cell 数据 = 总数据 / Cell 数
+
+例：
+- 总订单 = 1 亿
+- Cell 数 = 12
+- 每 Cell 订单 = 833 万
+```
+
+**资源利用率**：
+
+```
+利用率 = 实际流量 / Cell 容量
+
+设计目标：50-70%（留 30-50% 冗余应对峰值）
+```
+
+**爆炸半径**：
+
+```
+故障 Cell 占比 = 1 / N_Cells
+
+例：12 个 Cell 中 1 个故障
+影响 = 1/12 ≈ 8.3%
+```
+
+### 2.3 关键算法 / 方法
+
+1. **路由算法**：
+   - **一致性 Hash**：保证同一用户总命中同一 Cell。
+   - **Range 分片**：按 ID 范围分片（如 0-1000 万到 Cell 1）。
+   - **地域路由**：按地理位置分片（如华东到 Cell 1）。
+   - **混合路由**：综合考虑 userId + region。
+
+2. **ID 设计**：
+   - **统一 ID**：用全局唯一 ID（如雪花算法 Snowflake）。
+   - **业务 ID**：用业务字段（如 userId、orderId）。
+   - **复合 ID**：userId + cellId 的复合。
+
+3. **数据同步**：
+   - **同 Cell**：读写都在同一 Cell（无跨 Cell 调用）。
+   - **跨 Cell 读**：读其他 Cell 的副本。
+   - **跨 Cell 写**：通过消息队列异步同步。
+   - **全局数据**：用单独的中心化存储（如配置中心）。
+
+4. **流量调度**：
+   - **动态扩缩容**：基于流量动态调整 Cell 大小。
+   - **故障切流**：把故障 Cell 的流量切到正常 Cell。
+   - **灰度切流**：按 Cell 切分灰度。
+
+5. **AI 时代的单元化**：
+   - **GPU Cell**：每 Cell 独立 GPU 池。
+   - **模型 Cell**：每 Cell 部署独立模型副本。
+   - **Agent Cell**：每 Cell 独立 Agent 集群。
+   - **向量 Cell**：每 Cell 独立向量索引。
+
+### 2.4 与相邻概念的关系
+
+| 相邻概念 | 关系 | 关键差异 |
+| --- | --- | --- |
+| 微服务 | 切分维度不同 | 微服务按业务能力切，单元化按用户/数据切 |
+| 异地多活 | 物理形态 | 单元化是异地多活的最佳实践 |
+| 流量调度 | 路由方式 | 单元化路由基于业务 ID |
+| 灰度回滚 | 灰度粒度 | 单元化让灰度可以按 Cell 切分 |
+| 混沌工程 | 爆炸半径 | 单元化降低混沌爆炸半径 |
+
+---
+
+## 3. 设计模式与范式
+
+### 3.1 主要模式
+
+#### 模式 1：用户单元化
+
+按 userId Hash 到 Cell，所有用户相关的服务（账户、订单、推荐）都在同一 Cell。
+
+**优点**：用户的所有数据集中，无跨 Cell 调用。
+
+**挑战**：热点用户（大 V）可能压垮某个 Cell。
+
+#### 模式 2：地域单元化
+
+按地域切分 Cell（如华东、华南、华北）。
+
+**优点**：天然就近接入。
+
+**挑战**：用户跨地域时需要重路由。
+
+#### 模式 3：业务单元化
+
+按业务切分（用户 Cell、商品 Cell、订单 Cell）。
+
+**优点**：业务边界清晰。
+
+**挑战**：业务间调用频繁。
+
+#### 模式 4：复合单元化
+
+混合多种路由（如 userId + region）。
+
+#### 模式 5：分层单元化
+
+```
+[核心 Cell（订单、支付）]   ← 强一致
+[重要 Cell（商品、库存）]   ← 最终一致
+[普通 Cell（评论、推荐）]   ← 弱一致
+```
+
+#### 模式 6：AI 单元化
+
+- 每 Cell 独立 GPU 池。
+- 每 Cell 独立模型副本。
+- 每 Cell 独立 Agent 集群。
+
+### 3.2 适用场景决策表
+
+| 场景 | 推荐模式 | 理由 |
+| --- | --- | --- |
+| 电商交易 | 用户单元化 | 用户数据集中 |
+| 内容平台 | 用户单元化 + 地域 | 用户数据 + 就近 |
+| 金融交易 | 业务单元化（强一致） | 业务边界清晰 |
+| AI 推理 | AI 单元化（GPU 池化） | GPU 资源 |
+| 内部系统 | 不需要单元化 | 规模小 |
+| 全球化 | 地域单元化 | 跨地域 |
+
+### 3.3 反模式与陷阱
+
+#### 反模式 1：Cell 数量过多
+
+**症状**：100 个 Cell，运维复杂。
+
+**正解**：12-24 个 Cell 是常见规模。
+
+#### 反模式 2：热点用户
+
+**症状**：一个大 V 把某个 Cell 打挂。
+
+**正解**：大 V 单独处理（专用 Cell / 缓存）。
+
+#### 反模式 3：跨 Cell 调用频繁
+
+**症状**：每个请求都跨 Cell，性能差。
+
+**正解**：数据按 userId 集中，避免跨 Cell。
+
+#### 反模式 4：资源浪费
+
+**症状**：每个 Cell 双倍资源，利用率 < 50%。
+
+**正解**：根据流量动态扩缩容。
+
+#### 反模式 5：忽视全局数据
+
+**症状**：配置、商品字典放某个 Cell，跨 Cell 访问慢。
+
+**正解**：全局数据用中心化存储（如配置中心）。
+
+---
+
+## 4. 工程实现
+
+### 4.1 落地步骤
+
+#### 阶段 1：业务域切分（1-2 个月）
+
+1. **识别业务键**：userId / orderId / region。
+2. **估算 Cell 数量**：基于峰值 QPS 和单 Cell 容量。
+3. **设计路由规则**：Hash 算法、容灾策略。
+
+#### 阶段 2：数据切分（2-3 个月）
+
+1. **DB 水平切分**：按业务键水平切到 N 个 DB。
+2. **Cache 切分**：Redis Cluster 按业务键分片。
+3. **MQ 切分**：Kafka Topic 按业务键分区。
+
+#### 阶段 3：路由层（1-2 个月）
+
+1. **单元化路由网关**：基于 userId 路由到固定 Cell。
+2. **流量染色**：识别请求来源（生产 / 压测）。
+3. **跨 Cell 调用处理**：消息中心 / 配置中心。
+
+#### 阶段 4：演练验证（持续）
+
+1. **单 Cell 故障演练**：kill 一个 Cell，观察流量切换。
+2. **数据一致性验证**：跨 Cell 数据一致性检查。
+3. **流量调度演练**：动态调整 Cell 流量。
+
+### 4.2 关键技术点
+
+#### 1. 单元化路由（Spring Cloud Gateway）
+
+```java
+// 单元化路由：根据 userId 路由到固定 Cell
+@Component
+public class CellRoutingFilter implements GlobalFilter {
+    
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        
+        // 从请求头获取 userId
+        String userId = request.getHeaders().getFirst("X-User-Id");
+        if (userId == null) {
+            // 匿名用户走默认 Cell
+            userId = "anonymous";
+        }
+        
+        // 计算 Cell ID
+        int cellId = Math.abs(userId.hashCode()) % 12;
+        
+        // 路由到 Cell
+        String cellName = "cell-" + cellId;
+        
+        // 修改请求路径，加上 cell 前缀
+        ServerHttpRequest mutatedRequest = request.mutate()
+            .header("X-Cell-Id", String.valueOf(cellId))
+            .build();
+        
+        return chain.filter(exchange.mutate().request(mutatedRequest).build());
+    }
+}
+```
+
+#### 2. 一致性 Hash 路由
+
+```python
+import hashlib
+
+class CellRouter:
+    def __init__(self, cell_count=12, virtual_nodes=200):
+        self.cell_count = cell_count
+        self.virtual_nodes = virtual_nodes
+        # 虚拟节点：{hash: cell_id}
+        self.ring = {}
+        for cell_id in range(cell_count):
+            for v_node in range(virtual_nodes):
+                key = f"cell-{cell_id}-vnode-{v_node}"
+                hash_value = int(hashlib.md5(key.encode()).hexdigest(), 16)
+                self.ring[hash_value] = cell_id
+        # 排序
+        self.sorted_keys = sorted(self.ring.keys())
+    
+    def get_cell(self, user_id):
+        hash_value = int(hashlib.md5(user_id.encode()).hexdigest(), 16)
+        # 二分查找第一个 >= hash_value 的位置
+        idx = bisect.bisect_right(self.sorted_keys, hash_value)
+        if idx == len(self.sorted_keys):
+            idx = 0
+        return self.ring[self.sorted_keys[idx]]
+```
+
+#### 3. 流量染色（生产 / 压测 / 灰度）
+
+```java
+// 流量染色 Filter
+public class TrafficColoringFilter implements Filter {
+    
+    private static final String STRESS_HEADER = "X-Stress-Test";
+    private static final String GRAY_HEADER = "X-Gray-User";
+    
+    @Override
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) {
+        HttpServletRequest httpReq = (HttpServletRequest) req;
+        
+        // 压测流量
+        if ("true".equals(httpReq.getHeader(STRESS_HEADER))) {
+            RequestContext.setStress(true);
+        }
+        
+        // 灰度流量
+        String grayUser = httpReq.getHeader(GRAY_HEADER);
+        if (grayUser != null) {
+            RequestContext.setGrayUser(grayUser);
+        }
+        
+        try {
+            chain.doFilter(req, resp);
+        } finally {
+            RequestContext.clear();
+        }
+    }
+}
+```
+
+#### 4. 数据库水平切分（ShardingSphere）
+
+```yaml
+# ShardingSphere 数据分片规则
+rules:
+- !SHARDING
+  tables:
+    orders:
+      actualDataNodes: ds_${0..11}.orders_${0..1}
+      databaseStrategy:
+        standard:
+          shardingColumn: user_id
+          shardingAlgorithmName: cell_mod
+      tableStrategy:
+        standard:
+          shardingColumn: order_id
+          shardingAlgorithmName: order_hash
+  shardingAlgorithms:
+    cell_mod:
+      type: MOD
+      props:
+        sharding-count: 12
+```
+
+### 4.3 工具链与平台（含 2024-2025 新工具）
+
+| 类别 | 工具 | 特点 |
+| --- | --- | --- |
+| **路由层** | Spring Cloud Gateway、Kong、Envoy | 单元化路由 |
+| **DB 分片** | ShardingSphere、Vitess、MyCat | 数据库水平切分 |
+| **配置中心** | Apollo、Nacos、Consul | 全局配置 |
+| **服务发现** | Eureka、Consul、Nacos | 服务发现 |
+| **流量调度** | Istio、Linkerd、阿里云 AHAS | 服务网格层流量调度 |
+| **AI 单元化** | NVIDIA MIG、阿里云 cGPU、vGPU | GPU 池化 |
+
+### 4.4 代码 / 示例
+
+#### 完整单元化路由示例
+
+```java
+// Spring Boot 单元化路由完整实现
+@RestController
+public class OrderController {
+    
+    @Autowired
+    private OrderService orderService;
+    
+    @PostMapping("/orders")
+    public Order createOrder(@RequestBody OrderRequest req, 
+                              @RequestHeader("X-User-Id") String userId) {
+        // 1. 计算 Cell ID
+        int cellId = CellRouter.getCell(userId);
+        
+        // 2. 设置上下文
+        RequestContext.setCellId(cellId);
+        RequestContext.setUserId(userId);
+        
+        // 3. 写入当前 Cell（一致性 Hash 保证）
+        Order order = orderService.createOrder(req);
+        
+        return order;
+    }
+    
+    @GetMapping("/orders/{orderId}")
+    public Order getOrder(@PathVariable String orderId,
+                           @RequestHeader("X-User-Id") String userId) {
+        // 同 Cell 读取
+        int cellId = CellRouter.getCell(userId);
+        RequestContext.setCellId(cellId);
+        
+        return orderService.getOrder(orderId);
+    }
+}
+```
+
+---
+
+## 5. 前沿演进（AI 时代）
+
+### 5.1 LLM/Agent 时代的演进方向
+
+#### 1. GPU 单元化
+
+- **GPU 池化**：每 Cell 独立 GPU 池，提高利用率。
+- **MIG（Multi-Instance GPU）**：A100 MIG 切分，每 Cell 独立 MIG 实例。
+- **GPU 弹性**：基于推理流量的 GPU 弹性调度。
+
+#### 2. 模型单元化
+
+- **每 Cell 独立模型副本**：避免跨 Cell 调用。
+- **模型版本管理**：每 Cell 部署不同版本（A/B 测试）。
+- **模型降级链路**：每 Cell 独立降级策略。
+
+#### 3. Agent 单元化
+
+- **每 Cell 独立 Agent 集群**：避免跨 Cell 调用。
+- **工具独立**：每 Cell 独立的工具访问。
+- **状态独立**：Agent 状态在 Cell 内集中。
+
+#### 4. 向量检索单元化
+
+- **向量索引分片**：每 Cell 一份向量索引。
+- **跨 Cell 检索**：跨 Cell 向量检索容灾。
+- **本地优先**：优先本地 Cell 检索。
+
+#### 5. AI 辅助单元化决策
+
+- **AI Cell 调度**：用 AI 预测流量，自动调度 Cell 资源。
+- **AI 故障预测**：预测 Cell 故障，自动切流。
+- **AI 容量优化**：自动调整每 Cell 容量。
+
+### 5.2 与 RAG / 向量库 / GraphRAG 的结合
+
+RAG 系统的单元化需要每个组件独立：
+
+```
+[Cell 1]：[Embedding] → [向量检索] → [LLM]
+[Cell 2]：[Embedding] → [向量检索] → [LLM]
+[Cell N]：[Embedding] → [向量检索] → [LLM]
+```
+
+**RAG 单元化策略**：
+
+- **Embedding 单元化**：每 Cell 独立 Embedding 服务。
+- **向量索引单元化**：每 Cell 独立向量索引。
+- **LLM 单元化**：每 Cell 独立 LLM 副本。
+- **跨 Cell 容灾**：Cell 故障时切到其他 Cell。
+
+### 5.3 学术与工业最新进展（2024-2025）
+
+- **阿里单元化 2024**：升级到三地五中心 + AI 推理单元化。
+- **字节跳动 2024**：AI 推荐全面单元化，GPU 池化利用率提升至 70%。
+- **eBay 2024**：单元化架构演进，支持 AI 搜索。
+- **AWS 2024**：发布 Cell-Based Architecture Reference。
+- **Google 2024**：Spanner Cell 模式（地理隔离的 Cell）。
+
+### 5.4 未来 3-5 年趋势
+
+1. **AI-Native Cell**：从架构设计之初就考虑 AI 负载。
+2. **Self-Balancing Cell**：Cell 自动平衡负载。
+3. **跨云 Cell**：跨云厂商的 Cell（避免厂商绑定）。
+4. **边缘 Cell**：边缘节点作为 Cell。
+5. **AI 主导的 Cell 调度**：智能体自动调度 Cell 资源。
+
+---
+
+## 6. 落地实践
+
+### 6.1 真实案例
+
+#### 案例 1：阿里双11 单元化
+
+**背景**：阿里双11 2015 首次大规模应用单元化（12 个 Cell）。
+
+**关键实践**：
+
+- **业务域切分**：按 userId Hash 到 12 个 Cell。
+- **三地五中心**：杭州 2 + 上海 1 + 深圳 1 + 异地灾备 1。
+- **数据库分片**：12 个数据库实例，每 Cell 一份。
+- **跨 Cell 调用**：通过消息中心异步处理。
+- **流量调度**：阿里自研 GSLB，按地理位置路由。
+
+**结果**：扛住双11 峰值，0 严重故障。
+
+#### 案例 2：字节跳动春晚红包单元化
+
+**背景**：字节春晚红包 2017 首次单元化。
+
+**关键实践**：
+
+- **用户单元化**：按 userId 路由到 Cell。
+- **预创建**：红包预创建到本地缓存。
+- **异步落账**：抢到红包后异步写账。
+
+**结果**：扛住 20 亿 QPS。
+
+#### 案例 3：eBay Cell-Based Architecture
+
+**背景**：eBay 2008 提出 Cell-Based Architecture。
+
+**关键实践**：
+
+- **物理 Cell**：每 Cell 是物理隔离的部署。
+- **数据库切分**：每 Cell 独立 DB。
+- **消息中心**：跨 Cell 通过消息中心。
+
+**结果**：eBay 业务连续性显著提升。
+
+### 6.2 踩坑与经验
+
+#### 坑 1：Cell 数量过多
+
+**现象**：100 个 Cell 运维复杂。
+
+**解决**：12-24 个 Cell 是常见规模。
+
+#### 坑 2：热点用户
+
+**现象**：大 V 把某个 Cell 打挂。
+
+**解决**：大 V 单独处理（专用 Cell / 缓存）。
+
+#### 坑 3：跨 Cell 调用频繁
+
+**现象**：每个请求跨 Cell 调用。
+
+**解决**：数据按 userId 集中。
+
+#### 坑 4：全局数据管理
+
+**现象**：配置放某个 Cell，跨 Cell 访问慢。
+
+**解决**：全局数据用中心化存储。
+
+### 6.3 落地路径（0→1, 1→10, 10→100）
+
+#### 0→1：从零开始
+
+1. 第 1-2 月：业务域切分。
+2. 第 3-4 月：DB 水平切分。
+3. 第 5-6 月：路由层。
+
+#### 1→10：体系化
+
+1. 跨 Cell 调用处理。
+2. 流量调度。
+3. 演练验证。
+
+#### 10→100：智能化
+
+1. AI 辅助调度。
+2. 自适应 Cell 大小。
+3. 跨云 Cell。
+
+### 6.4 ROI 评估
+
+#### 收益维度
+
+- **可用性提升**：从 99.9% 到 99.99%。
+- **扩展性提升**：从 1000 万 QPS 到 1 亿 QPS。
+- **故障隔离**：单 Cell 故障不影响全局。
+
+#### 投入维度
+
+- **资源成本**：双倍资源（Cell 互备）。
+- **人力成本**：稳定性团队 5-10 人。
+- **复杂度成本**：运维、调试复杂度上升。
+
+#### 决策建议
+
+- 初创公司：不需要单元化。
+- 中大型公司：12-24 Cell。
+- 大型公司：100+ Cell（如阿里）。
+
+---
+
+## 7. 与其他方法对比
+
+### 7.1 对比维度（评分 1-5）
+
+| 维度 | 单体 | 微服务 | 异地多活 | 单元化 |
+| --- | :---: | :---: | :---: | :---: |
+| 可用性 | 2 | 3 | 4 | 5 |
+| 扩展性 | 2 | 4 | 4 | 5 |
+| 故障隔离 | 1 | 3 | 4 | 5 |
+| 复杂度 | 5 | 3 | 2 | 1 |
+| 资源成本 | 5 | 3 | 2 | 2 |
+| **综合推荐度** | ★★ | ★★★ | ★★★★ | ★★★★★ |
+
+### 7.2 决策树
+
+```
+你的业务规模？
+├─ 小 → 不需要单元化
+├─ 中 → 微服务
+├─ 大 → 单元化
+└─ 超大 → 单元化 + AI 推理单元化
+
+你的可用性要求？
+├─ 99% → 微服务
+├─ 99.9% → 异地多活
+└─ 99.99% → 单元化
+```
+
+### 7.3 组合使用
+
+- **单元化 + 异地多活**：单元化是异地多活的最佳实践。
+- **单元化 + 大促保障**：大促流量分摊到多个 Cell。
+- **单元化 + 灰度**：灰度可以按 Cell 切分。
+- **单元化 + AI**：AI 推理单元化、GPU 池化。
+
+---
+
+## 8. 面试真题集
+
+> 本节保留原题库《大数据平台架构师》（创脉思 cms365.cn，版本 2025-11-25）的真题集，便于读者交叉查阅。
+
 # cell-based-architecture 面试真题集
 
 > **一句话定位**：业务域切分、单元数据、单元间协同。
@@ -10,7 +745,7 @@
 > 本节整合 11 个原 PDF 子章节、共 64 道真题。下表按原 PDF 主题汇总。
 
 | 原 PDF §N.M | 主题 | 题号范围 | 收录题数 | 主/辅 |
-| --- | --- | --- | :---: | :---: |
+| --- | --- | :---: | :---: | :---: |
 | §1.5 | 集群资源管理与调度 | 1.5.1, 1.5.2, 1.5.3, 1.5.4 | 4 | 辅 |
 | §3.5 | 混合负载与多租户场景下的深度优化 | 3.5.1 ~ 3.5.7（共 7） | 7 | 主 |
 | §4.5 | ⼤规模集群治理与架构演进 | 4.5.1 ~ 4.5.7（共 7） | 7 | 辅 |
