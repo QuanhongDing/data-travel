@@ -20,16 +20,16 @@
 
 ## 子主题（占位）
 
-- [ ] **OneData 思想**：统一数据标准、统一模型、统一指标
-- [ ] **OneID 主数据**：跨域用户打通、ID-Mapping、隐私合规
-- [ ] **OneService 数据服务化**：数据 API、查询网关、指标服务
-- [ ] **指标平台 / Headless BI**：Cube / dbt Semantic Layer / AloudData / 字节指标平台
-- [ ] **数据 API 网关**：限流、降级、计费、监控
-- [ ] **统一查询网关**：Trino / Presto / 自研查询网关
-- [ ] **Data Catalog 与元数据**：DataHub / OpenMetadata / Apache Atlas
-- [ ] **数据血缘**：采集、存储、可视化、影响分析
-- [ ] **Data Mesh 落地**：领域切分、自服务数据平台、联邦治理
-- [ ] **实战**：用 Trino + DataHub + OpenFGA 搭最小数据服务平台
+- [ ] **[OneData 思想](./one-data/README.md)**：统一数据标准、统一模型、统一指标
+- [ ] **[OneID 主数据](./one-id/README.md)**：跨域用户打通、ID-Mapping、隐私合规
+- [ ] **[OneService 数据服务化](./one-service/README.md)**：数据 API、查询网关、指标服务
+- [ ] **[指标平台 / Headless BI](./metric-platform/README.md)**：Cube / dbt Semantic Layer / AloudData / 字节指标平台
+- [ ] **[数据 API 网关](./data-api-gateway/README.md)**：限流、降级、计费、监控
+- [ ] **[统一查询网关](./unified-query-gateway/README.md)**：Trino / Presto / 自研查询网关
+- [ ] **[Data Catalog 与元数据](./data-catalog/README.md)**：DataHub / OpenMetadata / Apache Atlas
+- [ ] **[数据血缘](./data-lineage/README.md)**：采集、存储、可视化、影响分析
+- [ ] **[Data Mesh 落地](./data-mesh/README.md)**：领域切分、自服务数据平台、联邦治理
+- [ ] **[实战](./hands-on/README.md)**：用 Trino + DataHub + OpenFGA 搭最小数据服务平台
 
 > 文件命名建议：`one-data.md` / `one-id.md` / `one-service.md` / `metric-platform.md` / `data-api-gateway.md` / `unified-query-gateway.md` / `data-catalog.md` / `data-mesh.md` / `hands-on.md` / `tuning.md` / `summary.md` / `refs.md`。
 

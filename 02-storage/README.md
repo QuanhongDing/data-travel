@@ -20,16 +20,16 @@
 
 ## 子主题（占位）
 
-- [ ] **数据仓库**：Hive / MaxCompute / Doris / StarRocks / ClickHouse
-- [ ] **数据湖**：Iceberg / Hudi / Paimon / Delta Lake 的设计取舍
-- [ ] **湖仓一体**：Lakehouse 的工程实践（MinIO + Iceberg + Trino 实战）
-- [ ] **多模态数据库**：MongoDB（文档）/ InfluxDB & TimescaleDB（时序）/ Neo4j & NebulaGraph（图）/ Elasticsearch & OpenSearch（搜索）/ TiDB & CockroachDB（HTAP）/ Redis（KV）
-- [ ] **向量库与向量湖**：Milvus / Qdrant / Weaviate / pgvector 的工程取舍
-- [ ] **AI 原生数据库**：PostgreSQL + pgvector + ParadeDB / DuckDB VSS / TiDB 向量化
-- [ ] **流式存储**：Praveza / Fluss / Materialize / Kafka Streams
-- [ ] **存算分离 vs 存算一体**：什么时候必须分离，什么时候必须一体
-- [ ] **Schema Evolution / Time Travel / Hidden Partitioning**
-- [ ] **冷热分层与成本优化**
+- [ ] **[数据仓库](./data-warehouse/README.md)**：Hive / MaxCompute / Doris / StarRocks / ClickHouse
+- [ ] **[数据湖](./data-lake/README.md)**：Iceberg / Hudi / Paimon / Delta Lake 的设计取舍
+- [ ] **[湖仓一体](./lakehouse/README.md)**：Lakehouse 的工程实践（MinIO + Iceberg + Trino 实战）
+- [ ] **[多模态数据库](./multimodal-db/README.md)**：MongoDB（文档）/ InfluxDB & TimescaleDB（时序）/ Neo4j & NebulaGraph（图）/ Elasticsearch & OpenSearch（搜索）/ TiDB & CockroachDB（HTAP）/ Redis（KV）
+- [ ] **[向量库与向量湖](./vector-lake/README.md)**：Milvus / Qdrant / Weaviate / pgvector 的工程取舍
+- [ ] **[AI 原生数据库](./ai-native-db/README.md)**：PostgreSQL + pgvector + ParadeDB / DuckDB VSS / TiDB 向量化
+- [ ] **[流式存储](./streaming-store/README.md)**：Praveza / Fluss / Materialize / Kafka Streams
+- [ ] **[存算分离 vs 存算一体](./architecture-decisions/README.md)**：什么时候必须分离，什么时候必须一体
+- [ ] **[Schema Evolution / Time Travel / Hidden Partitioning](./schema-and-time-travel/README.md)**
+- [ ] **[冷热分层与成本优化](./cold-hot-tiering/README.md)**
 
 > 文件命名建议：`data-warehouse.md` / `data-lake.md` / `lakehouse.md` / `multimodal-db.md` / `vector-lake.md` / `ai-native-db.md` / `streaming-store.md` / `architecture-decisions.md` / `hands-on.md` / `tuning.md` / `summary.md` / `refs.md`。
 

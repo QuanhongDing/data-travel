@@ -20,16 +20,16 @@
 
 ## 子主题（占位）
 
-- [ ] **Feature Store**：Feast / Tecton / 阿里 FeatureDB / ByteFS，离线特征与在线特征一致性
-- [ ] **RAG 架构**：向量检索 + BM25 + 标量过滤 + Reranker + 上下文压缩
-- [ ] **Embedding 与向量检索**：Embedding 模型选型、HNSW/IVF/ScaANN、量化（PQ/SQ）
-- [ ] **混合检索**：向量 + 全文 + 标量过滤的统一查询
-- [ ] **DataAgent**：单 Agent vs Multi-Agent、MCP vs Function Calling、Text-to-SQL 陷阱
-- [ ] **决策智能**：强化学习 + 数据、因果推断、业务大脑
-- [ ] **AI 数据治理**：训练数据版本（DVC / LakeFS）、模型血缘、提示词治理
-- [ ] **AI 原生数据库**：PostgreSQL + pgvector / DuckDB VSS / Snowflake Cortex / Databricks AI Functions
-- [ ] **LLM 与数据库的融合**：AI Function in SQL、自然语言查询
-- [ ] **多模态 AI**：多模态 Embedding、视觉理解、跨模态检索
+- [ ] **[Feature Store](./feature-store/README.md)**：Feast / Tecton / 阿里 FeatureDB / ByteFS，离线特征与在线特征一致性
+- [ ] **[RAG 架构](./rag-architecture/README.md)**：向量检索 + BM25 + 标量过滤 + Reranker + 上下文压缩
+- [ ] **[Embedding 与向量检索](./embedding-and-retrieval/README.md)**：Embedding 模型选型、HNSW/IVF/ScaANN、量化（PQ/SQ）
+- [ ] **[混合检索](./hybrid-search/README.md)**：向量 + 全文 + 标量过滤的统一查询
+- [ ] **[DataAgent](./data-agent/README.md)**：单 Agent vs Multi-Agent、MCP vs Function Calling、Text-to-SQL 陷阱
+- [ ] **[决策智能](./decision-intelligence/README.md)**：强化学习 + 数据、因果推断、业务大脑
+- [ ] **[AI 数据治理](./ai-data-governance/README.md)**：训练数据版本（DVC / LakeFS）、模型血缘、提示词治理
+- [ ] **[AI 原生数据库](./ai-native-db/README.md)**：PostgreSQL + pgvector / DuckDB VSS / Snowflake Cortex / Databricks AI Functions
+- [ ] **[LLM 与数据库的融合](./llm-in-sql/README.md)**：AI Function in SQL、自然语言查询
+- [ ] **[多模态 AI](./multimodal-ai/README.md)**：多模态 Embedding、视觉理解、跨模态检索
 
 > 文件命名建议：`feature-store.md` / `rag-architecture.md` / `embedding-and-retrieval.md` / `hybrid-search.md` / `data-agent.md` / `decision-intelligence.md` / `ai-data-governance.md` / `ai-native-db.md` / `llm-in-sql.md` / `multimodal-ai.md` / `hands-on.md` / `summary.md` / `refs.md`。
 

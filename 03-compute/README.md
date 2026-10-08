@@ -20,14 +20,14 @@
 
 ## 子主题（占位）
 
-- [ ] **离线计算**：MaxCompute / Spark / Hive / Presto on Hive
-- [ ] **实时计算**：Flink / Blink 状态管理、Checkpoint、Exactly-Once、反压
-- [ ] **OLAP 引擎**：Hologres / ADB / StarRocks / ClickHouse / Druid / Doris
-- [ ] **统一查询**：Trino / Presto / Impala 的工程取舍
-- [ ] **AI 训练与推理**：PAI / Ray / Kubeflow / Volcano / Kserve
-- [ ] **流批一体**：Flink + Iceberg / Praveza / Hudi
-- [ ] **查询优化器**：Calcite / Velox / 自研优化器
-- [ ] **资源调度**：YARN / K8s / 自研调度器
+- [ ] **[离线计算](./offline-compute/README.md)**：MaxCompute / Spark / Hive / Presto on Hive
+- [ ] **[实时计算](./realtime-compute/README.md)**：Flink / Blink 状态管理、Checkpoint、Exactly-Once、反压
+- [ ] **[OLAP 引擎](./olap-engine/README.md)**：Hologres / ADB / StarRocks / ClickHouse / Druid / Doris
+- [ ] **[统一查询](./query-engine/README.md)**：Trino / Presto / Impala 的工程取舍
+- [ ] **[AI 训练与推理](./ai-compute/README.md)**：PAI / Ray / Kubeflow / Volcano / Kserve
+- [ ] **[流批一体](./stream-batch-unified/README.md)**：Flink + Iceberg / Praveza / Hudi
+- [ ] **[查询优化器](./optimizer/README.md)**：Calcite / Velox / 自研优化器
+- [ ] **[资源调度](./scheduler/README.md)**：YARN / K8s / 自研调度器
 
 > 文件命名建议：`offline-compute.md` / `realtime-compute.md` / `olap-engine.md` / `query-engine.md` / `ai-compute.md` / `stream-batch-unified.md` / `optimizer.md` / `scheduler.md` / `hands-on.md` / `tuning.md` / `summary.md` / `refs.md`。
 
