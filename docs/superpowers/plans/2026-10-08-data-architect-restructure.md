@@ -340,6 +340,18 @@ Refs: docs/superpowers/specs/2026-10-08-data-architect-restructure.md"
 - Rename: `09-team-and-leadership/` → `14-leadership/`
 - Rename: `10-case-studies/` → `15-case-studies/`
 
+**Step 4.0: Pre-step — relocate `data-lineage` from `11-cross-cutting/` to `06-cross-cutting-engineering/`**
+
+Reason: Task 2 moved `04-data-mesh-and-middleware/data-lineage` to `11-cross-cutting/`, but Task 4 also needs to rename `06-cross-cutting-engineering` to `11-cross-cutting/`. The destination must be empty for `git mv` to work, so move `data-lineage` back to where it will end up after the rename.
+
+Run:
+```bash
+cd /Users/dqh/CCProject/me/data-travel
+git mv 11-cross-cutting/data-lineage 06-cross-cutting-engineering/data-lineage
+git status
+```
+Expected: 1 rename
+
 **Step 4.1: Rename all 5 chapters via git mv**
 
 Run:
@@ -363,11 +375,16 @@ ls -d */ | sort
 ```
 Expected: same 17 dirs as Task 3.2 + directory naming `11-cross-cutting` etc.
 
-**Step 4.3: Commit renames**
+**Step 4.3: Commit pre-step + renames**
 
 ```bash
 cd /Users/dqh/CCProject/me/data-travel
 git commit -m "refactor(structure): renumber 5 preserved chapters to 11-15
+
+Pre-step: relocate data-lineage from 11-cross-cutting (pre-created
+in Task 2 to receive 04-data-mesh's data-lineage) back to
+06-cross-cutting-engineering so the rename below can proceed without
+target conflict.
 
 Mapping:
 - 06-cross-cutting-engineering → 11-cross-cutting
@@ -848,3 +865,10 @@ git commit -m "docs(plan): mark restructure plan as executed"
   - Sub-folder README 内部 `../README.md` 链接仍然有效（因为它们指向父章的 README，move 不影响）
   - sed 替换需要小心测试；如失败用 Edit 工具逐个修复
   - 根 README 中的「上一版本 SUPERSEDED」指针需保留指向 `2026-09-30-data-services-book-design.md`
+
+---
+
+## Restructure-plan executed
+
+This plan was executed on 2026-10-08 as part of the AI-era data
+architect restructure. See git log for full commit history.
