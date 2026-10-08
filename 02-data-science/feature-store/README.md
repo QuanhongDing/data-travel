@@ -4,7 +4,7 @@
 
 ## 章节定位
 
-> 本节是 **[Ch5 · AI 原生数据栈](../README.md)** 的子章节，主题为 **Feature Store**。
+> 本节是 **[Ch2 · 数据科学与算法](../README.md)** 的子章节，主题为 **Feature Store**。
 >
 > 章定位：Feature Store、RAG、DataAgent、决策智能——AI 时代数据架构师必须掌握的新一代数据栈。
 
@@ -26,7 +26,7 @@
 
 ## 前置章节
 
-- [Ch5 · AI 原生数据栈](../README.md)
+- [Ch2 · 数据科学与算法](../README.md)
 
 ## 附件与代码
 
@@ -36,4 +36,4 @@
 
 ## 下一步
 
-- 返回 [Ch5 · AI 原生数据栈](../README.md)
+- 返回 [Ch2 · 数据科学与算法](../README.md)
