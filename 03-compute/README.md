@@ -31,11 +31,11 @@
 
 > 文件命名建议：`offline-compute.md` / `realtime-compute.md` / `olap-engine.md` / `query-engine.md` / `ai-compute.md` / `stream-batch-unified.md` / `optimizer.md` / `scheduler.md` / `hands-on.md` / `tuning.md` / `summary.md` / `refs.md`。
 
-## 与 P9 能力的对应
+## 与 数据架构师能力的对应
 
-P9 必须能：
+数据架构师 必须能：
 
-- **判断何时引入 Flink**：很多团队过早引入 Flink，结果维护成本爆炸；P9 要能判断"批处理 + 小时级调度"是否已经够用
+- **判断何时引入 Flink**：很多团队过早引入 Flink，结果维护成本爆炸；数据架构师 要能判断"批处理 + 小时级调度"是否已经够用
 - **识别 OLAP 引擎的瓶颈**：Hologres vs StarRocks vs ClickHouse 在 1000 QPS 下的真实表现
 - **理解 AI 训练对数据栈的反向要求**：训练数据需要高吞吐读取、特征需要低延迟在线服务、模型推理需要 GPU 资源池
 - **设计流批一体的演进路径**：从 Lambda 架构 → Kappa 架构 → 流批一体的实际落地步骤

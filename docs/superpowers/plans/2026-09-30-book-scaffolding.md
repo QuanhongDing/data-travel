@@ -2,9 +2,9 @@
 
 > ## ⚠️ 本文档已 SUPERSEDED ⚠️
 >
-> 本计划是 **2026-09-30 初版脚手架**的实施方案（针对 6 章「技术演进时间线」结构：数仓 / 数据湖 / 多模态 / 向量湖 / 数据服务平台 / DataAgent），**已于 2026-10-08 被重构取代**（commit `f1aa559`：`refactor!: restructure to P9-aligned 10-chapter layout with team management`）。
+> 本计划是 **2026-09-30 初版脚手架**的实施方案（针对 6 章「技术演进时间线」结构：数仓 / 数据湖 / 多模态 / 向量湖 / 数据服务平台 / DataAgent），**已于 2026-10-08 被重构取代**（commit `f1aa559`：`refactor!: restructure to 数据架构师-aligned 10-chapter layout with team management`）。
 >
-> **当前项目结构**已改为 **10 章 P9 能力分层**：
+> **当前项目结构**已改为 **10 章 数据架构师能力分层**：
 >
 > | 章节 | 主题 |
 > | --- | --- |

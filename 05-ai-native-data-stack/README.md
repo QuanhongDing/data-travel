@@ -33,11 +33,11 @@
 
 > 文件命名建议：`feature-store.md` / `rag-architecture.md` / `embedding-and-retrieval.md` / `hybrid-search.md` / `data-agent.md` / `decision-intelligence.md` / `ai-data-governance.md` / `ai-native-db.md` / `llm-in-sql.md` / `multimodal-ai.md` / `hands-on.md` / `summary.md` / `refs.md`。
 
-## 与 P9 能力的对应
+## 与 数据架构师能力的对应
 
-> **2026 年的 P9 数据架构师 = 60% 数据 + 40% AI**。
+> **2026 年的 数据架构师 = 60% 数据 + 40% AI**。
 
-这一章是 P9 区别于上一代数据架构师的关键。P9 必须能：
+这一章是 数据架构师 区别于上一代数据架构师的关键。数据架构师 必须能：
 
 - **设计 Feature Store 而非临时拼凑特征**：在线/离线特征一致性是 AI 工程的"魔咒"
 - **设计 AI 原生数据治理**：训练数据版本、模型血缘、提示词治理、embedding 反演防御

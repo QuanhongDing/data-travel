@@ -31,11 +31,11 @@
 
 > 文件命名建议：`data-quality.md` / `data-security.md` / `data-cost-finops.md` / `observability.md` / `lineage-and-impact.md` / `data-assetization.md` / `audit-and-compliance.md` / `privacy-computing.md` / `hands-on.md` / `summary.md` / `refs.md`。
 
-## 与 P9 能力的对应
+## 与 数据架构师能力的对应
 
-> **P9 不只让系统跑起来，还要让系统"长期、可靠、可控"地跑**。
+> **数据架构师 不只让系统跑起来，还要让系统"长期、可靠、可控"地跑**。
 
-横切工程是"看不见的竞争力"。P9 必须能：
+横切工程是"看不见的竞争力"。数据架构师 必须能：
 
 - **设计数据 SLA 体系**：与业务方谈 SLA 而非被动响应故障
 - **设计数据成本治理方案**：在保证 SLA 的前提下，把数据成本降低 30-50%

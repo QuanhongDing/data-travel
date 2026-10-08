@@ -1,6 +1,6 @@
 # Ch7 · 架构与高可用
 
-> **一句话定位**：单元化、多活、大促保障、容量规划——P9 数据架构师的"硬功夫"。
+> **一句话定位**：单元化、多活、大促保障、容量规划——数据架构师的"硬功夫"。
 
 ## 基本信息
 
@@ -33,11 +33,11 @@
 
 > 文件命名建议：`cell-based-architecture.md` / `multi-region.md` / `large-event-readiness.md` / `capacity-planning.md` / `performance-engineering.md` / `chaos-engineering.md` / `disaster-recovery.md` / `data-consistency.md` / `gray-and-rollback.md` / `case-study.md` / `summary.md` / `refs.md`。
 
-## 与 P9 能力的对应
+## 与 数据架构师能力的对应
 
-> **P9 必须扛得住"老板最怕的事"——双 11 流量洪峰下的系统稳定性**。
+> **数据架构师 必须扛得住"老板最怕的事"——双 11 流量洪峰下的系统稳定性**。
 
-这一章是 P9 区别于 P8 的关键能力。P9 必须能：
+这一章是 数据架构师 区别于 P8 的关键能力。数据架构师 必须能：
 
 - **设计单元化架构**：按业务域切分数据域，确保单单元故障不影响全局
 - **设计异地多活方案**：在保证数据一致性的前提下，让多地域同时提供服务

@@ -33,9 +33,9 @@
 
 > 文件命名建议：`data-warehouse.md` / `data-lake.md` / `lakehouse.md` / `multimodal-db.md` / `vector-lake.md` / `ai-native-db.md` / `streaming-store.md` / `architecture-decisions.md` / `hands-on.md` / `tuning.md` / `summary.md` / `refs.md`。
 
-## 与 P9 能力的对应
+## 与 数据架构师能力的对应
 
-存储范式是数据架构师的"工具箱"。P9 不需要会写每种引擎的源码，但必须能：
+存储范式是数据架构师的"工具箱"。数据架构师不需要会写每种引擎的源码，但必须能：
 
 - **3 分钟内判断**一个业务场景该选哪类存储
 - **说出每种引擎的 2-3 个致命缺陷**（如 Doris 不擅长超高并发点查、Iceberg 的小文件问题）
