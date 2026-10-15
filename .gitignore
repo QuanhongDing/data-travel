@@ -28,3 +28,14 @@ replay_pid*
 *.swo
 *~
 
+
+# Editor / IDE / tooling state
+.idea/
+.obsidian/
+.superpowers/
+.claude/
+
+# Ephemeral build/cache data
+.tmp-dispatch/plan.json
+.tmp-dispatch/questions.json
+.tmp-dispatch/__pycache__/
