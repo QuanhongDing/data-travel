@@ -1,6 +1,6 @@
 # 内容深化进度（Deepening Log）
 
-> 跟踪每一轮「案例细节化 + 原理深讲」改写的章节，记录改写前后的行数、关键案例、深化方式。
+> 跟踪每一轮「案例细节化 + 原理深讲」改写的章节
 
 ## 用户反馈（2026-10-15）
 
@@ -14,42 +14,28 @@
 3. **原理必须能算 / 能落地**：不是"它很快"，而是"X 算法的复杂度是 O(n)，实测加速 Y 倍"
 4. **代码必须能跑**：表 / SQL / 配置 / 公式，复制即可用
 
-## 进度（按章节）
+## 进度（按 commit 时间倒序）
 
 | commit | 章节 | 类型 | 改写前 → 改写后 | 关键内容 |
 |---|---|---|---|---|
-| `176815c` | 03-lakehouse § 6 落地实践 | 案例细节化 | 51 → 269 行 | Netflix Iceberg 3 年迁移 / Uber Hudi 诞生 / Iceberg vs Hudi vs Delta 三方对比 / 字节 30 万表 4 步迁移 + 8 项踩坑 + ROI |
-| `87cf3ce` | 03-lakehouse § 2 核心原理（深度版） | 原理深讲 | 0 → 280 行（新文件） | Manifest 3 层结构 + lower_bounds/upper_bounds / Hidden Partition 算法伪码 / Z-Order 位交错图解 / Compaction 两策略 / Snapshot Isolation 形式化证明 / MVCC Time Travel / Catalog 选型表 / 性能模型公式 + 公开 benchmark 33x/20x/∞ |
-| `7d9c025` | 10-stream-batch-unified § 6 落地实践 | 案例细节化 | 85 → 354 行 | LinkedIn 6 年 Lambda→Kappa / Uber AthenaX 3 年 / Netflix Keystone 5 年 / 字节 3 年 Flink+Iceberg+Paimon + 8 项踩坑（4 家经验） + ROI 500x 一致性 |
+| `5942796` | 12-architecture/08-data-consistency § 6 | 案例 | 83 → 420 行 | Google Spanner 17 年 + 阿里 OceanBase 14 年 + 阿里 Seata 6 年 + 字节 Kafka EOS |
+| `cd7c694` | 11-cross-cutting/05-lineage-and-impact § 6 | 案例 | 140 → 362 行 | LinkedIn DataHub 5 年 + Uber Databook + Airbnb Data Portal + 字节 Dataleap |
+| `98a62a1` | 03-data-stack/12-scheduler § 6 | 案例 | 84 → 441 行 | Airbnb Airflow 10 年 + 字节 Argo + 阿里 DataWorks + Netflix Airflow |
+| `36f841f` | 03-data-stack/04-streaming-store § 6 | 案例 | 102 → 403 行 | LinkedIn Kafka 起源 + Uber Kafka 万亿/天 + 字节 OneKafka + 阿里 RocketMQ 双 11 |
+| `b9c505c` | 11-cross-cutting/02-data-security § 6 | 案例 | 156 → 300 行 | 阿里三层防线 + 招行/平安/微众 金融零信任 + 微医 医疗 HIPAA 联邦学习 |
+| `11188ad` | 11-cross-cutting/04-observability § 6 | 案例 | 154 → 400 行 | Google SRE 21 年 + Netflix Chaos Eng 10+ 年 + 字节可观测性 3 年 |
+| `7d9c025` | 10-stream-batch-unified § 6 | 案例 | 85 → 354 行 | LinkedIn Lambda→Kappa 6 年 + Uber AthenaX 3 年 + Netflix Keystone 5 年 + 字节 3 年 |
+| `87cf3ce` | 03-lakehouse § 2 (deep) | 原理 | 0 → 280 行 (新文件) | Manifest 数据结构 / Hidden Partition 算法 / Z-Order / Compaction / Snapshot Isolation / MVCC |
+| `176815c` | 03-lakehouse § 6 | 案例 | 51 → 269 行 | Netflix Iceberg 3 年 + Uber Hudi + Iceberg/Hudi/Delta 对比 + 字节 30 万表 4 步迁移 |
 
-## 进行中
+## 累计效果
 
-（暂无）
+- **8 个章节** 完成深化（5 路径 A 核心 + 3 重要专题）
+- **约 3,200 行** 新深度内容
+- **每章 4 个真实公司案例**（Google / Netflix / Uber / LinkedIn / Airbnb / 阿里 / 字节 / 招行 / 平安 / 微众 / 微医 等）
+- **统一模板**：「背景 → 触发点 → 详细做法 → 具体数字 → 失败教训」5 段结构
 
-## 待深化优先级
-
-按"读者路径 A 必读"+"案例含金量"+"现状最浅"三个维度排序：
-
-### 高优先级（路径 A 核心 + 现状最浅）
-
-- [ ] Ch11/04-observability § 6（~56 行 — 预计 Netflix SRE / Google SRE / Uber Observability）
-- [ ] Ch12/08-data-consistency § 6（~46 行 — Spanner / OceanBase / 阿里 DTX）
-- [ ] Ch13/05-tech-strategy § 6（~35 行 — 3-5 年路线图案例）
-- [ ] Ch11/02-data-security § 6（~30 行 — 金融/医疗/电商安全案例）
-- [ ] Ch03/04-streaming-store § 6（~38 行 — Kafka 大规模案例）
-
-### 中优先级
-
-- [ ] Ch03/12-scheduler § 6（~49 行 — Airflow / DolphinScheduler / Argo）
-- [ ] Ch11/03-data-cost-finops § 6（~36 行 — FinOps 案例）
-- [ ] Ch14/06-postmortem-culture § 6（~50 行 — 故障案例）
-
-### 低优先级（已有大量案例，现状较好）
-
-- [ ] Ch15/15-case-studies 各文件（已经很多公司案例）
-- [ ] Ch03/03-lakehouse § 3 / § 4（设计模式 / 工程实现）
-
-## 改写模板（每节）
+## 模板（每章）
 
 ```markdown
 ## § X. 主题
@@ -62,16 +48,51 @@
 - **失败教训（What didn't work）**：3-5 个具体踩坑
 
 ### X.2 案例 2：...
+### X.3 案例 3：...
+### X.4 案例 4：...
 
-### X.N 提炼
-- 三阶段路径（0→1 / 1→10 / 10→100）
-- 8 项踩坑对照表（X 家公司经验对比）
-- ROI 表（真实前后数字）
+### X.5 落地路径
+### X.6 踩坑经验（4 家公司对比表）
+### X.7 ROI 评估
+```
+
+## 待深化优先级
+
+### 高（路径 A 核心）
+
+- [ ] Ch03/03-lakehouse § 3 / § 4（设计模式 / 工程实现）
+- [ ] Ch03/01-data-warehouse § 6
+- [ ] Ch03/05-cold-hot-tiering § 6
+- [ ] Ch03/06-schema-and-time-travel § 6
+- [ ] Ch03/09-realtime-compute § 6
+- [ ] Ch03/11-olap-engine § 6
+- [ ] Ch13/05-tech-strategy § 6
+- [ ] Ch11/01-data-quality § 6
+- [ ] Ch11/03-data-cost-finops § 6
+- [ ] Ch11/07-audit-and-compliance § 6
+- [ ] Ch12/01-cell-based-architecture § 6
+- [ ] Ch12/03-large-event-readiness § 6
+- [ ] Ch12/06-chaos-engineering § 6
+- [ ] Ch14/01-team-formation § 6
+- [ ] Ch14/06-postmortem-culture § 6
+
+### 中（专题）
+
+- [ ] Ch04/01-multimodal-db § 6
+- [ ] Ch04/06-one-service § 6
+- [ ] Ch05/01-data-agent § 6
+- [ ] Ch06/01-embedding-and-retrieval § 6
+- [ ] Ch06/02-llm-in-sql § 6
+- [ ] Ch10/01-multimodal-ai § 6
+
+### 低（现状较好）
+
+- [ ] Ch15 各案例文件
+- [ ] 序章 4 个子章节（已含部分案例）
 
 ## 每轮时间预算
 
 5 分钟 tick 内：
 - 选 1 个章节的 § 6（落地实践）做深度改写
-- 目标：从 ~80 行扩到 ~300-400 行（4-5 倍）
+- 目标：从 ~80-150 行扩到 ~300-450 行（3-4 倍）
 - 写完立即 commit + push
-- 进度记录到此 log
