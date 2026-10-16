@@ -21,7 +21,7 @@
 >
 > **当前真相**请查阅：
 >
-> - 项目门面：[README.md](../../README.md)
+> - 项目门面：[README.md](../../../README.md)
 > - 设计规格（已同步更新到 10 章结构）：[2026-09-30-data-services-book-design.md](../specs/2026-09-30-data-services-book-design.md)
 > - 章节导读：`0X-<slug>/README.md`
 >
@@ -152,7 +152,7 @@ Co-Authored-By: Claude Code <noreply@anthropic.com>"
 > 2. 目录速览（含 8 行的章节表：序号 / 章节名 / 核心问题 / 难度 / 推荐角色）
 > 3. 阅读路径（数据工程师 / AI 应用工程师 / 架构师三档）
 > 4. 章节导图（Mermaid 横向时间线 / 全景图）
-> 5. 术语表链接（指向 `00-introduction/README.md#术语表`）
+> 5. 术语表链接（指向 `../../00-introduction/README.md#术语表`）
 > 6. 写作约定
 > 7. 贡献指南
 > 8. 许可
@@ -239,7 +239,7 @@ flowchart LR
 
 ## 术语表
 
-为方便跨章节跳读，本书在 [序章 · 术语表](00-introduction/README.md#术语表) 中维护统一的术语对照表。新出现的关键术语都会在这里登记。
+为方便跨章节跳读，本书在 [序章 · 术语表](../../../00-introduction/README.md#术语表) 中维护统一的术语对照表。新出现的关键术语都会在这里登记。
 
 ## 写作约定
 
@@ -302,17 +302,17 @@ Co-Authored-By: Claude Code <noreply@anthropic.com>"
 
 ---
 
-## Task 3: 写 00-introduction/README.md（总论）
+## Task 3: 写 ../../00-introduction/README.md（总论）
 
 **Files:**
-- Create: `00-introduction/README.md`
+- Create: `../../00-introduction/README.md`
 - Delete: `00-introduction/.gitkeep`
 
 **Interfaces:**
 - Consumes: spec §4 中「00 序章」的内容清单；根 README 中的术语表链接锚点
 - Produces: 一份含「全景图 / 为什么按这个顺序读 / 难度梯度表 / 角色推荐路径 / 术语表」的总论 README
 
-- [ ] **Step 1: 写入 00-introduction/README.md**
+- [ ] **Step 1: 写入 ../../00-introduction/README.md**
 
 ```markdown
 # 序章 · 数据服务的全景图
@@ -408,7 +408,7 @@ flowchart TB
 
 ## 下一步
 
-从 [Ch1 · 数据仓库](../01-data-warehouse/) 开始阅读，或回到 [根目录](../README.md) 选择你的角色路径。
+从 [Ch1 · 数据仓库](../01-data-warehouse/) 开始阅读，或回到 [根目录](../../../README.md) 选择你的角色路径。
 ```
 
 - [ ] **Step 2: 删除占位文件**
@@ -420,7 +420,7 @@ rm 00-introduction/.gitkeep
 - [ ] **Step 3: 提交**
 
 ```bash
-git add 00-introduction/README.md
+git add ../../00-introduction/README.md
 git commit -m "docs: add introduction (总论) — panorama, difficulty table, glossary
 
 - Panoramic mermaid diagram (演进主线 + 横线)
@@ -483,7 +483,7 @@ Co-Authored-By: Claude Code <noreply@anthropic.com>"
 
 ## 下一步
 
-- 回到 [根目录](../README.md) 选择其他角色路径
+- 回到 [根目录](../../../README.md) 选择其他角色路径
 - 进入 [Ch2 · 数据湖](../02-data-lake/) 继续阅读
 ```
 
@@ -556,7 +556,7 @@ Co-Authored-By: Claude Code <noreply@anthropic.com>"
 
 ## 下一步
 
-- 回到 [根目录](../README.md) 选择其他角色路径
+- 回到 [根目录](../../../README.md) 选择其他角色路径
 - 进入 [Ch3 · 多模态数据库](../03-multimodal-db/) 继续阅读
 ```
 
@@ -624,7 +624,7 @@ Co-Authored-By: Claude Code <noreply@anthropic.com>"
 
 ## 下一步
 
-- 回到 [根目录](../README.md) 选择其他角色路径
+- 回到 [根目录](../../../README.md) 选择其他角色路径
 - 进入 [Ch4 · 向量湖](../04-vector-lake/) 继续阅读
 ```
 
@@ -692,7 +692,7 @@ Co-Authored-By: Claude Code <noreply@anthropic.com>"
 
 ## 下一步
 
-- 回到 [根目录](../README.md) 选择其他角色路径
+- 回到 [根目录](../../../README.md) 选择其他角色路径
 - 进入 [Ch5 · 数据服务能力平台](../05-data-service-platform/) 继续阅读
 ```
 
@@ -760,7 +760,7 @@ Co-Authored-By: Claude Code <noreply@anthropic.com>"
 
 ## 下一步
 
-- 回到 [根目录](../README.md) 选择其他角色路径
+- 回到 [根目录](../../../README.md) 选择其他角色路径
 - 进入 [Ch6 · DataAgent](../06-dataagent/) 继续阅读
 ```
 
@@ -916,7 +916,7 @@ Co-Authored-By: Claude Code <noreply@anthropic.com>"
 
 - 每年对各章做一次较大版本更新，跟进主要技术演进
 - 新增案例章节（按需），覆盖典型行业实践
-- 在 [序章 · 术语表](../00-introduction/README.md#术语表) 中持续追加新术语
+- 在 [序章 · 术语表](../../../00-introduction/README.md#术语表) 中持续追加新术语
 
 ## 反馈与贡献
 

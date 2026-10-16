@@ -506,7 +506,7 @@ For `02-data-science/README.md`:
 
 ## 子主题
 
-- [ ] **[Feature Store](./feature-store/README.md)**：特征平台搭建（Feast / Tecton）
+- [ ] **[Feature Store](../../../02-data-science/01-feature-store/README.md)**：特征平台搭建（Feast / Tecton）
 - [ ] 分类算法（LR / GBDT / DeepFM）—— 占位
 - [ ] 聚类算法（KMeans / DBSCAN）—— 占位
 - [ ] 回归算法 —— 占位
@@ -521,7 +521,7 @@ For `02-data-science/README.md`:
 
 ## 下一步
 
-- 回到 [根目录](../README.md) 选择其他角色路径
+- 回到 [根目录](../../../README.md) 选择其他角色路径
 - 进入 [Ch3 · 数据全栈基础设施](../03-data-stack/) 继续阅读
 ```
 
@@ -615,10 +615,10 @@ git add 15-case-studies
 git commit -m "docs(Ch15): rewrite case-studies chapter with persona mapping (R8)"
 ```
 
-### Task 8: 改写 00-introduction/README.md
+### Task 8: 改写 ../../00-introduction/README.md
 
 **Files:**
-- Modify: `00-introduction/README.md`
+- Modify: `../../00-introduction/README.md`
 
 **Step 8.1: Replace the file with new content that includes:**
 - New **目标画像** section (6 大职责 + 8 大要求 + 加分项, condensed from spec §2)
@@ -656,7 +656,7 @@ Per spec §6 (根 README 内容结构), include:
 5. **章节导图**：Mermaid 全景图
 6. **横切主题索引**：4 条横线的主要承载章节
 7. **辅助资源**：docs/career/, docs/interview/, docs/superpowers/specs/, docs/superpowers/plans/
-8. **术语表**：超链接到 `00-introduction/README.md#术语表`
+8. **术语表**：超链接到 `../../00-introduction/README.md#术语表`
 9. **写作约定**：引用规范、目录命名、文件命名、提交规范
 10. **贡献指南**：如何新增章节 / 提交勘误
 11. **许可**：Apache License 2.0
@@ -714,17 +714,17 @@ Note: Most sub-folder READMEs use `../README.md` (relative to parent chapter dir
 
 For each sub-folder `README.md`, find the blockquote:
 ```
-> 本节是 **[Ch<N> · <title>](../README.md)** 的子章节
+> 本节是 **[Ch<N> · <title>](../../../README.md)** 的子章节
 ```
 Update the `Ch<N>` and `<title>` to match the new chapter:
 
 For example, after Task 6 `03-data-stack` receives `data-warehouse` (originally from `02-storage`), its `README.md` may say:
 ```
-> 本节是 **[Ch2 · 存储范式](../README.md)** 的子章节
+> 本节是 **[Ch2 · 存储范式](../../../README.md)** 的子章节
 ```
 This must become:
 ```
-> 本节是 **[Ch3 · 数据全栈基础设施](../README.md)** 的子章节
+> 本节是 **[Ch3 · 数据全栈基础设施](../../../README.md)** 的子章节
 ```
 
 Run a sed-based replacement script (be specific about each source→destination):
