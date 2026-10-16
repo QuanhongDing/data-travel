@@ -16,16 +16,16 @@
 
 本目录按上述 5 类组织面试题与参考答题思路。
 
-## 子主题（占位）
+## 子主题
 
-- [ ] **系统设计**：实时数据管道、湖仓一体平台、指标平台、DataAgent、Feature Store
-- [ ] **选型决策**：存储引擎、计算引擎、OLAP 引擎、向量库、AI 原生数据库
-- [ ] **故障复盘**：真实故障案例复盘、5 Whys、根因分析、行动项设计
-- [ ] **团队管理**：人才画像、绩效面谈、跨团队协作、向上管理
-- [ ] **战略决策**：技术战略 3-5 年规划、技术雷达、组织演进
-- [ ] **数据架构师晋升答辩套路**：晋升答辩、述职模板、能力举证
-
-> 文件命名建议：`system-design-*.md` / `tech-selection-*.md` / `postmortem-*.md` / `team-management-*.md` / `strategy-*.md` / `promotion-defense.md`
+| 主题 | 核心内容 | 文件 |
+| --- | --- | --- |
+| **系统设计** | 实时数据管道 / 湖仓一体平台 / 指标平台 / DataAgent / Feature Store 的 4 步设计法 | [01-system-design.md](01-system-design.md) |
+| **选型决策** | 7 大技术选型 + 4 步决策树 + 决策矩阵模板 | [02-tech-selection.md](02-tech-selection.md) |
+| **故障复盘** | blameless 复盘 + 5 Why + 6 段答辩结构 + 5 类题源 | [03-postmortem.md](03-postmortem.md) |
+| **团队管理** | 6 大高频题 + 团队组建 / 绩效 / 跨团队 / 向上管理 / 文化建设 | [04-team-management.md](04-team-management.md) |
+| **战略决策** | 5 大战略题 + 趋势/框架/业务三段 + Wardley Maps 等框架 | [05-strategy.md](05-strategy.md) |
+| **数据架构师晋升答辩** | 4 段答辩稿 + 10 大 Q&A + 7 大禁忌 + P5→P8 各职级论据 | [06-promotion-defense.md](06-promotion-defense.md) |
 
 ## 答题框架
 
