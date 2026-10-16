@@ -34,10 +34,10 @@
 
 | 横线 | 主要承载章节 | 横切出现位置 |
 | --- | --- | --- |
-| **可治理** | [Ch8 AI 治理](../08-ai-governance/01-ai-data-governance/01-ai-data-governance.md) | Ch1（建模规范 / Owner 制度）、Ch3（数据血缘 / 分类分级）、Ch5（平台权限）、Ch7（资产沉淀审计）、Ch11（治理体系） |
-| **可观测** | [Ch11 横切工程](../11-cross-cutting/04-observability/04-observability.md) | Ch5（Agent 可观测）、Ch6（多模型调用追踪）、Ch7（自进化指标）、Ch12（架构可观测 / SLO） |
-| **可计量** | [Ch11 横切工程](../11-cross-cutting/03-data-cost-finops/03-data-cost-finops.md) | Ch3（存储 / 计算成本）、Ch6（Token 成本）、Ch9（决策效果指标）、Ch13（技术债成本） |
-| **可演进** | [Ch13 决策与权衡](../13-decision/06-tech-debt/06-tech-debt.md) | Ch1（模型演进）、Ch4（向量库 / RAG 演进）、Ch5（Agent 框架演进）、Ch7（自进化机制）、Ch12（架构演进） |
+| **可治理** | [Ch8 AI 治理](../../08-ai-governance/01-ai-data-governance/01-ai-data-governance.md) | Ch1（建模规范 / Owner 制度）、Ch3（数据血缘 / 分类分级）、Ch5（平台权限）、Ch7（资产沉淀审计）、Ch11（治理体系） |
+| **可观测** | [Ch11 横切工程](../../11-cross-cutting/04-observability/04-observability.md) | Ch5（Agent 可观测）、Ch6（多模型调用追踪）、Ch7（自进化指标）、Ch12（架构可观测 / SLO） |
+| **可计量** | [Ch11 横切工程](../../11-cross-cutting/03-data-cost-finops/03-data-cost-finops.md) | Ch3（存储 / 计算成本）、Ch6（Token 成本）、Ch9（决策效果指标）、Ch13（技术债成本） |
+| **可演进** | [Ch13 决策与权衡](../../13-decision/06-tech-debt/06-tech-debt.md) | Ch1（模型演进）、Ch4（向量库 / RAG 演进）、Ch5（Agent 框架演进）、Ch7（自进化机制）、Ch12（架构演进） |
 
 ### 1.4 演进历程
 
@@ -60,7 +60,7 @@
 | **可演进（Evolvable）** | 系统可平滑升级、可回滚 | API 兼容 / 灰度 / 抽象稳定 |
 | **可重复（Reproducible）** | 同样输入产生同样输出 | 实验可重跑 / 结果可对齐 |
 | **可观测性三大支柱** | Metrics / Logs / Traces | SRE 标准 |
-| **技术债（Tech Debt）** | 为短期收益做的长期妥协 | 见 [Ch13.06](../13-decision/06-tech-debt/06-tech-debt.md) |
+| **技术债（Tech Debt）** | 为短期收益做的长期妥协 | 见 [Ch13.06](../../13-decision/06-tech-debt/06-tech-debt.md) |
 | **SLO** | Service Level Objective | 服务质量目标 |
 
 ### 2.2 数学 / 形式化基础

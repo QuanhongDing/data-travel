@@ -63,7 +63,7 @@
 | **横切线（Cross-cutting Line）** | 跨能力域都需要的能力 | 可治理 / 可观测 / 可计量 / 可演进 |
 | **等级（Level）** | 能力的高低分级 | P5→P6→P7→P8 / 2-1→2-2→3-1 / L6→L7→L8 |
 | **画像（Profile）** | 一个岗位的典型能力组合 | "AI 平台架构师画像" = 4 域中 3 域强 + 1 域合格 |
-| **路径（Path）** | 从当前等级到目标等级的成长路线 | 见 [Ch99 成长建议](../99-outro/02-growth-advice/02-growth-advice.md) |
+| **路径（Path）** | 从当前等级到目标等级的成长路线 | 见 [Ch99 成长建议](../../99-outro/02-growth-advice/02-growth-advice.md) |
 | **KSAO** | Knowledge / Skills / Abilities / Others | 经典能力素质四元组 |
 | **T 型人才** | 一专多能 | 1 个领域深入 + 多领域了解 |
 | **π 型人才** | 两专多能 | 2 个领域深入 + 多领域了解，AI 时代更倾向此型 |

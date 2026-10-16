@@ -85,7 +85,7 @@
 
 **向量库**：
 
-- Milvus / Qdrant / Weaviate / Pinecone / pgvector / LanceDB（详见 [02-vector-lake](./02-vector-lake.md)）。
+- Milvus / Qdrant / Weaviate / Pinecone / pgvector / LanceDB（详见 [02-vector-lake](../02-vector-lake/02-vector-lake.md)）。
 
 **BM25 引擎**：
 

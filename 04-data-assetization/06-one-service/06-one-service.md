@@ -46,7 +46,7 @@
 | 用户 | 业务系统 / 应用 | API 调用方 | 数据团队 | 全员 |
 | 关注点 | 数据语义统一 | 限流 / 鉴权 | 建模 / 加工 | 可发现 / 可理解 |
 
-> OneService 与「数据 API 网关」（详见 [07-data-api-gateway](./07-data-api-gateway.md)）是互补关系——OneService 关注「数据语义 + 服务化」，API 网关关注「流量治理 + 工程稳定性」。
+> OneService 与「数据 API 网关」（详见 [07-data-api-gateway](../07-data-api-gateway/07-data-api-gateway.md)）是互补关系——OneService 关注「数据语义 + 服务化」，API 网关关注「流量治理 + 工程稳定性」。
 
 ### 1.2 为什么需要
 
@@ -143,11 +143,11 @@
 - **标签（Tag / Label）**：用户 / 物品的画像属性（如「高价值用户」「流失风险」）。
 - **宽表（Wide Table）**：预 JOIN 好的大表，供 API 直接查询。
 - **API 编排（API Orchestration）**：把多个原子 API 组合成复杂 API。
-- **数据网关（Data Gateway）**：所有数据 API 的统一入口（详见 [07-data-api-gateway](./07-data-api-gateway.md)）。
-- **元数据目录（Metadata Catalog）**：所有数据资产的注册中心（详见 [08-data-catalog](./08-data-catalog.md)）。
+- **数据网关（Data Gateway）**：所有数据 API 的统一入口（详见 [07-data-api-gateway](../07-data-api-gateway/07-data-api-gateway.md)）。
+- **元数据目录（Metadata Catalog）**：所有数据资产的注册中心（详见 [08-data-catalog](../08-data-catalog/08-data-catalog.md)）。
 - **Text-to-API**：LLM 把自然语言转 API 调用（Snowflake Cortex、Databricks Genie）。
 - **Function Calling**：LLM 调用预注册的工具（含 OneService API）。
-- **指标平台（Metric Platform）**：指标定义 + 指标计算 + 指标服务一体化（详见 [10-metric-platform](./10-metric-platform.md)）。
+- **指标平台（Metric Platform）**：指标定义 + 指标计算 + 指标服务一体化（详见 [10-metric-platform](../10-metric-platform/10-metric-platform.md)）。
 - **API 版本管理（API Versioning）**：API 演进不破坏调用方。
 - **数据契约（Data Contract）**：数据生产方与消费方之间的「数据 SLA」（schema、口径、更新频率）。
 
@@ -248,7 +248,7 @@ GET /api/v1/metric/gmv?dim=date&filter=is_new_user:true,city:beijing&time_range=
 - **OneService vs Data API Gateway**：OneService 关注「数据语义 + 服务化」，API 网关关注「流量治理 + 工程稳定性」。两者协同：OneService 提供 API，API 网关做限流 / 鉴权 / 监控。
 - **OneService vs Data Catalog**：OneService 是「数据 → API」的转换，Data Catalog 是「数据 → 元数据」的可发现性。OneService API 注册到 Data Catalog 中。
 - **OneService vs Metric Platform**：Metric Platform 是 OneService 的子集，专注「指标」的服务化。OneService 还包括标签 / 维度 / 宽表 / 数据库表。
-- **OneService vs Unified Query Gateway**：OneService 是「预定义 API」（指标 / 标签），Unified Query Gateway 是「联邦查询」（跨源 SQL）。详见 [09-unified-query-gateway](./09-unified-query-gateway.md)。
+- **OneService vs Unified Query Gateway**：OneService 是「预定义 API」（指标 / 标签），Unified Query Gateway 是「联邦查询」（跨源 SQL）。详见 [09-unified-query-gateway](../09-unified-query-gateway/09-unified-query-gateway.md)。
 - **OneService vs Data API**：Data API 是 OneService 的输出形态之一。OneService 是方法论 + 平台，Data API 是接口。
 - **OneService vs Data Product**：Data Product 是「面向业务的数据包」，OneService 是「数据服务化的工程实现」。Data Product 可能通过 OneService 暴露。
 

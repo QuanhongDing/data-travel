@@ -21,7 +21,7 @@
 >
 > **当前真相**请查阅：
 >
-> - 项目门面：[README.md](../../../README.md)
+> - 项目门面：[README.md](../../README.md)
 > - 设计规格（已同步更新到 10 章结构）：[2026-09-30-data-services-book-design.md](../specs/2026-09-30-data-services-book-design.md)
 > - 章节导读：`0X-<slug>/README.md`
 >

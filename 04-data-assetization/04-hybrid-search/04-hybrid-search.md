@@ -134,7 +134,7 @@
 
 - **BM25（Best Matching 25）**：经典词频统计检索算法（Robertson 1995）。
 - **TF-IDF（Term Frequency-Inverse Document Frequency）**：经典词权重算法。
-- **向量检索（Vector Search）**：基于 Embedding 相似度的检索（详见 [01-multimodal-db](./01-multimodal-db.md)）。
+- **向量检索（Vector Search）**：基于 Embedding 相似度的检索（详见 [01-multimodal-db](../01-multimodal-db/01-multimodal-db.md)）。
 - **稀疏向量（Sparse Vector / SPLADE）**：词级别的稀疏向量（SPLADE / SPLADE++）。
 - **稠密向量（Dense Vector）**：句级别的稠密 Embedding。
 - **RRF（Reciprocal Rank Fusion）**：倒数排名融合（Cormack 2009），无需分数标准化。

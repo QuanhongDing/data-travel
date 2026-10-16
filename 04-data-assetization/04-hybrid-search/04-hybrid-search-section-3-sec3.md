@@ -58,7 +58,7 @@ BGE-M3 同时输出 dense / sparse / colbert 三种向量，单模型搞定混�
 
 **模式 6：结构化 + 向量融合**
 
-PostgreSQL + pgvector 模式（详见 [03-ai-native-db](./03-ai-native-db.md)）：
+PostgreSQL + pgvector 模式（详见 [03-ai-native-db](../03-ai-native-db/03-ai-native-db.md)）：
 
 ```
 SELECT ... FROM products WHERE category = 'phone' ORDER BY embedding <=> $1 LIMIT 10

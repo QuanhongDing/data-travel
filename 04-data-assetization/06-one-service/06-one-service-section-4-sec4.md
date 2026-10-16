@@ -20,14 +20,14 @@
 
 **Step 3：指标 / 标签平台搭建**
 
-- 建立指标平台（详见 [10-metric-platform](./10-metric-platform.md)）。
+- 建立指标平台（详见 [10-metric-platform](../10-metric-platform/10-metric-platform.md)）。
 - 建立标签平台（用户 / 商品 / 内容画像）。
 - 统一指标 / 标签定义、口径、Owner。
 - 输出：**统一指标 / 标签库**。
 
 **Step 4：API 平台搭建**
 
-- 选 API 网关（详见 [07-data-api-gateway](./07-data-api-gateway.md)）。
+- 选 API 网关（详见 [07-data-api-gateway](../07-data-api-gateway/07-data-api-gateway.md)）。
 - 选 API 框架（FastAPI / Spring Boot / Go）。
 - 实现认证 / 鉴权 / 限流 / 监控。
 - 输出：**API 平台**。
@@ -41,7 +41,7 @@
 
 **Step 6：元数据注册**
 
-- 把所有 API 注册到数据目录（详见 [08-data-catalog](./08-data-catalog.md)）。
+- 把所有 API 注册到数据目录（详见 [08-data-catalog](../08-data-catalog/08-data-catalog.md)）。
 - 配置 Schema、血缘、Owner、文档。
 - 输出：**可发现的 API 目录**。
 
@@ -68,7 +68,7 @@
 5. **查询优化**：索引下推、覆盖索引、JOIN 优化、向量化执行。
 6. **权限模型**：行级（Casbin / OPA）、列级（动态脱敏）、指标级（白名单）。
 7. **可观测**：Prometheus 指标、Jaeger 链路追踪、ELK 日志。
-8. **API 网关**：Kong / APISIX / Tyk / Envoy（详见 [07-data-api-gateway](./07-data-api-gateway.md)）。
+8. **API 网关**：Kong / APISIX / Tyk / Envoy（详见 [07-data-api-gateway](../07-data-api-gateway/07-data-api-gateway.md)）。
 9. **GraphQL**：Hasura / Apollo / PostGraphile。
 10. **Function Calling**：OpenAI Function Calling / Anthropic Tool Use / MCP。
 11. **Text-to-API**：Snowflake Cortex Analyst / Databricks Genie / 自研。
