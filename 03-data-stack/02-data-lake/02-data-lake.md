@@ -105,14 +105,14 @@
 
 **第二阶段：云原生数据湖（2016-2020）**
 
-- 2017：Delta Lake 0.2 发布（Databricks），Lakehouse 雏形。
 - 2018：Apache Iceberg 0.1，Hudi 0.5 加入竞争。
+- 2019：Databricks 开源 Delta Lake，Lakehouse 雏形。
 - 2019：Netflix / Apple / LinkedIn 大规模 Iceberg 落地。
 - 2020：对象存储成本下降 + 开放表格式成熟，云数据湖爆发。
 
 **第三阶段：Lakehouse 主流化（2020-2024）**
 
-- 2020：Databricks 提出 Lakehouse 概念，Delta Lake 1.0。
+- 2020：Databricks 提出 Lakehouse 概念，湖仓形态定型。
 - 2021：Iceberg 1.0、Hudi 0.10、表格式"三国杀"开始。
 - 2022：Apache Paimon（前 Flink Table Store）进入战场。
 - 2023：Snowflake 推出 Iceberg Tables，三大云厂商全部支持 Iceberg。

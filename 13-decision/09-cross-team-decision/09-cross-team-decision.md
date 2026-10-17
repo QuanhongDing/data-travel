@@ -81,7 +81,7 @@
 - **1980s-1990s**：RACI 矩阵广泛应用于项目管理（PMI）。
 - **2000s**：敏捷开发推动轻量级决策（Scrum、SAFe）。
 - **2010s**：开源治理模式（Linux Foundation、CNCF）的跨组织决策实践。
-- **2014**：Google「Site Reliability Engineering」把决策推给「最接近问题的人」。
+- **2016**：Google《Site Reliability Engineering》一书把「把决策推给最接近问题的人」写成成文原则（书为 2016 年出版；Google 内部的相关实践早于此，但成文与公开以该书为标志）。
 - **2018**：Spotify Squad / Tribe / Chapter / Guild 模型成熟。
 - **2020**：GitHub / GitLab 的 RFC + ADR 流程成为开源 / 互联网公司主流。
 - **2022-2024**：架构委员会（Architecture Board）+ 跨团队 RFC 平台普及。

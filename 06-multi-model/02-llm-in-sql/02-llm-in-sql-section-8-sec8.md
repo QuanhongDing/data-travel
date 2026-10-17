@@ -668,7 +668,7 @@
 
 - **a) Model Router (模型路由)**：决策逻辑——数据敏感 → Self-Hosted；任务简单 → 小模型（Qwen 7B）；任务复杂 → 大模型（Claude 3.5 Sonnet）；节省成本 → 缓存命中。开源实现：OpenRouter / LiteLLM / 阿里云 ModelScope 路由。**Anthropic Claude + AWS Bedrock** 是「按账号级选模型」的范例。
 
-- **b) Inference Server**：vLLM（高吞吐，PagedAttention）/ SGLang（UC Berkeley 新一代）/ TensorRT-LLM（NVIDIA GPU 加速）/ Ollama（本地开发）。**Netflix Maistral**、**Uber Maestro** 是大流量场景下的自研推理优化范例。**Anthropic Claude Code** 的「按工具复杂度路由」也是 LLM 本身的实践。
+- **b) Inference Server**：vLLM（高吞吐，PagedAttention）/ SGLang（UC Berkeley 新一代）/ TensorRT-LLM（NVIDIA GPU 加速）/ Ollama（本地开发）。**部分超大流量公司会自研推理优化层**——本节未能核到可定位的具体系统名与出处，故不点名，需要举例时请按「inference server」「continuous batching」等关键词检索各家官方工程博客自行核验。**Anthropic Claude Code** 的「按工具复杂度路由」也是 LLM 本身的实践。
 
 - **c) Prompt & Eval Registry**：每个 Prompt 是版本化的（Git + Registry），每次发布要求对应评估集通过。**Databricks Mosaic AI / Anthropic Console** 提供类似管理能力。**dbt + Prompt Registry** 是新兴组合。
 
@@ -715,8 +715,8 @@
 
 **5. 参考资料**
 
-- Netflix Tech Blog 关于 Maistral / Auto-Remediation——大流量 LLM 推理的工业级优化范例。
-- Uber Engineering 关于 Maestro / observability——端到端可观测的工程实践。
+- 大流量 LLM 推理的工业级优化：本节未能核到可引用的具体系统与出处（原文此处点名的两个系统名在本仓库内无其它佐证，且其一与本书别处对该系统用途的描述相左），请按「inference server」「continuous batching」等关键词检索各家官方工程博客自行核验。
+- 端到端可观测的工程实践：同上，本节未能核到可定位的出处，请以各公司官方工程博客为准。
 - Anthropic / OpenAI / DeepSeek 关于成本与缓存的官方材料——模型路由与 token 经济性。
 - Langfuse / Arize Phoenix / Helicone 官方文档——LLM 可观测的开源实现。
 - OWASP LLM Top 10 与 NIST AI RMF（AI Risk Management Framework，AI 风险管理框架）——AI 安全的合规框架。

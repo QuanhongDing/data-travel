@@ -81,13 +81,13 @@
 
 **第一阶段：概念萌芽（2017-2019）**
 
-- 2017：Delta Lake 0.2 发布（Databricks），提出"Open Table Format"思想。
+- 2017：Uber 开源 Hudi，针对更新密集场景。
 - 2018：Netflix 开源 Iceberg（前身），解决 Hive 表的事务问题。
-- 2019：Uber 开源 Hudi，针对更新密集场景。
+- 2019：Databricks 开源 Delta Lake，提出“Open Table Format”思想。
 
 **第二阶段：三国杀形成（2020-2022）**
 
-- 2020：Databricks 提出 Lakehouse 概念。Iceberg 进入 Apache 孵化器。
+- 2020：Databricks 提出 Lakehouse 概念。Iceberg 毕业为 Apache 顶级项目。
 - 2021：Iceberg 1.0、Hudi 0.10。表格式大战开始。
 - 2022：Apache Paimon（前 Flink Table Store）进入战场，主打流批一体。
 - **2022-2023**：社区分裂——Delta 偏 Databricks、Iceberg 偏 Trino/Snowflake、Hudi 偏 Uber、Paimon 偏 Flink。

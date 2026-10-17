@@ -59,7 +59,7 @@ Netflix Keystone 是基于 Kafka + Flink 的实时数据管道，2017 年开始�
 
 #### 4.3.1 Maestro 核心
 
-Maestro 是 Netflix 2021 年开源的工作流调度系统，对标 Apache Airflow。
+Maestro 是 Netflix 自研并开源的工作流调度系统（开源仓库地址本书未给出），对标 Apache Airflow；其公开材料的年份口径不一——2022 年之说见 Netflix 工程博客，2021 年开源之说本书未核到出处，本节不锁定单一值。
 
 #### 4.3.2 关键能力
 

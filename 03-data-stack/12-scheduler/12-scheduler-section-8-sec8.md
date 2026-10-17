@@ -58,7 +58,7 @@
 
 - **Airflow**：团队有 Python 工程能力、Operator 生态依赖重、已经在 YARN / 云 VM 上跑。这是**默认推荐**——LinkedIn 早期 TonY 项目基于 Azkaban 演进，但当前 LinkedIn 内部大量业务已迁到 Airflow；Airbnb 至今仍是 Airflow 的最大贡献者，每天跑数千 DAG；Spotify 早期是大用户并贡献了 `KubernetesPodOperator`；Uber 在 Michelangelo ML 平台用 Airflow 编排训练任务。
 - **DolphinScheduler**：业务团队偏运营 / 分析、需要 UI 拖拽、对国产生态依赖强（信创 / 国产数据库适配）。这是**国内中大型企业的传统首选**——美团、京东、招行大量业务线仍以 DolphinScheduler 为底座；微众银行的联邦学习调度也构建于其上。
-- **Argo Workflows**：已经在 K8s 上、希望编排与基础设施同构、对弹性要求极高。**字节跳动 Argo 实践**是典型代表——每天百万级任务量、依赖 Argo + 自研调度器把成本显著压低（具体幅度本书无法给出可核验出处，此处按【经验】档处理）；Netflix 的 **Maestro** 平台底层也是 Argo。阿里云 **DataWorks** 智能升级版也在向 K8s + Argo 靠拢。
+- **Argo Workflows**：已经在 K8s 上、希望编排与基础设施同构、对弹性要求极高。**字节跳动 Argo 实践**是典型代表——每天百万级任务量、依赖 Argo + 自研调度器把成本显著压低（具体幅度本书无法给出可核验出处，此处按【经验】档处理）；Netflix 的 **Maestro** 也是多后端执行，Argo 只是其执行后端之一。阿里云 **DataWorks** 智能升级版也在向 K8s + Argo 靠拢。
 
 **第五层：组合策略。**
 
@@ -88,7 +88,7 @@
 - Airbnb Engineering 关于 Airflow 早期实践的公开分享——Airflow 的诞生背景与 Airbnb 数千 DAG 的运维经验。
 - LinkedIn Engineering 关于 TonY 与 Azkaban 的公开材料——LinkedIn 从 Azkaban 演进到 Airflow + TonY 的工程动机。
 - Uber Engineering 关于 Michelangelo ML 平台的公开材料——Airflow 在 ML 训练调度中的角色。
-- Netflix Technology Blog 关于 Maestro 的公开材料——基于 Argo 的工作流编排平台设计。
+- Netflix Technology Blog 关于 Maestro 的公开材料——统一编排层 + 多后端执行（Spark / Flink / Argo）的平台设计。
 - Apache Airflow GitHub 主仓库的 K8s Executor 源码——理解 Task → Pod 映射机制。
 - **字节跳动 Argo + K8s 调度实践** —— 每天百万级任务量，Argo + 自研调度器组合显著压低成本（具体幅度以原分享为准，本节无法给出可核验链接），是国内云原生调度的代表案例。
 - **阿里 DataWorks 智能升级** —— 一站式调度 + MaxCompute + 智能告警，云上数据栈的事实标准。

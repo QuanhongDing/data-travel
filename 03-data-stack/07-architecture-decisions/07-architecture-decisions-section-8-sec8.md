@@ -537,7 +537,7 @@
 - **复杂 DAG（多分支 + 动态生成 + Python 配置）**：
   - 推荐 **Airflow**——Python DAG + 动态 DAG（DagBag）+ Jinja 模板。
   - **LinkedIn** 是 Airflow 的主要使用者，**Airbnb** 起源，**Uber** 用 Airflow 做离线调度。
-  - **Netflix** 用 Airflow 做大规模数据调度（Maestro 平台基于 Airflow）。
+  - **Netflix** 早期用过 Airflow，后自研统一工作流编排层 Maestro（多后端执行——Maestro 不是基于 Airflow 的二次开发）。
 - **多团队多租户（多业务线 + 资源隔离 + 权限管控）**：
   - 推荐 **DolphinScheduler**——租户 + 用户 + 资源 + 权限四层模型。
   - **Apache DolphinScheduler** 是中国 Apache 顶级项目（2021），**阿里 / 字节跳动 / 美团 / 招行** 等中国企业大量使用。
@@ -582,7 +582,7 @@
 - LinkedIn Azkaban 官方文档——Web 调度 + Executor。
 - Argo Workflows 官方文档《Kubernetes Native Workflows》——K8s 原生 DAG。
 - **LinkedIn Airflow 调度平台** —— LinkedIn 用 Airflow 调度大规模数据流水线，10+ 集群分业务域。
-- **Netflix Maestro（基于 Airflow）** —— Netflix 用 Airflow 做大规模数据调度，Maestro 平台支撑 EB 级数据。
+- **Netflix Maestro** —— Netflix 自研的统一工作流编排层（多后端执行），承载其大规模数据调度，支撑 EB 级数据。
 - **Uber Airflow 离线调度** —— Uber 用 Airflow 做离线调度，K8s Executor 弹性伸缩。
 - **阿里 / 字节 / 美团 / 招行 DolphinScheduler** —— 中国企业大量使用 DolphinScheduler 做多租户调度。
 - **永辉超市 / 美的集团 DolphinScheduler** —— 多团队多租户调度场景，资源隔离 + 权限管控。

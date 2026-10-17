@@ -381,7 +381,7 @@ Netflix 实际用法：核心交易表走 COW（数据量稳定、按天刷新�
 
 > 本主题考察「**湖仓之上层**」：Netflix 为什么自研 Maestro 而不是直接用 Airflow？Data Mesh 四大原则如何在 Netflix 落地？这一主题从「调度系统设计」切入，到「联邦治理范式」，再到「文化变革」——面试官想听的不是工具介绍，而是「为什么这么选、怎么落地、踩了什么坑」。
 
-#### §15.5.3.1 Netflix 2021 年开源了 Maestro 工作流调度系统，请从「统一 DAG 模型」「多触发方式（时间 / 事件 / API）」「可视化编辑」「回填能力」「SLA 管理」五个维度，对比 Maestro 与 Apache Airflow 的设计差异，并说明 Netflix 内部为何选择自研而非直接基于 Airflow 二次开发。
+#### §15.5.3.1 Netflix 自研并开源了 Maestro 工作流调度系统，请从「统一 DAG 模型」「多触发方式（时间 / 事件 / API）」「可视化编辑」「回填能力」「SLA 管理」五个维度，对比 Maestro 与 Apache Airflow 的设计差异，并说明 Netflix 内部为何选择自研而非直接基于 Airflow 二次开发。
 
 **1. 考察点**
 
@@ -436,11 +436,11 @@ Netflix 实际用法：核心交易表走 COW（数据量稳定、按天刷新�
 - **Airflow**：Airbnb 开源，Lyft / Stripe / Twitter / 京东 / 美团 / 字节 等大量公司采用。优势是生态丰富、Operator 多；劣势是触发语义弱、UI 偏弱。
 - **DolphinScheduler**：国产开源调度系统，海尔 / 唯品会 / 字节 / 美团 等国内厂商广泛采用，强项是「**可视化 + 多触发 + 任务类型丰富**」，与 Maestro 设计哲学类似。
 - **Apache Airflow + 自研触发层**：部分公司（LinkedIn / Uber）选择在 Airflow 上自研事件触发层（如 Kafka trigger）。这是「**生态优先 + 增量定制**」的折中方案。
-- **Netflix Maestro**：自研的统一 DAG 调度，2021 年 GitHub 开源，社区影响力目前小于 Airflow / DolphinScheduler，但设计哲学值得参考。
+- **Netflix Maestro**：自研的统一 DAG 调度（已开源，开源仓库地址本书未给出；公开材料的年份口径不一——2022 年之说见 Netflix 工程博客，2021 年开源之说本书未核到出处），社区影响力目前小于 Airflow / DolphinScheduler，但设计哲学值得参考。
 
 **第六层：行业落地佐证。**
 
-- **Netflix**：Maestro 服务内部 1000+ 数据工程师，每日百万级任务调度，2021 年开源。
+- **Netflix**：Maestro 服务内部 1000+ 数据工程师，每日百万级任务调度（已开源，公开材料的年份口径不一——2022 年之说见 Netflix 工程博客，2021 年开源之说本书未核到出处）。
 - **海尔 / 美的**：制造业巨头，调度系统多采用 DolphinScheduler，强调「**可视化 + 任务类型丰富 + 多触发**」——Maestro / DolphinScheduler 这类强可视化系统在制造业落地普遍。
 - **永辉 / 屈臣氏**：零售行业实时调度需求高，事件触发 + 时间触发混合，调度系统普遍做了二次开发。
 - **中信证券 / 招商银行**：金融行业，调度 SLA 要求严格（每个报表必须在开市前出数），调度系统的 SLA 管理与告警是核心。
@@ -463,7 +463,7 @@ Netflix 实际用法：核心交易表走 COW（数据量稳定、按天刷新�
 
 **5. 参考资料**
 
-- Netflix OSS《Maestro: A Workflow Orchestrator for Netflix Data Platform》（GitHub + 官方博客）——Maestro 的开源说明与设计哲学，含统一 DAG + 多触发 + 回填的完整论述。
+- Netflix OSS《Maestro: A Workflow Orchestrator for Netflix Data Platform》（GitHub + 官方博客；本书未给出可链接的仓库地址）——Maestro 的开源说明与设计哲学，含统一 DAG + 多触发 + 回填的完整论述。
 - Apache Airflow 官方文档的「DAG」「Operators」「Sensors」「Backfill」「TaskFlow API」章节——Airflow 设计哲学与扩展点的权威出处。
 - Maxime Beauchemin（Airflow 创始人）《The Rise of the Data Engineer》与 Apache Airflow 论文——工作流调度的工程哲学与 Airflow 起源。
 - Apache DolphinScheduler 官方文档与海尔 / 美的 / 唯品会的落地案例——国产调度系统的对照实践。

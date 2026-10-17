@@ -137,7 +137,7 @@
 - 2014：Apache Atlas（LinkedIn 出品）开源。
 - 2015：WhereHows（LinkedIn 出品）成为 DataHub 前身。
 - 2016：Apache Griffin 与血缘集成。
-- 2017：Databricks 推出 Delta Lake，时间旅行 + 血缘雏形。
+- 2019：Databricks 开源 Delta Lake，时间旅行 + 血缘雏形。
 - 2019：DataHub（LinkedIn）正式开源。
 - 2020：Unity Catalog（Databricks）发布。
 

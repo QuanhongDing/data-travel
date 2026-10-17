@@ -35,7 +35,7 @@ Netflix 成立于 1997 年（从 DVD 租赁起步），2007 年推出流媒体�
 - **2018：Apache Iceberg 开源**。Netflix 把 Iceberg 捐赠给 Apache 基金会。
 - **2019：Metaflow 升级**。Netflix 开源 Metaflow（ML 框架），大幅升级 ML 工程化能力。
 - **2020：Iceberg 全面铺开**。Netflix 内部 100% 数据栈基于 Iceberg。
-- **2021：Maestro 调度发布**。Netflix 开源 Maestro（工作流调度系统）。
+- **2022 年前后：Maestro 调度公开**。Netflix 自研并开源 Maestro（工作流调度系统；开源仓库地址本书未给出）；其公开材料的年份口径不一——2022 年之说见 Netflix 工程博客，2021 年开源之说本书未核到出处，本书不锁定单一值。
 - **2022：Data Mesh 实践**。Netflix 内部推进 Data Mesh，数据所有权分散到业务团队。
 - **2023：GenAI 应用**。Netflix 内部广泛使用 LLM 做内容理解 / 推荐 / 营销。
 - **2024：Iceberg 1.5 / 2.0 发布**。Iceberg 成为事实标准。

@@ -118,7 +118,7 @@
 
 **第三阶段：实时 + Lakehouse 融合（2020-至今）**
 
-- 2020：Databricks 推出 Delta Lake 2.0，Lakehouse 概念成熟。
+- 2020：Databricks 提出 Lakehouse 概念，湖仓形态成熟。
 - 2021：Apache Doris 1.0、StarRocks 2.0 走向成熟，国产实时数仓崛起。
 - 2022：Iceberg / Hudi / Paimon 三大表格式并立，Lakehouse 成为事实标准。
 - 2023-2024：LLM 与数仓结合——自然语言查询（Text-to-SQL）、指标语义层（Metric Layer）、AI 驱动的自动建模。
