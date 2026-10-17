@@ -249,6 +249,7 @@
 
 ---
 
+- [§2. 核心原理（深度版）](03-lakehouse-section-2-deep-principles.md)
 - [§3. 设计模式与范式](03-lakehouse-section-3-sec3.md)
 - [§4. 工程实现](03-lakehouse-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](03-lakehouse-section-5-ai.md)
@@ -262,6 +263,7 @@
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
+- [§2. 核心原理（深度版）](03-lakehouse-section-2-deep-principles.md)
 - [§3. 设计模式与范式](03-lakehouse-section-3-sec3.md)
 - [§4. 工程实现](03-lakehouse-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](03-lakehouse-section-5-ai.md)
