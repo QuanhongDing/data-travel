@@ -2,7 +2,7 @@
 
 ## 8. 面试真题集
 
-> 本节围绕「故障复盘文化」设计 6 道高频面试题，覆盖 Blameless Postmortem、5 Whys / 故障树 RCA、Action Items 闭环、故障分级与复盘频次、知识沉淀、AI 时代新形态。每道题均按照「题目背景 / 难点拆解 / 参考答案 / 落地实践 / 面试官评估维度」五段式作答，篇幅 800–1500 字。引用案例来自 Google SRE、Netflix、Atlassian、Etsy、Amazon、阿里、字节、美团、京东、招行、微众、平安等公开工程实践，不附外链。
+> 本节围绕「故障复盘文化」设计 6 道高频面试题，覆盖 Blameless Postmortem、5 Whys / 故障树 RCA、Action Items 闭环、故障分级与复盘频次、知识沉淀、AI 时代新形态。每道题均按照「题目背景 / 难点拆解 / 参考答案 / 落地实践 / 面试官评估维度」五段式作答，篇幅 800–1500 字。引用案例来自 Google SRE、Netflix、Atlassian、Etsy、Amazon、阿里、字节、美团、京东、招行、微众、平安等公开工程实践，不附外链；各题「落地实践」中的公司机制描述与规模数字均取自这些公开材料，本书未逐条附文档名与链接，引用前请按机构与关键词自行检索核验。
 
 ---
 
@@ -22,7 +22,7 @@
 
 #### 参考答案
 
-**Blameless Postmortem 的本质**：聚焦「系统为什么失败」而非「谁搞坏了」。其学术根源是 Chris Argyris 1977 年的「组织学习」理论与 Sidney Dekker 2012 年的「Just Culture」；工程实践起点是 John Allspaw 2012 年在 Etsy 推动并于 2014 年写入 Google SRE Book 的标准做法。
+**Blameless Postmortem 的本质**：聚焦「系统为什么失败」而非「谁搞坏了」。其学术根源是 Chris Argyris 1977 年的「组织学习」理论与 Sidney Dekker 2012 年的「Just Culture」；工程实践起点是 John Allspaw 2012 年在 Etsy 推动的实践，此后被 Google SRE Book 收录为该书的 Postmortem 标准做法（该书写入复盘文化的年份口径是 2016 年，与本章 §7 一致）。
 
 **三句话讲清内核**：
 
@@ -38,11 +38,11 @@
 - **Step 4 模板化运行**：套用 Google SRE 风格的 Postmortem 模板（摘要、时间线、根因、Action Items、经验教训、后续跟进），保证形式上的结构化。
 - **Step 5 30/60/90 闭环**：Action Items 落地后，30 天跟踪、60 天验证、90 天评估文化效果，形成反馈环。
 
-**反模式警示**：判断 Blameless 是否真实落地的三条硬指标——① 一年内是否有「无损公开」的 P0 复盘文档；② 当事人是否敢在复盘会上说「这是我犯的错」；③ Action Items 的 Owner 是否 80% 以上不是「当事人本人」。若三条都否，本质仍是追责文化。
+**反模式警示**：判断 Blameless 是否真实落地的三条硬指标——① 一年内是否有「无损公开」的 P0 复盘文档；② 当事人是否敢在复盘会上说「这是我犯的错」；③ Action Items 的 Owner 是否绝大多数（【经验】档，约 80% 以上）不是「当事人本人」。若三条都否，本质仍是追责文化。
 
 #### 落地实践
 
-- **Google SRE**：所有 P0/P1 故障 24 小时内 Postmortem 文档必须发布到内部 Wiki，公开率近 100%；Action Items 进入 SRE 季度 OKR，闭环率行业最高。
+- **Google SRE**：所有 P0/P1 故障 24 小时内必须产出 Postmortem 文档并发布到内部 Wiki；Action Items 要求有 Owner 与优先级，并进入 SRE 季度 OKR；公开率与闭环率长期处于高位（本节无法给出上述机制描述与比例的可核验出处；本章 §7 的公开依据只支持到「行动项需有 Owner 与优先级，并记录为可跟踪的工作项」）。
 - **Etsy（John Allspaw 2012）**：早期由 VP 工程亲自示范「这是我引入的故障」讲话，建立心理安全基线。
 - **Atlassian**：用 Confluence 模板强制 Blameless 措辞——禁止使用「人为错误」「粗心大意」等字眼，必须改为「缺乏校验步骤」「缺乏自动化」。
 - **阿里**：内网故障复盘文档明确「禁止出现当事人真名」，用花名或代号；高管如行颠（张建锋）多次公开复盘自己的战略失误。
@@ -135,7 +135,7 @@ Why5：缺乏「模型升级自动重建索引」的 SOP ← 真正的根因（�
 1. **责任机制**：Action Items 必须有 Owner + Due Date + Priority 三元组，且 Owner 不能是「当事人」（避免变相惩罚）。
 2. **跟踪机制**：需要看板（Kanban）+ 周会 Review + 30/60/90 天分级验证，而不是写完文档归档。
 3. **验证机制**：Action Items 完成后必须有「验收证据」——告警触发测试、SOP 文档落地、Runbook 演练记录等，避免「口头完成」。
-4. **闭环率指标**：健康水平 90%+，行业基线 50-60%，如何从基线推到优秀水平。
+4. **闭环率指标**：健康水平 90%+，基线 40% 量级（两档均为【经验】量级，本书无法给出可核验出处；与本章 §6 案例表的基线口径一致），如何从基线推到优秀水平。
 
 #### 参考答案
 
@@ -159,9 +159,9 @@ Layer 4  验证层  →  30/60/90 天分级验证（30 天跟踪、60 天验收�
 
 **健康指标体系**：
 
-| 指标 | 行业基线 | 优秀水平 |
+| 指标 | 基线（【经验】量级，无公开出处） | 优秀水平（【经验】目标） |
 | --- | --- | --- |
-| 闭环率（Done / Total） | 50-60% | 90%+ |
+| 闭环率（Done / Total） | 40% 量级 | 90%+ |
 | 平均完成时长 | 45 天 | < 30 天 |
 | 超期率 | 30% | < 10% |
 | 复发率（同类故障再发） | 10-20% | < 5% |
@@ -195,7 +195,7 @@ Layer 4  验证层  →  30/60/90 天分级验证（30 天跟踪、60 天验收�
 #### 难点拆解
 
 1. **分级标准**：P0（核心业务完全中断）/ P1（核心业务部分受损）/ P2（次要业务受损）/ P3（内部问题）的清晰划分，需结合业务影响、用户影响、SLA 违反程度。
-2. **复盘频次与形式**：P0/P1 详细 Postmortem（24h 内完成、文档 + 复盘会），P2 简化 Postmortem（72h 内完成、轻量文档），P3 可选（周报汇总、口头复盘）。
+2. **复盘频次与形式**：P0/P1 详细 Postmortem（P0 24h 内、P1 48h 内完成，文档 + 复盘会），P2 简化 Postmortem（72h 内完成、轻量文档），P3 可选（周报汇总、口头复盘）。
 3. **复盘会节奏**：何时开（24h 内）、谁参加（IC + 跨团队）、开多久（≤ 1 小时）、怎么避免形式化。
 4. **数据驱动**：用 TTD / TTM / TTR 三个时间指标作为分级与改进的硬指标。
 
@@ -216,7 +216,7 @@ Layer 4  验证层  →  30/60/90 天分级验证（30 天跟踪、60 天验收�
 | **P2** | 简化复盘（书面） | 72h 内 | 0.5-2 页 | 当事团队 | 30 天 |
 | **P3** | 周报汇总 | 周内 | 0.5 页 | 当事人 | 月度 Review |
 
-**复盘会的「五个一」原则**（参考阿里 3721 原则）：
+**复盘会的「五个一」原则**（参考阿里 3721 原则；该原则的具体阈值与出处说明见 8.4 落地实践）：
 
 - **一个 IC（事故指挥官）**：故障期间统一指挥，避免多头决策。
 - **一个时间盒**：复盘会 ≤ 1 小时，避免马拉松式讨论。
@@ -244,7 +244,7 @@ MTTR = TTD（Time to Detect）+ TTM（Time to Mitigate）+ TTR 残值（Time to 
 #### 落地实践
 
 - **Google SRE**：P0/P1 故障 24h 内 Postmortem，P2/P3 进入月度汇总，避免过度复盘。
-- **阿里 3721 原则**：3 分钟响应、30 分钟定位、4 小时恢复、24 小时 Postmortem；按等级调整但形式统一。
+- **阿里 3721 原则**：3 分钟响应、30 分钟定位、4 小时恢复、24 小时 Postmortem（【经验】档：本节无法核验这四个阈值的原始出处，引用前请自行查证）；按等级调整但形式统一。
 - **Netflix**：P0/P1 详细复盘，P2/P3 进入「Lessons Learned」季度汇总。
 - **美团**：外卖配送系统按「订单影响量 × 时长」自动分级，避免主观判断。
 - **招行 / 微众**：金融级稳定性要求，P0/P1 必须高管 Review；平安在保险核心系统也沿用类似分级。
@@ -272,7 +272,7 @@ MTTR = TTD（Time to Detect）+ TTM（Time to Mitigate）+ TTR 残值（Time to 
 1. **沉淀形式**：从文档归档升级到知识图谱 + RAG 检索，让知识可被主动查询而非被动阅读。
 2. **新员工 Onboarding**：必读近 6 个月 Postmortem，把历史故障作为「新员工风险手册」。
 3. **跨团队共享**：每月跨团队复盘 Review，让 A 团队的故障教训传播到 B 团队。
-4. **量化指标**：复发率（同类故障再发比例）< 5% 是优秀水平，行业基线 10-20%。
+4. **量化指标**：复发率（同类故障再发比例）< 5% 是优秀水平，基线 10-20%（【经验】量级，本书无法给出可核验出处）。
 
 #### 参考答案
 
@@ -304,7 +304,7 @@ Layer 1  原始记录（监控 / 日志 / 时间线）
 
 **AI 时代的知识沉淀升级（2024-2025）**：
 
-- **LLM 自动总结**：把故障日志 / 时间线输入 LLM，自动生成 Postmortem 草稿（节省 70% 文档时间）。
+- **LLM 自动总结**：把故障日志 / 时间线输入 LLM，自动生成 Postmortem 草稿（可显著缩短文档撰写时间；幅度随故障复杂度与模板成熟度而异，本书无法给出可核验的统一百分比，此处按【经验】档只给方向）。
 - **故障知识图谱**：用 LLM + GraphRAG 把 Postmortem 文档抽取为「故障 → 根因 → Action Items → 防范措施」的图谱。
 - **RAG 检索 Oncall**：On-call 接到告警时，自动 RAG 检索相似故障 + Runbook + 历史 Action Items。
 
@@ -314,7 +314,7 @@ Layer 1  原始记录（监控 / 日志 / 时间线）
 RecurrenceRate(incident_type) = Recurrences(90 天内) / TotalIncidents(同类型)
 
 健康标准：< 5%
-行业基线：10-20%
+基线量级：10-20%（【经验】，本书无法给出可核验出处）
 复盘失败：> 20%（说明知识沉淀失效）
 ```
 
@@ -349,7 +349,7 @@ RecurrenceRate(incident_type) = Recurrences(90 天内) / TotalIncidents(同类�
 #### 难点拆解
 
 1. **新型故障的不可追溯性**：LLM 幻觉是非确定性的——同样输入可能产生不同输出，传统 RCA 难以复现。
-2. **数据漂移与模型衰减**：模型上线时准确率 95%，3 个月后降至 80%，根因可能是训练数据分布变化，传统监控难以捕获。
+2. **数据漂移与模型衰减**：模型上线时准确率 95%、3 个月后降至 80%（示意值，用于说明衰减形态，非实测统计，实际幅度随场景而异），根因可能是训练数据分布变化，传统监控难以捕获。
 3. **Agent 失控**：多 Agent 协作时，一个 Agent 的错误决策可能级联放大，传统 5 Whys 不够用。
 4. **AI 辅助复盘**：用 LLM 自动总结故障、提取 Action Items、检索相似历史故障——这把双刃剑既提升效率又带来 AI 隐私 / 合规风险。
 
@@ -394,7 +394,7 @@ RecurrenceRate(incident_type) = Recurrences(90 天内) / TotalIncidents(同类�
 
 #### 落地实践
 
-- **Google SRE Workbook 2nd Edition（2024）**：新增「AI 系统故障」专章，讨论 LLM 幻觉、模型衰减的复盘方法。
+- **Google SRE 系列（SRE Book / The Site Reliability Workbook）**：其复盘模板的字段（时间线、根因、Action Items、后续跟进）可直接迁移到 LLM 幻觉、模型衰减这类新型故障的复盘。
 - **Netflix ChAP（Chaos Automation Platform 2024）**：自动化注入 AI 故障（幻觉 / 漂移），验证系统韧性。
 - **Rootly AI（2024）**：AI 辅助 Incident Response，自动生成 Postmortem 草稿、提取 Action Items。
 - **Incident.io AI（2024）**：AI 自动总结故障、检索相似历史案例。
@@ -417,7 +417,7 @@ RecurrenceRate(incident_type) = Recurrences(90 天内) / TotalIncidents(同类�
 
 1. **基础必读**：Google SRE Book 第 14-16 章（Postmortem 章节）+ Etsy 2012 Velocity 演讲（Blameless Postmortem 起源）+ Sidney Dekker《Just Culture》。
 2. **方法论深入**：丰田生产方式（5 Whys 起源）+ 石川馨《鱼骨图》+ James Reason《Human Error》（Swiss Cheese）+ NASA Mishap Investigation 流程。
-3. **工程实践**：阿里 3721 原则 + Atlassian Blameless 模板 + Netflix Chaos Engineering + Google SRE Workbook 2nd Edition（2024）。
+3. **工程实践**：阿里 3721 原则（其阈值出处本书未核验）+ Atlassian Blameless 模板 + Netflix Chaos Engineering + Google SRE 系列（SRE Book / The Site Reliability Workbook）。
 4. **AI 时代升级**：Rootly AI / Incident.io AI 工具调研 + Ch8 AI 治理章节 + Ch11 可观测性 + Ch12 混沌工程。
 5. **跨章联动**：复盘文化与 Ch14 §01 团队组建、§03 绩效管理、§10 团队节奏、§12 文化建设强相关，需协同理解。
 

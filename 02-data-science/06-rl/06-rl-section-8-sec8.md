@@ -8,7 +8,7 @@
 
 ## 1 全景视图
 
-> 本节整合 7 道 RL 方向真题，覆盖算法选型、奖励工程、离线 RL、MARL、RLHF / 对齐、工业落地六大主题。下表按主题汇总。
+> 本节整合 7 道 RL 方向真题，覆盖算法选型、基于模型 vs 无模型、奖励工程、离线 RL、MARL、RLHF / 对齐、工业落地七大主题。下表按主题汇总。
 
 | 主题 | 题目编号 | 收录题数 | 主/辅 |
 | --- | --- | :---: | :---: |
@@ -54,7 +54,7 @@
 
 - **DQN 家族**（DQN / Double DQN / Dueling DQN / Rainbow）：离散动作场景下首选。技巧在于 target network 与 replay buffer。**连续动作必须离散化或换模型**，否则 Q 值无法表达。
 - **PPO**（Proximal Policy Optimization）：on-policy，但通过 clip 目标限制策略更新幅度，工程界事实默认算法。能处理离散和连续动作，但**样本利用率低**（一个 batch 用完即弃）；在大模型时代其 LLM RLHF 变体仍是主流但被 GRPO / DPO 蚕食。
-- **SAC**（Soft Actor-Critic）：off-policy + 最大熵框架，**样本效率是 PPO 的 5-10 倍**。代价是需要两个 Q 网络（twin Q）+ 熵温度系数 α 的自动调节，工程实现复杂度高于 PPO。
+- **SAC**（Soft Actor-Critic）：off-policy + 最大熵框架，**样本效率通常是 PPO 的 5-10 倍**（此处按【经验】档表述，具体倍数随任务与环境交互成本差异很大）。代价是需要两个 Q 网络（twin Q）+ 熵温度系数 α 的自动调节，工程实现复杂度高于 PPO。
 - **关键超参经验值**：PPO 的 clip ε = 0.2、GAE λ = 0.95；SAC 的 target entropy = −dim(action)；DQN 的 replay buffer 通常是 10⁶ 级别。
 - **稳定性排序**：SAC > DQN > PPO，其中 PPO 训练方差最大，需要多次种子取均值。
 
@@ -62,12 +62,12 @@
 
 - **字节跳动 / 阿里**：广告出价与推荐重排长期价值场景，SAC 与 PPO 都跑过，最终 PPO 因工程稳定 + 监控指标明确而被主选。
 - **美团 / 滴滴**：动态定价 + 派单，动作维度可控、试错成本高，主流退化为 **Contextual Bandit + PPO 微调**。
-- **DeepMind**：AlphaGo（DQN 衍生 + MCTS）、DM Control（SAC 主战场）。
-- **OpenAI**：RLHF 用 PPO，推理模型 o1/o3 转向 GRPO。
+- **DeepMind**：AlphaGo（策略网络 + 价值网络 + MCTS 自博弈）、DM Control（SAC 主战场）。
+- **OpenAI**：RLHF 用 PPO；推理模型 o1/o3 的具体 RL 算法未公开（GRPO 是 DeepSeek 的路线，并非 OpenAI 公开采用的算法）。
 
 #### 常见追问
 
-- Q：为什么 PPO 训练不稳定？答：clip 范围外样本被丢弃导致策略更新方差大；可用学习率 warmup、梯度裁剪、KL 惩罚缓解。
+- Q：为什么 PPO 训练不稳定？答：PPO 是 on-policy，同一批样本要复用多轮更新，策略一旦偏离采样时的行为策略，优势估计就变旧、更新方差随之放大（clip 会截断超出范围的 ratio 的梯度，只限制单步幅度、并不消除方差）；可用学习率 warmup、梯度裁剪、KL 惩罚缓解。
 - Q：SAC 的 α 怎么调？答：可固定（heuristic = −dim(action)）也可自动调节（target entropy）；后者在跨任务迁移更稳。
 - Q：是否要上 SAC？答：连续动作 + 能容忍 off-policy 复杂度时优先；强工程约束或需要 Gradio UI 调试时退回 PPO。
 
@@ -100,9 +100,9 @@
 #### 工业落地与案例
 
 - **DeepMind AlphaGo / AlphaZero / MuZero**：完美自博弈 + 可建模环境的代表。
-- **Google DeepMind 电网控制**：已发表使用 Model-Based RL 节约能耗 12% 的工作。
+- **Google DeepMind 电网控制**：有公开的电网 / 能源调度相关工作使用 Model-Based RL 降低能耗（本书未能定位到该工作的论文名与年份，降耗幅度亦无可核验的统计口径，引用时请自行查证）。
 - **Wayve GAIA-1**（自动驾驶世界模型）：典型 Model-Based + RL 训练路径。
-- **NVIDIA DreamerV3**：机器人控制 DM Control 通用 SOTA。
+- **DreamerV3**：机器人控制 DM Control 通用 SOTA。
 
 #### 常见追问
 
@@ -131,7 +131,7 @@
 - **奖励函数三要素**：
   - **即时奖励**：点击 +1、完播 +0.5、点赞 +2、负反馈 −5。
   - **长期奖励**：用 return（带折扣 γ ∈ [0.95, 0.99]）加进训练目标。
-  - **过程奖励（PRM）**：每步给一个细粒度奖励，DeepSeek-R1、OpenAI o1 的核心技巧。
+  - **过程奖励（PRM）**：每步给一个细粒度奖励，是另一条被探索过的路线——DeepSeek-R1 的技术报告把 PRM 列入「试验后未采用（Unsuccessful Attempts）」，R1 实际用的是 GRPO + 规则奖励（答案正确性 + 格式合规）；o 系列的具体 RL 算法未公开。
 - **Reward Shaping 三大法**：
   - **Curiosity-Driven**：内在好奇心模块（ICM / RND）解决稀疏奖励。
   - **HER（Hindsight Experience Replay）**：把"失败"重新解释为"成功"，适合 goal-conditioned RL。
@@ -143,9 +143,9 @@
 
 #### 工业落地与案例
 
-- **OpenAI InstructGPT / ChatGPT**：RLHF 的奖励模型训练后，人类偏好评分提升 30%；后续引入 **Constitutional AI / RLAIF**（Anthropic）降低人工标注成本。
+- **OpenAI InstructGPT / ChatGPT**：RLHF 的奖励模型训练后，人类偏好评分显著提升（具体幅度本书无法给出可核验出处与统计口径，此处按【经验】档处理）；后续引入 **Constitutional AI / RLAIF**（Anthropic）降低人工标注成本。
 - **Anthropic Claude**：用 RLAIF + Constitutional AI 让模型自我批评与修正，避免有害输出。
-- **DeepSeek-R1**：PRM + GRPO 让模型在数学推理上 SOTA。
+- **DeepSeek-R1**：GRPO + 规则奖励（答案正确性 + 格式合规）让模型在数学推理上 SOTA。
 - **Netflix Artwork RL**：用长期留存作为奖励，避免点击率高的"标题党"封面。
 - **Shein 供应链定价**：奖励 = 短期 GMV + 7 日退货率惩罚，避免错定价。
 
@@ -187,7 +187,7 @@
 
 #### 工业落地与案例
 
-- **阿里巴巴 推荐重排**：长序列用户行为 + Offline RL（CQL/IQL 实验）拿到长期 GMV +8%，已在主场景灰度。
+- **阿里巴巴 推荐重排**：长序列用户行为 + Offline RL（CQL/IQL 实验）拿到长期 GMV 的显著提升，已在主场景灰度（具体幅度本书无法给出可核验出处，此处按【经验】档处理）。
 - **字节跳动 广告出价**：基于历史日志训练，CQL 变体是 eCPM 提升的关键。
 - **Uber / Lyft 司机匹配**：试错代价高，Offline RL 几乎是默认选项。
 - **Wayve 自动驾驶**：完全不能在线试错，Offline RL + 仿真器主线。
@@ -226,7 +226,7 @@ MARL 的关键是引入 **集中训练 + 去中心化执行（CTDE）** 范式�
   - 训练时用全局信息（其他 Agent 的状态 / 动作），部署时只用本地观测。
   - 代表：**MADDPG**（Multi-Agent DDPG）、**MAPPO**（Multi-Agent PPO，工业首选）、**QMIX**（值分解，用 mixing network 联合局部 Q）。
 - **算法族对比**：
-  - **MAPPO**：基于 PPO，工业稳定，OpenAI 的 Dota Five 与许多机器人仿真实验采用。
+  - **MAPPO**：PPO 的多智能体版本（CTDE + 集中式 Critic），工业稳定，常用于协作型多智能体任务与机器人仿真。
   - **MADDPG**：DDPG 的多智能体扩展，连续动作可用。
   - **QMIX**：值分解，协同任务首选，需满足 IGM（Individual-Global-Max）条件。
   - **MAVEN**：解决多智能体探索不足。
@@ -235,7 +235,7 @@ MARL 的关键是引入 **集中训练 + 去中心化执行（CTDE）** 范式�
 #### 工业落地与案例
 
 - **OpenAI Five（Dota 2）**：Self-Play + 极大算力，5 个 Agent 协同击败人类世界冠军。
-- **DeepMind AlphaStar（星际争霸 II）**：5 个 Agent 协同 + 联盟训练（League Training）。
+- **DeepMind AlphaStar（星际争霸 II）**：1v1 单智能体 + 联盟训练（League Training，主智能体与多个利用者构成对手池）。
 - **DeepNash（Stratego）**：DeepMind 用 self-play 训练无模型 MARL 达到人类专家水平。
 - **仓储 / 物流 AGV**：京东、菜鸟、亚马逊仓库机器人调度，MAPPO + QMIX 主流实现。
 - **交通信号控制**：MIT、UC Berkeley 多个城市部署 MARL 优化红绿灯时长，缓解拥堵。
@@ -268,10 +268,10 @@ RLHF = 监督学习（SFT）+ 奖励建模（Reward Model）+ 策略优化（PPO
   - **Stage 1 SFT（Supervised Fine-Tuning）**：用高质量指令 - 回答对微调基础模型，建立基本能力。
   - **Stage 2 RM（Reward Model）**：让人类标注员对同一 prompt 的多个回答排序（chosen > rejected），训练一个 Bradley-Terry 模型的奖励打分器。
   - **Stage 3 RL（PPO）**：在 RM 上做 RL，把策略推向"高奖励 + 不偏离 SFT 太远（KL 惩罚）"的方向。
-- **三族改进算法**：
+- **四条改进路线**：
   - **DPO**（Stanford 2023）：跳过 RM + RL，直接用偏好数据做监督学习。**简单、稳定、低算力**，但表达力不及 PPO。
-  - **GRPO**（DeepSeek 2024）：保留 PPO 框架但去掉 Critic，**用同一 prompt 的多个回答的组内归一化奖励作为优势**。显存省一半，是 DeepSeek-R1 推理训练的核心。
-  - **PRM（Process Reward Model）**：在推理步骤级别奖励，而非仅最终结果；OpenAI o1 / o3、DeepSeek-R1 均采用。
+  - **GRPO**（DeepSeek 2024）：保留 PPO 框架但去掉 Critic，**用同一 prompt 的多个回答的组内归一化奖励作为优势**。相比 PPO 省去价值模型，显存开销更低（具体降幅随模型规模与并行 / 切分策略而异，本书无法给出可核验的统一数字，此处按【经验】档处理），是 DeepSeek-R1 推理训练的核心。
+  - **PRM（Process Reward Model）**：在推理步骤级别奖励，而非仅最终结果。它与「只看最终答案」的结果奖励是两条路线：DeepSeek-R1 的技术报告把 PRM 列入「试验后未采用（Unsuccessful Attempts）」；o 系列（o1 / o3）的具体 RL 算法未公开，是否采用 PRM 无官方确认。
   - **RLAIF / Constitutional AI**（Anthropic）：用 AI 而非人类给反馈，大幅降低标注成本 + 提升安全性。
 - **PPO 训练 LLM 的工程坑**：显存爆炸（参考模型 + 价值模型 + 策略模型三份）、奖励 hacking（RM 漏洞被利用）、KL 散度失控。
 - **数据规模经验**：SFT 10K-100K 条；RM 100K-1M 条偏好对；RL 数十万到百万 prompt。
@@ -280,7 +280,7 @@ RLHF = 监督学习（SFT）+ 奖励建模（Reward Model）+ 策略优化（PPO
 
 - **OpenAI InstructGPT → ChatGPT**：RLHF 三段式奠定 LLM 对齐范式，2022 年 ChatGPT 爆发。
 - **Anthropic Claude**：RLAIF + Constitutional AI，标注员只写"宪法"（Constitution），由 AI 自评自改，安全性 SOTA。
-- **DeepSeek-R1（2025）**：GRPO + PRM 在数学 / 代码 / 推理任务上 SOTA，开源引发行业震动。
+- **DeepSeek-R1（2025）**：GRPO + 规则奖励（答案正确性 + 格式合规）在数学 / 代码 / 推理任务上 SOTA，开源引发行业震动。
 - **Meta Llama 3**：RLHF + DPO 并用，模型质量与开源生态兼顾。
 - **阿里 Qwen2.5 / 智谱 GLM-4 / 百度 ERNIE 4.0**：均有自研 RLHF + DPO 流水线。
 
@@ -304,7 +304,7 @@ RLHF = 监督学习（SFT）+ 奖励建模（Reward Model）+ 策略优化（PPO
 
 #### 答案骨架
 
-RL 工业落地难，**70% 不是算法问题，是工程问题**。核心难点：① 奖励工程对齐业务 KPI；② 模拟器/Sim2Real 真实性；③ 离线评估置信度；④ 监控 + 漂移检测；⑤ 业务方协同（奖励函数签字）。一个完整闭环包括 **策略训练 → 离线评估 → 影子模式 → 灰度发布 → 在线监控 → 反馈回流** 六步。
+RL 工业落地难，**约七成不是算法问题、是工程问题**（经验法则，非精确统计）。核心难点：① 奖励工程对齐业务 KPI；② 模拟器/Sim2Real 真实性；③ 离线评估置信度；④ 监控 + 漂移检测；⑤ 业务方协同（奖励函数签字）。一个完整闭环包括 **策略训练 → 离线评估 → 影子模式 → 灰度发布 → 在线监控 → 反馈回流** 六步。
 
 #### 关键细节
 
@@ -333,18 +333,18 @@ RL 工业落地难，**70% 不是算法问题，是工程问题**。核心难点
 
 #### 工业落地与案例
 
-- **字节跳动 / 抖音 RL 推荐**：长期 GMV +8%，但建立了一整套监督学习 → Bandit → DRL → MARL 的层级架构。
-- **美团 / 饿了么 派单 RL**：配送效率 +10%，背后是 Bandit + 离线 RL + 实时重排的三层组合。
+- **字节跳动 / 抖音 RL 推荐**：长期 GMV 有显著提升（具体幅度本书无法给出可核验出处，此处按【经验】档处理），背后建立了一整套监督学习 → Bandit → DRL → MARL 的层级架构。
+- **美团 / 饿了么 派单 RL**：配送效率有显著提升（幅度高度依赖订单结构、运力与时段分布，不宜引用单一数字），背后是 Bandit + 离线 RL + 实时重排的三层组合。
 - **Uber / Lyft 司机匹配 RL**：订单匹配率大幅提升，Offline RL + Contextual Bandit 是技术核心。
 - **Airbnb 动态定价**：Contextual Bandit + RL 提升房东收益；早期栽过 Reward Hacking 的跟头，引入多重奖励 + 守门策略后稳定。
 - **LinkedIn Feed Ranking**：长期活跃度优化，Bandit + DRL 混合架构。
-- **京东 供应链 RL**：库存 + 履约联合优化，毛利 +5%。
+- **京东 供应链 RL**：库存 + 履约联合优化，毛利有可观的提升（提升幅度随品类、季节与履约半径而异，本书无法给出可核验的统一数字，此处按【经验】档处理）。
 - **网易雷火 / 米哈游 游戏 NPC AI**：PPO / SAC 训练 NPC 行为，并通过 RL + Self-Play 提升对抗强度。
-- **顺丰 / Shein 路径规划 RL**：连续动作 SAC + 仿真器，物流成本 -8%。
+- **顺丰 / Shein 路径规划 RL**：连续动作 SAC + 仿真器，物流成本有明显下降（具体幅度本书无法给出可核验出处，此处按【经验】档处理）。
 
 #### 常见追问
 
-- Q：RL 项目从立项到产生业务价值要多久？答：单点 0→1 验证 1-3 个月；部门级 1→10 半年到一年；企业级 10→100 一般 1-2 年。
+- Q：RL 项目从立项到产生业务价值要多久？答：单点 0→1 验证 1-3 个月；部门级 1→10 半年到一年；企业级 10→100 一般 1-2 年（经验性量级估计，随团队与场景而异，此处按【经验】档处理）。
 - Q：怎么衡量 RL 项目的 ROI？答：分三层——业务 ROI（直接 GMV / CTR）、技术 ROI（决策自动化程度替代人力）、战略 ROI（团队 AI 能力水位提升）。
 - Q：RL 团队需要哪些角色？答：算法工程师 + 平台工程师 + 业务方 PM + 数据工程师 + 实验科学家，缺一不可。
 - Q：未来 RL 的最大机会在哪？答：**RL for LLM、Agent RL、Multi-Agent LLM 系统**——用 RL 把大模型从"对话工具"升级为"决策 Agent"。
@@ -360,13 +360,13 @@ RL 工业落地难，**70% 不是算法问题，是工程问题**。核心难点
 - **LLM 对齐**：RLHF / DPO / GRPO 是 2025 年最重要的工程范式演进；理解为什么 OpenAI 用 PPO、DeepSeek 用 GRPO、Anthropic 用 RLAIF。
 - **离线安全**：不能在线试错就用 Offline RL（CQL / IQL / ReBRAC）；TD3+BC 是工程兜底。
 - **多智能体协同**：CTDE 范式 + 信用分配 + 通信是 MARL 的三大支柱。
-- **工业闭环能力**：训练-评估-灰度-监控-反馈五步法是 RL 工程的核心，也是区分"调参工程师"和"系统架构师"的分水岭。
+- **工业闭环能力**：从 MDP 抽象、训练、评估、灰度、监控到反馈回流的六步闭环是 RL 工程的核心，也是区分"调参工程师"和"系统架构师"的分水岭。
 
 ---
 
 ## 4 本章小结
 
-> 本面试真题集收录 7 道题，覆盖 RL 算法选型、奖励工程、离线 RL、MARL、RLHF / 对齐、工业落地六大主题。
+> 本面试真题集收录 7 道题，覆盖 RL 算法选型、基于模型 vs 无模型、奖励工程、离线 RL、MARL、RLHF / 对齐、工业落地七大主题。
 > 题目与本章 §1-§7 内容一一对应，建议结合原文章节交叉学习。
 
 ### 4.1 推荐学习路径

@@ -40,15 +40,15 @@
 **第一层：先收集证据再做假设。** 拿到"突然变慢"的首要动作不是立刻改 SQL，而是收集"基线 vs 当前"的差异：
 
 - **数据量**：对比 `T-1` 与 `T-n` 的输入行数与输入字节数（看 Hive 的 `INPUT_RECORDS` / Spark 的 `input bytes`）。数据量涨 3 倍时间是会涨 3 倍，但若只涨 50% 就涨到 4 小时，那是别的问题。
-- **集群环境**：查 YARN / K8s 的资源水位——是不是别的作业抢占了队列？Netflix 在内部 SRE 文档里反复强调"先看邻居"：性能退化 80% 是邻居造成的。
+- **集群环境**：查 YARN / K8s 的资源水位——是不是别的作业抢占了队列？Netflix 的 SRE 实践里反复强调"先看邻居"：性能退化中有相当比例来自邻居的资源争抢（该比例与 Netflix 相关材料的出处本节均无法核实，此处按【经验】档处理）。
 - **输入数据分布**：上游是不是新增了大量 `NULL` 或某热点键？这是数据倾斜的最常见诱因。
-- **配置变更**：上游表是否切了分区格式（ORC → TextFile）、改了 `bucket` 数、做了 Schema 变更？Meta（Facebook）2021 年公开的 Hive 优化经验里专门强调"Schema 与表格式是隐性回归源"。
+- **配置变更**：上游表是否切了分区格式（ORC → TextFile）、改了 `bucket` 数、做了 Schema 变更？Meta（Facebook）的公开 Hive 优化经验把"Schema 与表格式"列为隐性回归源（该材料的名称与链接本节无法核实，引用时请自行查证）。
 
 **第二层：分四类根因做系统排查。**
 
-- **数据膨胀 / 上游变更类**：`COUNT(DISTINCT user_id)` 这类算子对 `NULL` 极敏感——上游一旦引入"未登录用户"占位值，distinct 会瞬间膨胀到全量。Uber 的 ETL 工程规范明确要求"对 distinct 输入做空值预过滤"。
+- **数据膨胀 / 上游变更类**：`COUNT(DISTINCT user_id)` 这类算子对 `NULL` 极敏感——上游一旦引入"未登录用户"占位值，distinct 会瞬间膨胀到全量。Uber 的 ETL 工程实践里强调过"对 distinct 输入做空值预过滤"这一取向（Uber 是否发布过该规范及其原文，本节无法核实，此处按【经验】档处理）。
 - **数据倾斜类**：Spark UI 上某个 stage 有 3 个 task 跑了 2 小时，其余 5 分钟——典型长尾。常见原因是 `GROUP BY` 热点键（如大商家、热门商品、热门城市）。
-- **小文件 / 碎片类**：上游表的小文件数量爆炸（每天多 1 万文件），文件 open 与 split 阶段吃满 driver。Meta《Scaling the Facebook Data Warehouse to 300 PB》论文里专门讨论过这个。
+- **小文件 / 碎片类**：上游表的小文件数量爆炸（每天多 1 万文件），文件 open 与 split 阶段吃满 driver。Meta《Scaling the Facebook Data Warehouse to 300 PB》论文里专门讨论过这个（该论文的作者等完整著录信息本节无法核实，引用时请以会议官方论文库为准）。
 - **资源/配置类**：YARN 队列换了默认 AM 资源、Spark 的 `spark.sql.shuffle.partitions` 被改回默认 200 但数据量已涨 10 倍、Hive 的 `tez.am.resource.memory.mb` 不足。
 
 **第三层：给出可执行的优化清单。** 按"立竿见影 → 中期 → 长期"分级：
@@ -57,7 +57,7 @@
 - **中期修复**：上游约定按 `dt` 切片、做小文件 compaction（用 Iceberg / Hudi 自带的 `rewrite_data_files`）、对热点键走独立 ETL 链路。
 - **长期治理**：建基线（baseline）预警——任何作业超时 1.5× 就告警；建立影响面分析（修改表结构前自动推演下游作业）。
 
-**第四层：与 DataWorks 的对应。** 在阿里 DataWorks 上排查类似问题，应直接利用 DataWorks 的 **运维中心** + **作业基线告警** + **智能诊断**：DataWorks Copilot（2024）内置了"作业变慢自动归因"，会直接给出"该作业的 Shuffle 写量增长 200%"或"上游表新增分区数爆炸"的结论，是头部企业典型的"AI 增强 SRE"实践。
+**第四层：与 DataWorks 的对应。** 在阿里 DataWorks 上排查类似问题，应直接利用 DataWorks 的 **运维中心** + **作业基线告警** + **智能诊断**：DataWorks Copilot 提供了"作业变慢自动归因"能力，可给出"该作业的 Shuffle 写量较基线明显放大"或"上游表新增分区数爆炸"这类结论，是头部企业典型的"AI 增强 SRE"实践（该产品能力的具体版本、边界与输出本节无法核实，此处按【经验】档处理）。
 
 **3. 常见陷阱**
 
@@ -65,23 +65,23 @@
 - **只看 task 数量不看 task 时长分布。** Spark UI 里看 stage 耗时中位数与最大值的差距，比看 task 数有用得多。
 - **忽略"邻居"效应。** YARN 队列公平调度下，新上线的大作业会挤掉老作业的资源——慢的不是它，是别人抢了它的资源。
 - **不验证就上线。** "调参后跑一次变快了"是最低标准；要验证"调参后连续 7 天稳定"，否则只是把问题推迟。
-- **把根因都归到代码。** 80% 的突增是数据侧的，不是 SQL 侧的。
+- **把根因都归到代码。** 突增的根因多数在数据侧，而不是 SQL 侧（该比例本节无法给出可溯源统计，此处按【经验】档处理）。
 
 **4. 追问预测**
 
 - **「Spark UI 里 stage 耗时阶梯式上升，每个 stage 都比上一个慢 2 倍，是什么原因？」** 答：典型数据倾斜 + Shuffle 退化。先看每个 stage 的输入/输出数据量比例——理论上是 1:1，但实际倾斜会让部分 partition 落盘数据放大 N 倍。
 - **「上游表新增了一列 NULL 值，导致下游所有 `COUNT(DISTINCT col)` 跑挂，怎么救？」** 答：短期——把 SQL 改写成 `COUNT(DISTINCT CASE WHEN col IS NOT NULL THEN col END)`；长期——上游约定 NOT NULL 约束或对占位值用单独 sentinel 列。
-- **「Hudi / Iceberg 表上做 ETL 也会出现这种问题吗？」** 答：会，但形态不同——湖表的常见性能回归是 **compaction 积压**（小文件数爆炸）和 **z-order 列错选**（聚簇效果失效）。DataWorks 的湖仓 ETL 任务一般会开 `compaction.scheduleinline=true` 自动合并。
+- **「Hudi / Iceberg 表上做 ETL 也会出现这种问题吗？」** 答：会，但形态不同——湖表的常见性能回归是 **compaction 积压**（小文件数爆炸）和 **z-order 列错选**（聚簇效果失效）。应对办法是把 compaction 纳入常规调度：Hudi 侧打开内联 compaction（`hoodie.compact.inline`，配合 `hoodie.compact.schedule.inline`）让写入时顺带合并小文件，Iceberg 侧用 `rewrite_data_files` 定期重写。DataWorks 湖仓 ETL 任务是否默认开启此类自动合并、默认值如何，本节无法给出可核验的产品文档出处，此处按【经验】档处理。
 - **「作业加了自适应执行（AQE）反而更慢了？」** 答：AQE 在数据量极大时会反复触发 broadcast 阈值探测，反而增加 driver 开销。需要在 `spark.sql.adaptive.enabled=true` 的同时关闭 `autoBroadcastJoinThreshold` 的自动调整。
 
 **5. 参考资料**
 
-- Meta（Facebook）发表于 SIGMOD 2013 的《Scaling the Facebook Data Warehouse to 300 PB》论文——小文件、数据倾斜与调度在大规模 ETL 中的真实形态。
+- Meta（Facebook）发表于 SIGMOD 2013 的《Scaling the Facebook Data Warehouse to 300 PB》论文——小文件、数据倾斜与调度在大规模 ETL 中的真实形态（该论文的作者等完整著录信息本节无法核实，引用时请以会议官方论文库为准）。
 - 阿里 MaxCompute / DataWorks 公开技术材料与《大数据之路》——作业基线、智能诊断、运维大屏的工业实践。
 - Apache Spark 官方文档中关于 AQE（Adaptive Query Execution）、动态资源分配、Shuffle 调优的章节——相关参数的权威出处。
 - Uber Engineering 关于 Hudi 与 Spark 增量 ETL 的公开文章——湖仓场景下 compaction 与数据倾斜的工程解法。
 - Netflix Technology Blog 关于 Spark 性能调优与 SparkUI 排查思路的系列文章——头部流媒体公司的真实 SRE 经验。
-- **中国移动** 经营分析系统的 Hive / Spark 作业基线告警实践——百亿级计费话单场景下"超时 1.3× 即告警 + 智能归因"机制，公开技术大会多次分享，是运营商级 ETL 治理的代表性做法。
+- **中国移动** 经营分析系统的 Hive / Spark 作业基线告警实践——百亿级计费话单场景下按超时倍数设阈告警 + 智能归因的机制，是运营商级 ETL 治理的代表性做法（该实践在公开技术大会上被分享过，但本节无法给出该分享的可核验出处与其中给出的具体阈值，引用时请自行查证）。
 - **京东** 数据中台基于自研调度平台对 Spark 作业超时与上游数据膨胀异常的工程响应——作业历史回放与影响面推演是国内电商大厂的代表性做法。
 - **宁德时代** 工业大数据平台在电池质检 ETL 上的 Iceberg compaction 与小文件治理实践——制造行业对"上游传感器数据小文件爆炸"的典型工程解法。
 - **中国电信** —— 中国电信的 BSS 数据湖——计费、营账、客户数据统一入湖 + 实时营销推荐。
@@ -94,7 +94,7 @@
 - **中国移动** —— 中国移动的实时话单 Flink 引擎——PB 级话单走 Flink 流 + Spark 小时级对账。
 - **中国联通** —— 中国联通网络运维数据平台——告警、性能、配置的统一存储与 AI 故障预测。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。其中以「XX 公司 / 机构 + 公开实践 / 公开介绍 / 公开分享」形式出现的条目，以及各条中的规模量级（PB 级、亿级、百亿级等），本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -141,7 +141,7 @@
 **第四层：进阶方案。**
 
 - **倾斜键单独处理（Skew Join Optimization）**：识别热点 key 后，将其 join 单独切出来走独立链路（或加随机后缀），最后 `UNION` 回去。Hive on Tez 的 `Skew Join Optimization`、Spark 3.x 的 `AQE Skew Join` 都内置了这一能力。
-- **过滤占位值**：把 `NULL` / `-1` 等无效值提前过滤掉，能消除 50%+ 的倾斜而不引入额外复杂度。
+- **过滤占位值**：把 `NULL` / `-1` 等无效值提前过滤掉，往往能消除相当比例的倾斜而不引入额外复杂度（幅度取决于上游脏数据的实际占比，此处按【经验】档处理，不宜引用单一数字）。
 - **改写业务逻辑**：如果热点是"业务允许的"（如大商家），业务侧可以接受"按商家分别聚合再 sum"，本质是把热点打散到多个 job。
 
 **第五层：Hive vs Spark 的差异。** Hive on Tez 通过 `hive.tez.auto.reducer.parallelism` 与 `hive.optimize.skewjoin` 内置倾斜处理；Spark 通过 AQE（`spark.sql.adaptive.skewJoin.enabled`）在运行时检测倾斜并拆分热点 partition。Spark 3.x 的 AQE 比 Hive 更细粒度，但 Hive 在 MR/Tez 上的稳定性更好。
@@ -165,10 +165,10 @@
 
 - Apache Spark 官方文档中关于 AQE、Skew Join、Broadcast Join 的章节——倾斜处理的权威参数与行为定义。
 - 阿里 MaxCompute / DataWorks 公开技术材料与《大数据之路》——MaxCompute 的小表广播与倾斜优化在国内大数仓中的实践。
-- Meta（Facebook）发表于 SIGMOD 的若干关于 Hive 倾斜优化的内部工程文档（公开摘要版）——超大规模集群上识别与处理倾斜的真实经验。
+- Meta（Facebook）关于 Hive 倾斜优化的公开工程经验材料——超大规模集群上识别与处理倾斜的典型经验（该材料的名称、作者、年份与链接本节均无法核实，引用时请自行查证，此处按【经验】档处理）。
 - Uber Engineering 关于 Spark 倾斜优化的公开文章——倾斜诊断、加盐与分桶的工业级组合实践。
 - Apache Hive 官方文档关于 `hive.optimize.skewjoin` 与 `hive.groupby.skewindata` 的章节——Hive 内置倾斜处理的语义。
-- **招商银行** 湖仓一体架构下的 Hive ETL 数据倾斜治理——亿级零售客户的金融交易明细在 distinct 与 join 上的倾斜案例，公开金融科技峰会多次披露。
+- **招商银行** 湖仓一体架构下的 Hive ETL 数据倾斜治理——亿级零售客户的金融交易明细在 distinct 与 join 上的倾斜案例（该分享的可核验出处本节无法提供，引用时请自行查证）。
 - **米哈游** 原神 / 崩坏系列日志分析中针对高 DAU 玩家聚集导致的 DISTINCT 倾斜——游戏行业典型的"少数玩家产生大量事件"的热点键处理实战。
 - **Shein / Temu** 跨境电商在爆款商品评论与订单维度上的数据倾斜处理——零售/电商行业典型的"商品热度二八分布"工程范式。
 - **Shein** —— Shein 跨境供应链实时数据——日均千万订单走实时分发 + 离线对账，柔性供应链的核心。
@@ -181,7 +181,7 @@
 - **京东零售** —— 京东零售双 11 实时特征极限压力——KV 热点、Flink 反压、Schema 演进的工程化解法。
 - **唯品会** —— 唯品会特卖场景的数据平台——日清模式 + 离线数仓 + 实时推荐三层结构。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。其中以「XX 公司 / 机构 + 公开实践 / 公开介绍 / 公开分享」形式出现的条目，以及各条中的规模量级（PB 级、亿级、百亿级等），本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -226,7 +226,7 @@
 
 - **`EXPLAIN` / `EXPLAIN EXTENDED` / `EXPLAIN COST`**：看执行计划，特别注意是否有 `Exchange`（即 Shuffle）与 `BroadcastExchange`。
 - **Spark UI**：stage DAG、task 时长分布、Shuffle 读写量、GC 时间。
-- **DataWorks 智能诊断**：阿里云用户可以直接看 DataWorks Copilot 给出的"瓶颈 stage + 优化建议"——它本质上是对 `EXPLAIN` 与 Spark UI 的 AI 化解读。
+- **DataWorks 智能诊断**：阿里云用户可查看 DataWorks Copilot 给出的"瓶颈 stage + 优化建议"类提示——它本质上是对 `EXPLAIN` 与 Spark UI 的 AI 化解读（该产品能力的具体版本与输出本节无法核实，此处按【经验】档处理）。
 
 **3. 常见陷阱**
 
@@ -252,7 +252,7 @@
 - 华为云 DataArts 公开材料——国内大厂对 Spark 多表 join 优化的工程实践。
 - **网易雷火** 永劫无间 / 逆水寒日志分析中星型模型 + 多表 join 的优化实战——游戏行业典型的"玩家 × 副本 × 装备 × 道具"四维 join 调优案例。
 - **国家电网 / 南方电网** 电力调度数仓对"设备 × 线路 × 气象 × 用电负荷"多源关联的工程经验——能源行业典型的"事实表 join 多张慢变维表"场景。
-- **平安银行** 金融风控数仓在"客户 × 账户 × 交易 × 设备指纹"星型模型上的 Broadcast / SMB Join 取舍，公开发表在金融科技行业大会。
+- **平安银行** 金融风控数仓在"客户 × 账户 × 交易 × 设备指纹"星型模型上的 Broadcast / SMB Join 取舍（该实践据称公开发表于金融科技行业大会，本节无法给出可核验的材料名称与链接，引用时请自行查证）。
 - **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
 - **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
 - **中国海油** —— 中国海油海上生产数据平台——钻井平台、船舶、生产数据的实时采集与监控。
@@ -263,7 +263,7 @@
 - **中国石油** —— 中国石油勘探数据湖——地震、测井、钻井多源异构数据入湖 + AI 油气识别。
 - **南方电网** —— 南方电网营销数据中台——客户、电价、计费、服务的统一数据底座。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。其中以「XX 公司 / 机构 + 公开实践 / 公开介绍 / 公开分享」形式出现的条目，以及各条中的规模量级（PB 级、亿级、百亿级等），本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -311,7 +311,7 @@ Kafka (Source)
 - **聚合与窗口**：
   - **窗口类型**：滚动（`TUMBLING`）、滑动（`SLIDING`）、会话（`SESSION`）。电商场景大多用滚动 1 分钟 / 5 分钟。
   - **Watermark**：必须设置 `withWatermark("event_time", "10 minutes")`，否则状态无限增长，最终 OOM。
-  - **状态后端**：默认 RocksDB（推荐）；HDFSBackend 在大状态时 I/O 不可控。
+  - **状态后端**：Spark 的默认状态存储是 HDFSBackedStateStore（状态较小时够用，大状态时 I/O 不可控），大状态生产上应显式切到 RocksDB（`spark.sql.streaming.stateStore.providerClass`）。
 
 - **Sink（写入 OLAP）**：
   - **Hologres / Doris / StarRocks**：用主键 `INSERT ... ON CONFLICT UPDATE` 或 `UPSERT`，实现幂等 + 乱序覆盖。
@@ -331,7 +331,7 @@ Kafka (Source)
 
 - **阿里 Real-time Compute (Flink 版)** 是替代 Spark Structured Streaming 的另一选择——Flink 在流处理语义上更原生（事件时间、watermark、状态后端都是一等公民）。
 - **Hologres / SelectDB / AnalyticDB** 是阿里系 OLAP 主力，DataWorks 提供可视化配置 + 智能诊断。
-- **DataWorks Copilot（2024+）**：能直接根据自然语言描述生成 Structured Streaming 作业模板（含 checkpoint 路径、trigger 间隔、watermark 字段），是 AI 增强流式 ETL 的工业实践。
+- **DataWorks Copilot**：能根据自然语言描述生成 Structured Streaming 作业模板（含 checkpoint 路径、trigger 间隔、watermark 字段），是 AI 增强流式 ETL 的实践方向（该产品能力的具体版本与生成质量本节无法核实，此处按【经验】档处理）。
 
 **3. 常见陷阱**
 
@@ -344,10 +344,10 @@ Kafka (Source)
 
 **4. 追问预测**
 
-- **「Spark Structured Streaming vs Flink，选哪个？」** 答：**Flink 是流处理首选**——事件时间、watermark、状态后端、双流 Join 都是一等公民，Exactly-Once 语义更扎实。Spark Structured Streaming 优势在**与 Spark 离线作业共享代码与目录**，适合"实时增量 + 离线全量"的混合场景。Netflix 与 Uber 在大规模生产中倾向 Flink；LinkedIn 部分场景用 Structured Streaming 与批作业共享 UDF。
+- **「Spark Structured Streaming vs Flink，选哪个？」** 答：**Flink 是流处理首选**——事件时间、watermark、状态后端、双流 Join 都是一等公民，Exactly-Once 语义更扎实。Spark Structured Streaming 优势在**与 Spark 离线作业共享代码与目录**，适合"实时增量 + 离线全量"的混合场景。Netflix 与 Uber 在大规模生产中倾向 Flink；LinkedIn 部分场景用 Structured Streaming 与批作业共享 UDF（这几家公司的选型比例与依据本节无法给出可核验出处，此处按【经验】档处理，引用时请自行查证）。
 - **「Broadcast 维表大小限制是多少？」** 答：默认 10 MB（`spark.sql.autoBroadcastJoinThreshold`）；实际生产中 100 MB 也常工作，但 driver 内存要 ≥ 4 GB。**超过 1 GB 必须用 Lookup Join**。
 - **「Hologres 与 Doris 怎么选？」** 答：Hologres 与阿里生态深度集成（DataWorks / MaxCompute），PG 协议兼容；Doris 在国内互联网选型更多，社区活跃。**两者都能做实时 OLAP upsert**，性能差异更多在部署成本与运维成熟度。
-- **「怎么保证 Exactly-Once？」** 答：四道防线——① Kafka Source 端 offset 由 checkpoint 管理；② Sink 端使用幂等写入（主键 upsert / Hudi precombine）；③ 状态后端做 Checkpoint（默认 RocksDB）；④ 业务侧接受"端到端 at-least-once + sink 幂等 = 端到端 exactly-once"的工程组合。**单靠 Kafka 事务不能保证 Exactly-Once**，因为 sink 失败重试时仍可能重复。
+- **「怎么保证 Exactly-Once？」** 答：四道防线——① Kafka Source 端 offset 由 checkpoint 管理；② Sink 端使用幂等写入（主键 upsert / Hudi precombine）；③ 状态后端做 Checkpoint（Spark 默认 HDFSBackedStateStore，大状态生产上切 RocksDB）；④ 业务侧接受"端到端 at-least-once + sink 幂等 = 端到端 exactly-once"的工程组合。**单靠 Kafka 事务不能保证 Exactly-Once**，因为 sink 失败重试时仍可能重复。
 
 **5. 参考资料**
 
@@ -359,7 +359,7 @@ Kafka (Source)
 - LinkedIn Engineering 关于 Brooklin 与 Kafka 实时管道的公开文章——Kafka 在头部企业的大规模运维经验。
 - **滴滴** 实时订单分配基于 Kafka + Flink 的端到端流式 ETL——出行行业万级 QPS 下维表关联（司机、商户、用户、地理位置）的工程方案。
 - **货拉拉 / 曹操出行** 实时运单 / 调度数据的 Structured Streaming 实践——物流与出行行业对"维表 TTL 与晚到数据"处理的典型做法。
-- **中信证券** 金融行情实时 ETL 的 Kafka → 流处理 → OLAP（ClickHouse / Hologres）链路，对 Exactly-Once 与乱序处理最严苛，金融行业公开材料多次披露。
+- **中信证券** 金融行情实时 ETL 的 Kafka → 流处理 → OLAP（ClickHouse / Hologres）链路，对 Exactly-Once 与乱序处理的要求最严苛；该实践在金融行业的公开材料中被提及，但本节无法给出可核验的材料名称与链接，引用时请自行查证。
 - **京东物流** —— 京东物流仓储数据中台——AGV、库存、订单的多源整合与实时监控。
 - **滴滴** —— 滴滴实时订单与司机画像——万级 Flink 作业 + Iceberg 增量读下的冲突与 compaction 治理。
 - **货拉拉** —— 货拉拉城配实时调度——Flink 实时订单分发 + Spark 离线对账 + 路径优化。
@@ -370,7 +370,7 @@ Kafka (Source)
 - **滴滴** —— 滴滴实时订单与司机画像——万级 Flink 作业 + Iceberg 增量读下的冲突与 compaction 治理。
 - **货拉拉** —— 货拉拉城配实时调度——Flink 实时订单分发 + Spark 离线对账 + 路径优化。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。其中以「XX 公司 / 机构 + 公开实践 / 公开介绍 / 公开分享」形式出现的条目，以及各条中的规模量级（PB 级、亿级、百亿级等），本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -394,7 +394,7 @@ Kafka (Source)
 - **消除 Shuffle**：Common Join 的最大代价是 Shuffle——大表数据按 join key 重哈希分区，网络 IO 巨大；MapJoin 直接避免。
 - **消除 Sort**：Sort Merge Join 需要先按 join key 排序，CPU 密集；MapJoin 的哈希 probe 是 O(1)。
 - **并行度更高**：Common Join 受限于 Reduce 数；MapJoin 的并行度等于大表的 split 数，可以更大。
-- 实测经验：在 Hive 上对一个 100 GB 大表 join 100 MB 小表，**MapJoin 比 Common Join 快 5–10 倍**；Meta 内部 benchmark 显示 MapJoin 在维度表场景下能省 70%+ 的 wall-clock。
+- 实测经验（本书无法给出可溯源的 benchmark 出处，此处按【经验】档处理）：在 Hive 上对一个 100 GB 大表 join 100 MB 小表，**MapJoin 相对 Common Join 常有数倍级别的加速**；维度表场景下的 wall-clock 收益同样显著，但具体倍数高度依赖两表体积比、集群负载与数据分布，不宜引用单一数字。
 
 **第三层：典型适用场景。**
 
@@ -404,7 +404,7 @@ Kafka (Source)
 
 **第四层：硬性限制与失败模式。**
 
-- **小表大小限制**：Hive 默认 `hive.auto.convert.join.noconditionaltask.size` = 10 MB（旧版本 25 MB）；超过会被拒绝并 fallback 到 Common Join。Spark 的对应是 `spark.sql.autoBroadcastJoinThreshold`。
+- **小表大小限制**：Hive 默认 `hive.auto.convert.join.noconditionaltask.size` = 10 MB（另有小表判定开关 `hive.mapjoin.smalltable.filesize`，默认 25 MB）；超过会被拒绝并 fallback 到 Common Join。Spark 的对应是 `spark.sql.autoBroadcastJoinThreshold`。
 - **内存限制**：MapJoin 把小表加载到每台 executor 的内存。100 MB 小表 × 1000 个 executor = 100 GB 内存占用。**driver 内存也要够**——driver 要 broadcast 整个小表到每个 executor。
 - **键类型限制**：Hive 的 MapJoin 要求 join key 是**等值**且**类型一致**；`>=`、`<=` 这类非等值 join 走不了 MapJoin。
 - **不支持 FULL OUTER JOIN 的 MapJoin**：FULL OUTER 需要两侧都 probe，Hive 的 MapJoin 仅对小表做 probe（LEFT/INNER/RIGHT 适用）；FULL OUTER 必须走 Reduce。
@@ -416,7 +416,7 @@ Kafka (Source)
 - **何时禁用 MapJoin**：当小表实际很大（虽然 CBO 估计小）、或集群内存紧张、或 join 频繁触发 OOM——`SET hive.auto.convert.join = false` 强制 Common Join。
 - **结合 Bucket Join**：当小表 > 100 MB 但 < 10 GB，且两张表都能按相同 key 分桶时，Bucket Join 是 MapJoin 的替代——它把 join 成本从"运行时内存"挪到"写入时 Shuffle"。
 - **结合 Sort Merge Bucket Join**：进一步按排序加速，适合大表 join 中表。
-- **DataWorks 上的对应**：DataWorks 调度的 Hive 作业默认开启自动 MapJoin（`hive.auto.convert.join=true`），并在 Copilot 智能诊断里给出"建议 MapJoin"的优化提示——这是阿里云上数仓 ETL 最常见的自动优化。
+- **DataWorks 上的对应**：DataWorks 调度的 Hive 作业默认开启自动 MapJoin（`hive.auto.convert.join=true`；DataWorks 侧是否默认开启该开关、默认值如何，本节无法给出可核验的产品文档出处，此处按【经验】档处理），并在 Copilot 智能诊断里给出"建议 MapJoin"的优化提示——这是阿里云上数仓 ETL 最常见的自动优化（Copilot 智能诊断的实际能力与输出本节无法核实，此处按【经验】档处理）。
 
 **3. 常见陷阱**
 
@@ -430,7 +430,7 @@ Kafka (Source)
 
 - **「Spark 的 BroadcastHashJoin 和 Hive 的 MapJoin 完全一样吗？」** 答：基本思想一致，**实现细节不同**——Spark 的 Broadcast 走 Netty / HTTP / BlockManager 传输（更高效），Hive 的 MapJoin 走 DistributedCache。Spark 3.x 的 AQE 还能在运行时**动态降级** Sort Merge Join 为 Broadcast Join，而 Hive 只能在编译期决定。
 - **「MapJoin 在 MaxCompute 上有什么特殊？」** 答：MaxCompute 默认对小表自动 broadcast（`odps.sql.mapjoin.memory.max` 控制上限），且支持 `MAPJOIN HINT`；但**小表大小按压缩前算**，所以 Parquet/ORC 表的实际广播阈值是压缩前的 10 MB。
-- **「10 GB 维度表怎么办？Broadcast 不可能。」** 答：分桶 + SMB Join、或者把维度表拆成"高频维度"（10 MB，MapJoin）和"低频维度"（10 GB，Bucket Join）。Uber 的维度建模实践里这种"按访问频率分层"是标准手法。
+- **「10 GB 维度表怎么办？Broadcast 不可能。」** 答：分桶 + SMB Join、或者把维度表拆成"高频维度"（10 MB，MapJoin）和"低频维度"（10 GB，Bucket Join）。Uber 的维度建模实践里这种"按访问频率分层"是常见手法（该实践的具体出处与做法细节本节无法核实，此处按【经验】档处理）。
 - **「MapJoin 走的是内存，那 executor GC 怎么调？」** 答：G1GC 通常更适合大内存场景；`-XX:MaxGCPauseMillis=200` 控制 GC 停顿；维度表的哈希表最好是预热好的（避免冷启动时频繁 GC）。
 
 **5. 参考资料**
@@ -438,10 +438,10 @@ Kafka (Source)
 - Apache Hive 官方文档中关于 MapJoin / `hive.auto.convert.join` 的章节——MapJoin 的语义与开关的权威出处。
 - Apache Spark 官方文档中关于 Broadcast Join / `autoBroadcastJoinThreshold` 的章节——Spark 引擎的对应实现。
 - 阿里 MaxCompute / DataWorks 公开技术材料与《大数据之路》——MaxCompute 的 MapJoin HINT、ODPS 优化器在国内大数仓中的实践。
-- Meta（Facebook）发表于 SIGMOD 的关于 Hive Join 优化的公开论文摘要——头部互联网企业 MapJoin 实测收益的来源。
+- Meta（Facebook）关于 Hive Join 优化的公开论文材料——头部互联网企业 MapJoin 收益经验的来源之一（该论文的名称、作者、年份与会议归属本节均无法核实，此处按【经验】档处理，引用时请自行查证）。
 - LinkedIn Engineering 关于 Pinot 与维度建模的公开文章——LinkedIn 在大规模数仓上对 MapJoin 的工程经验。
 - Cloudera / Hortonworks 关于 Hive MapJoin 调优的公开技术博客——历史最完整的 MapJoin 实操指南。
-- **永辉 / 屈臣氏 / 丝芙兰** 零售连锁业态下"事实表 join 商户 × 商品 × 门店 × 促销"维度的 MapJoin 实战——零售业的星型模型典型场景，公开数据中台演讲多次披露。
+- **永辉 / 屈臣氏 / 丝芙兰** 零售连锁业态下"事实表 join 商户 × 商品 × 门店 × 促销"维度的 MapJoin 实战——零售业的星型模型典型场景（该实践在公开的数据中台分享中被提及，但本节无法给出该分享的可核验出处，引用时请自行查证）。
 - **中国电信 / 中国联通** 运营商级星型模型下用户、计费、套餐、基站维表的 MapJoin 实践——PB 级话单 join 维度表的工程经验。
 - **美的 / 海尔** 制造业 MES 数仓中产品 BOM × 工位 × 设备 × 工艺参数维度表 MapJoin 案例，制造业典型的"小维度表 + 大量生产事实"调优范式。
 - **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
@@ -454,7 +454,7 @@ Kafka (Source)
 - **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
 - **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。其中以「XX 公司 / 机构 + 公开实践 / 公开介绍 / 公开分享」形式出现的条目，以及各条中的规模量级（PB 级、亿级、百亿级等），本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ### 8.3 本章小结
 
@@ -462,7 +462,7 @@ Kafka (Source)
 
 参考答题的通用心法：**先说清约束，再说清选项，最后说清取舍**。这一主题下所有问题的本质都是"在数据量、内存、Shuffle 之间做工程权衡"——面试官真正想听的是"你为什么这么选 + 失败的备选方案"，而不是"有哪几种做法"。
 
-本章与 DataWorks / MaxCompute / Hologres 落地强相关：在阿里云生态里这些题目几乎都对应着 DataWorks 调度 + MaxCompute 计算 + Hologres OLAP 的真实组合；DataWorks Copilot（2024+）能直接对 Spark UI 与作业历史做智能归因，是头部企业把"AI 增强 SRE"落到 ETL 工程上的典型实践。
+本章与 DataWorks / MaxCompute / Hologres 落地强相关：在阿里云生态里这些题目几乎都对应着 DataWorks 调度 + MaxCompute 计算 + Hologres OLAP 的真实组合；DataWorks Copilot 能对 Spark UI 与作业历史做智能归因，是头部企业把"AI 增强 SRE"落到 ETL 工程上的一个方向（该产品能力的具体版本与输出本节无法核实，此处按【经验】档处理）。
 
 ### 8.4 返回
 

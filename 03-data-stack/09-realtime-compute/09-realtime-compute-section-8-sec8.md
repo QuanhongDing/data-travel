@@ -8,7 +8,7 @@
 
 ### 8.1 全景视图
 
-| 原 PDF §N.M | 主题 | 题号范围 | 收录题数 | 主/辅 |
+| 原 PDF §N.M | 主题 | 题号范围 | 原题号数 | 主/辅 |
 | --- | --- | --- | :---: | --- |
 | §13.1 | 实时数据处理核心组件基础概念与特性 | 13.1.1, 13.1.2, 13.1.4, 13.1.5 | 4 | 主 |
 | §13.2 | Flink 与 Kafka 集成开发与数据流转 | 13.2.1, 13.2.3, 13.2.4 | 3 | 主 |
@@ -18,7 +18,7 @@
 | §14.5 | 大规模集群下的流处理管道设计与调优 | 14.5.2, 14.5.4, 14.5.5 | 3 | 辅 |
 | §18.4 | 实时特征计算与流式处理 | 18.4.1, 18.4.4 | 2 | 辅 |
 
-> 收录 20 道题，覆盖 7 个原 PDF 主题、5 大横切能力（Flink 引擎对比、状态后端、Exactly-Once、Watermark/事件时间、Flink CDC、反压）。
+> 上表汇总原题库在 7 个主题下的题号分布（共 20 道候选）；本节收录其中 7 道深度作答，覆盖 5 大横切能力（Flink 引擎对比与选型、状态后端与 Exactly-Once、时间语义与水位线、Flink CDC、反压）。
 
 ### 8.2 Flink 引擎对比与状态后端
 
@@ -53,15 +53,15 @@
 
 - **业务延迟要求 < 1 秒** → Flink（真正流 + 事件时间 + 复杂窗口）。
 - **已有 Spark 体系 / 团队主要做离线 + 准实时** → Spark Structured Streaming（复用同一套代码）。
-- **简单流处理 + 不想搭集群 / 业务就是 Kafka 生态** → Kafka Streams（LinkedIn 全公司部署超 1000+ Kafka Streams 应用）。
+- **简单流处理 + 不想搭集群 / 业务就是 Kafka 生态** → Kafka Streams（LinkedIn 在全公司部署了上千个 Kafka Streams 应用；该规模数字来自其工程团队的公开分享，本节未核到可引用的公开出处，按【经验】档处理）。
 - **复杂 CEP / 状态化聚合 / 多流 Join** → Flink 几乎是唯一选择（Uber AthenaX、阿里 Blink 都选了 Flink）。
 
 **第四层：行业真实决策。**
 
 - **Uber AthenaX**：基于 Flink 重写了早期基于 Storm 的流处理，统一支撑实时特征、订单分发、风控，是"复杂流处理选 Flink"的代表案例。
 - **LinkedIn**：Kafka Streams 的母公司，部署了上千个 Kafka Streams 应用做"轻量级流处理"，但复杂场景（推荐 / 监控）仍用 Flink/Samza。
-- **阿里 Blink**：基于 Flink 改造为 Blink，支撑双 11 万亿级实时大屏，是国内 Flink 复杂场景的代表。
-- **字节**：Flink on K8s 支撑抖音 / TikTok 全平台实时业务，PB 级吞吐。
+- **阿里 Blink**：基于 Flink 改造为 Blink，支撑双 11 万亿级实时大屏（该规模数字本节未核到可引用的公开出处，按【经验】档处理），是国内 Flink 复杂场景的代表。
+- **字节**：Flink on K8s 支撑抖音 / TikTok 全平台实时业务，PB 级吞吐（该量级本节未核到可引用的公开出处，按【经验】档处理）。
 - **Netflix**：Flink + Iceberg 做实时 AB 测试和指标加工。
 
 **第五层：演进趋势。** Apache Beam 是 Google 推的"引擎抽象层"（统一 Flink / Spark / Google Dataflow 的 API），但落地以 Flink 为主。**真正的结论是：复杂流处理 = Flink，微批复用 = Spark，轻量流 = Kafka Streams，没有银弹**。
@@ -85,8 +85,8 @@
 - Paris Carbone 等「Apache Flink: Stream and Batch Processing in a Single Engine」（2015 Bulletin of the IEEE）——Flink 流批一体架构的原始论文。
 - Matei Zaharia《Structured Streaming: A Declarative API for Real-Time Applications in Apache Spark》（SIGMOD 2018）——Spark 流批统一的官方论述。
 - Apache Kafka Streams 官方文档 `architecture` 章节——KTable / GlobalKTable / Interactive Queries 的最权威定义。
-- Uber Engineering AthenaX 公开博客——Flink 重构实时特征平台的实战经验。
-- LinkedIn Engineering 关于 Kafka Streams 部署规模的公开分享——上千 Kafka Streams 应用的运维范式。
+- Uber Engineering AthenaX 公开博客（本节未核到该文的标题、年份与链接，引用时请自行查证）——Flink 重构实时特征平台的实战经验。
+- LinkedIn Engineering 关于 Kafka Streams 部署规模的公开分享（本节未核到该分享的标题、年份与链接，其中的应用数量量级按【经验】档处理）——Kafka Streams 应用的大规模运维范式。
 - **阿里巴巴 Blink 在双 11 的应用** —— 万亿级事件流、Blink 自研 + Flink 内核、秒级大屏，是国内 Flink 复杂场景的代表。
 - **字节跳动 Flink on K8s** —— PB 级实时业务、Flink Operator 调度、支撑抖音 / TikTok 全平台，是云原生 Flink 的代表实践。
 - **滴滴实时订单分发** —— 万级 Flink 作业 + Iceberg 增量读下的 Flink 实时调度，是出行行业 Flink 实战代表。
@@ -96,7 +96,7 @@
 - **中国海油** —— 中国海油海上生产数据平台——钻井平台、船舶、生产数据的实时采集与监控。
 - **中国石油** —— 中国石油勘探数据湖——地震、测井、钻井多源异构数据入湖 + AI 油气识别。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料中，仅以「企业名 + 场景概述」形式罗列、未附任何文档名的行业实践条目，以及以「公开分享 / 公开演讲 / 公开博客 / 公开论文」形式出现却未给出文档名与年份的条目，连同各条中的规模量与性能数字（状态规模、QPS、吞吐、延迟、应用数量等），本节均未核到可引用的公开出处，属【经验】档表述，引用时请自行查证；带论文题名、官方文档章节名或博客标题的条目，指向对应的公开论文、官方文档与企业公开技术博客。
 
 ---
 
@@ -115,7 +115,7 @@
 
 **第二层：State 的两层分类。**
 
-- **Keyed State**：按 key 分区的状态，**只在 KeyedStream 上可用**（`keyBy` 之后）。类型包括 ValueState、ListState、MapState、ReducingState、AggregatingState。Flink 按 key 自动分区到并行算子的子任务上，保证**相同 key 的事件落到同一个 TaskManager 实例**，状态可被正确读写。
+- **Keyed State**：按 key 分区的状态，**只在 KeyedStream 上可用**（`keyBy` 之后）。类型包括 ValueState、ListState、MapState、ReducingState、AggregatingState。Flink 按 key 自动分区到并行算子的子任务上，保证**相同 key 的事件落到同一个并行子任务（subtask）上**，状态可被正确读写。
 - **Operator State**：算子级的状态，常用于 Source / Sink（Kafka offset、FlinkKafkaProducer 的事务状态等），与 key 无关。
 
 **第三层：三种 State Backend 的核心差异。**
@@ -130,14 +130,14 @@
 
 - **可扩容量**：状态落在本地磁盘，TB 级是常态；Memory/FsFS 受 TM 堆限制，单 TM 通常 ≤ 8-16 GB 状态。
 - **增量 Checkpoint**：Flink 1.13+ 的 RocksDB 增量 Checkpoint 只把新产生的 SST 文件上传到远程存储，**Checkpoint 耗时与状态大小解耦**——这是大状态场景能稳定运行的关键。
-- **代价**：读写要经过序列化（Java 对象 ↔ byte[]），吞吐比 FsFS 低 2-5 倍，需要更大的并发与并行度。
+- **代价**：读写要经过序列化（Java 对象 ↔ byte[]），吞吐明显低于 FsStateBackend（差距随 key/value 大小与序列化开销而异，本节无法给出可溯源的统一倍数，此处按【经验】档处理），需要更大的并发与并行度。
 
 **第五层：行业真实选型。**
 
-- **阿里 Blink**：核心链路（RMB 亿级 UV、千万级 QPS）几乎全部用 RocksDB，单作业状态 100GB-1TB 量级常态化。
-- **字节 Flink**：Flink on K8s + RocksDB 状态外挂到本地 SSD 卷，单 TM 可承载 50-200GB 状态。
+- **阿里 Blink**：核心链路（RMB 亿级 UV、千万级 QPS）几乎全部用 RocksDB，单作业状态 100GB-1TB 量级常态化（上述规模数字本节未核到可引用的公开出处，按【经验】档处理）。
+- **字节 Flink**：Flink on K8s + RocksDB 状态外挂到本地 SSD 卷，单 TM 可承载 50-200GB 状态（该状态容量区间本节未核到可引用的公开出处，按【经验】档处理）。
 - **美团实时数仓**：大状态作业（实时 Join 多流）用 RocksDB；小状态聚合（PV/UV）用 FsFS。
-- **Apache Flink 官方推荐**：超过 **1GB/任务** 的状态就用 RocksDB。
+- **Apache Flink 官方**：官方文档对**大状态场景推荐使用 RocksDB 状态后端**；「超过 **1GB/任务** 就换 RocksDB」并非官方文档给出的硬性阈值，只能按【经验】档理解（实际切换点应结合本地磁盘容量与增量 Checkpoint 开销综合判断）。
 
 **第六层：State 的常见陷阱与治理。**
 
@@ -164,8 +164,8 @@
 
 - Apache Flink 官方文档 `state backends` 章节——三种 State Backend 的权威定义与配置示例。
 - Flink 1.13 Release Notes 的 Incremental Checkpoint 部分——RocksDB 增量 Checkpoint 的设计动机与落地方法。
-- Paris Carbone 等关于 Flink 状态管理的公开演讲——Keyed State / Operator State 的内部实现。
-- Meta（Facebook）Stylus 团队的公开分享——Stylus（基于 Flink 的流处理）在状态管理上的实践。
+- Paris Carbone 等关于 Flink 状态管理的公开演讲（本节未核到该演讲的标题、年份与链接，引用时请自行查证）——Keyed State / Operator State 的内部实现。
+- Meta（Facebook）Stylus 团队的公开分享（本节未核到该分享的标题、年份与链接，引用时请自行查证）——Stylus（基于 Flink 的流处理）在状态管理上的实践。
 - **阿里巴巴 Blink 的状态治理** —— TB 级单作业状态 + 增量 Checkpoint + TTL 治理，是国内大状态作业的代表。
 - **字节跳动 Flink on K8s 的状态外挂** —— RocksDB 状态外挂到本地 SSD 卷 + 状态迁移到远端存储的运维范式。
 - **美团实时数仓的状态选型** —— 大状态 RocksDB + 小状态 FsFS 的混合实践。
@@ -175,7 +175,7 @@
 - **京东物流** —— 京东物流仓储数据中台——AGV、库存、订单的多源整合与实时监控。
 - **京东零售** —— 京东零售双 11 实时特征极限压力——KV 热点、Flink 反压、Schema 演进的工程化解法。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料中，仅以「企业名 + 场景概述」形式罗列、未附任何文档名的行业实践条目，以及以「公开分享 / 公开演讲 / 公开博客 / 公开论文」形式出现却未给出文档名与年份的条目，连同各条中的规模量与性能数字（状态规模、QPS、吞吐、延迟、应用数量等），本节均未核到可引用的公开出处，属【经验】档表述，引用时请自行查证；带论文题名、官方文档章节名或博客标题的条目，指向对应的公开论文、官方文档与企业公开技术博客。
 
 ---
 
@@ -247,9 +247,9 @@ Source EOS + Flink Checkpoint + Sink Two-Phase Commit = End-to-End EOS
 
 **4. 追问预测**
 
-- **「Barrier 对齐会带来什么副作用？」** 答：对齐期间上游被"卡住"，会加剧反压。Flink 1.11+ 提供 `AlignedCheckpointTimeout` 选项允许跳过对齐，但会牺牲精确一次 → 业务级权衡。
+- **「Barrier 对齐会带来什么副作用？」** 答：对齐期间上游被"卡住"，会加剧反压。Flink 1.11+ 起提供**未对齐 Checkpoint（unaligned checkpoint）**，后续版本可用 `execution.checkpointing.aligned-checkpoint-timeout` 让对齐超时的 Checkpoint 自动转为未对齐；未对齐快照会把在途数据一并落盘，因此**仍然保持精确一次语义**，代价是快照体积变大 → 这是「延迟 vs 快照开销」的权衡，不是一致性强度的降级。
 - **「Sink 不是 Kafka 怎么办？比如 MySQL / HDFS 怎么支持 EOS？」** 答：MySQL 通过幂等写入（PK 去重）或 `INSERT ... ON DUPLICATE KEY UPDATE`；HDFS 通过文件 Two-Phase Commit（写入 `.pending` 文件，commit 时 rename 为正式名）。
-- **「Exactly-Once 的代价是什么？」** 答：吞吐下降 30%-50%，延迟增加 100-200ms（两阶段提交的额外 round-trip）。如果业务能容忍 At-Least-Once + 幂等下游，应回退到 At-Least-Once。
+- **「Exactly-Once 的代价是什么？」** 答：吞吐与延迟都要付出代价——两阶段提交的额外 round-trip 会带来可观的吞吐下降与延迟上升（具体幅度与 Sink 实现、下游事务能力、Checkpoint 间隔强相关，本节无法给出可溯源的统一数字，此处按【经验】档处理）。如果业务能容忍 At-Least-Once + 幂等下游，应回退到 At-Least-Once。
 - **「Savepoint 怎么用？」** 答：`flink savepoint :jobId [targetDir]` 触发；恢复时 `flink run -s :savepointPath`。**0-1 升级、并行度修改、修复 bug 必须用 Savepoint**。
 
 **5. 参考资料**
@@ -258,16 +258,16 @@ Source EOS + Flink Checkpoint + Sink Two-Phase Commit = End-to-End EOS
 - Paris Carbone 等「Lightweight Asynchronous Snapshots for Distributed Dataflows」（arXiv: 1506.08603）——Flink Checkpoint 的原始算法论文。
 - Flink 官方文档 `fault tolerance` / `two-phase-commit-sink` 章节——权威实现细节。
 - Apache Kafka 官方文档 `design / transactions` 章节——Kafka EOS 的设计动机与 API。
-- LinkedIn Engineering 关于 Kafka 事务在生产环境的公开分享——Kafka EOS 在金融级场景的实践。
+- LinkedIn Engineering 关于 Kafka 事务在生产环境的公开分享（本节未核到该分享的标题、年份与链接，引用时请自行查证）——Kafka EOS 在金融级场景的实践。
 - **招商银行支付实时** —— Flink + Kafka EOS 保证支付链路不重不漏，是金融业 Exactly-Once 的代表案例。
 - **Uber AthenaX 实时特征** —— Flink + Kafka EOS 实现特征不重不漏，是出行行业 Exactly-Once 的代表。
 - **滴滴订单实时分发** —— Flink + Kafka EOS 支撑订单分配不丢不重，是订单分配场景的典型。
 - **Stripe 支付流水处理** —— 基于流处理 + EOS 的金融级支付流水处理，是支付行业的代表性架构。
 - **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
 - **京东数科** —— 京东数科的金融特征平台——支撑消费分期、信用支付等场景，特征口径与模型版本强一致。
-- **平安银行** —— 平安银行的数据分级与脱敏实践——把客户、账户、交易按敏感度分级，配合 ABAC 权限与脱敏网关，是国内金融业最完整的案例。
+- **平安银行** —— 平安银行的数据分级与脱敏实践——把客户、账户、交易按敏感度分级，配合 ABAC 权限与脱敏网关。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料中，仅以「企业名 + 场景概述」形式罗列、未附任何文档名的行业实践条目，以及以「公开分享 / 公开演讲 / 公开博客 / 公开论文」形式出现却未给出文档名与年份的条目，连同各条中的规模量与性能数字（状态规模、QPS、吞吐、延迟、应用数量等），本节均未核到可引用的公开出处，属【经验】档表述，引用时请自行查证；带论文题名、官方文档章节名或博客标题的条目，指向对应的公开论文、官方文档与企业公开技术博客。
 
 ---
 
@@ -278,7 +278,7 @@ Source EOS + Flink Checkpoint + Sink Two-Phase Commit = End-to-End EOS
 **1. 考察点**
 
 - 能否说清 **Event Time / Ingestion Time / Processing Time** 三种时间语义的真实含义，以及"为什么业务应该选 Event Time"。
-- 能否说清 **Watermark 的数学定义**（`Watermark(t) = max(arrival_time) - max_out_of_orderness`）及其"延迟与正确性的取舍"本质。
+- 能否说清 **Watermark 的数学定义**（`Watermark(t) = max(event_time) - max_out_of_orderness`）及其"延迟与正确性的取舍"本质。
 - 能否结合 Kafka EOS 解释"乱序事件 + 迟到事件"的处理策略（`allowedLateness` / `sideOutputLateData`）。
 - 加分项：能说出 **idleness detection**（分区空闲时 Watermark 不前进）这种细节。
 
@@ -297,10 +297,10 @@ Source EOS + Flink Checkpoint + Sink Two-Phase Commit = End-to-End EOS
 数学定义：
 
 ```
-Watermark(t) = max(arrival_time_so_far) - max_out_of_orderness
+Watermark(t) = max(event_time_so_far) - max_out_of_orderness
 ```
 
-其中 `max_out_of_orderness` 是业务能容忍的最大乱序时长。
+其中 `max(event_time_so_far)` 取已到达事件的**最大事件时间**（是业务时间，不是机器时钟），`max_out_of_orderness` 是业务能容忍的最大乱序时长。
 
 **第三层：乱序事件处理三件套。**
 
@@ -331,9 +331,9 @@ Kafka EOS（同一事务内提交数据 + offset）
 
 **第六层：行业实践。**
 
-- **阿里 Blink**：所有实时计算作业默认 Event Time + Watermark，乱序容忍 3-5 秒。
+- **阿里 Blink**：业务作业基本全部采用 Event Time + Watermark（仅监控类作业用 Processing Time），乱序容忍为秒级经验值（3-5 秒；本节未核到可引用的公开出处，按【经验】档处理）。
 - **字节 Flink**：在 Watermark 上加了**自适应乱序容忍**——根据历史乱序分布动态调整 `max_out_of_orderness`。
-- **Uber AthenaX**：实时订单事件用 Event Time + 5 秒乱序容忍，配合 60 秒迟到容忍 + 侧输出流做补偿。
+- **Uber AthenaX**：实时订单事件用 Event Time + 5 秒乱序容忍，配合 60 秒迟到容忍 + 侧输出流做补偿（该组经验参数本节未核到可引用的公开出处，按【经验】档处理）。
 - **滴滴订单分发**：订单事件用 Event Time + Watermark，按订单事件时间排序，避免处理时间乱序导致的派单顺序错乱。
 
 **3. 常见陷阱**
@@ -341,7 +341,7 @@ Kafka EOS（同一事务内提交数据 + offset）
 - **混淆"延迟"与"乱序"**：延迟是「事件到达时间晚」，乱序是「事件到达顺序与事件时间不一致」。两者都要靠 Watermark + allowedLateness 协同。
 - **忽略 Kafka partition 间乱序**：单 partition 有序不意味着 topic 有序——这是分布式系统的基本约束。
 - **Watermark 设过长**：容忍 1 小时乱序会让窗口延迟 1 小时才触发，业务几乎不能接受。
-- **Watermark 设过短**：容忍 1 秒乱序 → 5% 的事件被当迟到丢弃，统计偏差大。
+- **Watermark 设过短**：容忍 1 秒乱序 → 超出该容忍度的事件会被当作迟到丢弃（丢弃比例取决于上游实际的乱序分布，可能相当可观；本节未核到可溯源的统一百分比，按【经验】档处理），统计偏差大。
 
 **4. 追问预测**
 
@@ -353,8 +353,8 @@ Kafka EOS（同一事务内提交数据 + offset）
 
 - Flink 官方文档 `timely stream processing` / `generating watermarks` 章节——Watermark 策略的权威定义。
 - Tyler Akidau 等「The Dataflow Model: A Practical Approach to Balancing Correctness, Latency, and Cost in Massive-Scale, Unbounded, Out-of-Order Data Processing」（VLDB 2015）——Google Dataflow 提出的事件时间 + Watermark 模型，Flink 直接借鉴。
-- Flink Forward 大会关于 Event Time 与迟到数据处理的演讲——行业真实经验。
-- **阿里巴巴 Blink 的事件时间实践** —— 全链路 Event Time + 3-5 秒乱序容忍 + 侧输出流补偿，是国内 Event Time 实践的代表。
+- Flink Forward 大会关于 Event Time 与迟到数据处理的演讲（本节未核到该演讲的年份与链接，引用时请自行查证）——行业真实经验。
+- **阿里巴巴 Blink 的事件时间实践** —— 业务作业基本全部采用 Event Time（仅监控类作业用 Processing Time）+ 秒级乱序容忍（3-5 秒，经验值）+ 侧输出流补偿，是国内 Event Time 实践的代表。
 - **Uber AthenaX 的事件时间策略** —— 订单事件 Event Time + 5 秒乱序 + 60 秒迟到容忍 + 侧输出流补偿，是出行行业的真实落地。
 - **滴滴订单分发的事件时间排序** —— 按订单事件时间派单，避免处理时间乱序导致顺序错乱。
 - **米哈游游戏玩家行为** —— 玩家行为用 Event Time + Watermark + 跨副本异步入湖，是游戏行业实时事件流处理的代表。
@@ -363,7 +363,7 @@ Kafka EOS（同一事务内提交数据 + offset）
 - **中国移动** —— 中国移动的实时话单 Flink 引擎——PB 级话单走 Flink 流 + Spark 小时级对账。
 - **中国联通** —— 中国联通网络运维数据平台——告警、性能、配置的统一存储与 AI 故障预测。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料中，仅以「企业名 + 场景概述」形式罗列、未附任何文档名的行业实践条目，以及以「公开分享 / 公开演讲 / 公开博客 / 公开论文」形式出现却未给出文档名与年份的条目，连同各条中的规模量与性能数字（状态规模、QPS、吞吐、延迟、应用数量等），本节均未核到可引用的公开出处，属【经验】档表述，引用时请自行查证；带论文题名、官方文档章节名或博客标题的条目，指向对应的公开论文、官方文档与企业公开技术博客。
 
 ---
 
@@ -402,11 +402,11 @@ Kafka EOS（同一事务内提交数据 + offset）
 **第五层：状态膨胀的工程影响。**
 
 - 大状态（TB 级）+ Processing Time = 一旦 Failover 必须从 0 重建（无 Checkpoint 可恢复）；
-- Event Time + RocksDB + 增量 Checkpoint = Failover 1-5 分钟恢复。
+- Event Time + RocksDB + 增量 Checkpoint 下，Failover 恢复可控制在分钟级（经验值，随状态规模与远端存储带宽而异）。
 
 **第六层：行业真实选择。**
 
-- **阿里 Blink**：100% 业务作业用 Event Time，仅监控作业用 Processing Time。
+- **阿里 Blink**：业务作业基本全部用 Event Time，仅监控作业用 Processing Time。
 - **美团实时数仓**：交易、配送、营销等核心业务链路全部 Event Time；运维监控类用 Processing Time。
 - **米哈游玩家实时特征**：玩家行为用 Event Time（必须按行为时间排序），运维监控用 Processing Time。
 
@@ -426,15 +426,15 @@ Kafka EOS（同一事务内提交数据 + offset）
 
 - Tyler Akidau《Streaming 102: The World Beyond Batch》（2017）——事件时间 + Watermark 模型的完整论述，是实时系统的经典文献。
 - Flink 官方文档 `event time` / `processing time` / `ingestion time` 章节——三种时间语义的权威定义。
-- Google Dataflow 论文——三种时间语义的理论源头。
-- **阿里 Blink 全链路 Event Time 实践** —— 100% 业务作业 Event Time，是国内 Event Time 实践的代表。
+- Google Dataflow 论文，即 Tyler Akidau 等「The Dataflow Model」（VLDB 2015；完整题名与出处见 §13.2.3 参考资料）——三种时间语义的理论源头。
+- **阿里 Blink 全链路 Event Time 实践** —— 业务作业基本全部采用 Event Time，是国内 Event Time 实践的代表。
 - **美团实时数仓的时间语义选择** —— 核心业务 Event Time + 运维监控 Processing Time 的混合策略。
 - **米哈游玩家行为 Event Time 排序** —— 玩家行为按 Event Time 排序 + Watermark 推进，是游戏行业的代表实践。
 - **中国电信** —— 中国电信的 BSS 数据湖——计费、营账、客户数据统一入湖 + 实时营销推荐。
 - **中国移动** —— 中国移动的实时话单 Flink 引擎——PB 级话单走 Flink 流 + Spark 小时级对账。
 - **中国联通** —— 中国联通网络运维数据平台——告警、性能、配置的统一存储与 AI 故障预测。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料中，仅以「企业名 + 场景概述」形式罗列、未附任何文档名的行业实践条目，以及以「公开分享 / 公开演讲 / 公开博客 / 公开论文」形式出现却未给出文档名与年份的条目，连同各条中的规模量与性能数字（状态规模、QPS、吞吐、延迟、应用数量等），本节均未核到可引用的公开出处，属【经验】档表述，引用时请自行查证；带论文题名、官方文档章节名或博客标题的条目，指向对应的公开论文、官方文档与企业公开技术博客。
 
 ---
 
@@ -520,15 +520,7 @@ CREATE TABLE paimon_orders (
 INSERT INTO paimon_orders SELECT * FROM orders_cdc;
 ```
 
-**第六层：常见坑与治理。**
-
-- **Schema Evolution**：上游加字段后下游 Paimon / Iceberg 也要同步加。Flink CDC 3.x + Paimon / Iceberg 支持自动 schema 演进。
-- **全量阶段对业务库的冲击**：Flink CDC 3.x 增量快照算法无锁，老版本会 SCAN ALL 大表 → 业务库 CPU / IO 飙高。**正确做法**：升级到 3.x；或者在业务低峰跑全量。
-- **binlog 过期**：全量阶段太久导致 binlog 被 purge → CDC 失败。**正确做法**：把 `expire_logs_days` 调大（保留 7-30 天），或并行分片。
-- **DDL 同步**：Flink CDC 3.x 支持 `includeSchemaChanges` 选项捕获 DDL，否则 DDL 会被吞。
-- **主键冲突**：源库主键冲突或迁移导致 PK 重复 → 下游乱序写入。**正确做法**：用业务主键 + binlog position 双键去重。
-
-**第七层：行业真实落地。**
+**第六层：行业真实落地。**
 
 - **美团实时数仓**：Flink CDC + ClickHouse / StarRocks 实时接入 MySQL / TiDB，支撑外卖、配送、营销。
 - **京东 618 大促**：Flink CDC 实时同步订单 / 库存主数据到实时数仓，是电商大促 CDC 落地的代表。
@@ -537,9 +529,17 @@ INSERT INTO paimon_orders SELECT * FROM orders_cdc;
 - **招行支付流水**：Flink CDC 同步交易流水 + Kafka EOS + 实时风控，是金融业 CDC 落地的代表。
 - **滴滴订单分配**：Flink CDC 同步订单、司机、车辆实时变化 + Flink 实时分发，是出行行业 CDC 落地代表。
 
+**3. 常见陷阱**
+
+- **Schema Evolution**：上游加字段后下游 Paimon / Iceberg 也要同步加。Flink CDC 3.x + Paimon / Iceberg 支持自动 schema 演进。
+- **全量阶段对业务库的冲击**：Flink CDC 3.x 增量快照算法无锁，老版本会 SCAN ALL 大表 → 业务库 CPU / IO 飙高。**正确做法**：升级到 3.x；或者在业务低峰跑全量。
+- **binlog 过期**：全量阶段太久导致 binlog 被 purge → CDC 失败。**正确做法**：把 `expire_logs_days` 调大（保留 7-30 天），或并行分片。
+- **DDL 同步**：Flink CDC 3.x 支持 `includeSchemaChanges` 选项捕获 DDL，否则 DDL 会被吞。
+- **主键冲突**：源库主键冲突或迁移导致 PK 重复 → 下游乱序写入。**正确做法**：用业务主键 + binlog position 双键去重。
+
 **4. 追问预测**
 
-- **「Flink CDC 3.x 的无锁读取原理？」** 答：基于**增量快照算法**（参考 Materialize / DBLog 的论文）——按 chunk 分片并行 SCAN，对每个 chunk 记录 SCAN 时刻的 binlog offset，全量 + 增量无缝衔接，**全程不加锁**。
+- **「Flink CDC 3.x 的无锁读取原理？」** 答：基于**增量快照算法**（其学术出处见本节参考资料中的增量快照 / 水印式 CDC 论文条目；该论文与 Materialize / DBLog 提法的具体对应关系本节未能核实，引用时请自行查证）——按 chunk 分片并行 SCAN，对每个 chunk 记录 SCAN 时刻的 binlog offset，全量 + 增量无缝衔接，**全程不加锁**。
 - **「MySQL 主从切换后 CDC 怎么办？」** 答：Flink CDC 通过 GTID / server-id 跟踪主从切换，会自动从新主节点续读；但需要正确配置 `debezium.include.schema.changes` 等参数。
 - **「为什么 Kafka 经常被 CDC 链路跳过？」** 答：Flink CDC 直接对接下游湖表可以省掉 Kafka，少一层存储 + 少一份运维；但 Kafka 在"多消费者分发 / 历史回放"上仍有价值。
 
@@ -548,7 +548,7 @@ INSERT INTO paimon_orders SELECT * FROM orders_cdc;
 - Flink CDC 官方文档（GitHub apache/flink-cdc）——Flink CDC 3.x 增量快照算法的权威论述。
 - Debezium 官方文档 `mysql-connector` / `postgresql-connector` 章节——binlog 解析的标准实现。
 - Materialize 团队「Incremental Snapshot for Change Data Capture」（arXiv: 2406.02176）——增量快照算法的原始论文。
-- YugabyteDB / DBLog 团队的增量 CDC 公开论文——CDC 演进方向的学术参考。
+- YugabyteDB / DBLog 方向的增量 CDC 公开论文（该条目的团队归属、标题与年份本节未能核实，引用时请自行查证）——CDC 演进方向的学术参考。
 - **美团实时数仓 CDC 落地** —— Flink CDC + ClickHouse / StarRocks 实时接入 MySQL，是本地生活行业 CDC 落地的代表。
 - **京东 618 Flink CDC 大促实战** —— 大促场景下 Flink CDC 实时同步订单 / 库存，是电商大促的代表。
 - **永辉超市实时库存 CDC** —— Flink CDC 同步门店库存变动 + 实时数仓，是零售业 CDC 落地的代表。
@@ -559,7 +559,7 @@ INSERT INTO paimon_orders SELECT * FROM orders_cdc;
 - **京东物流** —— 京东物流仓储数据中台——AGV、库存、订单的多源整合与实时监控。
 - **京东零售** —— 京东零售双 11 实时特征极限压力——KV 热点、Flink 反压、Schema 演进的工程化解法。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料中，仅以「企业名 + 场景概述」形式罗列、未附任何文档名的行业实践条目，以及以「公开分享 / 公开演讲 / 公开博客 / 公开论文」形式出现却未给出文档名与年份的条目，连同各条中的规模量与性能数字（状态规模、QPS、吞吐、延迟、应用数量等），本节均未核到可引用的公开出处，属【经验】档表述，引用时请自行查证；带论文题名、官方文档章节名或博客标题的条目，指向对应的公开论文、官方文档与企业公开技术博客。
 
 ---
 
@@ -636,7 +636,7 @@ INSERT INTO paimon_orders SELECT * FROM orders_cdc;
 
 - Flink 官方文档 `monitoring backpressure` 章节——Credit-based 反压机制的权威论述。
 - Fang Zheng 等「Latency-Aware Flink Scheduling」（Flink Forward 2019）——Flink 反压调度优化的代表性研究。
-- Apache Beam 关于 Flow Control 的论文——Credit-based 反压的理论参考。
+- Apache Beam 关于 Flow Control 的论文（本节未核到该论文的标题与年份，引用时请自行查证）——Credit-based 反压的理论参考。
 - **阿里 Blink 全链路压测 + 反压治理** —— 双 11 反压治理靠全链路压测 + 自动扩容 + 反压监控告警，是国内反压治理的代表。
 - **字节 Flink 自适应调度器** —— 根据反压指标自动扩缩容，是云原生 Flink 反压治理的代表。
 - **京东 618 Flink 反压实战** —— 电商大促下 KV 热点 + 反压的工程化解法。
@@ -645,13 +645,13 @@ INSERT INTO paimon_orders SELECT * FROM orders_cdc;
 - **京东零售** —— 京东零售双 11 实时特征极限压力——KV 热点、Flink 反压、Schema 演进的工程化解法。
 - **唯品会** —— 唯品会特卖场景的数据平台——日清模式 + 离线数仓 + 实时推荐三层结构。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料中，仅以「企业名 + 场景概述」形式罗列、未附任何文档名的行业实践条目，以及以「公开分享 / 公开演讲 / 公开博客 / 公开论文」形式出现却未给出文档名与年份的条目，连同各条中的规模量与性能数字（状态规模、QPS、吞吐、延迟、应用数量等），本节均未核到可引用的公开出处，属【经验】档表述，引用时请自行查证；带论文题名、官方文档章节名或博客标题的条目，指向对应的公开论文、官方文档与企业公开技术博客。
 
 ---
 
 ### 8.5 本章小结
 
-本节收录 6 道深度面试题（原 PDF 散落题号 13.1.1 / 13.1.2 / 13.1.4 / 13.2.3 / 13.2.4 / 13.4.6 / 14.5.2），覆盖 5 大核心能力——**Flink 引擎对比与选型、状态后端与 Exactly-Once、时间语义与水位线、Flink CDC、反压排查**。六道题构成一条完整的下钻链路：**引擎选型 → 状态基础 → 容错一致 → 时间语义 → 数据接入 → 性能治理**。
+本节收录 7 道深度面试题（原 PDF 散落题号 13.1.1 / 13.1.2 / 13.1.4 / 13.2.3 / 13.2.4 / 13.4.6 / 14.5.2），覆盖 5 大核心能力——**Flink 引擎对比与选型、状态后端与 Exactly-Once、时间语义与水位线、Flink CDC、反压排查**。七道题构成一条完整的下钻链路：**引擎选型 → 状态基础 → 容错一致 → 时间语义 → 数据接入 → 性能治理**。
 
 参考答题的通用心法：**先说清约束，再说清选项，最后说清取舍**。Flink 相关问题的真正考点是"为什么用 Flink / 为什么这个配置 / 为什么这个水位线值"——架构师的差异在于敢不敢说"在什么场景下 Flink 不是最优"。
 

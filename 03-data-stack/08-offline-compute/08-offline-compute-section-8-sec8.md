@@ -32,13 +32,13 @@
 
 **2. 参考答案框架**
 
-**第一层：执行模型的代际差。** MapReduce 把每个作业硬拆成 Map → Shuffle → Reduce 两阶段，每阶段之间必须**落盘**，所以一个复杂逻辑（多次迭代、多路 join）会被拆成多个 MR 作业串行，每个作业都要重新从 HDFS 读上一次结果。Spark 用 DAG 把多阶段合并成一个逻辑图，**中间结果可以缓存在内存（Storage Level）**，跨 stage 的数据复用不再落盘，迭代类算法（PageRank、K-Means、SQL 优化器的代价迭代）的吞吐能拉开一到两个数量级。
+**第一层：执行模型的代际差。** MapReduce 把每个作业硬拆成 Map → Shuffle → Reduce 两阶段，每阶段之间必须**落盘**，所以一个复杂逻辑（多次迭代、多路 join）会被拆成多个 MR 作业串行，每个作业都要重新从 HDFS 读上一次结果。Spark 用 DAG 把多阶段合并成一个逻辑图，**中间结果可以缓存在内存（Storage Level）**，跨 stage 的数据复用不再落盘，迭代类算法（PageRank、K-Means、SQL 优化器的代价迭代）的吞吐优势最明显（幅度随迭代轮数与中间结果能否驻留内存而异，本书无法给出可溯源的统一倍数，此处按【经验】档处理）。
 
-**第二层：API 与表达力。** MapReduce 只提供 Map / Reduce 两类原语，写复杂逻辑要靠多次 MR 串起来；Spark 提供 RDD 的 80+ 个 Transformation / Action 算子，并且通过 DataFrame / Dataset 提供 Catalyst 优化器与 Tungsten 执行引擎，让用户写一份声明式 SQL 就能拿到向量化、谓词下推、列裁剪这些能力。这是 Meta（300PB 数仓）从 2013 年起就在内部用 Spark 替换 Hive MR 的核心动机——一份代码既可批处理又可探索。
+**第二层：API 与表达力。** MapReduce 只提供 Map / Reduce 两类原语，写复杂逻辑要靠多次 MR 串起来；Spark 提供 RDD 的 80+ 个 Transformation / Action 算子，并且通过 DataFrame / Dataset 提供 Catalyst 优化器与 Tungsten 执行引擎，让用户写一份声明式 SQL 就能拿到向量化、谓词下推、列裁剪这些能力。这也是 Meta 等超大规模数仓（其公开论文描述过 300 PB 量级的单集群）在内部把 Hive MR 计算逐步换成 Spark 的核心动机之一——一份代码既可批处理又可探索（该迁移的起始年份本书未核验到可溯源的出处，引用时请自行查证）。
 
 **第三层：Shuffle 与容错。** MapReduce 的 Shuffle 必须落盘（Map 输出写本地、Reduce 拉取合并），Spark 的 Shuffle 同样落盘，但通过 `spark.shuffle.file.buffer`、`spark.reducer.maxSizeInFlight` 等参数可以更细粒度控制 IO；容错上两者都是 Lineage + 重算，但 Spark 的 RDD 抽象让分区级别的重算粒度更细，结合 `checkpoint` 可以切断过长的血缘。
 
-**第四层：生态与生态位的让渡。** Spark 出现后并未完全杀死 MapReduce——HDFS 文件格式（SequenceFile / ORC / Parquet）、Hive Metastore、YARN 资源调度都被 Spark 复用，MapReduce 退化成"Spark 的一种底层 Task 实现"。LinkedIn 从 2015 年起把几乎所有 ETL 迁到 Spark，只保留极少数历史 MR 作业；Uber 的 Hadoop 平台（基于 Hudi）核心计算已全部 Spark 化。
+**第四层：生态与生态位的让渡。** Spark 出现后并未完全杀死 MapReduce——HDFS 文件格式（SequenceFile / ORC / Parquet）、Hive Metastore、YARN 资源调度都被 Spark 复用，MapReduce 退化成"Spark 的一种底层 Task 实现"。LinkedIn、Uber 等公司都公开介绍过把 Hadoop 上的 ETL 从 MapReduce 迁到 Spark 的大规模实践（LinkedIn 保留了少量历史 MR 作业，Uber 的开源湖表 Hudi 也以 Spark 写入链路为主）；这些分享的确切标题与年份本书无法给出，引用时请自行查证。
 
 **3. 常见陷阱**
 
@@ -57,8 +57,8 @@
 **5. 参考资料**
 
 - Matei Zaharia 等《Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing》（NSDI 2012）——RDD 的原始论文，是 Spark 替代 MapReduce 的理论基线。
-- Meta（Facebook）发表于 SIGMOD 2013 的《Scaling the Facebook Data Warehouse to 300 PB》——超大规模数仓从 Hive MR 切到 Spark 的工程权衡。
-- LinkedIn Engineering 公开博客关于把 ETL 从 MapReduce 迁移到 Spark 的系列文章——大规模迁移的工程路径与踩坑。
+- Meta（Facebook）发表于 SIGMOD 2013 的《Scaling the Facebook Data Warehouse to 300 PB》——超大规模数仓在存储、调度与元数据上的工程权衡（该论文的作者等完整著录信息本书未核验，引用时请以会议官方论文库为准）。
+- LinkedIn Engineering 公开博客关于把 ETL 从 MapReduce 迁移到 Spark 的系列文章——大规模迁移的工程路径与踩坑（本节无法给出这些文章的确切标题与年份，引用时请自行查证）。
 - Apache Spark 官方文档"Cluster Mode Overview"与"Spark on YARN"——理解 MR / Spark / Tez 在 YARN 上的统一调度。
 - 阿里 MaxCompute / ODPS 公开技术材料——《大数据之路》中关于"引擎选型 MR / Tez / Spark"的演进章节，是国内超大规模场景的对标案例。
 
@@ -201,11 +201,11 @@
 - **上游流式 ETL**（Spark Streaming / Flink）按 micro-batch 触发，每个 micro-batch 写一个文件。
 - **过度 reduce / partition**：Reduce 阶段随机数设大，每个 partition 一个小文件。
 
-**第三层：治理手段——三层体系。**
+**第三层：治理手段——四类手段。**
 
 - **写入侧预防**：`spark.sql.files.maxRecordsPerFile` 控制单文件行数；`spark.sql.shuffle.partitions` 调到合理范围；Streaming 作业设置 `trigger(availableNow=True)` + 大窗口合并。
 - **独立 Compaction 作业**：定期跑合并 Job，把分区下的小文件 union 成目标大小（典型 256MB-512MB）。**关键参数**：`spark.sql.files.minPartitionSize`、Iceberg 的 `rewrite-data-files` procedure、Hudi 的 `compaction` schedule。
-- **湖表自合并**：Iceberg / Hudi / Delta Lake 都内置 compaction 策略。Iceberg 通过 `expire_snapshots` + `rewrite_data_files` 定期清理；Hudi 通过 `hoodie.compaction.inline` 内联触发；Delta 通过 `OPTIMIZE` 命令。
+- **湖表自合并**：Iceberg / Hudi / Delta Lake 都内置 compaction 策略。Iceberg 通过 `expire_snapshots` + `rewrite_data_files` 定期清理；Hudi 通过 `hoodie.compact.inline` 内联触发；Delta 通过 `OPTIMIZE` 命令。
 - **监控告警**：把"分区文件数"作为 DQC 指标，超阈值（如单分区 > 200 文件）即报警。
 
 **第四层：合并到多大。**
@@ -232,7 +232,7 @@
 **5. 参考资料**
 
 - Apache Iceberg 官方文档"Maintenance Procedures"——`rewrite_data_files` / `expire_snapshots` 的工程细节。
-- Apache Hudi 官方文档"Compaction"——`hoodie.compaction.*` 系列的内联 / 异步策略。
+- Apache Hudi 官方文档"Compaction"——`hoodie.compact.*` 系列的内联 / 异步策略。
 - Uber Engineering 关于 Hudi 大规模应用的公开文章——PB 级 upsert + 小文件治理的真实案例。
 - Netflix 关于 Iceberg 在 EB 级数仓应用的公开技术博客——Netflix 把 compaction 做成独立 Flink 作业的工程模式。
 - Meta（Facebook）300PB 数仓论文——大规模文件组织与 compaction 调度的工程经验。
@@ -285,7 +285,7 @@
 - **数据层重构**：把倾斜字段拆出来做独立表，物理隔离倾斜数据。
 - **改用自适应执行引擎**：Trino / StarRocks / Doris 在 OLAP 场景下倾斜治理更自动化。
 
-**第五层：Join 倾斜 vs GroupBy 倾斜的难度差异。** Join 倾斜可以用 BHJ 或 Bucket Join **根除**（前提是一边足够小或可以分桶）；GroupBy 倾斜只能用加盐或过滤，因为聚合必然把同 Key 数据集中到一起，没有"广播聚合"的等价物。**这就是为什么 90% 的严重倾斜是 GroupBy 引发的**。
+**第五层：Join 倾斜 vs GroupBy 倾斜的难度差异。** Join 倾斜可以用 BHJ 或 Bucket Join **根除**（前提是一边足够小或可以分桶）；GroupBy 倾斜只能用加盐或过滤，因为聚合必然把同 Key 数据集中到一起，没有"广播聚合"的等价物。**这就是为什么严重倾斜的案例里 GroupBy 占比最高**（本节无法给出可溯源的统计比例，此处按【经验】档处理）。
 
 **3. 常见陷阱**
 
@@ -351,7 +351,7 @@
 
 - **Shuffle Service**：YARN 上启用 `spark.shuffle.service.enabled=true`，把 Shuffle 文件托管给 NodeManager 的 Auxiliary Service，避免 Executor 被回收后 Shuffle 文件丢失。
 - **Shuffle Compression**：`spark.shuffle.compress=true`（默认），可换 ZSTD 替代 LZ4 提升压缩率。
-- **Reduce 端合并**：`spark.shuffle.mergePercent`（默认 0.2）控制合并行为。
+- **Reduce 端合并**：Shuffle 聚合 / 合并可用的堆内存比例由 `spark.shuffle.memoryFraction`（默认 0.2）控制；Spark 2.0 起统一内存管理接管了这块内存，该参数需配合 `spark.memory.useLegacyMode=true` 才会生效，现代调优应转向 `spark.memory.fraction` 与 `spark.reducer.maxSizeInFlight`。
 - **Kryo 序列化**：`spark.serializer=org.apache.spark.serializer.KryoSerializer` + 注册自定义类，序列化耗时显著下降。
 
 **第四层：K8s / 云原生场景的额外考量。** K8s 上没有内建 Shuffle Service，必须外挂 Remote Shuffle Service，如 Apache Celeborn / Uber 的 Spark-RSS。**远程 Shuffle 把 Shuffle 数据落远端存储**，减少本地磁盘压力与 Executor 耦合，是云原生场景的演进方向。
@@ -421,14 +421,14 @@
 **第四层：生产实践要点。**
 
 - **资源配额**：用 `ResourceQuota` / `LimitRange` 控制每个 Namespace 的 CPU / Memory 上限，避免一个团队占用整个集群。
-- **镜像管理**：Spark 基础镜像（包含 JDK、Hadoop client、Spark binary）私有仓库托管；Executor 镜像预热避免冷启动 30s+ 延迟。
+- **镜像管理**：Spark 基础镜像（包含 JDK、Hadoop client、Spark binary）私有仓库托管；Executor 镜像预热可明显缩短 Pod 冷启动（具体时长随镜像层数与拉取带宽而异，本节无法给出可溯源的统一数字，此处按【经验】档处理）。
 - **网络**：K8s CNI 要支持 Service / Pod 间直连，避免 NAT 影响 Shuffle 拉取性能。
 - **存储**：HDFS 通过 CSI Driver 挂载，或直接用对象存储（OSS / S3）+ 湖表（Iceberg / Hudi）。
 - **作业调度**：Spark Operator 负责 Application 生命周期，Airflow / Argo Workflows 负责 DAG 编排与依赖。
 
 **第五层：典型落地场景。**
 
-- **字节跳动**：Spark on K8s + 自研调度器替代 YARN，**成本下降 50%**，弹性伸缩应对大促。
+- **字节跳动**：Spark on K8s + 自研调度器替代 YARN，**资源成本明显下降**（幅度随混部比例与资源利用率而异，本节无法给出可溯源的统一数字，此处按【经验】档处理），弹性伸缩应对大促。
 - **Netflix**：Spark on K8s 配合 Remote Shuffle Service 处理 EB 级 ETL。
 - **Databricks**：Cloud-native 架构从一开始就基于 K8s 抽象，**多云一致**。
 - **美的**：工业制造场景下 Spark on K8s 处理工厂实时上报 + 离线分析。
@@ -438,7 +438,7 @@
 - **"Spark on K8s 和 YARN 一样，只是换个调度器"。** 错。Shuffle 处理、存储对接、镜像管理、Scheduler Plugin 都是新增工程复杂度。
 - **"K8s 天然支持弹性"。** Pod 弹性 ≠ Executor 弹性，Spark 必须配合 Remote Shuffle 才能真正复用 Pod 弹性。
 - **"用默认 K8s 调度器就够了"。** 错。Spark 是 Gang Scheduler 需求（所有 Executor 一起申请），默认调度器会让"先起 Driver 再起 Executor"造成资源碎片。
-- **"Pod 启动慢是 K8s 的锅"。** 多数情况是镜像过大（3GB+ Spark 镜像含完整 JDK/Hadoop client），应做**镜像分层** + 预热。
+- **"Pod 启动慢是 K8s 的锅"。** 多数情况是镜像过大（含完整 JDK / Hadoop client 的 Spark 镜像常在数 GB 量级，此处按【经验】档处理），应做**镜像分层** + 预热。
 - **"Executor 进程 = 1 Pod 1 Executor"。** 可以 1 Pod 多 Executor 减少 K8s API 调用，但代价是 Pod 内 JVM GC / 资源竞争变复杂。
 
 **4. 追问预测**
@@ -485,11 +485,11 @@
 **第二层：执行引擎差异。**
 
 - **Hive on MapReduce**：硬编码两阶段，每个作业都要落盘，慢但稳定、失败可重。
-- **Hive on Tez**：DAG 合并 + 内存连续计算，性能提升显著（典型 3-10x），但仍受限于 Hive 编译器的优化能力。
-- **Hive on Spark**：Hive 编译 → Spark 执行；Hive 的 logical plan 翻译为 Spark physical plan。**性能优于 Hive on Tez**（Catalyst 优化更强），但仍是 Hive 的"老 DSL + 新执行"组合。
-- **Spark SQL（原生）**：用 Spark 自己的 DataFrame API / SQL 方言，Catalyst 全程参与优化，Tungsten 生成 JVM 字节码；**性能最强，UDF 灵活度最高**。
+- **Hive on Tez**：DAG 合并 + 内存连续计算，相比 Hive on MapReduce 的逐作业落盘有阶段合并带来的明显收益（倍率随 DAG 形态与落盘占比而异，本节无法给出可溯源的统一倍数，此处按【经验】档处理），但仍受限于 Hive 编译器的优化能力。
+- **Hive on Spark**：Hive 编译 → Spark 执行；Hive 的 logical plan 翻译为 Spark physical plan。与 Hive on Tez 路线相比谁更快，取决于查询形态与引擎版本，不宜一概而论——计划仍由 Hive 编译器产出，Catalyst 的全链路优化（谓词下推、常量折叠、CBO）在这里施展不开；它仍是 Hive 的"老 DSL + 新执行"组合。
+- **Spark SQL（原生）**：用 Spark 自己的 DataFrame API / SQL 方言，Catalyst 全程参与优化，Tungsten 生成 JVM 字节码；这几条路线中**优化链路最完整**（性能差异随查询形态与数据分布而异，本节无法给出可溯源的统一倍数，此处按【经验】档处理），UDF 侧还可同时用 Java 与 Python（Pandas UDF）。
 
-**第三层：SQL 方言与兼容性。** Hive 与 Spark SQL 在**90% 的常见 SQL**上兼容，差异主要在：① 高阶分析函数（窗口、collect_list、复杂类型）；② Lateral View / Explode；③ 自定义 UDF 加载方式；④ 一些 ANSI SQL 行为的差异（如 NULL 排序）。生产中通常用 Spark SQL 提供 **Hive 兼容模式**（`spark.sql.hive.convertMetastoreOrc=true` 等），让历史 HQL 直接运行。
+**第三层：SQL 方言与兼容性。** Hive 与 Spark SQL 在**绝大多数常见 SQL** 上兼容（本书无法给出可溯源的统计比例，此处按【经验】档处理），差异主要在：① 高阶分析函数（窗口、collect_list、复杂类型）；② Lateral View / Explode；③ 自定义 UDF 加载方式；④ 一些 ANSI SQL 行为的差异（如 NULL 排序）。生产中通常用 Spark SQL 提供 **Hive 兼容模式**（`spark.sql.hive.convertMetastoreOrc=true` 等），让历史 HQL 直接运行。
 
 **第四层：元数据与生态的复用。** Spark SQL 主动复用 Hive Metastore 作为元数据层，让 Hive 表与 Spark 表**共享一份 Catalog**——这是二者协同的关键。Databricks 的 Unity Catalog、阿里 DataWorks、网易雷火 / 米哈游 的数据平台都遵循这一架构。
 
@@ -511,7 +511,7 @@
 
 **4. 追问预测**
 
-- **「Hive on Spark 与 Spark SQL 在性能上真的有差距吗？」** 答：有，但差距主要在**优化器深度**。Hive 编译 plan 后翻译给 Spark，**Catalyst 的全链路优化（谓词下推、常量折叠、CBO）会被打折扣**；Spark SQL 原生用 Catalyst，Tungsten 生成字节码，性能通常高 10-50%。
+- **「Hive on Spark 与 Spark SQL 在性能上真的有差距吗？」** 答：有，但差距主要在**优化器深度**。Hive 编译 plan 后翻译给 Spark，**Catalyst 的全链路优化（谓词下推、常量折叠、CBO）会被打折扣**；Spark SQL 原生用 Catalyst，Tungsten 生成字节码，优化链路更完整，性能通常有可观察的提升（幅度随查询形态与数据分布而异，本节无法给出可溯源的统一比例，此处按【经验】档处理）。
 - **「Spark SQL 能完全替代 Hive 吗？」** 答：执行层可以，元数据 + UDF 生态层面 Hive 仍是事实标准。生产实践是"Spark 执行 + Hive 元数据 + 自研 SQL 网关"，二者各管一段。
 - **「MaxCompute 与 Spark SQL 是什么关系？」** 答：MaxCompute 是阿里自研的云原生离线引擎，**接口层兼容 Hive / Spark SQL**，但执行引擎与优化器自研（与 ODPS 一脉相承）。**业务可写 Spark SQL 风格 SQL，提交后翻译到 MaxCompute 执行**。
 - **「Trino / Presto 与 Spark SQL 的边界？」** 答：Trino 是联邦查询引擎，**擅长交互式 OLAP**（亚秒到秒级），不适合长时间跑批；Spark SQL 是批处理引擎，**擅长长时间 ETL**（分钟到小时级）。二者**互补大于替代**，生产中常并存。

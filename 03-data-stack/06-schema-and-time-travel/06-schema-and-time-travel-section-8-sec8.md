@@ -4,7 +4,7 @@
 
 > 本节整合自题库《大数据平台架构师》（创脉思 cms365.cn，版本 2025-11-25）的真实面试题，题号沿用原题库编号（PDF §X.Y 第 K 题），便于读者回溯原题。
 >
-> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Netflix / Uber / Meta / LinkedIn / Confluent / 阿里 / 字节 / 招行 等），便于读者进一步溯源。
+> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Netflix / Uber / Meta / LinkedIn / Confluent / 阿里 / 字节 / 招行 等），便于读者进一步溯源；其中相当一部分条目只有「公司 + 实践方向」而无确切文档名与链接，属【经验】档表述，仅作方向参考。
 
 ### 8.1 全景视图
 
@@ -42,13 +42,13 @@
 
 **第一层：定义与视角。** 三种兼容性策略是相对"**消费者侧的旧版本 Reader**"和"**生产者侧的旧版本 Writer**"而言的：
 
-- **Backward Compatible（新 schema 读旧数据 OK）**：旧 Reader 读新数据时遇到未知字段，要么忽略、要么按默认值解码——只要新字段都有 `default`。**Kafka Producer 升级、Lakehouse 加列**默认属于此类。
-- **Forward Compatible（旧 schema 读新数据 OK）**：新 Reader 读旧数据时，遇到旧数据缺失的字段按 `null`/默认值补齐。**Avro/Protobuf 的 schema 注册**默认要求此类——确保旧 Producer 写出的消息能被新 Consumer 解码。
-- **Full Compatible（双向兼容）**：新字段既有 `default` 又能 `null`，老 reader 能读新、老 writer 能写新。**Avro/Protobuf 默认目标模式**就是 Full 兼容——为 Kafka 流式场景的双向滚动升级服务。
+- **Backward Compatible（新 schema 读旧数据 OK）**：用新 schema 的 Reader 读旧数据时，旧数据里缺失的字段按 `default` 补齐——只要新字段都有 `default`。**Kafka 消费者先升级、Lakehouse 加列**默认属于此类。
+- **Forward Compatible（旧 schema 读新数据 OK）**：用旧 schema 的 Reader 读新数据时，未知字段被忽略即可（Avro / Protobuf 都允许跳过不认识的字段）——它保证"还没升级完的消费者"不会被新消息卡死。**Avro/Protobuf 的 schema 注册**默认只保证 Backward，Kafka 流式场景需要额外覆盖此项（见第二层）。
+- **Full Compatible（双向兼容）**：新字段既有 `default` 又可为 `null`，于是新 Reader 读旧数据（Backward）与旧 Reader 读新数据（Forward）同时成立。**Kafka 流式场景的默认目标模式**就是 Full 兼容——为双向滚动升级服务。
 
 **第二层：消息层（Kafka）的工程实践。**
 
-- **必须 Full**：Confluent Schema Registry 默认 `compatibility=full`，因为 Kafka 有**慢消费者**和**追消息**两类典型场景。慢消费者拉取几小时前的旧消息（要求 Forward 兼容），追消息/重投场景则是旧 Reader 拉到新消息（要求 Backward 兼容）。两条路必须同时通——这就是为什么 Avro 默认每个新字段都要带 `default` 值（连 `null` 都不行，必须显式 `default: null`）。
+- **通常上调为 Full**：Confluent Schema Registry 的全局默认是 `compatibility=backward`，而 Kafka 流式场景通常把它上调为 `full`，因为 Kafka 有**慢消费者**和**追消息**两类典型场景。慢消费者（已升到新 schema）拉取几小时前的旧消息，要求 **Backward** 兼容；追消息/重投场景是尚未升级的旧 Consumer 拉到新消息，要求 **Forward** 兼容。两条路必须同时通——这就是为什么 Avro 默认每个新字段都要带 `default` 值（连 `null` 都不行，必须显式 `default: null`）。
 - **不允许的破坏性变更**：删除已有字段、改变已有字段类型、把 `optional` 改成无默认的 `required`、修改 enum 的数字映射。**LinkedIn** 在内部规范中明确禁止这些操作，所有破坏性变更必须走"**新建 subject + 新版本号**"路径，不覆盖旧 schema。
 
 **第三层：表层（Lakehouse）的工程实践。** 与消息层最大的差异在于——**表是带历史数据的**。
@@ -66,7 +66,7 @@
 **3. 常见陷阱**
 
 - **混淆"加列默认 Backward"与"加 NOT NULL 必填"**。加一个无默认值的 NOT NULL 列属于**破坏性变更**——旧数据无法补默认值，下游会直接报错。
-- **以为"Forward 兼容就是 Backward 的反义"**。Forward 要求"老 Producer 写新字段时缺值也能解码"，但 Backward 是"老 Reader 读新字段时能忽略"——两者方向相反，工程手段（`default` vs `null` 容忍）也不同。
+- **以为"Forward 兼容就是 Backward 的反义"**。Backward 要求"新 Reader 读旧数据时，旧数据缺失的新字段能按 `default` 补齐"；Forward 要求"旧 Reader 读新数据时能忽略未知字段"——两者方向相反，工程手段（写入端保证 `default` vs 读取端容忍未知字段）也不同。
 - **删除字段未通知下游**。Avro/Protobuf 的"删除"实际上是给字段加 `@Deprecated` 并停止写入，下游仍能读到字段——物理删除等价于 Breaking Change。
 - **Lakehouse 表以为"删列安全"**。Iceberg 虽然不物理删除，但下游 SQL 仍按最新 schema 查询，删除的列读不到——必须用 `FOR SYSTEM_TIME AS OF` 才能读到历史列。
 - **混淆 Schema 兼容性与查询兼容性**。Schema 兼容是数据写入侧的约束；查询兼容是"下游能不能正确 join/group by"——后者属于数据语义层。
@@ -83,16 +83,16 @@
 - Confluent 官方文档《Schema Registry Compatibility Checks》——Backward / Forward / Full 的原始定义与 HTTP API。
 - Martin Kleppmann《Designing Data-Intensive Applications》第 4 章「Encoding and Evolution」——消息演进的标准教材，对兼容性策略的形式化讨论堪称经典。
 - Apache Avro 规范 1.11.0 第「Schema Resolution」章节——JSON / 二进制两种编码下的兼容性规则。
-- Netflix Tech Blog《Evolving Schemas in the Data Mesh》——Netflix 在数据网格中处理 Schema 演进的标准做法。
+- Netflix Tech Blog《Evolving Schemas in the Data Mesh》【出处待核验：仅有平台与标题，缺作者、年份与链接】——Netflix 在数据网格中处理 Schema 演进的标准做法。
 - **LinkedIn 的 Schema 演进规范** —— LinkedIn 处理万亿级 Kafka 消息时"双 subject + 不可破坏"的强制规范，是工业级 Full 兼容的标杆。
 - **Stripe 的支付消息双 schema** —— 支付场景对 Backward + Forward 双通的强约束，任意时刻新服务都能解码旧支付事件。
 - **阿里 DataWorks Schema 演进实践** —— 阿里 DataWorks 在 MaxCompute / Hologres 上的 Schema 演进策略，业务过程维度模型兼容 Backward。
-- **网易雷火游戏版本回滚** —— 游戏版本数据按 snapshot 保留 180 天，配合 Schema 演进做 A/B 测试复盘。
+- **网易雷火游戏版本回滚** —— 游戏版本数据按 snapshot 保留历史版本，配合 Schema 演进做 A/B 测试复盘（该保留窗口的具体天数本书无法给出可核验出处，此处按【经验】档处理）。
 - **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
 - **京东数科** —— 京东数科的金融特征平台——支撑消费分期、信用支付等场景，特征口径与模型版本强一致。
 - **平安银行** —— 平安银行的数据分级与脱敏实践——把客户、账户、交易按敏感度分级，配合 ABAC 权限与脱敏网关，是国内金融业最完整的案例。
 
-> 注：以上参考资料均指向公开出版物或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料均指向公开出版物或企业公开技术博客；其中以「XX 公司 + 公开实践 / 公开介绍」形式出现的条目、各条中的规模量级（PB 级、日均千万级等）与实践效果值（保留窗口、分钟级 / 秒级恢复时长、版本数等），以及正文「场景化选型 / 典型落地 / 常见陷阱 / 追问预测」里的同类「公司 + 数字」表述，本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。参考资料中以「平台 / 媒体名 + 文章标题」形式给出的条目，凡未随条给出作者与年份者，本节均按【出处待核验】处理：已就地标注的条目即属此类，未就地标注者并不因此视为已经核实。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -142,7 +142,7 @@
 
 **4. 追问预测**
 
-- **「Avro 性能比 Protobuf 慢多少？」** 答：单条消息 10-30% 差距（按字段顺序反射 vs 直接 wire decode），但 Kafka 批量 + zstd 压缩下差距缩小到 < 5%。选型优先看生态而非裸性能。
+- **「Avro 性能比 Protobuf 慢多少？」** 答：单条消息有 10-30% 的编解码差距（按字段顺序反射 vs 直接 wire decode；此处按【经验】档表述，本书无法给出可溯源的统一基准），但 Kafka 批量 + zstd 压缩下差距缩小到 < 5%。选型优先看生态而非裸性能。
 - **「Avro + SR 怎么保证高可用？」** 答：SR 集群部署（5 节点 + ZK/Kafka backend），本地缓存 schema（`subjects/<name>/versions/<v>`），SR 挂掉时用本地缓存解码；新 schema 注册失败时拒绝写入。
 - **「Protobuf 字段怎么演进最安全？」** 答：① 新字段用新 field number；② 删除字段保留 field number 标 `reserved`；③ 不改 wire_type；④ enum 不重用数字 + 加 `allow_alias`。
 - **「AI 时代 schema 自动生成怎么落地？」** 答：LLM 生成候选 Avro schema → CI 校验兼容性 → 人工 review → 自动注册 SR；Databricks Genie 已经把这个流程产品化。
@@ -152,17 +152,17 @@
 - Apache Avro 1.11 规范——Avro 二进制编码、Schema Resolution、默认值机制的官方定义。
 - Google Protobuf Language Guide 第「Field Numbers」「Reserved Fields」章节——Protobuf 兼容性的物理基础。
 - Confluent《Schema Registry — Avro vs Protobuf vs JSON Schema》白皮书——Kafka 场景下的选型决策树。
-- LinkedIn Engineering Blog《Managing Schemas at Scale》——LinkedIn 万亿级 Kafka 消息的 Avro + SR 工程实践。
-- Netflix Tech Blog《Kafka Schema Evolution at Netflix》——Netflix 跨语言消费者的 Avro 实践。
+- LinkedIn Engineering Blog《Managing Schemas at Scale》【出处待核验：仅有平台与标题，缺作者、年份与链接】——LinkedIn 万亿级 Kafka 消息的 Avro + SR 工程实践。
+- Netflix Tech Blog《Kafka Schema Evolution at Netflix》【出处待核验：仅有平台与标题，缺作者、年份与链接】——Netflix 跨语言消费者的 Avro 实践。
 - **Uber 的 Protobuf + Avro 双轨实践** —— Uber 微服务 RPC 用 Protobuf、Kafka 消息用 Avro + SR，两套机制互不干扰。
 - **字节跳动 Kconf + Avro SR** —— 字节跳动内部 Schema 平台对 Avro / Protobuf 的统一治理与跨语言支持。
-- **米哈游游戏事件 schema 演进** —— 米哈游用 Avro + SR 管理游戏内行为事件，schema 演进期间支持新老版本共存 90 天。
+- **米哈游游戏事件 schema 演进** —— 米哈游用 Avro + SR 管理游戏内行为事件，schema 演进期间支持新老版本共存（该共存窗口的具体时长本书无法给出可核验出处，此处按【经验】档处理）。
 - **微众银行 Protobuf 在金融场景的实践** —— 微众银行核心交易用 Protobuf RPC + Avro 消息混部，强类型 + 兼容性双保障。
 - **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
 - **京东数科** —— 京东数科的金融特征平台——支撑消费分期、信用支付等场景，特征口径与模型版本强一致。
 - **平安银行** —— 平安银行的数据分级与脱敏实践——把客户、账户、交易按敏感度分级，配合 ABAC 权限与脱敏网关，是国内金融业最完整的案例。
 
-> 注：以上参考资料均指向公开出版物或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料均指向公开出版物或企业公开技术博客；其中以「XX 公司 + 公开实践 / 公开介绍」形式出现的条目、各条中的规模量级（PB 级、日均千万级等）与实践效果值（保留窗口、分钟级 / 秒级恢复时长、版本数等），以及正文「场景化选型 / 典型落地 / 常见陷阱 / 追问预测」里的同类「公司 + 数字」表述，本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。参考资料中以「平台 / 媒体名 + 文章标题」形式给出的条目，凡未随条给出作者与年份者，本节均按【出处待核验】处理：已就地标注的条目即属此类，未就地标注者并不因此视为已经核实。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -187,7 +187,7 @@
 
 - **Iceberg**：snapshot id 由原子递增生成；`metadata.json` 保留当前 + 历史 snapshot 列表；可通过 `expire_snapshots` 删除旧 snapshot 但保留 manifest list；`rewrite_manifests` 合并 manifest 减少元数据膨胀。**Snowflake Polaris** 把 Iceberg 的 catalog 抽象成 REST API 后，snapshot 管理下沉到 Polaris 服务。
 - **Hudi**：Timeline 按 commit_time 排序；通过 `HoodieTimeline` API 按时间过滤；Compaction / Archive 自动清理过期 commit；可通过 `archival` 配置保留 commit 数量。
-- **Delta**：每个 JSON commit 永久追加（直到 vacuum）；`DESCRIBE HISTORY` 查询历史版本；`VACUUM` 删除无引用文件；保留事务时长默认 7 天（`delta.logRetentionDuration`）。
+- **Delta**：每个 JSON commit 永久追加（直到 vacuum）；`DESCRIBE HISTORY` 查询历史版本；`VACUUM` 删除无引用文件；事务日志保留默认 30 天（`delta.logRetentionDuration`），可被 VACUUM 清理的数据文件保留默认 7 天（`delta.deletedFileRetentionDuration`）。
 
 **第三层：查询路径。**
 
@@ -200,11 +200,11 @@
 - **金融/支付回滚（Stripe / 招行）**：
   - 选 **Delta Lake**（Databricks 生态）+ 严格保留策略（365 天）。
   - 关键能力：`VERSION AS OF` 一秒回滚 + 审计级 JSON 日志 + Delta UniForm 跨引擎读取。
-  - **Stripe** 用 Delta 做支付账本回滚，"用户投诉一笔 90 天前的订单 → 找到 version number → 1 分钟恢复"。
+  - **Stripe** 用 Delta 做支付账本回滚，"用户投诉一笔历史订单 → 找到 version number → 回滚恢复"；其中可回滚窗口与恢复时长的具体数值本书无法给出可核验出处，此处按【经验】档处理。
 - **电商大数据（阿里 / 京东）**：
   - 选 **Iceberg**（OSS + Hive Metastore）+ 7 天滚动保留 + 关键节点永久。
   - 关键能力：Hidden Partition 自动路由 + manifest 增量读 + Spark/Trino 兼容。
-  - **阿里** 在双 11 期间用 Iceberg 做交易宽表，"任意时刻可查 30 天内任意订单状态"。
+  - **阿里** 在双 11 期间用 Iceberg 做交易宽表，主打能力是"任意时刻可查近期任意订单状态"；该窗口的具体天数本书无法给出可核验出处，此处按【经验】档处理。
 - **AI 训练复现（Netflix / 字节）**：
   - 选 **Iceberg V3** + 长保留 + 与 MLflow 集成。
   - 关键能力：snapshot tag（永久标签）+ 向量类型 + Variant 半结构化。
@@ -220,8 +220,8 @@
 
 - **以为"Time Travel 是免费的"**。snapshot 越多存储越贵——必须配 expire 策略；Meta 表单文件过多查询反而慢（manifest list 膨胀）。
 - **混淆"Time Travel"与"备份"**。Time Travel 是**原地元数据 + 数据文件**的引用，备份是**完整数据副本**——前者快但保留有限，后者慢但永久。
-- **Hudi MoR 表直接查历史时间点性能差**。`WHERE _hoodie_commit_time = 'xxx'` 不会自动合并 log 文件，必须读 base + log 才能拿到完整历史视图——查询延迟可能比当前时间点高 10 倍。
-- **Delta VACUUM 把可恢复版本删了**。误操作后发现 VACUUM 已经把对应 version 的数据删了 → 无法回滚。**招行** 生产环境的 SOP 规定：VACUUM 前必须确认"最近 30 天没有未关闭的工单"。
+- **Hudi MoR 表直接查历史时间点性能差**。`WHERE _hoodie_commit_time = 'xxx'` 不会自动合并 log 文件，必须读 base + log 才能拿到完整历史视图——查询延迟可能比当前时间点高 10 倍（此为机制层面的量级说明，非实测基准，按【经验】档处理）。
+- **Delta VACUUM 把可恢复版本删了**。误操作后发现 VACUUM 已经把对应 version 的数据删了 → 无法回滚。**招行** 生产环境的 SOP 规定：VACUUM 前必须确认没有未关闭的相关工单（该 SOP 本书无法给出可核验出处，此处按【经验】档处理）。
 - **跨引擎读 Iceberg 不一致**。Spark 写的表，Trino 读不到 `_hoodie_metadata`（Hudi 字段）——这是格式隔离，不是 bug。
 
 **4. 追问预测**
@@ -237,9 +237,9 @@
 - Apache Hudi 官方文档——Timeline / Commit / Compaction 的实现细节。
 - Delta Lake 官方文档《Time Travel》章节——`_delta_log` + checkpoint 的存储结构。
 - Databricks Engineering Blog《Delta UniForm: One Storage Format for All Engines》——一份 Delta 数据支持 Iceberg / Hudi 读取。
-- Netflix Tech Blog《Time Travel for ML Reproducibility》——Netflix 用 Iceberg 做训练数据 snapshot 复现。
-- **Stripe 的支付账本 Delta 回滚** —— Stripe 用 Delta Lake 做支付账本回滚，1 分钟定位任意历史 version。
-- **Uber Hudi CDC + Time Travel** —— Uber 用 Hudi MoR 接入 MySQL binlog，Timeline 提供秒级回滚。
+- Netflix Tech Blog《Time Travel for ML Reproducibility》【出处待核验：仅有平台与标题，缺作者、年份与链接】——Netflix 用 Iceberg 做训练数据 snapshot 复现。
+- **Stripe 的支付账本 Delta 回滚** —— Stripe 用 Delta Lake 做支付账本回滚，可快速定位任意历史 version（该时长为量级描述，本书无法给出可核验出处，此处按【经验】档处理）。
+- **Uber Hudi CDC + Time Travel** —— Uber 用 Hudi MoR 接入 MySQL binlog，Timeline 提供秒级回滚（该量级为经验描述，本书无法给出可核验出处，此处按【经验】档处理）。
 - **阿里 DataWorks Iceberg 维护工具** —— 阿里双 11 期间 Iceberg 表的快照清理 + 孤儿文件扫描实践。
 - **美团 IcebergMaintainer 工具** —— 美团自研 Iceberg 维护器，每天清理过期 snapshot + 孤儿文件。
 - **招行 Delta Lake 生产 SOP** —— 招行金融场景 Delta Lake 的"VACUUM 前必须确认无未关闭工单"硬性规范。
@@ -248,7 +248,7 @@
 - **京东零售** —— 京东零售双 11 实时特征极限压力——KV 热点、Flink 反压、Schema 演进的工程化解法。
 - **唯品会** —— 唯品会特卖场景的数据平台——日清模式 + 离线数仓 + 实时推荐三层结构。
 
-> 注：以上参考资料均指向公开出版物或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料均指向公开出版物或企业公开技术博客；其中以「XX 公司 + 公开实践 / 公开介绍」形式出现的条目、各条中的规模量级（PB 级、日均千万级等）与实践效果值（保留窗口、分钟级 / 秒级恢复时长、版本数等），以及正文「场景化选型 / 典型落地 / 常见陷阱 / 追问预测」里的同类「公司 + 数字」表述，本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。参考资料中以「平台 / 媒体名 + 文章标题」形式给出的条目，凡未随条给出作者与年份者，本节均按【出处待核验】处理：已就地标注的条目即属此类，未就地标注者并不因此视为已经核实。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -327,7 +327,7 @@
 1. **三层保留策略**：
    - **近 90 天**：Time Travel（Iceberg V3 snapshot + Delta _delta_log），RTO < 1 分钟。
    - **近 1 年**：每日全量备份到独立 OSS bucket，RTO < 30 分钟。
-   - **永久**：合规归档（按法规要求，**中国金融业通常 5-7 年**），写入冷存储（AWS Glacier / 阿里 OSS Archive）。
+   - **永久**：合规归档（按法规要求，**中国金融业通常 5-7 年**；该年限为【经验】档区间，实际以属地监管规定与机构制度为准），写入冷存储（AWS Glacier / 阿里 OSS Archive）。
 
 2. **回滚决策链路**：
    - **Step 1 影响分析**：基于血缘（DataHub / Atlas）找到该表的上下游，估算影响范围。
@@ -336,14 +336,14 @@
    - **Step 4 收尾**：清理备份残留 + 通知上下游 + 写入审计日志。
 
 3. **典型落地**：
-   - **Stripe 支付账本**：Delta Lake Time Travel + S3 Glacier 永久归档，任意 90 天内订单可 1 分钟回滚，5 年前订单可小时级恢复。
+   - **Stripe 支付账本**：Delta Lake Time Travel + S3 Glacier 永久归档，近期订单可快速回滚、久远订单可小时级恢复（上述窗口与恢复时长为量级描述，本书无法给出可核验出处，此处按【经验】档处理）。
    - **招行核心交易**：Iceberg V3 + 双活备份（同城 + 异地）+ 监管报送快照，监管检查时可提供任意时刻表状态。
-   - **平安保险理赔**：Hudi MoR + Kafka 增量备份，理赔误操作可秒级回滚，原始单据按 10 年归档。
+   - **平安保险理赔**：Hudi MoR + Kafka 增量备份，理赔误操作可快速回滚，原始单据长期归档（上述量级为经验描述，本书无法给出可核验出处，此处按【经验】档处理）。
    - **微众银行信贷**：Delta Lake + 自研 lakehouse-backup 工具，信贷审批数据按"日全量+实时增量"双保险。
 
 **3. 常见陷阱**
 
-- **只有 Time Travel 没有备份**。VACUUM/expire 一旦误操作，旧 snapshot 删了 → 无法回滚。**Stripe 的教训**：曾经因为 VACUUM 误删 30 天历史，差点丢了一批历史对账数据。
+- **只有 Time Travel 没有备份**。VACUUM/expire 一旦误操作，旧 snapshot 删了 → 无法回滚。**Stripe 的教训**：曾因 VACUUM 误删历史版本，差点丢了一批历史对账数据（该案例本书无法给出可核验出处，此处按【经验】档处理）。
 - **只有备份没有 Time Travel**。误操作后发现备份是昨天的 → 丢了一整天数据。RPO 0 的场景不可接受。
 - **备份未做"跨可用区"或"跨地域"**。本地备份 → 数据中心故障时一起挂。**金融场景硬性要求**同城双活 + 异地灾备。
 - **回滚不通知下游消费方**。表被恢复到旧 version，但下游 Flink 作业仍按当前 schema 处理 → 数据错位。**阿里 DataWorks** 强制要求"表变更必须发事件到下游消息队列"。
@@ -352,9 +352,9 @@
 **4. 追问预测**
 
 - **「RTO 与 RPO 怎么定？」** 答：根据业务影响分级——核心交易 RTO < 5 分钟 / RPO < 1 分钟；用户画像 RTO < 1 小时 / RPO < 1 天；日志 RTO < 24 小时 / RPO 允许 1 天。
-- **「备份压缩率能做到多少？」** 答：Parquet + zstd 压缩率 5-10 倍；增量备份可再降 3-5 倍。**招行** 生产环境 1PB 表 → 压缩后备份约 200TB。
+- **「备份压缩率能做到多少？」** 答：Parquet + zstd 压缩率约 5-10 倍；增量备份可再降 3-5 倍（此处按【经验】档表述，具体倍数随数据类型与编码差异很大）。**招行** 生产环境的 PB 级表压缩后备份体积大幅下降（具体比例本书无法给出可核验出处，此处按【经验】档处理）。
 - **「跨可用区回滚怎么保证一致性？」** 答：双活部署 + Raft/Paxos 协议 + Quorum 链路（双写一致才提交）；异步复制场景用 CDC + 版本号对账。
-- **「Time Travel 性能瓶颈在哪？」** 答：snapshot 越多 manifest list 越大，查询优化器扫 metadata 开销指数级增长。**Netflix** 经验：单表 snapshot > 1000 时查询慢 10 倍，必须配 expire。
+- **「Time Travel 性能瓶颈在哪？」** 答：snapshot 越多 manifest list 越大，查询优化器扫 metadata 的开销随之上升。**Netflix** 经验：单表 snapshot 积累到千级时查询明显变慢（具体倍数本书无法给出可核验出处，此处按【经验】档处理），必须配 expire。
 
 **5. 参考资料**
 
@@ -363,15 +363,15 @@
 - Stripe 公开技术分享《Stripe's data infrastructure》——支付账本的 Time Travel + 永久归档设计。
 - 阿里 DataWorks《数据治理白皮书》——DataWorks 在 MaxCompute / Hologres 上的回滚工程实践。
 - **招行核心交易 Iceberg V3 双活方案** —— 招行金融场景的"同城双活 + 异地灾备"硬性合规要求。
-- **平安保险 Hudi MoR + Kafka 增量备份** —— 平安理赔系统按 10 年归档的合规保留策略。
+- **平安保险 Hudi MoR + Kafka 增量备份** —— 平安理赔系统的长期合规归档保留策略（该年限的具体取值本书无法给出可核验出处，此处按【经验】档处理）。
 - **微众银行 lakehouse-backup 工具** —— 微众银行自研湖仓备份工具，支撑信贷数据日全量 + 实时增量双保险。
-- **永辉超市库存回滚** —— 永辉用 Iceberg + Delta 双轨做库存快照回滚，单店任意 7 天内库存状态可秒级恢复。
-- **顺丰运单回滚** —— 顺丰用 Delta Lake 做运单账本，按 30 天 Time Travel + 1 年冷备份的策略处理运单回滚。
+- **永辉超市库存回滚** —— 永辉用 Iceberg + Delta 双轨做库存快照回滚，单店在滚动保留窗口内的库存状态可快速恢复（该时间窗与恢复时长为量级描述，本书无法给出可核验出处，此处按【经验】档处理）。
+- **顺丰运单回滚** —— 顺丰用 Delta Lake 做运单账本，按「近期走 Time Travel、久远走冷备份」的分层策略处理运单回滚（该策略的具体保留时长本书无法给出可核验出处，此处按【经验】档处理）。
 - **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
 - **京东数科** —— 京东数科的金融特征平台——支撑消费分期、信用支付等场景，特征口径与模型版本强一致。
 - **平安银行** —— 平安银行的数据分级与脱敏实践——把客户、账户、交易按敏感度分级，配合 ABAC 权限与脱敏网关，是国内金融业最完整的案例。
 
-> 注：以上参考资料均指向公开出版物或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料均指向公开出版物或企业公开技术博客；其中以「XX 公司 + 公开实践 / 公开介绍」形式出现的条目、各条中的规模量级（PB 级、日均千万级等）与实践效果值（保留窗口、分钟级 / 秒级恢复时长、版本数等），以及正文「场景化选型 / 典型落地 / 常见陷阱 / 追问预测」里的同类「公司 + 数字」表述，本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。参考资料中以「平台 / 媒体名 + 文章标题」形式给出的条目，凡未随条给出作者与年份者，本节均按【出处待核验】处理：已就地标注的条目即属此类，未就地标注者并不因此视为已经核实。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -414,7 +414,7 @@ Partition Spec (V2)：
 - **V1 阶段**——查询"2025-01-15 当天广东订单"：
   ```sql
   SELECT * FROM orders WHERE order_time = '2025-01-15' AND region = 'GD';
-  -- Iceberg 自动 prune：days=20250115 + bucket=region=3
+  -- Iceberg 自动 prune：days=20250115（V1 只有 days 分区，region 谓词不参与分区裁剪）
   -- 用户无需感知 partition 字段
   ```
 - **V2 阶段**——增加 `region` 分区：
@@ -438,7 +438,7 @@ Partition Spec (V2)：
 - **以为 Hidden Partition 是"隐藏"了分区事实**。不是隐藏，是「**不在底数中创建列**」——partition 仍然存在 metadata 中，优化器照样 prune。
 - **混淆 partition transform 与 partition column**。`days(order_time)` 的输出是 int 类型的 day value，不是 string "2025-01-15"——查询条件必须用 timestamp，Iceberg 自动转换。
 - **partition evolution 后忘记改下游**。改 partition spec 后下游 SQL 仍按旧假设 prune → 性能没变化或更差。**阿里** 实践中 partition evolution 必须走 PR + 灰度。
-- **bucket 数选错**。bucket(8) → 数据倾斜到部分 bucket → 部分 partition 文件过大；bucket(256) → 元数据膨胀。**Netflix** 经验：根据 distinct value 数量选 bucket 数，目标是单 bucket 100MB-1GB。
+- **bucket 数选错**。bucket(8) → 数据倾斜到部分 bucket → 部分 partition 文件过大；bucket(256) → 元数据膨胀。**Netflix** 经验：根据 distinct value 数量选 bucket 数，目标是单 bucket 100MB-1GB（该目标区间为【经验】档，具体取值随查询模式与存储格式而异，本书无法给出可核验出处）。
 - **混淆 Iceberg 与 Hive 的 partition 概念**。Iceberg 是 sort key + transform + spec 三层抽象，Hive 只有静态分区；直接迁移 Hive 分区表到 Iceberg 经常踩坑。
 
 **4. 追问预测**
@@ -451,17 +451,17 @@ Partition Spec (V2)：
 **5. 参考资料**
 
 - Apache Iceberg 官方规范《Partitioning》章节——Hidden Partition + Partition Evolution 的标准定义。
-- Netflix Tech Blog《Hidden Partitioning in Iceberg at Netflix》——Netflix 在 PB 级订单表上的 Hidden Partition 实践。
+- Netflix Tech Blog《Hidden Partitioning in Iceberg at Netflix》【出处待核验：仅有平台与标题，缺作者、年份与链接】——Netflix 在 PB 级订单表上的 Hidden Partition 实践。
 - Ryan Blue（Iceberg PMC）《The Hidden Partitioning in Iceberg》演讲——Hidden Partition 的设计哲学与工程取舍。
-- **LinkedIn Hidden Partition + bucket 优化** —— LinkedIn 在用户行为表用 `bucket(16, user_id)` + `days(event_time)` 双层 partition，查询性能提升 10 倍。
-- **阿里双 11 Hidden Partition 实践** —— 阿里订单表用 Hidden Partition 替代 Hive 显式分区，下游 SQL 减少 60%。
+- **LinkedIn Hidden Partition + bucket 优化** —— LinkedIn 在用户行为表用 `bucket(16, user_id)` + `days(event_time)` 双层 partition，查询性能提升显著（具体倍数本书无法给出可核验出处，此处按【经验】档处理）。
+- **阿里双 11 Hidden Partition 实践** —— 阿里订单表用 Hidden Partition 替代 Hive 显式分区，下游 SQL 的改造量显著减少（具体降幅本书无法给出可核验出处，此处按【经验】档处理）。
 - **字节跳动 Partition Evolution 演进** —— 字节跳动在 Iceberg 表上做 partition spec 灰度切换，老数据零迁移。
 - **美团 partition 维护工具** —— 美团 IcebergMaintainer 工具的 partition evolution 兼容性校验模块。
 - **Shein** —— Shein 跨境供应链实时数据——日均千万订单走实时分发 + 离线对账，柔性供应链的核心。
 - **京东零售** —— 京东零售双 11 实时特征极限压力——KV 热点、Flink 反压、Schema 演进的工程化解法。
 - **唯品会** —— 唯品会特卖场景的数据平台——日清模式 + 离线数仓 + 实时推荐三层结构。
 
-> 注：以上参考资料均指向公开出版物或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料均指向公开出版物或企业公开技术博客；其中以「XX 公司 + 公开实践 / 公开介绍」形式出现的条目、各条中的规模量级（PB 级、日均千万级等）与实践效果值（保留窗口、分钟级 / 秒级恢复时长、版本数等），以及正文「场景化选型 / 典型落地 / 常见陷阱 / 追问预测」里的同类「公司 + 数字」表述，本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。参考资料中以「平台 / 媒体名 + 文章标题」形式给出的条目，凡未随条给出作者与年份者，本节均按【出处待核验】处理：已就地标注的条目即属此类，未就地标注者并不因此视为已经核实。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -541,12 +541,12 @@ Partition Spec (V2)：
 **关键工程点：**
 
 1. **多集群部署**：同城双活（同机房 3 节点 Karapace + 5 节点 Kafka）+ 异地灾备（独立 Kafka 集群，RPO 5s）。
-2. **本地缓存**：每个 Producer/Consumer 启动时拉全量 schema 到本地（schema registry size 通常 < 100MB）；后续增量拉取；缓存 24h TTL。
+2. **本地缓存**：每个 Producer/Consumer 启动时拉全量 schema 到本地（全量 schema 体积通常在几十 MB 量级）；后续增量拉取；缓存 24h TTL。
 3. **降级策略**：SR 不可用时 Producer 仍能发送消息（用本地缓存解码），但拒绝注册新 schema；SR 恢复后批量回传新 schema。
 4. **监控告警**：SR 节点存活、API 延迟、兼容性检查失败率、缓存命中率——任何指标异常告警到 OnCall。
 5. **典型落地**：
-   - **招行核心交易**：Karapace + 同城双活 + 异地灾备，schema 注册失败 < 0.01%。
-   - **Stripe 支付消息**：Confluent SR 商业版 + 多区域同步，schema 演进 RTO < 1 分钟。
+   - **招行核心交易**：Karapace + 同城双活 + 异地灾备；该部署形态与其中的注册失败率水平本书无法给出可核验出处，此处按【经验】档处理。
+   - **Stripe 支付消息**：Confluent SR 商业版 + 多区域同步，schema 演进的目标 RTO 在分钟级（具体数值本书无法给出可核验出处，此处按【经验】档处理）。
    - **阿里 DataWorks + Paimon SR**：实时数仓场景用 Paimon SR，湖仓场景用 Karapace。
    - **微众银行 Kafka 集群**：自研 SR + ZK 强一致，schema 演进与业务发布解耦。
 
@@ -555,14 +555,14 @@ Partition Spec (V2)：
 - **Confluent SR 单点**。ZK + Kafka 看似高可用，但 SR 本身只是无状态 REST 服务，**SR 节点全部挂掉 = Producer/Consumer 无法解析 schema**——必须有客户端本地缓存。
 - **Karapace 与 Confluent SR API 不完全兼容**。Karapace 兼容 SR v6 API，但 Confluent v7 新增的 API（如 `mode` 全局配置）可能不支持——升级前必须校验。
 - **schema 兼容性策略选错**。默认 FULL 是最安全但也最慢——兼容性检查会拒绝所有无默认值的字段；金融场景默认 FULL，分析场景可降级为 BACKWARD。
-- **schema 注册失败没告警**。注册失败默认只返回 409 Conflict 状态码——如果客户端不监控日志，schema 演进可能在生产环境悄悄失败。**微众** 强制要求"schema 注册失败 5 分钟内告警"。
-- **schema 无限膨胀没清理**。每个 subject 保留 1000+ 历史版本 → SR 内存爆炸、查询变慢。**Stripe** 经验：保留最近 100 版本 + 关键版本永久归档。
+- **schema 注册失败没告警**。注册失败默认只返回 409 Conflict 状态码——如果客户端不监控日志，schema 演进可能在生产环境悄悄失败。**微众** 强制要求"schema 注册失败后尽快告警"（具体时间窗本书无法给出可核验出处，此处按【经验】档处理）。
+- **schema 无限膨胀没清理**。每个 subject 保留 1000+ 历史版本 → SR 内存爆炸、查询变慢。**Stripe** 经验：只保留最近若干版本 + 关键版本永久归档（保留版本数本书无法给出可核验出处，此处按【经验】档处理）。
 - **混淆 SR 兼容性与代码兼容性**。SR 只检查 schema 字段兼容性，不检查业务语义——例如 Protobuf enum 数字重用，SR 不会发现。
 
 **4. 追问预测**
 
-- **「SR 集群多大合适？」** 答：参考峰值 schema 注册 QPS——注册 QPS 通常 1-100；查询 QPS 通常 1000+。3 节点 Karapace + 5 节点 Kafka 集群可支撑 1 万 QPS。
-- **「本地缓存多大？」** 答：单 schema 通常 1-10KB；全量 10000 个 schema 约 50MB；公共缓存配置 schema registry size < 200MB 都合理。
+- **「SR 集群多大合适？」** 答：参考峰值 schema 注册 QPS——注册 QPS 通常 1-100；查询 QPS 通常 1000+。3 节点 Karapace + 5 节点 Kafka 集群可支撑万级 QPS（此处按【经验】档处理，实际容量取决于 schema 大小与客户端缓存命中率）。
+- **「本地缓存多大？」** 答：单 schema 通常 1-10KB；全量 10000 个 schema 约 50MB；本地缓存按几十 MB 量级预留即可。
 - **「schema 演进期间怎么平滑过渡？」** 答：双 schema 并行发布 → Consumer 灰度切流 → 旧 schema 标记 deprecated → 30 天后下线。
 - **「Paimon SR 与 Iceberg REST Catalog 怎么集成？」** 答：Paimon SR 管理 Avro/Protobuf schema，Iceberg REST Catalog 管理 Table schema——两者通过 subject-name 映射集成。**字节跳动** 在湖仓中实现"Paimon SR + Iceberg REST"双轨。
 
@@ -572,17 +572,17 @@ Partition Spec (V2)：
 - Karapace GitHub README——Aiven 开源的 Confluent SR 替代品，API 完全兼容。
 - Apicurio 官方文档《Schema Registry Overview》——Apicurio 的多协议支持与 backend 选择。
 - Apache Paimon 官方文档《Schema Management》——Paimon SR 在 Flink 实时数仓中的定位。
-- Stripe Engineering《Schema Registry at Scale》——Stripe 支付消息的 SR 商业版实践。
+- Stripe Engineering《Schema Registry at Scale》【出处待核验：仅有平台与标题，缺作者、年份与链接】——Stripe 支付消息的 SR 商业版实践。
 - **LinkedIn Karapace 实践** —— LinkedIn 用 Karapace 替代 Confluent SR，处理万亿级 Kafka 消息的 schema 演进。
-- **招行 Karapace 同城双活 + 异地灾备** —— 招行金融场景的 SR 集群部署规范，schema 注册失败率 < 0.01%。
+- **招行 Karapace 同城双活 + 异地灾备** —— 招行金融场景的 SR 集群部署规范（该规范细节与其中的注册失败率水平本书无法给出可核验出处，此处按【经验】档处理）。
 - **微众银行自研 SR + ZK 强一致** —— 微众银行自研 Schema Registry，基于 ZK 强一致协议，schema 演进与业务发布解耦。
 - **阿里 DataWorks + Paimon SR** —— 阿里在实时数仓场景用 Paimon SR，跨湖仓 schema 治理统一。
-- **Netflix Confluent SR 演进** —— Netflix 跨语言消费者用 Confluent SR，schema 演进失败告警 5 分钟内 OnCall。
+- **Netflix Confluent SR 演进** —— Netflix 跨语言消费者用 Confluent SR，schema 演进失败会触发 OnCall 告警（该告警时延的具体数值本书无法给出可核验出处，此处按【经验】档处理）。
 - **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
 - **京东数科** —— 京东数科的金融特征平台——支撑消费分期、信用支付等场景，特征口径与模型版本强一致。
 - **平安银行** —— 平安银行的数据分级与脱敏实践——把客户、账户、交易按敏感度分级，配合 ABAC 权限与脱敏网关，是国内金融业最完整的案例。
 
-> 注：以上参考资料均指向公开出版物或企业公开技术博客。精确链接待联网环境补全。
+> 注：以上参考资料均指向公开出版物或企业公开技术博客；其中以「XX 公司 + 公开实践 / 公开介绍」形式出现的条目、各条中的规模量级（PB 级、日均千万级等）与实践效果值（保留窗口、分钟级 / 秒级恢复时长、版本数等），以及正文「场景化选型 / 典型落地 / 常见陷阱 / 追问预测」里的同类「公司 + 数字」表述，本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。参考资料中以「平台 / 媒体名 + 文章标题」形式给出的条目，凡未随条给出作者与年份者，本节均按【出处待核验】处理：已就地标注的条目即属此类，未就地标注者并不因此视为已经核实。精确链接请按条目名称自行检索核验。
 
 ---
 
