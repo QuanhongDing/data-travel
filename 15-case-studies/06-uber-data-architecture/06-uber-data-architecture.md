@@ -35,7 +35,7 @@ Uber 成立于 2009 年，至今 16 年。数据栈演进的关键时间节点�
 - **2017：Michelangelo ML 平台**。Uber 自研 ML 平台。
 - **2018：实时数仓 V1**。Kafka + Flink + Hudi。
 - **2019：Docstore 立项**。Uber 自研文档数据库（基于 Schemaless + Cassandra）。
-- **2020：Apache Hudi 进入 Apache 孵化**。
+- **2020：Apache Hudi 成为 Apache 顶级项目**。
 - **2021：Hudi 0.6 发布，开始大规模使用**。
 - **2022：Data Mesh 内部讨论**。Uber 内部推进数据所有权分散。
 - **2023：GenAI 应用 + Hudi 1.0**。

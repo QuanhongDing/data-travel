@@ -96,7 +96,7 @@
 **大数据目录阶段（2015-2020）**：
 
 - 2015：Apache Atlas（Apache 开源）——Hadoop 生态元数据。
-- 2017：Amundsen（Lyft 开源）——基于 Neo4j + Elasticsearch。
+- 2019：Amundsen（Lyft 开源）——基于 Neo4j + Elasticsearch。
 - 2019：DataHub（LinkedIn 开源）——基于 Kafka + Elasticsearch + MySQL。
 
 **云原生 + AI 阶段（2020+）**：

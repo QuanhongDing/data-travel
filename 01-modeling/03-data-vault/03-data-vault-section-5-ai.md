@@ -93,7 +93,7 @@ GraphRAG Pipeline：
 #### 5.3.2 Data Vault + Lakehouse 深度融合
 
 - **Databricks**：2024 年发布 Lakehouse + Data Vault 2.0 模板，Delta Lake 表天然支持 DV 的"全量追加 + 时间旅行"。
-- **Apache Iceberg**：2024 年发布 v2 规范，支持 Data Vault 风格的"append-only + equality delete"。
+- **Apache Iceberg**：V2 规范引入的等值删除（equality delete）支持 Data Vault 风格的"append-only + equality delete"。
 - **Apache Hudi**：2024 年发布 MOR 表，支持 DV 的"高频变更 + 历史保留"。
 
 #### 5.3.3 Data Vault + LLM Agent

@@ -780,7 +780,7 @@
 - Apache Iceberg 官方文档（iceberg.apache.org）——Spec、Architecture、Performance 章节，是回答冰山表格式设计理念的一手材料。
 - Reynold Xin 等人发表的 Delta Lake 论文（2020）——Databricks 对湖仓一体的定义与 ACID 实现，是 Delta 派别的思想起点。
 - Uber Engineering 关于 Apache Hudi 的开源公告与 Architecture 文档——Hudi 的 Timeline / Record-Level Index 设计来源。
-- Netflix Technology Blog 关于 Iceberg 落地的系列文章——流媒体公司大规模湖仓一体的真实案例，含"每日万亿行增量"的工程数据。
+- Netflix Technology Blog 关于 Iceberg 落地的系列文章——流媒体公司大规模湖仓一体的真实案例，含"每日万亿行增量"一类的工程规模数字（"万亿"属量级表述且口径不一：本仓 [Netflix 案例 § 7.4](../../15-case-studies/05-netflix-data-stack/05-netflix-data-stack-section-7-sec7.md) 记其日事件量为「数千亿条/日」，两者相差一个量级，均不锁定单一数值）。
 - LinkedIn DataHub 官方文档中 Iceberg Integration 章节——湖仓元数据如何被目录吸收与暴露的工程实现。
 - 阿里 DataLake / DLF + DataWorks 关于湖仓一体的公开演讲与文档——国内 PB 级湖仓的工程经验与取舍。
 - Databricks Delta Live Tables（DLT）公开材料——湖仓批流一体在 SaaS 层的封装范本，对应"声明式数据流水线"的工业案例。

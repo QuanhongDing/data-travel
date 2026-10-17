@@ -123,7 +123,7 @@ Docstore 的本质是**用一个统一的文档模型（JSON / BSON）+ 多种�
 
 **第一层：三家表格式的起源与目标差异。**
 
-- **Apache Hudi**：2016 年 Uber 内部立项（最初叫"Hoodie"），2020 年进入 Apache 孵化，2024 年成为顶级项目。核心目标——**CDC 友好 + 增量处理 + Upsert / Delete 原生支持**。Vinoth Chandar 在 Uber 内部为解决「Hive 表无法 upsert」这一痛点而起。
+- **Apache Hudi**：2016 年 Uber 内部立项（最初叫"Hoodie"），2020 年成为 Apache 顶级项目。核心目标——**CDC 友好 + 增量处理 + Upsert / Delete 原生支持**。Vinoth Chandar 在 Uber 内部为解决「Hive 表无法 upsert」这一痛点而起。
 - **Apache Iceberg**：2018 年 Netflix 发起，2020 年进入 Apache 孵化，2021 年成为顶级项目。核心目标——**隐藏分区（Hidden Partitioning）+ 多引擎兼容（Spark / Flink / Trino / Hive 都能读）+ 元数据可演进**。起点是 Netflix 在 S3 上做大规模 PB 级分析。
 - **Delta Lake**：2019 年 Databricks 开源。核心目标——**Spark 生态内的 ACID + 时间旅行 + Schema 演进**，后逐步扩展到 Flink / Trino。商业上是 Databricks 产品的核心数据格式。
 
@@ -674,13 +674,13 @@ Compaction 调度使用 Uber 自研的"Maestro + Hudi Cleaner"组合：
 
 ---
 
-#### §15.6.8 Michelangelo ML 平台的核心模块是什么？请从特征工程、训练、部署、监控四个环节拆解 Uber 的 ML 工程化方法论，并说明它与 Airbnb Metaflow / 字节 PAI / 阿里 PAI / 商业化 ML 平台的差异。
+#### §15.6.8 Michelangelo ML 平台的核心模块是什么？请从特征工程、训练、部署、监控四个环节拆解 Uber 的 ML 工程化方法论，并说明它与 Netflix Metaflow / 字节 PAI / 阿里 PAI / 商业化 ML 平台的差异。
 
 **1. 考察点**
 
 - 是否理解 ML 平台的核心不是"训练框架"，而是**把分散在每个算法工程师手中的 ML 流程标准化、自动化、平台化**。
 - 能否拆解特征工程 / 训练 / 部署 / 监控四个环节的具体能力，以及各环节的难点。
-- 是否了解 Uber Michelangelo 与 Airbnb Metaflow / 字节 PAI / 阿里 PAI / Databricks ML Platform / Vertex AI 的能力对比。
+- 是否了解 Uber Michelangelo 与 Netflix Metaflow / 字节 PAI / 阿里 PAI / Databricks ML Platform / Vertex AI 的能力对比。
 - 加分项：能讲清"训练-服务偏差（Training-Serving Skew）""模型版本管理""模型漂移监控"三大 ML 工程难题的解决思路。
 
 **2. 参考答案框架**
@@ -718,7 +718,7 @@ Compaction 调度使用 Uber 自研的"Maestro + Hudi Cleaner"组合：
 | 平台 | 主控方 | 核心特征 | 适用场景 |
 | --- | --- | --- | --- |
 | **Michelangelo** | Uber 自研 | 自研 Feature Store + Horovod + MLflow；Marketplace 业务深度耦合 | 超大规模 Marketplace 业务 |
-| **Metaflow** | Airbnb 开源 | Python 优先，工作流简单；适合数据科学家 | 中等规模 ML 团队 |
+| **Metaflow** | Netflix 开源 | Python 优先，工作流简单；适合数据科学家 | 中等规模 ML 团队 |
 | **字节 PAI** | 字节跳动自研 | 与火山引擎 / 字节生态深度集成；万亿级特征 | 字节生态内业务 |
 | **阿里 PAI** | 阿里云商业化 | 与 MaxCompute / OSS / DataWorks 一体化 | 阿里云客户 |
 | **Databricks ML** | Databricks 商业化 | 基于 Spark + Delta Lake；MLflow 主控 | 云上数据科学家 |
@@ -727,7 +727,7 @@ Compaction 调度使用 Uber 自研的"Maestro + Hudi Cleaner"组合：
 **关键差异**：
 
 - **Michelangelo** 重自研，与 Uber 业务深度耦合，**不适合复制**——Uber 内部多次强调这一点。
-- **Metaflow** 是 Airbnb 2019 年开源，主打"数据科学家友好"，代码即 DAG，学习曲线低，适合中小 ML 团队。
+- **Metaflow** 是 Netflix 2019 年开源，主打"数据科学家友好"，代码即 DAG，学习曲线低，适合中小 ML 团队。
 - **阿里 PAI** 是商业化版本，与阿里云数据栈一体化，**多租户 + 计费**是其特色；自研 ML 团队用得少，更多是大客户和上云客户。
 - **字节 PAI** 内部材料显示支持 10000+ 模型、100+ 业务线，规模与 Michelangelo 同级。
 
@@ -757,7 +757,7 @@ Compaction 调度使用 Uber 自研的"Maestro + Hudi Cleaner"组合：
 - Uber Engineering Blog《Meet Michelangelo: Uber's Machine Learning Platform》——Michelangelo 整体架构与设计动机。
 - Uber Engineering Blog《Scaling Machine Learning at Uber with Michelangelo》——规模化实践与故障复盘。
 - Uber 开源项目 Horovod 的官方文档——分布式训练框架的技术细节。
-- Airbnb Engineering Blog《Metaflow: Human-Centric Data Science》——Metaflow 设计理念与开源动机。
+- Netflix Engineering Blog《Metaflow: Human-Centric Data Science》——Metaflow 设计理念与开源动机。
 - 字节跳动技术沙龙公开材料关于 PAI 平台的内容——国内同等规模 ML 平台的对标。
 - 阿里云 PAI 团队公开文档——商业化 ML 平台的对照参考。
 - 微众银行公开材料关于金融 ML 平台的可解释性实践——金融行业的特殊要求对标。
