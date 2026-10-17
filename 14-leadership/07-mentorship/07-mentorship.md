@@ -273,8 +273,6 @@ I：这让作者不知道代码质量是否过关，也影响团队 CR 质量
 
 ---
 
-- [§3. 设计模式与范式](07-mentorship-section-3-sec3.md)
-- [§4. 工程实现](07-mentorship-section-4-sec4.md)
 ## 1. 当前职级与目标
 - 当前：P6
 - 目标：P7（12 个月内）
@@ -289,7 +287,7 @@ I：这让作者不知道代码质量是否过关，也影响团队 CR 质量
 | 协作 | 4 | 4 | 4 |
 | 领导力 | 2 | 2 | 3 |
 
-- [§3. 关键差距](07-mentorship-section-3-sec3.md)
+- [§3. 设计模式与范式](07-mentorship-section-3-sec3.md)
 - [§4. 工程实现](07-mentorship-section-4-sec4.md)
 - [§5. 资源](07-mentorship-section-5-sec5.md)
 - [§5. 前沿演进（AI 时代）](07-mentorship-section-5-ai.md)
@@ -304,8 +302,6 @@ I：这让作者不知道代码质量是否过关，也影响团队 CR 质量
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
 - [§3. 设计模式与范式](07-mentorship-section-3-sec3.md)
-- [§4. 工程实现](07-mentorship-section-4-sec4.md)
-- [§3. 关键差距](07-mentorship-section-3-sec3.md)
 - [§4. 工程实现](07-mentorship-section-4-sec4.md)
 - [§5. 资源](07-mentorship-section-5-sec5.md)
 - [§5. 前沿演进（AI 时代）](07-mentorship-section-5-ai.md)

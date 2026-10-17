@@ -269,36 +269,28 @@ MeetingTimeHealth = MeetingHours / TotalHours
 ## 2. 本周计划（10 分钟）
 - 关键任务
 - 关键交付物
+```
 
-- [§3. 关键问题讨论（20 分钟）](10-team-rhythm-section-3-sec3.md)
-- [§4. 跨团队协调（10 分钟）](10-team-rhythm-section-4-sec4.md)
-- [§3. 设计模式与范式](10-team-rhythm-section-3-sec3.md)
-- [§4. 工程实现](10-team-rhythm-section-4-sec4.md)
-## 1. 上周进展（10 分钟）
-- 关键成果
-- 关键风险
+**7. Quarterly Review（QBR）模板**
 
-## 2. 本周计划（10 分钟）
-- 关键任务
-- 关键交付物
+```markdown
+# Quarterly Review - {季度}
 
-- [§3. 关键问题讨论（20 分钟）](10-team-rhythm-section-3-sec3.md)
-- [§4. 跨团队协调（10 分钟）](10-team-rhythm-section-4-sec4.md)
 ## 1. 上季度 OKR 完成度
 | OKR | 目标 | 实际 | 完成度 |
 | --- | --- | --- | --- |
-| O1 | | | |
-| O2 | | | |
-| O3 | | | |
+| O1 | {目标} | {实际} | {完成度} |
+| O2 | {目标} | {实际} | {完成度} |
+| O3 | {目标} | {实际} | {完成度} |
 
 ## 2. 关键成果
 1. ______
 2. ______
 3. ______
+```
 
 - [§3. 关键问题](10-team-rhythm-section-3-sec3.md)
 - [§4. 工程实现](10-team-rhythm-section-4-sec4.md)
-- [§6. 资源需求](10-team-rhythm-section-6-sec6.md)
 - [§5. 前沿演进（AI 时代）](10-team-rhythm-section-5-ai.md)
 - [§6. 落地实践](10-team-rhythm-section-6-sec6.md)
 - [§7. 与其他方法对比](10-team-rhythm-section-7-sec7.md)
@@ -310,15 +302,8 @@ MeetingTimeHealth = MeetingHours / TotalHours
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
-- [§3. 关键问题讨论（20 分钟）](10-team-rhythm-section-3-sec3.md)
-- [§4. 跨团队协调（10 分钟）](10-team-rhythm-section-4-sec4.md)
-- [§3. 设计模式与范式](10-team-rhythm-section-3-sec3.md)
-- [§4. 工程实现](10-team-rhythm-section-4-sec4.md)
-- [§3. 关键问题讨论（20 分钟）](10-team-rhythm-section-3-sec3.md)
-- [§4. 跨团队协调（10 分钟）](10-team-rhythm-section-4-sec4.md)
 - [§3. 关键问题](10-team-rhythm-section-3-sec3.md)
 - [§4. 工程实现](10-team-rhythm-section-4-sec4.md)
-- [§6. 资源需求](10-team-rhythm-section-6-sec6.md)
 - [§5. 前沿演进（AI 时代）](10-team-rhythm-section-5-ai.md)
 - [§6. 落地实践](10-team-rhythm-section-6-sec6.md)
 - [§7. 与其他方法对比](10-team-rhythm-section-7-sec7.md)
