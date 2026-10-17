@@ -46,7 +46,7 @@
 | 维度 | 联邦学习（FL） | 安全多方计算（MPC） | 可信执行环境（TEE） |
 | --- | --- | --- | --- |
 | 数据流向 | 数据不动、模型 / 梯度动 | 数据被秘密分享、密文协同计算 | 数据出域但在硬件 enclave 内解密 |
-| 计算性能 | 接近明文（瓶颈在通信） | 比明文慢 10–1000 倍 | 接近明文（部分硬件有 1–10% 损耗） |
+| 计算性能 | 接近明文（瓶颈在通信） | 比明文慢若干数量级（常见量级估计 10–1000 倍，随协议与网络条件而异） | 接近明文（部分硬件的开销在百分之几到百分之十量级；量级估计，随硬件与负载而异） |
 | 安全性根基 | 协议 + 安全聚合 + DP | 密码学可证明安全 | 硬件厂商 RoT + 远程证明（Attestation） |
 | 信任假设 | 半诚实 / 恶意参与方，但需要可信聚合器 | 半诚实即可，部分协议抵抗恶意 | 信任硬件厂商（Intel / AMD / NVIDIA） |
 | 典型应用 | 跨机构 / 跨设备 AI 训练 | 联合统计、隐私求交、模型推理 | 数据出域训练、机密 LLM 推理 |
@@ -74,7 +74,7 @@
 
 **3. 常见陷阱**
 
-- **把 FL 当「免费午餐」**：忽视 5–15% 的模型效果损失与通信代价，强行上 FL；正解是先评估业务可接受性，再决定是否真需要跨域。
+- **把 FL 当「免费午餐」**：忽视 FL 相对明文中心化训练的效果损失（题 §11.8.6 讨论的「5–15%」是粗经验区间，本书无法给出可核验的统一降幅，此处按【经验】档处理）与通信代价，强行上 FL；正解是先评估业务可接受性，再决定是否真需要跨域。
 - **混淆 MPC 与同态加密**：MPC 是一类协议集合（SPDZ、ABY3、Yao GC），同态加密（HE）是其中的密码学工具之一，二者常组合使用但不是一回事。
 - **认为 TEE 万能**：TEE 把信任从「参与方」转移到「硬件厂商」，并没有消除信任，只是把信任根换了；同时还要面对侧信道攻击（Foreshadow / SGX 漏洞、SEV 早期漏洞）。
 - **忽略通信瓶颈**：FL 看起来轻量，但千亿样本级别的特征同步在跨境链路上会成主瓶颈，必须算一笔跨地域带宽账。
@@ -92,7 +92,7 @@
 - McMahan, B., Moore, E., Ramage, D., Hampson, S. & Aguera y Arcas, B.《Communication-Efficient Learning of Deep Networks from Decentralized Data》, AISTATS 2017——FedAvg 的原始论文，是横向 FL 的标准出处。
 - Bonawitz, K. 等《Practical Secure Aggregation for Privacy-Preserving Machine Learning》, ACM CCS 2017——Google 的 Secure Aggregation，通信量从 `O(K)` 降到 `O(1)`，是工业 FL 的安全基石。
 - Cheng, K. 等《SecureBoost: A Lossless Federated Learning Framework》, IEEE Intelligent Systems 2021——纵向联邦 XGBoost 的代表实现，FATE 与 SecretFlow 都内置。
-- Liu, T. 等《Fusion360 — FedLearner by WeBank》, AAAI 2022（或 KDD 2021 相关论文）——微众银行 FATE 在金融联合风控的真实落地报告。
+- 微众银行《FATE 联邦学习技术白皮书》——微众银行 FATE 在金融联合风控的落地报告。（原条目引「Liu, T. 等《Fusion360 — FedLearner by WeBank》, AAAI 2022」，归属存疑：FedLearner 一般被认为是字节跳动的联邦学习框架，微众银行的框架是 FATE，此处按 C 类摘除该错误归属，具体文献待人工核查。）
 - 蚂蚁集团《SecretFlow — Privacy Preserving Data Collaboration》技术白皮书——FL + MPC + TEE 三引擎架构的第一手材料。
 - Google AI Blog《Federated Learning: Collaborative Machine Learning without Centralized Training Data》——Gboard 横向 FL 的工业范式与 Secure Aggregation 工程要点。
 - 阿里研究院《中国数据要素流通场景化研究报告》与《大数据之路：阿里巴巴大数据实践》——国内数据要素市场化的方法论与工程架构。
@@ -130,7 +130,7 @@
 - 暴露"我方有谁"本身就是 PII 泄露，电商用户 ID 关联到浏览历史属于敏感信息。
 - 半诚实对手会通过交集大小反推合作密度（"你这家银行只和 3 家电商合作"）。
 
-PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled PSI），或双方各拿到"自己侧+对方标签"的交集（Labeled PSI / PSI-CA），且**不暴露非交集的 ID**。
+PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled PSI），或双方各拿到"自己侧+对方标签"的交集（**Labeled PSI**，即交集元素携带对方的附加标签），且**不暴露非交集的 ID**。（注意 **PSI-CA（PSI Cardinality）只返回交集的大小、不返回交集元素**，它与 Labeled PSI 是两种不同功能，不要混用。）
 
 **第二层：三大协议家族对比。**
 
@@ -152,7 +152,7 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 
 **第四层：精度陷阱——安全模型与 ID 重合度。**
 - **半诚实 vs 恶意**：半诚实模型下 KKRT-PSI 已经足够；恶意模型必须用 Circuit-PSI 或在 OPRF 之上加一致性证明。
-- **ID 重合率**：实际业务里银行和电商的客户重合度往往只有 20%–60%——训练样本比原始数据少一个数量级，**模型效果天然受损**，必须在选型时预估损失。
+- **ID 重合率**：实际业务里银行和电商的客户重合度往往并不高——对齐后的训练样本显著少于任一方原始数据（重合度区间随行业、客群与地域差异很大，本书无法给出可核验的数字，此处按【经验】档处理），**模型效果天然受损**，必须在选型时预估损失。
 - **ID 漂移**：手机号换号、设备 ID 重置都会让 PSI 漏掉真实同一人；现实做法是引入弱标识符（生日 + 地区 + 名字）组合，但会引入更多协议层复杂度。
 - **半诚实假设违反**：对方如果真攻破协议（如缓存 OPRF 输出做生日攻击），后果是交集泄露——必须按恶意安全设计 + 一次性 OPRF。
 
@@ -165,16 +165,16 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 
 **3. 常见陷阱**
 
-- **以为 PSI 是纯算法问题**——工程上 80% 的难度是**通信优化 + 容错 + 监控**，不知道/不做就得满分也难交付。
+- **以为 PSI 是纯算法问题**——工程上难度的大头是**通信优化 + 容错 + 监控**（量化占比无公认口径，本书无法给出可核验数字，此处按【经验】档处理），不知道/不做就得满分也难交付。
 - **把"近似 PSI"当成"近似的另一种说法"——忽略 False Positive 是协议层定义的**，必须选合适的 false positive rate（如 `2^-40`）并审计。
-- **不评估 ID 重合率**——直接把全量 ID 拿去对齐，60% 的样本白丢，后期无法挽回。
-- **忽略配对失败**：通信失败时 90% 的工程任务会"静默成功"，但漏掉的样本可能在关键长尾客户群体——必须有 checksum + 重试 + 失败告警。
+- **不评估 ID 重合率**——直接把全量 ID 拿去对齐，大量样本会在取交集后白丢（比例随双方客群重合度而异，本书无法给出可核验数字，此处按【经验】档处理），后期无法挽回。
+- **忽略配对失败**：通信失败时多数工程实现会"静默成功"（任务返回成功但结果不完整；比例取决于实现，本书无法给出可核验数字，此处按【经验】档处理），但漏掉的样本可能在关键长尾客户群体——必须有 checksum + 重试 + 失败告警。
 - **混淆 PSI 与 PIR**：PIR（Private Information Retrieval）解决的是"我查数据库但不让数据库知道查的是哪条"，与 PSI 是两个独立工具，常组合使用。
 
 **4. 追问预测**
 
 - **「两方扩展到三方 PSI 怎么改？」** 答：KKRT 协议可扩展到 N 方，但通信轮次随参与方数线性增加；现实做法是把三方 PSI 拆成两两 PSI + 取交集，或者直接用三方 OPRF 协议（如 ABY3-PSI），代价明显上升。
-- **「PSI 算完交集之后，还能做什么防止被反推？」** 答：在交集基础上跑 DP（差分隐私），对交集大小加噪声；或用 PSI-CA（Labeled PSI）一次性把标签带回来，避免二次通信泄露意图。
+- **「PSI 算完交集之后，还能做什么防止被反推？」** 答：在交集基础上跑 DP（差分隐私），对交集大小加噪声；或用 **Labeled PSI**（交集元素携带对方标签）一次性把标签带回来，避免二次通信泄露意图；若只需要交集规模，用 **PSI-CA** 即可——它只返回交集大小、不返回元素。
 - **「服务器是恶意能破解吗？」** 答：标准 KKRT 在恶意模型下不安全，需要叠加 Cut-and-Choose 或切到 Circuit-PSI；工程上会用硬件 RoT（HSM）+ 远程证明补充。
 - **「ID 高基数且不一致怎么办？」** 答：引入 LSH（局部敏感哈希）做预过滤 + 多轮 PSI，配合 PSI 的近似版本降低通信量。
 
@@ -229,16 +229,16 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 - **Per-sample 梯度裁剪**：把每个样本梯度 norm 裁到上限 `C`，防止"大梯度样本"过度影响模型——本质是把单个样本对模型的影响钳制在 `C/D` 量级。
 - **高斯噪声注入**：聚合梯度后加 `N(0, σ²C² I)` 噪声，σ 控制信噪比。
 - **隐私会计（Privacy Accountant）**：累计多轮训练的 `(ε, δ)`，常用 RDP 转换（Opacus 内置 `PRVAccountant`）。
-- 公式粗估：`ε ≈ 样本数 × 轮数 / σ² × √log(1/δ)` 量级，反过来说——同一个隐私预算下，可训练轮数 `T ≈ ε·σ² / log(1/δ)·(样本数倒数)` 量级——**预算被样本量和训练轮数直接锁定**。
+- **公式粗估**：`ε ≈ q × √(T × log(1/δ)) / σ` 量级（q = 每轮采样比例、T = 训练轮数）——即 ε 随采样比例线性增长、随轮数按 `√T` 增长、随噪声 σ 线性下降；反过来说，同一个隐私预算下可训练轮数 `T ≈ (ε·σ / q)² / log(1/δ)` 量级——**预算被样本量（体现为采样比例 q）、噪声与训练轮数直接锁定**。
 
 **第四层：ε 的现实分级（结合工业实践）。**
-- **ε ≤ 1（强保护）**：美国 2020 年人口普查目标水平，隐私保护极强但模型 AUC 通常跌 5%–10%——只有最敏感的统计场景用。
+- **ε ≤ 1（强保护）**：美国 2020 年人口普查的目标水平，隐私保护极强，代价是模型效果明显下降（通常以 AUC 跌几个百分点计——跌幅随任务与模型而异，本书无法给出可核验的统一数字，此处按【经验】档处理）——只有最敏感的统计场景用。
 - **ε ≈ 3（中等保护）**：学术界主流目标；DeepMind、OpenMined、Apple DP 实践的常用上界；模型可用性相对可接受。
 - **ε ≈ 8（弱保护）**：Google 在 RAPPOR、Chrome 浏览器统计等大规模工业部署的典型值——商业可接受、研究上不够严谨。
 - **ε > 10**：基本失去数学保护意义，工业部署偶尔出现，但应警惕。
 
 **第五层：FL 中的预算特殊性。**
-- FL 不只训练消耗预算，**PSI / 样本对齐**也消耗——一次 PSI 在半诚实模型下大约消耗 0.1–1 个 ε（依赖 ID 基数与重试频率），一个工业 FL 项目要算"完整隐私预算账"。
+- FL 不只训练消耗预算，**PSI / 样本对齐**的信息泄露也属于项目隐私账的一部分——但它要与 DP 预算**分开记账**、不能折算成 ε：一次 PSI 在半诚实模型下泄露的信息量与 ID 基数、重试频率相关，一个工业 FL 项目要算"完整隐私预算账"，账本里得分别看到"DP 消耗的 ε"与"PSI 的信息泄露面"。（PSI 的安全性由密码学假设而非 DP 保证，把它折算成 ε 的数值没有公认口径，本书无法给出可核验的换算，此处按【经验】档处理。）
 - 长期迭代项目必须假设预算会**随时间累计**——同一批用户数据参与多轮训练，预算 "升表"。现实做法是限定每个用户一生的总预算上限（用户级 ε 上限）。
 - **组合性 vs 实用性**：必须用 RDP / 高级组合定理来压缩预算，不能简单相加，否则项目运营两三轮就被劝退。
 
@@ -255,7 +255,7 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 
 - **"预算可简单相加"**——这是最常见的反模式，多次访问场景下预算增长不是线性的，必须用 RDP / 高级组合定理压缩。
 - **"只看总 ε 不看 δ"**——δ 过大则 `(ε, δ)`-DP 退化为几乎没有保障，必须保证 `δ ≪ 1/N`（N 为样本数）。
-- **"以为 DP-SGD 等于明文 SGD"**——实证上 DP-SGD 比明文差 5–15%，不可忽视，必要时换更大模型或更长训练。
+- **"以为 DP-SGD 等于明文 SGD"**——实证上 DP-SGD 的效果通常劣于明文训练（差距随 ε、模型规模与训练量而异，本书无法给出可核验的统一数字，此处按【经验】档处理），不可忽视，必要时换更大模型或更长训练。
 - **"用一次 PSI 的 ε 给整个项目打 DP 标签"**——预算与机制（composition）是分开计算的，不能"以偏概全"。
 - **"忽略了 Privacy Budget 的运营含义"**——上线后消费 ε 的并不只有训练，还包括统计查询、A/B 测试等，必须建立全链路预算台账。
 
@@ -315,19 +315,19 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 | 编程难度 | 高（SDK 限制多） | 中（透明加密） | 中（需要专用驱动/库） |
 | AI 推理友好度 | 中（手动分区） | 中 | **高（GPU 原生支持）** |
 | 侧信道历史 | Foreshadow、SGAXE、Spectre | 早期 SEV 漏洞（已被修补） | 较新（攻击面尚在研究） |
-| 生态成熟度 | Occlum LibOS / Graphene | Azure Confidential VM / GCP | NVIDIA NeMo Guardrails + CC |
+| 生态成熟度 | Occlum LibOS / Graphene | Azure Confidential VM / GCP | NVIDIA CC 驱动栈 + 云厂商机密 GPU 实例 |
 | GPU 加速 | 仅 GPU 直通，需手工密钥交换 | CPU 友好，GPU 需虚拟化 | **原生机密 GPU 模式** |
 
 **第二层：四个维度的展开比较。**
 
 - **隔离强度**：SGX 提供最大隔离——只有 enclave 内代码可见明文，包括 OS 在内都看不到；SEV-SNP 是 VM 加密，加密整虚机内存，但 VM 内核仍在威胁面内；H100 CC 隔离到 GPU 显存，对 LLM 场景天然贴合（模型权重以密文形式加载到 GPU 显存，host CPU 不可见）。
-- **迁移成本**：SGX 应用通常需要**重新编译 + 修改 ABI**，迁移成本最高；SEV-SNP 通常只需要"把虚机跑在机密虚机里"；H100 CC 通过 Kubernetes Device Plugin + NeMo Guardrails 改造，迁移成本中等。
+- **迁移成本**：SGX 应用通常需要**重新编译 + 修改 ABI**，迁移成本最高；SEV-SNP 通常只需要"把虚机跑在机密虚机里"；H100 CC 通过 Kubernetes Device Plugin + NVIDIA CC 驱动栈改造，迁移成本中等。
 - **AI 推理友好度**：GPU TEE 完胜——H100 CC 让模型权重全程留在 GPU 显存里不暴露，**推理延迟几乎等同明文**；SGX + GPU 走的是"CPU enclave + GPU 透传"架构，密钥交换与 PCIe DMA 路径复杂且慢。
 - **侧信道攻击面**：SGX 攻击面最丰富（Foreshadow / Spectre / SGAXE）、社区审计最严；SEV-SNP 在 2017 后修补了主要漏洞；H100 CC 攻击面研究尚新，NVIDIA Hopper 架构自带多级保护。
 
 **第三层：机密 LLM 推理选型的关键指标。**
 - **模型权重不泄露 host**——必须能验证 GPU 内密文加载、远程证明 GPU 硬件是 H100 而非模拟器。
-- **推理延迟 vs 明文比**——目标劣化不超过 5%–10%，否则在线服务体验崩塌；H100 CC 在 FP16/BF16 推理上达标。
+- **推理延迟 vs 明文比**——工程上通常把「劣化控制在百分之十以内」当作目标档位（具体阈值随业务与 SLA 而异，此处按【经验】档处理），否则在线服务体验崩塌；NVIDIA 公开材料称 H100 CC 在 FP16/BF16 推理上可满足这一档位（厂商自述口径，本书无法独立核验）。
 - **KV cache 不泄露**——KV cache 含用户 prompt 上下文，最敏感；H100 CC 通过机密显存与 CPU-GPU 加密 DMA 路径保护。
 - **支持模型规模**——显存上限决定可服务模型大小（70B vs 405B vs 更大）；多卡 NVLink 域的机密扩展尚未完全公开。
 - **审计与远程证明**——control plane 必须能远程证明：执行环境是确切的硬件型号 + 固件版本；Intel / AMD / NVIDIA 都提供配套 root of trust 验证 API。
@@ -336,7 +336,7 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 **第四层：工业落地的代表性案例。**
 - **Microsoft Azure Confidential VM + Azure OpenAI**（Intel SGX / AMD SEV-SNP 双栈）——把 GPT 模型跑在机密虚机里，对外提供"机密 OpenAI"服务。
 - **Google Confidential Gemini**（AMD SEV-SNP）——把 Gemini 推理部署在 GCP Confidential VM 上，强调与 Vertex AI 集成。
-- **NVIDIA H100 CC + NeMo Guardrails**（Hopper 机密 GPU 模式）——自有商用部署和云服务（Bishop Fox 等第三方审计）均在推进。
+- **NVIDIA H100 CC**（Hopper 机密 GPU 模式）——自有商用部署与云服务均在推进；其第三方安全审计的具体结论本书无法给出可核验出处，此处按【经验】档处理。（更正：原条目把「NeMo Guardrails」与 H100 CC 并列有误——NeMo Guardrails 是 LLM 内容护栏工具包，与机密 GPU 模式、远程证明无直接关系；原句并列的「Bishop Fox 等第三方审计」同样无可核验出处。）
 - **蚂蚁「摩斯」**——基于自研 TEE 方案的机密 AI 平台，覆盖蚂蚁内部场景与少量外部场景。
 - **阿里云机密计算 / 阿里通义 + enclave**——依托 SGX/SEV 的云机密算力，以及「通义 + enclave」的机密 LLM 推理。
 - **Cape Privacy / Opaque / Privitar**（MPC + TEE 混合 SaaS）——TEE 在 SaaS 化隐私计算中的轻量化落地。
@@ -446,8 +446,8 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 - **退出机制**：某一方退出训练时，已训练模型中"对方相关特征"的叶子权重必须可证清空；这是 SecretFlow 与 FATE 都在工程上反复打磨的"司法可解释性"。
 
 **第五层：真实工业案例对照。**
-- **微众银行 FATE + 跨行联合反欺诈**：纵向 SecureBoost + PSI + 联邦 XGBoost，AUC 提升 15% 左右（对比单方模型），是国内最早公开案例。
-- **蚂蚁集团 SecretFlow + 联合营销 / 联合风控**：FL + MPC + TEE 三引擎，按场景切换；公开提及服务超 50 家合作机构、ROI 提升 30% 量级。
+- **微众银行 FATE + 跨行联合反欺诈**：纵向 SecureBoost + PSI + 联邦 XGBoost，AUC 相比单方模型有可观提升（公开案例中的具体幅度本书无法核验，此处按【经验】档处理），是国内较早公开的案例之一。
+- **蚂蚁集团 SecretFlow + 联合营销 / 联合风控**：FL + MPC + TEE 三引擎，按场景切换；公开分享中提到已服务数十家合作机构、联合营销场景下 ROI 有可观提升（机构数与 ROI 幅度的具体出处本书无法给出可核验来源，此处按【经验】档处理）。
 - **平安金融「联邦学习反欺诈平台」**：纵向 SecureBoost + 区块链审计上链，金融场景典型落地。
 - **腾讯 WeChat Pay「联邦反欺诈」**：跨金融机构 + 跨场景的横向 + 纵向混合 FL 实践。
 - **平安科技 + 多家保险公司「联邦保险定价」**：纵向 FL + 差分隐私 + TEE，欧盟 GDPR 框架下合规。
@@ -473,7 +473,7 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 - Cheng, K. 等《SecureBoost: A Lossless Federated Learning Framework》, IEEE Intelligent Systems 2021——SecureBoost 的原始论文与算法形式化。
 - Bonawitz, K. 等《Practical Secure Aggregation for Privacy-Preserving Machine Learning》, ACM CCS 2017——Google 的 Secure Aggregation，通信 `O(1)` 的工业实践。
 - McMahan, B. 等《Communication-Efficient Learning of Deep Networks from Decentralized Data》, AISTATS 2017——FedAvg 原始定义，纵向联邦 SecureBoost 也基于其梯度聚合思想。
-- Liu, T. 等《Fusion360 — FedLearner by WeBank》——微众银行纵向 SecureBoost 在金融反欺诈的工业报告。
+- 微众银行《FATE 联邦学习技术白皮书》——微众银行纵向 SecureBoost 在金融反欺诈的工业报告。（原条目引「Liu, T. 等《Fusion360 — FedLearner by WeBank》」，归属有误：FedLearner 一般被认为是字节跳动的联邦学习框架，与微众银行 FATE 无关，此处按 C 类摘除该错误归属，具体文献待人工核查。）
 - 蚂蚁集团《SecretFlow 开源白皮书》——FL + MPC + TEE 联合风控的工程范式与审计设计。
 - Zhu, L. 等《Deep Leakage from Gradients》, NeurIPS 2019——DLG 梯度反演攻击，揭示"梯度本身是信息"的核心证据。
 - 平安科技《联邦学习在金融反欺诈中的实践》——金融场景工程经验与监管对齐案例。
@@ -503,17 +503,17 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 - 是否能从「数据 - 模型 - 系统」三层把 FL 效果损失的根因拆开，而不是只背"non-IID 影响大"。
 - 能否区分 FedAvg 的固有缺陷——客户端漂移（client drift）、异构梯度方向冲突、统计异质性三个机制。
 - 是否掌握主流异构友好算法的核心机制与适用场景：FedProx（近端正则）、FedNova（归一化平均）、SCAFFOLD（控制变量）、FedOpt 系列（adaptive server optimizer）。
-- 加分项：能结合 FedScale / LEAF benchmark、工业案例（CMU、Stanford、Google）讲清"哪种算法对应哪种数据"。
+- 加分项：能结合 FedScale / LEAF benchmark、以及有公开记载的工业案例（Google Gboard 横向 FL、NVIDIA FLARE 医学影像 FL、微众银行纵向 SecureBoost）讲清"哪种算法对应哪种数据"。
 
 **2. 参考答案框架**
 
-**第一层：5–15% 损失从哪里来。** FL 模型和明文中心化模型的差距本质上由三个独立贡献叠加：
-- **统计异质性（Non-IID）**：每个客户端的样本分布、特征分布、标签分布都不同；最大可贡献 8%–12% 的差距，是核心来源。
-- **系统异质性（System Heterogeneity）**：客户端算力/网络差异大——某些 client 训练慢、被 straggler 拖慢整体聚合节奏，导致参与 client 群体分布与全集不一致；贡献 1%–3%。
-- **通信瓶颈 + 信息损失**：本地更新轮次、压缩、量化都会损失信息；长期低精度压缩贡献 1%–3%。
-- **隐私噪声**（如启用了 DP）：额外贡献 2%–5%。
+**第一层：效果损失从哪里来。** FL 模型和明文中心化模型的差距本质上由三个独立贡献叠加（题干给出的「5–15%」是极粗的经验区间，不是可引用的分解值）：
+- **统计异质性（Non-IID）**：每个客户端的样本分布、特征分布、标签分布都不同；在各项中通常贡献最大，是核心来源（具体占比随任务、数据量与模型而异，本书无法给出可核验的分解数字，此处按【经验】档处理）。
+- **系统异质性（System Heterogeneity）**：客户端算力/网络差异大——某些 client 训练慢、被 straggler 拖慢整体聚合节奏，导致参与 client 群体分布与全集不一致；通常小于统计异质性那一项。
+- **通信瓶颈 + 信息损失**：本地更新轮次、压缩、量化都会损失信息；长期低精度压缩的贡献通常也小于统计异质性那一项。
+- **隐私噪声**（如启用了 DP）：额外叠加的一项，幅度直接由 ε 决定——ε 越小、噪声越大。
 
-注意：这个「5–15%」是非常粗的经验区间；真实差距与任务、数据量、模型复杂度强相关。**没有任何机制保证 FL ≈ 明文中心化模型。**
+注意：这个「5–15%」是非常粗的经验区间，上面各项的相对大小同理——**它们都不是可引用的分解值**；真实差距与任务、数据量、模型复杂度强相关。**没有任何机制保证 FL ≈ 明文中心化模型。**
 
 **第二层：核心机制——FedAvg 为何会失效。** FedAvg 的目标是找到`argmin_θ Σ_k p_k F_k(θ)`，其中 `F_k` 是第 k 个 client 的本地 loss，权重 `p_k = |D_k|/|D|`。但在 Non-IID 下：
 - **本地漂移（client drift）**：每个 client 解的是局部最优 `θ_k*`，聚合后是"局部最优点的加权平均"，与全局最优点可能有较大差距——特别是深度神经网络、病态 loss 地形下。
@@ -552,14 +552,14 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 **第五层：工程经验与基准。**
 - **本地更新轮次 E 的影响**：E=1 时 FedAvg 已接近 FedProx；E 越大，Non-IID 下漂移越严重，但通信节约越多；E=5 是常见上限。
 - **参与者数量**：参与聚合的客户端数 ≤ 100 时，简单的 FedAvg 已能接近最优；≥ 1000 时异构影响显著，必须上 FedProx 或 SCAFFOLD 级别算法。
-- **验证基准**：CMU 的 **FedScale benchmark**（Google LEAF 数据集扩展）允许跨算法横向对比；Stanford 提出的 **FedJAX** 是 JAX 实现的 FL 框架。
+- **验证基准**：**FedScale** 与 **LEAF** benchmark 允许跨算法横向对比；**FedJAX** 是 JAX 实现的 FL 框架。（原条目把 FedScale 归给 CMU、FedJAX 归给 Stanford，机构归属存疑，无网络环境无法核验，本节摘除机构标注。）
 - **工业经验**：Google Gboard 横跨百万级 device，公开报告显示 FedAvg + Secure Aggregation 即可；金融纵向 FL 因样本对齐低、特征差异大，几乎一定要 FedProx 或 SCAFFOLD 级别算法。
 
 **第六层：工业实践与参考研究。**
 - **Google Gboard 横向 FL**：百万级 device，强 Secure Aggregation；FedAvg 在 Gboard 场景下结论性有效，但模型差异没有明文 baseline 时几乎不可能直接验证。
 - **微众银行纵向 SecureBoost**：纵向 FL 经典，但与统计学习参数更新更类似；DP-SGD 风味而非经典 FedAvg。
 - **NVIDIA FLARE** + Clara：医学影像横向 FL，使用 FedProx 处理跨医院设备分布差异；NVIDIA Clara Train SDK 集成 Federated Learning 与 Differential Privacy。
-- **Stanford / CMU LEAF & FedScale**：开放 FL 基准，多算法可复现实验。
+- **LEAF & FedScale**：开放 FL 基准，多算法可复现实验。
 - **FedML / OpenMined PySyft**：学术研究导向的开源框架，集成了 FedAvg/FedProx/FedNova/SCAFFOLD 等算法。
 - **CVS / Bank of America / Ping An** 等金融 FL 平台：纵向 FL 为主，常配 FedProx 级别算法 + DP。
 
@@ -586,7 +586,7 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 - Karimireddy, S. P. 等《SCAFFOLD: Stochastic Controlled Averaging for Federated Learning》, ICML 2020——控制变量算法，是 Non-IID 收紧收敛界的最强基线之一。
 - Acar, D. A. E. 等《Federated Learning Based on Dynamic Regularization》, ICLR 2021——动态正则的进一步发展，与 FedProx 对比的方向之一。
 - LEAF Benchmark（Caldas et al.）——学术界 FL 基准的实现之一。
-- FedScale（CMU）——大规模 FL benchmark,允许横向对比算法效果与系统效率。
+- FedScale ——大规模 FL benchmark,允许横向对比算法效果与系统效率（原条目标注的「CMU」等维护机构归属存疑，待人工核查）。
 - NVIDIA FLARE 开源项目文档——医学影像领域 FL 工程范式。
 - Google AI Blog《Federated Learning: Building more robust models》与 Gboard 系列报告——大规模 device-side FL 的工业实践。
 - FedML / OpenMined PySyft / FedJAX 文档——FL 工具链第一手工程经验。
@@ -615,7 +615,7 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 - **机理层**（§11.8.3）：差分隐私预算 ε 的定义、累计、训练 DP-SGD 中的工程。
 - **硬件层**（§11.8.4）：SGX / SEV-SNP / H100 CC 的取舍与机密 LLM 选型指标。
 - **设计层**（§11.8.5）：三方联合反欺诈端到端方案设计 + 审计与 DP 加固。
-- **运营层**（§11.8.6）：FL 异构数据下 5–15% 效果损失归因与算法选型。
+- **运营层**（§11.8.6）：FL 异构数据下的效果损失归因与算法选型（题干以「5–15%」这一经验区间设问）。
 
 六道题构成一条完整的下钻链路：**为什么需要隐私计算 → 怎么选路线 → 怎么做协议 → 怎么管预算 → 怎么用硬件 → 怎么落地 → 怎么运营**。
 

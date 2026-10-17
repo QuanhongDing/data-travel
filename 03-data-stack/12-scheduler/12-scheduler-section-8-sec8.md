@@ -58,7 +58,7 @@
 
 - **Airflow**：团队有 Python 工程能力、Operator 生态依赖重、已经在 YARN / 云 VM 上跑。这是**默认推荐**——LinkedIn 早期 TonY 项目基于 Azkaban 演进，但当前 LinkedIn 内部大量业务已迁到 Airflow；Airbnb 至今仍是 Airflow 的最大贡献者，每天跑数千 DAG；Spotify 早期是大用户并贡献了 `KubernetesPodOperator`；Uber 在 Michelangelo ML 平台用 Airflow 编排训练任务。
 - **DolphinScheduler**：业务团队偏运营 / 分析、需要 UI 拖拽、对国产生态依赖强（信创 / 国产数据库适配）。这是**国内中大型企业的传统首选**——美团、京东、招行大量业务线仍以 DolphinScheduler 为底座；微众银行的联邦学习调度也构建于其上。
-- **Argo Workflows**：已经在 K8s 上、希望编排与基础设施同构、对弹性要求极高。**字节跳动 Argo 实践**是典型代表——每天百万级任务量、依赖 Argo + 自研调度器把成本降低 50%；Netflix 的 **Maestro** 平台底层也是 Argo。阿里云 **DataWorks** 智能升级版也在向 K8s + Argo 靠拢。
+- **Argo Workflows**：已经在 K8s 上、希望编排与基础设施同构、对弹性要求极高。**字节跳动 Argo 实践**是典型代表——每天百万级任务量、依赖 Argo + 自研调度器把成本显著压低（具体幅度本书无法给出可核验出处，此处按【经验】档处理）；Netflix 的 **Maestro** 平台底层也是 Argo。阿里云 **DataWorks** 智能升级版也在向 K8s + Argo 靠拢。
 
 **第五层：组合策略。**
 
@@ -90,7 +90,7 @@
 - Uber Engineering 关于 Michelangelo ML 平台的公开材料——Airflow 在 ML 训练调度中的角色。
 - Netflix Technology Blog 关于 Maestro 的公开材料——基于 Argo 的工作流编排平台设计。
 - Apache Airflow GitHub 主仓库的 K8s Executor 源码——理解 Task → Pod 映射机制。
-- **字节跳动 Argo + K8s 调度实践** —— 每天百万级任务量，Argo + 自研调度器组合，成本降低 50%，是国内云原生调度的代表案例。
+- **字节跳动 Argo + K8s 调度实践** —— 每天百万级任务量，Argo + 自研调度器组合显著压低成本（具体幅度以原分享为准，本节无法给出可核验链接），是国内云原生调度的代表案例。
 - **阿里 DataWorks 智能升级** —— 一站式调度 + MaxCompute + 智能告警，云上数据栈的事实标准。
 - **美团 DolphinScheduler 调度实践** —— 数千业务线、数万 DAG 在 DolphinScheduler 上跑，多租户 + 资源组隔离是核心，是国内零售业的典型落地。
 - **京东 DolphinScheduler + 离线 ETL** —— 大促场景下作业分级（P0/P1/P2）+ 独立资源池，对应电商大促的稳定性实践。
@@ -160,7 +160,7 @@
 - **「DAG Run 越来越多，TaskInstance 表越来越大怎么办？」** 答：Airflow 默认不清理历史 TaskInstance，生产实践是定期 purge（`airflow db clean`）保留近 90 天；2.7+ 的 `internal_logger` 把日志落到对象存储；DolphinScheduler 默认带清理任务。
 - **「Airflow 的 Datasets 和 ExternalTaskSensor 选哪个？」** 答：Datasets 是官方推荐——更解耦、依赖图更清晰。**注意** Datasets 在 2.4 时只能表达"产出-消费"关系，2.7+ 才有"条件触发"语义。
 - **「依赖环检测算法具体怎么写？」** 答：DFS + 三色标记。伪代码：`dfs(node)`：若 node 是灰色，返回"有环"；置 node 为灰色；遍历 node 的所有出边，对每个出边调用 `dfs`；置 node 为黑色。
-- **「怎么检测跨 DAG 的依赖环？」** 答：从血缘系统（DataHub / DataWorks / Neptune）抽取 DAG 间依赖关系，构建有向图，跑图算法（NetworkX 的 `simple_cycles` / Neo4j 的 `apoc.alg.dijkstra`）。
+- **「怎么检测跨 DAG 的依赖环？」** 答：从血缘系统（DataHub / DataWorks / Neptune）抽取 DAG 间依赖关系，构建有向图，跑图算法（NetworkX 的 `simple_cycles`，或在图库上用 Cypher / Gremlin 自研环检测查询）。
 
 **5. 参考资料**
 
@@ -382,7 +382,7 @@ SLA Miss 不只是"任务超时"，实际生产中至少四类：
 - **调度延迟**：DAG Run 未按时启动（Scheduler 卡顿）。
 - **数据问题**：上游数据缺失 / 异常（DQC 拦截）。
 
-**头部实践是把 SLA Miss 自动归类**——Airflow 的 `sla_miss_callback` 把上下文（执行日志、依赖关系、运行时长）一起推送，自动生成归因。Netflix Maestro 把 SLA Miss 自动归到 4 个分类标签之一，节省 70% 的定位时间。
+**头部实践是把 SLA Miss 自动归类**——Airflow 的 `sla_miss_callback` 把上下文（执行日志、依赖关系、运行时长）一起推送，自动生成归因。Netflix Maestro 把 SLA Miss 自动归到 4 个分类标签之一，显著缩短定位时间（幅度随故障类型与数据成熟度而异；本书无法给出可核验的量化出处，此处按【经验】档处理）。
 
 **第五层：生产实践要点。**
 
@@ -437,7 +437,7 @@ SLA Miss 不只是"任务超时"，实际生产中至少四类：
 - **代码 bug**：边界条件未覆盖、资源未释放、空指针。
 - **外部依赖**：第三方 API 限流、数据库连接池耗尽、消息中间件不可用。
 
-**Netflix / Uber / 阿里 / 字节的生产经验：万级 DAG 规模下，**单日任务失败率 1-5% 是健康水位**。低于 1% 说明告警失效（漏报），高于 10% 说明系统有严重问题。
+**经验判断（本书按【经验】档给出，无可溯源出处）：万级 DAG 规模下，**单日任务失败率在百分之几的量级属健康水位**。低于约 1% 要怀疑告警失效（漏报），高于 10% 说明系统有严重问题。
 
 **第二层：幂等性是重试的前提。**
 
@@ -499,7 +499,7 @@ SLA Miss 不只是"任务超时"，实际生产中至少四类：
 **4. 追问预测**
 
 - **「Lake 表的 MERGE / OVERWRITE 怎么保证幂等？」** 答：Lake 表（Iceberg / Hudi / Delta Lake）提供 `MERGE INTO` 主键级 upsert + 事务性，多次重写结果一致；分区级 `OVERWRITE` 也是幂等的。**这是存储层幂等的核心**。
-- **「跨任务的失败传递怎么处理？」** 答：依赖图天然传递——A 失败 → B 因依赖 A 而被跳过 / 失败；Airflow `trigger_rule='all_failed'` 让某些任务在依赖失败时也跑（如失败通知）；`trigger_rule='one_failed'` 让告警任务只触发一次。
+- **「跨任务的失败传递怎么处理？」** 答：依赖图天然传递——A 失败 → B 因依赖 A 而被跳过 / 失败；Airflow `trigger_rule='all_failed'` 让某些任务在依赖失败时也跑（如失败通知）；`trigger_rule='one_failed'` 让告警任务在任一上游失败时就触发，不必等全部上游结束。
 - **「怎么识别"假失败"（任务报告失败但实际产出正常）？」** 答：DQC 行数校验 + 上游 commit 状态查询 + 数据落表时间戳对比。**生产必须加这三道防线**，否则会被假失败误导人工介入。
 
 **5. 参考资料**

@@ -97,7 +97,7 @@
 - **字节跳动 Lakehouse 表格式双轨实践** —— 流式入湖用 Paimon/自研，流批读用 Iceberg 联邦，跨业务线双轨共存，是国内大厂表格式选型的真实写照。
 - **阿里云 MaxCompute / 阿里 Flink Paimon 出海路径** —— Paimon 脱胎于阿里 Flink 社区，与阿里实时计算 Flink 版深度集成，是国内流式湖仓的事实标准。
 - **Apache Hudi 在 Uber 的增量 ETL 起源案例** —— Uber 的司机 / 订单 upsert 是 Hudi 设计的初衷，对应"更新密集场景"的范式答案。
-- **Netflix Iceberg 替代 Hive 的迁移路径** —— PB 级 Hive 表迁向 Iceberg，Petabyte 级查询性能提升 5x、ETL 时间下降 70% 的公开数据。
+- **Netflix Iceberg 替代 Hive 的迁移路径** —— 对应上述 Netflix Tech Blog 的迁移记录：PB 级 Hive 表迁向 Iceberg 后，查询性能与 ETL 时延均有显著改善（具体倍数随工作负载与迁移阶段而异，本节无法给出该数字的可核验出处，此处按【经验】档处理）。
 - **LinkedIn DataHub 与 Iceberg 的集成案例** —— LinkedIn 同时是 Iceberg 与 DataHub 的重度使用者，二者组合是其数据资产目录的标准栈。
 - **京东物流** —— 京东物流仓储数据中台——AGV、库存、订单的多源整合与实时监控。
 - **滴滴** —— 滴滴实时订单与司机画像——万级 Flink 作业 + Iceberg 增量读下的冲突与 compaction 治理。
@@ -122,10 +122,10 @@
 
 **第二层：Iceberg 的事务模型——乐观并发 + Snapshot 隔离。** Iceberg 的 ACID 不靠传统数据库的锁，而是靠**文件原子重命名 + Snapshot 引用 + 乐观重试**的组合拳：
 
-- **原子提交**：每次 commit 写一个新的 `manifest list.avro` + 一组 `manifest file` + 数据 Parquet 文件，但**新 `manifest list` 通过对象存储的原子 rename 指向旧文件**，对外立即生效。对象存储（OSS / S3）提供的 PUT 与 COPY rename 是原子的，这是 Iceberg ACID 的工程基石。
+- **原子提交**：每次 commit 写一个新的 `manifest list.avro` + 一组 `manifest file` + 数据 Parquet 文件，再通过对象存储的**原子 rename / 条件写入把表指针切到新的 metadata 文件**，对外立即生效。对象存储（OSS / S3）能否提供原子的 PUT 与 rename 语义，是 Iceberg ACID 的工程基石。
 - **Snapshot 隔离**：每个 reader 启动时绑定一个 snapshot-id，读取对应 manifest list 中的所有文件集合——后续 commit 不会影响正在运行的 query。这就是经典的 MVCC（多版本并发控制）思想。
 - **冲突检测与重试**：当两个 writer 同时 commit 时，第二个 writer rename 时发现自己拿到的 manifest 已经陈旧，会抛 `CommitFailedException`，客户端按策略重试（取最新 snapshot + 重新生成 manifest + 再 commit）。这是「乐观并发」的标准实现。
-- **删除语义**：Iceberg V1 用**位置删除（Pos-Delete）文件**记录"在 N 号 Parquet 的第 K 行被删"；V2 引入**等值删除（Eq-Delete）文件**，由 reader 在读时过滤；V3 进一步支持行级删除的索引。
+- **删除语义**：Iceberg V1 **不支持行级删除**（只能整文件重写，即 copy-on-write）；V2 才引入行级删除，并同时提供两类删除文件——**位置删除（Pos-Delete）** 记录"在 N 号 Parquet 的第 K 行被删"，**等值删除（Eq-Delete）** 由 reader 在读时按等值条件匹配过滤；V3 进一步优化行级删除的表示与索引。
 - **时间旅行**：`_metadata` 目录里存所有历史 snapshot-id（每 commit 一个），查询时按 snapshot-id 或时间范围挑选即可。`expire_snapshots` 后才物理删除。
 
 **第三层：Hudi 的 Timeline 模型——动作流模型。** Hudi 把表的变更建模为「Timeline」上的「一组动作」：
@@ -161,7 +161,7 @@
 - **「私有化部署的对象存储（MinIO / Ceph）能跑 Iceberg 吗？」** 答：能，但要保证 rename 操作的原子性（PUT 后 COPY rename），否则 Iceberg 会退化为 eventually consistent。MinIO 在 2020 后提供类 S3 atomic rename，已是大数据部署常见。
 - **「Iceberg 在多 writer 高并发下表现如何？」** 答：乐观 CC 在低冲突时延迟极低，冲突频繁时（同一张表多 writer 并发 upsert）重试代价上升，重试风暴时需要降级为单 writer 或换 lock provider。Hudi 对此场景更友好。
 - **「读时合并 vs 写时合并怎么选？」** 答：COW（写时合并）读快写慢，MOR（读时合并）写快读慢；写放大决定了你应该选哪个——高频更新选 MOR，分析读多选 COW。
-- **「Iceberg V3 的 row-level delete 解决了什么？」** 答：解决了合规删除（GDPR right-to-be-forgotten）与低延迟更新的两类需求；V2 的位置删除需要全文件读取才能过滤，效率低。
+- **「Iceberg V3 的 row-level delete 解决了什么？」** 答：解决了合规删除（GDPR right-to-be-forgotten）与低延迟更新的两类需求；V2 的两类删除文件中，等值删除需要 reader 读数据文件做匹配、读放大更明显，位置删除相对高效——这也是后续版本持续优化行级删除表示的原因。
 - **「湖上的事务能跨表吗？」** 答：不能。需要两阶段 / Saga 协调到外部系统（Saga、Flink two-phase sink），这是湖仓库存的边界。
 
 **5. 参考资料**
@@ -652,10 +652,10 @@ OLAP（StarRocks / Doris / ClickHouse）+ BI / AI
 | 治理成熟度 | 高 | 高（依赖 Catalog + 血缘） |
 | 演进速度 | 慢 | 快 |
 
-典型 ROI：
-- **Netflix**：PB 级 Hive → Iceberg，存储成本下降 60%，查询性能 5x 提升。
-- **LinkedIn**：Iceberg 替代 Hive，ETL 时间下降 70%。
-- **字节**：Lakehouse 替代部分 Lambda 链路，成本下降 40%，实时性提升 10x。
+典型 ROI（以下为方向性结论，各家具体幅度依赖工作负载与统计口径，本节无法给出可核验的统一数字，此处按【经验】档处理）：
+- **Netflix**：PB 级 Hive → Iceberg，存储成本与查询开销显著下降。
+- **LinkedIn**：Iceberg 替代 Hive，ETL 链路时延明显缩短。
+- **字节**：Lakehouse 替代部分 Lambda 链路，成本下降、实时性提升。
 
 **第五层：演进失败的常见模式与对策。**
 

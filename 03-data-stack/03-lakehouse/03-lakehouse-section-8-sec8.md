@@ -48,7 +48,7 @@
 **第二层：四家的设计原点对比。**
 
 - **Apache Iceberg（Netflix / Apple 主导）**：设计原点是「让任何引擎都能安全读」。Catalog 与物理路径完全解耦，metadata 文件层级 `metadata.json -> manifest list -> manifest -> data file`。**写模型默认 COW**，Spark / Trino / Flink / StarRocks 全兼容，社区最广。**代价**是主键索引弱、依赖墨菲条（`MERGE INTO`）做 upsert，性能不如 Hudi MOR。
-- **Apache Hudi（Uber 主导）**：设计原点是「CDC 主键 upsert」。Timeline + Record-Level Index 让 upsert 在 PB 级也能秒级完成，**MOR 默认**让写快读时合并。代价是 Flink 集成偏后、社区贡献者比 Iceberg 少。Uber 把 Hudi 用在 UberEats 的实时订单流，是 CDC 路线最深的工业案例。
+- **Apache Hudi（Uber 主导）**：设计原点是「CDC 主键 upsert」。Timeline + Record-Level Index 让 upsert 在 PB 级也能秒级完成，**CDC 场景通常显式切到 MOR** 让写快读时合并（Hudi 的默认表类型其实是 COW，与 Iceberg 一致）。代价是 Flink 集成偏后、社区贡献者比 Iceberg 少。Uber 把 Hudi 用在 UberEats 的实时订单流，是 CDC 路线最深的工业案例。
 - **Delta Lake（Databricks）**：设计原点是「Spark 之上最强 ACID」。Transaction Log（`_delta_log`）以 JSON+Parquet 维护，**Spark API 集成最深**，配合 Unity Catalog 与 Vector Search 形成 AI 一体化闭环。**代价**是 Flink 写入生态比较薄（2024 之前的痛点）；2024 年的 **Delta UniForm** 通过写一份 Delta 同时发布 Iceberg/Hudi 元数据开始回应这一问题。
 - **Apache Paimon（Alibaba / Flink 生态）**：设计原点是「流批一体的 LSM 树」。LSM 让流式写入天然防小文件、Changelog Producer 输出变更流直接驱动物化视图增量刷新。代价是 Trino / StarRocks 的批端兼容性还在追赶。
 
@@ -57,7 +57,7 @@
 1. **引擎偏好**：Flink 为主线选 Paimon；Spark 为主线选 Delta；跨引擎 / Trino 联邦选 Iceberg。
 2. **更新频率**：CDC upsert 密集（电商订单、用户画像）选 Hudi MOR；普通批处理 + 偶发 upsert 选 Iceberg / Delta。
 3. **生态与人才**：选表格式就是选社区，建议优先选公司已有团队经验的；最差的选择是为了「先进性」换一个团队都不熟的格式。
-4. **总拥有成本**：含 Catalog 选型（Hive Metastore / Glue / Unity Catalog / Polaris / Nessie）、Compaction 成本、跨云一致性。Netflix 公开数据显示 Iceberg 替代 Hive 后存储成本下降 60%、查询提升 5 倍，是工业最常被引用的 ROI 锚点。
+4. **总拥有成本**：含 Catalog 选型（Hive Metastore / Glue / Unity Catalog / Polaris / Nessie）、Compaction 成本、跨云一致性。Netflix 在公开技术博客中介绍过 Iceberg 替代 Hive 后的成本与查询改善（本节无法给出该博客的可核验数字，引用时请自行查证），这是工业界最常被引用的 ROI 锚点方向。
 
 **第四层：工程上的多格式共存现实。** 真实大厂往往**不止一种格式**：阿里用 Paimon 做实时入湖 + Iceberg 做离线主仓；字节 DataFinder 用 Paimon+Flink+StarRocks 跑秒级实时数仓；招行湖仓建设用 Iceberg 做统一底座、辅以 Hudi MOR 处理高频额度变更；Databricks 2024 推 Delta UniForm 试图用「一份 Delta 三协议读」抹平差异。
 
@@ -331,7 +331,7 @@ Paimon 本质是**把 LSM 树结构搬到了湖表**：写入先入 memtable，f
 - Apache Iceberg V3 规范与「Row-Level Deletes」RFC——COW/MOR 边界融合的官方时间线。
 - Delta Lake 官方文档中「Optimistic Concurrency」与「Z-Order」章节——商业产品的 Compaction 策略。
 - Uber Engineering「Building Hudi's First Production MOR Use Case」——MOR 在 UberEats 实时订单的落地细节。
-- **美的工业互联网 Hudi MOR 实践** —— 设备状态每分钟级变更，Hudi MOR 替代原 COW Hive 表后写入性能提升 10 倍。
+- **美的工业互联网 Hudi MOR 实践** —— 设备状态每分钟级变更，Hudi MOR 替代原 COW Hive 表后写入性能有数量级改善（具体倍数随场景而异，本节无法给出可核验数字）。
 - **招商银行额度变更实时入湖（Hudi MOR + Flink CDC）** —— 高频额度变更场景下的 MOR 调优经验。
 - **字节跳动 DataFinder + Paimon LSM** —— Paimon 在流式入湖与实时 OLAP 一体的落地。
 - **Netflix Iceberg V3 行级删除调研** —— V3 在流式更新场景下的早期生产案例。
@@ -342,7 +342,7 @@ Paimon 本质是**把 LSM 树结构搬到了湖表**：写入先入 memtable，f
 
 **1. 考察点**
 
-- 是否理解「**全量重算的隐性成本**」——并非「逻辑简单所以就用全量」，而是数据量线性增长后**计算资源 + 调度窗口**会成为天花板。Netflix 公开数据：Iceberg 迁移后查询提速 3-10x 就是因为把每日全量重算改为增量读。
+- 是否理解「**全量重算的隐性成本**」——并非「逻辑简单所以就用全量」，而是数据量线性增长后**计算资源 + 调度窗口**会成为天花板。Netflix 在公开技术博客中介绍过 Iceberg 迁移后的查询提速（幅度本节无法核验，且提速未必只归因于「全量重算改为增量读」，引用时请自行查证）。
 - 能否区分**三种增量**：① 文件级增量（新增数据文件）② 主键级增量（CDC upsert 的 row-level diff）③ 表格式支持的 snapshot / changelog 增量（Iceberg V2 `append`/`overwrite`、`__delta__` 等）。
 - 是否能把 **Flink CDC + 湖表增量读 + 流批一体存储** 串成一条链路，而不是只看引擎层。
 - 加分项：能区分**端到端增量（end-to-end incremental）**与**单作业增量（per-job incremental）**的代际差异。
@@ -370,10 +370,10 @@ Paimon 本质是**把 LSM 树结构搬到了湖表**：写入先入 memtable，f
 
 **第五层：成本对比与典型 ROI。**
 
-- Netflix：Hive → Iceberg，存储成本下降 60%、查询性能提升 5 倍（数据公开）。
-- LinkedIn：Hudi 增量入湖替代每日全量重算，**资源消耗下降 70%**。
+- Netflix：Hive → Iceberg，存储与查询成本均有可观改善（原始幅度见 Netflix 公开技术博客，本节无法给出可核验数字）。
+- LinkedIn：Hudi 增量入湖替代每日全量重算，**资源消耗有大幅下降**（幅度本节无法给出可溯源数字）。
 - Uber：Hudi MOR 替代传统 MapReduce 日全量，**单作业时长从小时级降到分钟级**。
-- 国内某大厂（公开数据）：用 Iceberg + Flink CDC 替换原 T+1 全量，**日节省约 30 万核时**（具体数字行业有差，但量级可信）。
+- 国内某头部互联网公司（本节无法给出可核验出处）：用 Iceberg + Flink CDC 替换原 T+1 全量，**日节省的算力达到数十万核时量级**（具体数字随数据规模与实现差异很大，引用时请自行查证）。
 
 **第六层：增量处理落地的四道工序。**
 
@@ -407,7 +407,7 @@ Paimon 本质是**把 LSM 树结构搬到了湖表**：写入先入 memtable，f
 - Uber Engineering「Incremental ETL with Hudi」——Hudi 增量处理在 Uber 的实操。
 - LinkedIn Hudi vs Hive 全量重算对比——公开的 ROI 数据。
 - **Netflix Iceberg 增量处理（公开技术博客）** —— PB 级 Hive → Iceberg 增量替代全量的最大量级案例。
-- **LinkedIn Hudi 实践（公开技术博客）** —— 70% 资源消耗下降的具体路径。
+- **LinkedIn Hudi 实践（公开技术博客）** —— 资源消耗下降的具体路径与其公开口径说明。
 - **Uber Hudi MOR 增量入湖（公开技术博客）** —— UberEats 实时订单的全增量切换过程。
 - **招商银行湖仓增量 ETL（Iceberg + Flink CDC）** —— 国内金融业增量化链路的标准流程。
 - **字节跳动 DataFinder 端到端增量** —— 实时分层都走增量通道的工业实践。
@@ -421,7 +421,7 @@ Paimon 本质是**把 LSM 树结构搬到了湖表**：写入先入 memtable，f
 
 - 是否理解「存算分离」与「存算一体」的本质差异——存算一体是「数据在哪计算在哪」，存算分离是「数据永远在对象存储上、计算可以任意起停」。
 - 能否说清**一致性由谁负责**——是对象存储、Catalog、还是引擎？三者的责任边界。
-- 是否理解**对象存储的语义不是文件系统**——最终一致性、S3 GET 的 `If-Match` / `If-None-Match` 等能力对湖表协议的影响。
+- 是否理解**对象存储的语义不是文件系统**——不提供文件锁与跨对象的原子提交（读一致性自 2020 年起已是强一致）、S3 条件写 `If-Match` / `If-None-Match` 等能力对湖表协议的影响。
 - 加分项：能把云原生 K8s 上的 Spark Operator / Flink Operator 与存算分离的弹性优势串起来。
 
 **2. 参考答案框架**
@@ -436,7 +436,7 @@ Paimon 本质是**把 LSM 树结构搬到了湖表**：写入先入 memtable，f
 
 这种分工让「**存不被算影响**」「**算不被存拖累**」「**Catalog 是唯一的协调点**」——三件事的相对独立正是云原生的红利所在。
 
-**第三层：Catalog 在一致性上的核心作用。** 对象存储本身是最终一致的——S3 在 PUT 后**可能在毫秒到秒级才**让所有节点可见，且不提供读时锁。Catalog 通过**原子 commit 协议**弥补：
+**第三层：Catalog 在一致性上的核心作用。** 主流对象存储（S3 自 2020 年起、OSS 等）的读一致性已是强一致，但它**既不提供文件锁，也不提供跨对象的原子提交**——两个引擎同时写一张表时，存储层不会替你仲裁。Catalog 通过**原子 commit 协议**弥补：
 
 - **Iceberg 的 commit protocol**：所有写入完成后发起一次 `commit`，把新 manifest list 写入对象存储，并发引擎在 commit 时通过「乐观锁」检查「我要覆盖的 metadata.json 是否还是同一个版本」——若不是则回滚重试。这是著名的 **Iceberg concurrency model**。
 - **Delta Lake 的 optimistic concurrency**：与 Iceberg 类似，但日志格式不同（`xxx.json`）。

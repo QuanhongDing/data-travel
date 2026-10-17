@@ -100,8 +100,8 @@
 - **Meta TAO 缓存层的慢查询改造** —— TAO 把高频热点查询走内存缓存 + 异步回源，避免对 MySQL 的直接慢查询压力，是社交图谱场景"用缓存换查询"的代表。
 - **Uber 大查询识别与熔断实践** —— Uber 在 Hudi 增量管道中识别大查询并熔断，避免单个查询拖垮整个增量链路，是湖仓场景慢查询治理的案例。
 - **滴滴实时订单分配中的慢查询治理** —— 订单分配是 OLTP + OLAP 混合场景，滴滴用 ClickHouse 做 OLAP 分析 + HBase 做 OLTP 服务，慢查询治理分两条链路分别进行。
-- **京东零售 PB 级订单分析的慢查询治理** —— 京东 618 / 双 11 大促期间的实时订单分析对 ClickHouse 的 P99 要求 < 1s，慢查询治理成为大促稳定性的核心抓手。
-- **永辉零售的实时销售看板性能优化** —— 永辉把 ClickHouse 用于实时销售分析，通过物化视图预聚合把 P99 从 10s 降到 800ms，是零售 OLAP 慢查询治理的典型场景。
+- **京东零售 PB 级订单分析的慢查询治理** —— 京东 618 / 双 11 大促期间的实时订单分析对 ClickHouse 的 P99 要求在秒级以内（具体阈值本节无法给出可核验出处），慢查询治理成为大促稳定性的核心抓手。
+- **永辉零售的实时销售看板性能优化** —— 永辉把 ClickHouse 用于实时销售分析，通过物化视图预聚合把 P99 从秒级压到亚秒级（具体数字本节无法给出可核验出处），是零售 OLAP 慢查询治理的典型场景。
 - **LinkedIn Espresso 的查询优化器** —— Espresso（LinkedIn 自研 NoSQL）的查询优化器在 JOIN 顺序、谓词下推上的工程经验，是分布式数据库慢查询治理的代表。
 - **Shein** —— Shein 跨境供应链实时数据——日均千万订单走实时分发 + 离线对账，柔性供应链的核心。
 - **京东零售** —— 京东零售双 11 实时特征极限压力——KV 热点、Flink 反压、Schema 演进的工程化解法。
@@ -118,7 +118,7 @@
 - 是否理解**大 Key 与热 Key 是两个不同问题**：大 Key 是"单 Key 体积大"（如 Hash 存 1000 万元素），热 Key 是"单 Key 访问频次高"（如秒杀商品缓存）。二者都会拖垮 Redis，但治理手段完全不同。
 - 能否说清大 Key 的**三类危害**：① 删除时阻塞（DEL 一个 1GB 的 Key 会阻塞 Redis 主线程数十毫秒）；② 迁移卡顿（Cluster 迁移 slot 时卡顿）；③ 内存倾斜（单节点内存爆掉）。
 - 是否知道热 Key 的**三类危害**：① 单节点 QPS 瓶颈（无法水平扩展）；② 缓存击穿（Key 过期瞬间回源雪崩）；③ 带宽打满（单 Key 大 value + 高并发）。
-- 加分项：能结合 Redis 6.0+ 的 `MULTI-EXEC`、Lazy Free、Client-side Caching 等特性谈新解法。
+- 加分项：能结合 `MULTI-EXEC` 事务、Lazy Free（Redis 4.0+）、Client-side Caching（Redis 6.0+）等特性谈新解法。
 
 **2. 参考答案框架**
 
@@ -140,14 +140,14 @@
   - **Proxy 层埋点**（如 Codis / Twemproxy 自带）：在代理层统计每个 Key 的 QPS 与带宽，热 Key 自然浮现。
   - **Redis `MONITOR` + 采样**（慎用）：高开销，仅用于短时诊断。
   - **客户端上报**：在业务代码里对高频 Key 主动埋点上报，是补充手段。
-  - **`redis-cli --hotkeys`**（Redis 7.0+）：基于 LFU 访问频次输出热 Key，是新工具。
+  - **`redis-cli --hotkeys`**（需开启 LFU 淘汰策略）：基于 LFU 访问频次输出热 Key，是新工具。
 
 **第四层：治理——拆分、复制、迁移三板斧。**
 
 针对**大 Key**：
 
 - **拆分——从源头治理**：把大 Hash / List 拆成多个小 Key（如按 user_id 取模拆 100 个 Key），从根本上消除大 Key。
-- **Lazy Free 异步删除**：Redis 4.0+ 提供 `UNLINK` 命令替代 `DEL`，大 Key 删除放进后台线程，不阻塞主线程。Redis 6.0+ 进一步把所有"可能慢"的删除（过期 Key、FLUSHDB）都默认走 Lazy Free。
+- **Lazy Free 异步删除**：Redis 4.0+ 提供 `UNLINK` 命令替代 `DEL`，大 Key 删除放进后台线程，不阻塞主线程。Redis 还提供 `lazyfree-lazy-expire` / `lazyfree-lazy-evict` / `lazyfree-lazy-server-del`（4.0）与 `lazyfree-lazy-user-del`（6.0）等开关，把过期 Key、`FLUSHDB` 这类"可能慢"的删除也交给后台线程执行——但这些开关**默认均为关闭，需要显式开启**，未开启时过期删除与 `FLUSHDB` 仍会阻塞主线程。
 - **迁移工具**：用 `redis-migrate-tool` 或自研工具做平滑迁移，避免 Cluster 重分片时卡顿。
 
 针对**热 Key**：
@@ -185,7 +185,7 @@
 - 阿里云 Redis 开发规范——大 Key / 热 Key 的发现工具、治理 SOP、阈值分级。
 - Netflix Technology Blog 关于 EVCache 的公开文章——基于 JVM 堆的本地缓存设计，是热 Key 治理的工业标杆。
 - Redis 官方文档关于 `UNLINK` / Lazy Free / `FUNCTION` 章节——大 Key 异步删除与服务端治理能力的权威依据。
-- **阿里双 11 大促的 Redis 热 Key 治理** —— 双 11 期间通过多副本 + 本地缓存 + Key 散列三重手段，把热 Key QPS 降低 90%，是大促稳定性保障的核心手段。
+- **阿里双 11 大促的 Redis 热 Key 治理** —— 双 11 期间通过多副本 + 本地缓存 + Key 散列三重手段，把热 Key 的单点 QPS 压低约一个数量级（降幅随大促流量结构与 Key 分布而异，本节无法给出可核验的统一数字，此处按【经验】档处理），是大促稳定性保障的核心手段。
 - **字节跳动 Redis 热 Key 自动巡检** —— 字节基于 Proxy 埋点 + 客户端上报，自动识别热 Key 并告警业务 Owner。
 - **Meta TAO 的热 Key 持久缓存层** —— TAO 把社交图谱的极热 Key 缓存在专用的内存层（`mcache`），完全跳过 Redis，是头部社交平台热 Key 治理的极致方案。
 - **滴滴订单分配场景的 Redis 热 Key 治理** —— 订单分配场景的"司机位置"是天然热 Key，滴滴通过地理分片 + 本地缓存降低单 Key QPS。
@@ -292,14 +292,14 @@ HikariCP 是 Spring Boot 默认连接池，配置围绕三个核心参数：
 - HikariCP 官方 Wiki `About Pool Sizing`——连接池大小计算的权威依据，明确给出"小连接池 + 快速失败优于大连接池"的工程哲学。
 - HikariCP GitHub README——所有配置项的官方推荐值。
 - Spring Boot 官方文档关于 Tomcat / WebFlux 线程池配置章节。
-- Brendan Gregg《Java Performance》第 9 章「Threading and Concurrency」——线程池原理与最佳实践的经典参考。
+- 线程池原理与最佳实践的经典参考（原列条目把《Java Performance》第 9 章归于 Brendan Gregg，此归属本节无法在无网络环境核实——Brendan Gregg 的代表作为《Systems Performance》——故不列具名出处，读者引用前请自行查证）。
 - **阿里双 11 的线程池隔离** —— 阿里在双 11 期间对核心 / 非核心链路分别配置独立线程池，核心链路用 `CallerRunsPolicy` 兜底，是大促稳定性保障的标准做法。
 - **美团线程池监控与告警实践** —— 美团基于 Micrometer 自研线程池监控大盘，覆盖活跃线程、队列深度、拒绝次数、P99 执行时长，是国内大厂的标杆。
 - **Netflix Hystrix 舱壁模式** —— Hystrix（虽然已停止维护）的舱壁设计思想是每个远程依赖独立线程池，是熔断与资源隔离的工业标杆。
 - **LinkedIn Kafka 客户端的线程模型** —— Kafka Producer / Consumer 的 IO 线程与用户线程分离设计，是消息中间件线程池优化的代表。
 - **Stripe 支付链路的连接池配置** —— Stripe 在支付链路中严格限制每个服务的连接池大小（一般 10-20），DB 端用 ProxySQL 做集中连接管理，是金融级性能工程的代表。
-- **京东订单服务的连接池治理** —— 京东订单服务在双 11 通过 HikariCP 调优（`maximumPoolSize=40`、`connectionTimeout=3s`）+ 慢 SQL 治理把 P99 控制在 200ms 内。
-- **字节跳动 RPC 框架的异步线程模型** —— 字节自研 Kitex / ByteRPC 采用 Netty 事件循环 + 业务线程池隔离，单机 QPS 极限提升 3 倍。
+- **京东订单服务的连接池治理** —— 京东订单服务在双 11 通过 HikariCP 调优（`maximumPoolSize=40`、`connectionTimeout=3s`）+ 慢 SQL 治理把订单查询的 P99 控制在百毫秒量级（具体数值随硬件与流量结构而异，本节无法给出可核验数字，此处按【经验】档处理）。
+- **字节跳动 RPC 框架的异步线程模型** —— 字节自研的 RPC 框架把 IO 事件循环与业务线程池做隔离（ByteRPC 为 Java 侧实现；Kitex 属 Go 生态，走 netpoll / goroutine 模型而非 Netty 事件循环），单机 QPS 上限有数倍级提升（具体倍数随压测场景而异，本节无法给出可核验数字）。
 - **Shein** —— Shein 跨境供应链实时数据——日均千万订单走实时分发 + 离线对账，柔性供应链的核心。
 - **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
 - **京东零售** —— 京东零售双 11 实时特征极限压力——KV 热点、Flink 反压、Schema 演进的工程化解法。
@@ -410,10 +410,10 @@ Cache-Aside 模式下的**经典不一致场景**：
 - 阿里中间件团队《Tair 分布式缓存实践》——阿里自研缓存中间件的原理与实践。
 - 字节跳动 Aimer 缓存中间件公开文章——多级缓存 + 智能路由的高性能方案。
 - **阿里双 11 大促的缓存架构** —— 多级缓存（本地 + Redis + CDN）+ 永不过期 + 逻辑过期 + 熔断降级，是大促缓存治理的工业标杆。
-- **Netflix EVCache 多级缓存** —— Netflix 在全球部署 EVCache 多级缓存，支撑日均万亿次请求，是头部流媒体的缓存架构代表。
+- **Netflix EVCache 多级缓存** —— Netflix 在全球部署 EVCache 多级缓存，支撑全站海量读请求（公开讨论中常提及规模达万亿次/日量级，本节无法给出该规模数字的可核验出处，引用时请自行查证），是头部流媒体的缓存架构代表。
 - **美团外卖订单缓存的多级一致性** —— 美团外卖用 Canal 监听 binlog 异步失效缓存，保证订单状态的最终一致，是国内本地生活服务的标杆。
 - **滴滴订单分配的缓存治理** —— 订单分配是高频热点场景，滴滴用 Redis Cluster + 本地缓存 + 熔断降级三层兜底。
-- **京东商品详情页的多级缓存** —— 京东商品详情页用 CDN + Nginx 本地缓存 + Redis + DB 四级缓存架构，P99 < 100ms。
+- **京东商品详情页的多级缓存** —— 京东商品详情页用 CDN + Nginx 本地缓存 + Redis + DB 四级缓存架构，把 P99 控制在百毫秒量级（具体数值随流量与热点分布而异，本节无法给出可核验数字，此处按【经验】档处理）。
 - **Meta TAO 的缓存层** —— TAO 把社交图谱缓存在专用内存层 + Memcached，是社交场景缓存架构的极致代表。
 - **LinkedIn Espresso 的缓存一致性** —— Espresso（LinkedIn 自研 NoSQL）通过版本号 + 时间戳实现缓存与存储的一致性。
 - **永辉零售门店库存的多级缓存** —— 永辉用 Redis + 本地缓存兜底门店实时库存，保证高峰期的库存查询 P99。
@@ -484,7 +484,7 @@ Cache-Aside 模式下的**经典不一致场景**：
 - **连接池调优**：DB 连接数受 `max_connections` 限制，应用侧连接池不能盲目调大（§8.2.3）。
 - **读写分离代理**：ProxySQL / MyCat / ShardingSphere-Proxy，把读流量透明路由到从库。
 - **查询缓存**：MySQL 8.0 之前有 Query Cache，但高并发下反而是累赘——一般禁用。改用 Redis 做应用层缓存。
-- **硬件**：SSD（IOPS 提升 10 倍+）、更大的 Buffer Pool（`innodb_buffer_pool_size = 物理内存的 70-80%`）、NUMA 亲和性配置。
+- **硬件**：SSD（随机 IOPS 相比机械盘高一个数量级以上）、更大的 Buffer Pool（`innodb_buffer_pool_size = 物理内存的 70-80%`）、NUMA 亲和性配置。
 - **审计与限流**：所有 SQL 走 Proxy 限流，超阈值告警或 kill——避免单条烂 SQL 拖垮整个库。
 
 **3. 常见陷阱**
@@ -501,7 +501,7 @@ Cache-Aside 模式下的**经典不一致场景**：
 - **「EXPLAIN 显示走了索引，但实际很慢，可能是什么原因？」** 答：① 索引统计信息过期（`ANALYZE TABLE` 没跑）；② 回表代价高（覆盖索引缺失）；③ 索引选择性差（如性别索引）；④ 数据倾斜（同一索引下某些 value 占比过高）；⑤ IO 瓶颈（磁盘慢、buffer pool miss）。
 - **「深度分页怎么优化？给你一个 1 亿行的表。」** 答：① 游标分页（`WHERE id > last_id LIMIT 20`），适合无限滚动；② 延迟关联（`SELECT * FROM t JOIN (SELECT id FROM t LIMIT 1000000, 20) tmp`），先 ID 再回表；③ Elasticsearch 接管分页（基于倒排索引的 search_after）；④ 业务上禁止跳页（如订单列表只能顺序翻）。
 - **「JOIN 怎么优化？」** 答：① 小表驱动大表（MySQL 优化器不一定对，可用 `STRAIGHT_JOIN`）；② 关联字段建索引；③ 大 JOIN 走宽表预聚合；④ 跨库 JOIN 避免，改宽表或数据冗余。
-- **「MySQL 8.0 的 Hash Join 解决了什么问题？」** 答：MySQL 之前没有原生 Hash Join，大表 JOIN 走 Nested Loop Join（NLJ）是 O(M×N) 复杂度。Hash Join 是 O(M+N)，对大表 JOIN 提升 5-10 倍。**MySQL 8.0.18+ 默认开启**，但仅在等值 JOIN + 无索引场景下生效。
+- **「MySQL 8.0 的 Hash Join 解决了什么问题？」** 答：MySQL 之前没有原生 Hash Join，大表 JOIN 走 Nested Loop Join（NLJ）是 O(M×N) 复杂度。Hash Join 是 O(M+N)，对大表 JOIN 的耗时改善可达数倍（幅度取决于表规模与连接率，本节无法给出可核验倍数）。**MySQL 8.0.18+ 默认开启**，但仅在等值 JOIN + 无索引场景下生效。
 - **「你们怎么量化 SQL 调优的 ROI？」** 答：算「**慢 SQL 数量 × 平均耗时 × QPS**」——把 TOP 100 慢 SQL 的总耗时从集群总耗时的 40% 降到 5%，相当于每天省 100 万+ 次慢查询 IO。
 
 **5. 参考资料**
@@ -511,14 +511,14 @@ Cache-Aside 模式下的**经典不一致场景**：
 - 阿里云《RDS MySQL 性能调优白皮书》——阿里在 OLTP 调优上的工程经验总结。
 - 极客时间《MySQL 实战 45 讲》（林晓斌）——国内最系统的 MySQL 调优实战课。
 - 掘金 / InfoQ 上各互联网大厂（美团 / 阿里 / 字节）的 SQL 调优公开文章。
-- **阿里双 11 的 SQL 调优体系** —— 阿里在双 11 前通过 SQL Review + 慢查询治理 + 索引优化，把核心库 P99 控制在 50ms 内，是大促 OLTP 调优的工业标杆。
-- **美团 MySQL 慢查询治理** —— 美团基于 ProxySQL + 慢查询日志 + SQL Review 三层治理，把全公司慢 SQL 数量降低 80%。
-- **京东订单库的 SQL 调优** —— 京东订单库通过覆盖索引 + 读写分离 + 分库分表，把单库 QPS 从 1 万提升到 10 万。
+- **阿里双 11 的 SQL 调优体系** —— 阿里在双 11 前通过 SQL Review + 慢查询治理 + 索引优化，把核心库 P99 控制在数十毫秒量级（具体数值随库表规模与硬件而异，本节无法给出可核验数字，此处按【经验】档处理），是大促 OLTP 调优的工业标杆。
+- **美团 MySQL 慢查询治理** —— 美团基于 ProxySQL + 慢查询日志 + SQL Review 三层治理，把全公司慢 SQL 数量大幅降低（降幅随统计口径与治理阶段而异，本节无法给出可核验的统一数字，此处按【经验】档处理）。
+- **京东订单库的 SQL 调优** —— 京东订单库通过覆盖索引 + 读写分离 + 分库分表，把单库 QPS 提升约一个数量级（具体量级随硬件与场景而异，本节无法给出可核验数字）。
 - **Meta TAO 的 MySQL 调优** —— TAO（Meta 自研社交图谱缓存层）背后依赖的 MySQL 经过深度调优（包括定制 InnoDB、专门的索引设计），是头部社交平台的工业案例。
 - **LinkedIn Espresso 的二级索引优化** —— Espresso（LinkedIn 自研 NoSQL）在二级索引设计上有大量工程经验，覆盖索引、覆盖扫描、JOIN 优化。
 - **永辉零售订单库的 SQL 治理** —— 永辉零售订单库通过 SQL Review 准入 + 索引优化 + 慢查询周会机制治理慢 SQL。
 - **Stripe 支付链路的 MySQL 调优** —— Stripe 在支付链路严格控制单表大小（< 1000 万行）+ 强制覆盖索引 + 禁用 JOIN，是金融级 SQL 调优的代表。
-- **招行金融交易的 SQL 调优** —— 招商银行核心交易系统对 SQL 极致优化（包括执行计划细化到算子），保证 P99 < 10ms 的金融级延迟。
+- **招行金融交易的 SQL 调优** —— 招商银行核心交易系统对 SQL 极致优化（包括执行计划细化到算子），把核心交易的 P99 控制在十毫秒量级以满足金融级延迟要求（具体数值随交易类型与硬件而异，本节无法给出可核验数字，此处按【经验】档处理）。
 - **Shein** —— Shein 跨境供应链实时数据——日均千万订单走实时分发 + 离线对账，柔性供应链的核心。
 - **京东零售** —— 京东零售双 11 实时特征极限压力——KV 热点、Flink 反压、Schema 演进的工程化解法。
 - **唯品会** —— 唯品会特卖场景的数据平台——日清模式 + 离线数仓 + 实时推荐三层结构。
@@ -617,12 +617,12 @@ GC 类型：
 **第四层：未来方向——GraalVM Native Image 与分代 ZGC。**
 
 - **GraalVM Native Image**：把 Java 代码 AOT 编译为本地二进制，**无 JVM、无 GC**——启动时间 < 100ms，内存占用 < 50MB。代价是不支持反射（需配置）、运行期无法生成类。Serverless 场景（AWS Lambda、阿里云函数计算）首选。
-- **分代 ZGC（Java 21+）**：在并发 ZGC 基础上引入分代假设（多数对象朝生夕死），降低 GC 频率 50%+，延迟保持 < 1ms。**JDK 21 LTS 已默认推荐**。
+- **分代 ZGC（Java 21+）**：在并发 ZGC 基础上引入分代假设（多数对象朝生夕死），GC 频率与平均停顿都有下降（幅度随应用内存特征而异，本节无法给出可核验数字），停顿目标仍在 1ms 以内（这是 ZGC 的设计目标，不是每个应用都能达到）。**JDK 21 LTS 已提供分代 ZGC，但默认 GC 仍是 G1，需显式开启。**
 - **Lilliput（OpenJDK 实验）**：把对象头压缩到 64 bit 以下，减少 GC 扫描开销。
 
 **3. 常见陷阱**
 
-- **盲目追求低 STW 而忽略吞吐。** 把 `MaxGCPauseMillis` 设到 50ms 会让 G1 频繁触发，部分回收 + 整体吞吐降低 20%——得不偿失。
+- **盲目追求低 STW 而忽略吞吐。** 把 `MaxGCPauseMillis` 设到 50ms 会让 G1 更频繁触发、每次只做部分回收，整体吞吐明显下降（幅度取决于堆大小与活跃数据规模，本节无法给出可核验数字）——得不偿失。
 - **堆大小拍脑袋。** `-Xmx32g` 看似"大就是好"，实际会导致单次 GC 时间极长（数十秒）。建议按"业务峰值 × 1.5"估算。
 - **`-Xms != -Xmx`**。两者不等会让运行时扩容触发 Full GC，是常见的 GC 抖动源头。
 - **忽视 Metaspace。** Metaspace 溢出（类加载过多，如动态代理、CGLIB）会导致 Full GC，需要监控 Metaspace 使用率。
@@ -643,12 +643,12 @@ GC 类型：
 - Aleksey Shipilev《Java Garbage Collection Distilled》——GC 调优方法论与各种 GC 的对比。
 - Monica Beckwith《Java Performance Optimization》——JVM 调优实战参考。
 - 极客时间《深入拆解 Java 虚拟机》（郑雨迪）——国内最系统的 JVM 调优实战课。
-- **阿里双 11 的 G1 调优** —— 阿里在双 11 核心服务（堆切换、订单创建）使用 G1 GC，`-Xms8g -Xmx8g -XX:+UseG1GC -XX:MaxGCPauseMillis=200`，保证 P99 < 200ms。
-- **Netflix 的 ZGC 实践** —— Netflix 在 API 网关层采用 ZGC（堆 32GB），把 P99 从 50ms 降到 10ms，是头部流媒体的 ZGC 标杆。
+- **阿里双 11 的 G1 调优** —— 阿里在双 11 核心服务（堆切换、订单创建）使用 G1 GC，`-Xms8g -Xmx8g -XX:+UseG1GC -XX:MaxGCPauseMillis=200`，把服务 P99 控制在百毫秒量级（具体数值随堆大小与分配速率而异，本节无法给出可核验数字，此处按【经验】档处理）。
+- **Netflix 的 ZGC 实践** —— Netflix 在 API 网关层采用 ZGC（堆 32GB）后 P99 有数倍级改善（改善幅度随堆大小、分配速率与流量特征而异，本节无法给出可核验数字，此处按【经验】档处理），是头部流媒体的 ZGC 标杆。
 - **字节跳动推荐服务的 G1 调优** —— 字节推荐服务用 G1 + 大 Young 区（堆 24GB，Young 占 60%），避免推荐特征大量短生命周期对象触发频繁 GC。
 - **美团 JVM 调优实战** —— 美团公开的 JVM 调优案例涵盖 Metaspace OOM、Full GC 排查、G1 参数优化。
-- **京东订单服务的 GC 调优** —— 京东订单服务通过 G1 + 关闭大页（`-XX:-UseLargePages`）+ 控制 Region 大小把单次 GC 时间从 500ms 降到 100ms。
-- **Stripe 金融交易的 ZGC 实践** —— Stripe 在支付链路采用 ZGC（堆 16GB，P99 < 5ms），是金融级 GC 调优的标杆。
+- **京东订单服务的 GC 调优** —— 京东订单服务通过 G1 + 关闭大页（`-XX:-UseLargePages`）+ 控制 Region 大小，把单次 GC 停顿缩短到原来的数分之一（具体数字本节无法核验）。
+- **Stripe 金融交易的 ZGC 实践** —— Stripe 在支付链路采用 ZGC（堆 16GB，停顿目标在毫秒量级），是金融级 GC 调优的标杆。
 - **Meta TAO 后端服务的 GC 调优** —— TAO 后端服务的 MySQL 客户端经过专门的 GC 调优（含 G1 区域大小、IHOP 阈值），是头部社交平台的 GC 工程经验。
 - **LinkedIn Espresso 的 GC 调优** —— Espresso（LinkedIn 自研 NoSQL）的服务端通过定制 JVM 参数（`-XX:+UseG1GC -XX:MaxGCPauseMillis=50`）保证延迟 SLO。
 - **Google PerfKit 的 GC Benchmark 实践** —— Google PerfKit 工具集中包含 GC 基准测试方法，是 GC 性能评估的工业标准。

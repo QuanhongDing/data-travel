@@ -38,7 +38,7 @@
 
 **1. 考察点**
 
-- 是否理解强化学习（Reinforcement Learning, RL）解决的是「**序列决策**」问题——状态、动作、奖励三要素构成 MDP（元 Markov 决策过程），目标是长期累积奖励最大化。
+- 是否理解强化学习（Reinforcement Learning, RL）解决的是「**序列决策**」问题——状态、动作、奖励三要素构成 MDP（Markov Decision Process，马尔可夫决策过程），目标是长期累积奖励最大化。
 - 能否区分监督学习（Supervised Learning, SL）与 RL：**SL 学习"正确答案"，RL 学习"好的策略"**，后者特别适合"动作结果延迟显现"的运维动作。
 - 是否能把 RL 与 AIOps 的真实可观测信号（指标、日志、Trace、SQL 执行结果）对齐，而不是套名词。
 - 加分项：能结合 Data Agent 的查询重试 / 参数重写场景说明状态工程。
@@ -51,12 +51,12 @@
 
 **第三层：典型 RL 算法与场景映射。**
 
-- **Q-Learning / DQN**：离散且规模较小的动作空间典型算法。Netflix 在其 Chaos Engineering 平台 ChAP 上的早期"区域故障注入策略"，用 DQN 学习"在何种业务波形下选择何种注入"。代表论文 *ChAP: Chaos Engineering Through Planning* 与 Netflix Tech Blog 的 "Automated Failure Testing" 系列文章。
+- **Q-Learning / DQN**：离散且规模较小的动作空间典型算法。据 Netflix 在公开技术分享中的介绍，其 Chaos Engineering 平台曾探索用 DQN 学习"在何种业务波形下选择何种注入"的"区域故障注入策略"（本节无法给出该工作对应的论文标题、作者与年份等可核验信息，此处按【待核验】档处理，引用时请自行查证）。可与 Netflix Tech Blog 关于自动化故障注入的系列文章对照阅读。
 - **Policy Gradient（REINFORCE / PPO）**：连续或多维动作空间。Uber 的 Michelangelo 团队在"司机调度重路由"中用过 PPO（参见 *Deep Reinforcement Learning for Rebalancing*，2019），其动作是"路由权重连续调节"。
 - **Contextual Bandit**：单步决策，不需要严格时序。LinkedIn 的 *Correlate* 经验平台用 Bandit 选择"实验分组"以控制 P99 延迟，参见 LinkedIn Engineering 公开博客。
 - **Multi-Armed Bandit + Safety Constraint**：当动作结果必须保守时（如 SQL 杀作业），会把"误杀"的代价写成 hard constraint，防止奖励 hacking。
 
-**第四层：Data Agent 里的 RL 映射。** 一个自然场景是"**查询重试与参数重写**"——状态包括上一次 SQL 的执行耗时、扫描行数、Explain 计划是否含全表扫描、是否触发沙箱行数限制；动作是「原样重试 / 加 LIMIT / 改写索引提示 / 替换为物化视图 SQL / 主动切到粗粒度统计 / 拒绝并反问」；奖励是「**结果可交付**（结果集非空且在 SLO 内）+ 不触碰安全红线 + 不增加两倍以上延迟」。这是把经典 RL 改造成"自我精修 Agent"的关键技术，正是 §3.1 Plan-Execute 与 Reflexion 模式在工业级落地时常被引入的内核。Google Brain 在 *"When to Trust Your Model: Bandit-Driven Data Generation"* 中给出过类似 "失败一次换一句话" 的框架。
+**第四层：Data Agent 里的 RL 映射。** 一个自然场景是"**查询重试与参数重写**"——状态包括上一次 SQL 的执行耗时、扫描行数、Explain 计划是否含全表扫描、是否触发沙箱行数限制；动作是「原样重试 / 加 LIMIT / 改写索引提示 / 替换为物化视图 SQL / 主动切到粗粒度统计 / 拒绝并反问」；奖励是「**结果可交付**（结果集非空且在 SLO 内）+ 不触碰安全红线 + 不增加两倍以上延迟」。这是把经典 RL 改造成"自我精修 Agent"的关键技术，正是 §3.1 Plan-Execute 与 Reflexion 模式在工业级落地时常被引入的内核。RL 文献中也讨论过类似"失败一次就换一个动作"的思路（如 *When to Trust Your Model* 一类关于"何时信任模型 / 策略"的工作），但把它系统化搬到 Data Agent 的 SQL 重写上仍属工程实践。
 
 **第五层：落地的现实约束。** RL 在 AIOps 落地有三个必须说清的工程债：① 奖励函数难以工程化，过度优化容易造成"指标下降但业务受损"；② 状态空间必须降维——把全维度监控塞进状态会爆炸，需要先做特征工程或 Embedding；③ 探索成本——线上一旦执行错动作代价巨大，因此普遍采用离线仿真器 + Shadow 模式 + 极小范围在线灰度。
 
@@ -65,22 +65,22 @@
 - **把 RL 当成万能决策器。** RL 不是"加点 AI"的速效药。如果动作集合可用规则穷举、奖励延迟几乎为零、决策周期很长，直接写专家规则更安全。RL 适用场景要满足：**状态连续、动作有正反面、奖励延迟足够长能学到策略**。
 - **忽略奖励 hacking。** RL 会钻奖励函数的漏洞。如想让 P95 下降，模型可能学到"延迟敏感请求直接 503 拒绝"——指标好看但业务崩盘。必须把"业务可用性"或"用户满意度"作为带约束的奖励项。
 - **混淆 RL 与有监督学习。** RL 的样本是"轨迹"（state, action, reward, next_state），不是 (X, y)。需要轨迹级别的探索-利用权衡，不是简单的 (input, label) 拟合。
-- **状态工程被忽略。** 状态向量决定了模型能"看见"的世界，P99 / 队列深度等关键维度缺一项，策略就退化。Uber 在其 RL 公开经验里特别强调"**$S$ 决定性能上限**"。
+- **状态工程被忽略。** 状态向量决定了模型能"看见"的世界，P99 / 队列深度等关键维度缺一项，策略就退化——**$S$ 的质量通常决定策略的性能上限**（此处按【经验】档处理，不对该条做公司级出处归属）。
 - **没有离线仿真器就直接在线学习。** RL 的探索天然会试错，必须先在历史日志回放（offline RL / batch RL）里跑出安全基线，再灰度。
 
 **4. 追问预测**
 
-- **「奖励函数怎么设计？」** 答：三段式——主线奖励（P95 下降得分）、安全约束奖励（误杀负向）、稳定性奖励（动作变化幅度被惩罚，避免抖动）。AIOps 公开经验里，Uber 与 LinkedIn 都强调把"业务结果"作为长期折扣项。
+- **「奖励函数怎么设计？」** 答：三段式——主线奖励（P95 下降得分）、安全约束奖励（误杀负向）、稳定性奖励（动作变化幅度被惩罚，避免抖动）。设计要点是把"业务结果"作为长期折扣项，避免策略只优化局部资源指标（此处按【经验】档处理，不对该条做公司级出处归属）。
 - **「数据不够怎么训？」** 答：用 Offline RL（CQL / IQL）从历史日志学；或先拟合环境模型（World Model）做"虚拟仿真"，再在仿真里训，最后小流量在线试。
 - **「怎么验证策略不会出问题？」** 答：先用离线 replay、回测 + Counterfactual 推理；上线时 Shadow 模式 + 极小流量 + Kill Switch + 业务白名单。
 
 **5. 参考资料**
 
 - Sutton & Barto《Reinforcement Learning: An Introduction》（第 2 版 MIT Press 2018）——RL 形式化、Q-Learning、Policy Gradient 的标准教材。
-- Netflix Technology Blog《ChAP: Chaos Engineering Through Planning》——ChAP 把 RL 用于"自动决定故障注入位置与时机"的完整工业案例。
+- Netflix Technology Blog 关于其 Chaos Engineering 平台的文章——把 RL 用于"自动决定故障注入位置与时机"的工业案例（本节无法给出该文的标题、作者与年份等可核验信息，此处按【待核验】档处理，引用时请自行查证）。
 - Uber Engineering《Deep Reinforcement Learning for Rebalancing》——Michelangelo 团队在大规模资源调度中用 PPO 的公开经验。
 - LinkedIn Engineering 关于 *Correlate* 经验平台的公开文章——Bandit 用于在线实验与可观测信号决策。
-- Google Research《When to Trust Your Model》——Bandit / RL 在系统决策中的安全约束框架。
+- 《When to Trust Your Model》一类关于"何时信任模型 / 策略"的 RL 文献——模型信任边界在系统决策中的一般性讨论。
 - 阿里云《AIOps 实践白皮书》——国内头部电商在大促场景下"指标异常诊断 + RL 自愈"的工程范式。
 - 字节跳动技术博客《大数据 AIOps 之路》——短期离群、长期异常的混合检测 + RL 自愈在国内超大集群上的落地摘要。
 - **滴滴的智能派单与动态计价系统** —— 在城市级订单分配中规模化部署 RL 策略，解决供需匹配与运力调度的多目标优化问题，公开论文与行业演讲中均有总结。
@@ -134,7 +134,7 @@
 - **触发条件**：通过指标相关性、Trace 拓扑、KG 关系做根因定位，决策不再写死。
 - **典型处置**：基于根因选择动作，包括自动扩容、迁移、限流、切流、降级。
 - **局限**：构建成本高、误诊代价大、需要可观测体系成熟。
-- **工业案例**：Google 在 SRE 实践中推崇的"Golden Signal + 故障域隔离"路径；阿里在 AIOps 中用时序因果图（PC 算法 + Granger 因果）做故障传播链推断；Microsoft *Emocut* 系列工作用因果反事实推理做故障定位。
+- **工业案例**：Google 在 SRE 实践中推崇的"Golden Signal + 故障域隔离"路径；阿里在 AIOps 中用时序因果图（PC 算法 + Granger 因果）做故障传播链推断；Microsoft Research 也有用因果反事实推理做故障定位的工作方向（本节无法核验该系列工作的具体论文标题与年份，此处按【待核验】档处理，引用时请自行查证）。
 
 **第三层：Data Agent 中的对应形态。**
 
@@ -144,9 +144,9 @@
 
 **第四层：策略组合而非单选。** 真实生产里三种策略按层级叠加：
 
-- Layer 1：阈值规则挡掉 80% 简单故障。
-- Layer 2：已知 playbook 处理 15% 模式故障。
-- Layer 3：根因分析兜底剩下的 5%，必要时升级人工。
+- Layer 1：阈值规则挡掉简单故障中的绝大多数（工程经验值约八成——以下三档比例均为工程经验值，随集群与故障谱系而异，不是行业实测统计，此处按【经验】档处理）。
+- Layer 2：已知 playbook 处理模式化故障中的一小部分（工程经验值约一成半）。
+- Layer 3：根因分析兜底剩下的长尾（工程经验值约半成），必要时升级人工。
 - 这正是 Uber Michelangelo 平台内部"分级响应"的工程范式，可参考其 *feature store + rule + model* 三层决策的公开分享。
 
 **3. 常见陷阱**
@@ -170,7 +170,7 @@
 - Netflix *Janitor Monkey* 与 *Chaos Monkey* 公开文档——已知故障自愈与故障注入生态。
 - 阿里《大数据之路：阿里巴巴大数据实践》中"集群自愈"相关章节——阈值规则 + 已知 playbook 的国内超大集群实践。
 - Uber *Michelangelo* 平台关于"分级响应"与"特征 + 模型 + 规则"的公开分享。
-- Microsoft Research *Emocut* / *Causal* 系列论文——根因分析在云与大数据系统中的工程范式。
+- Microsoft Research 在因果推理 / 根因分析方向的公开论文（具体标题与年份待核验）——根因分析在云与大数据系统中的工程范式；本节无法给出可核验的论文清单，引用时请自行查证。
 - Brendan Gregg《BPF Performance Tools》与 Google《Site Reliability Engineering》——可观测 + 阈值治理的通用方法论，可与自愈策略直接配套阅读。
 - **网易雷火的游戏服务器自愈体系** —— MMO/FPS 服在 OOM、连接风暴、网关切换上分别采用阈值规则、Playbook 与灰度回滚，公开技术演讲中均有论述。
 - **招商银行核心交易系统的链路自愈** —— 在支付/转账核心链路上对超时与重试做阈值 + 模式匹配双层防护，是国内金融行业较早系统化落地的自愈案例之一。
@@ -204,14 +204,14 @@
 
 **第二层：核心价值四要素。**
 
-- **降低 MTTR**：自助式自愈把"小时级的人为响应"压缩到"秒级自动处置"，MTTR（Mean Time To Repair）可下降一个数量级。阿里在多次双 11 复盘文章里给出过"自动修复率从 30% 提升至 70%、MTTR 从 9 分钟下降到 1 分钟"的国内案例。
-- **提升可用性**：把已知故障从"等处理"变成"自动解决"，是 SLO 99.95% → 99.99% 的关键路径。Netflix 在其公开 SRE 总结里强调"自愈是把 SLO 从三个 9 推到四个 9 最划算的手段"。
-- **释放 SRE 人力**：把低价值重复劳动释放给真正需要人的未知故障。Databricks 的 Lakehouse 运维数据显示"自动修复占所有故障的 65%，节省 30% SRE 人力"。
+- **降低 MTTR**：自助式自愈把"小时级的人为响应"压缩到"秒级自动处置"，MTTR（Mean Time To Repair）可下降一个数量级（幅度随故障域与检测粒度而异，此处按【经验】档处理）。据阿里在双 11 复盘分享中的介绍，其自动修复率与 MTTR 均有明显改善——本节无法给出该分享的可核验出处与具体数字，引用时请自行查证。
+- **提升可用性**：把已知故障从"等处理"变成"自动解决"，是推动 SLO 从"三个 9"向"四个 9"迈进的关键路径之一（能否达成主要取决于冗余设计与故障域治理，本节不给出可溯源的具体可用性数字，此处按【经验】档处理）。
+- **释放 SRE 人力**：把低价值重复劳动释放给真正需要人的未知故障。据 Databricks 在 Lakehouse 运维相关公开分享中的介绍，自动修复覆盖了相当大一部分故障，并相应释放了 SRE 人力（本节无法给出该分享的可核验出处与具体比例，此处按【经验】档处理）。
 - **业务连续性兜底**：在凌晨 / 大促峰值期间人手不足时，自愈是唯一可持续的防线。
 
 **第三层：组织形式。**
 
-- **集中式与分布式**：集中式是统一决策中心（类似 Uber 的 *Doctor* 平台），所有节点上报事件，全局决策；分布式是每节点自带 agent（Kubernetes 自愈 loop、Linkerd 等），独立决策。集中式更聪明但易单点故障，分布式更鲁棒但全局优化弱。
+- **集中式与分布式**：集中式是统一决策中心（类似 LinkedIn 的 *Doctor* 平台），所有节点上报事件，全局决策；分布式是每节点自带 agent（Kubernetes 自愈 loop、Linkerd 等），独立决策。集中式更聪明但易单点故障，分布式更鲁棒但全局优化弱。
 - **推送与拉取**：推模式是异常事件主动发到决策中心；拉模式是 Agent 主动轮询健康。推响应快，流量压力小；拉实施简单但有延迟。
 - **Agent 有 / 无 LLM**：传统自愈多基于规则引擎；大模型时代出现"LLM-as-Decider"，让 LLM 读异常事件 + log + Trace 给决策建议，再由规则执行，是 Microsoft AutoGen 与 LangGraph 在运维领域正在演进的形态。
 
@@ -249,7 +249,7 @@
 - Databricks 与 Snowflake 关于 Lakehouse 运维的官方文档——湖仓架构在 Self-healing 上的工业实践。
 - Brendan Gregg《Systems Performance》——可观测与自愈之间的工程边界。
 - **顺丰科技"丰智云"智慧物流平台** —— 在分拣与配送异常场景中以集中式决策中心执行自愈，配合分布式 Agent 降低 MTTR 的公开案例。
-- **中国移动云资源池的运维自愈** —— 在通信运营商级 IDC 把"事件总线解耦 + 分级响应"做成产品能力，公开材料中给出了 99.99% 可用性路径。
+- **中国移动云资源池的运维自愈** —— 在通信运营商级 IDC 把"事件总线解耦 + 分级响应"做成产品能力，用于支撑高可用性目标（本节无法给出该材料的可核验出处与具体可用性数字，此处按【经验】档处理，引用时请自行查证）。
 - **美的工业互联网平台的设备自愈** —— 在注塑/家电装配线用规则 + Playbook + 因果根因三层叠加，把常见设备故障关闭时长大幅缩短。
 - **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
 - **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
@@ -284,7 +284,7 @@
 2. **错误信号族（Error Family）**：GC 次数与停顿、OOM 次数、内核 Oops、网卡错误、磁盘 IO error、应用层 exception 率。这些是故障的"近端前兆"，可用日级别与小时级别取比值。
 3. **负载变化族（Load Delta）**：单位时间内任务数 / 数据量 / 队列长度的变化率。第一阶差分（diff）与第二阶差分（diff of diff）是异常前兆指标。Uber 在 Apache Hudi 集群容量预测中给出的核心信号就是"滑动增量变化率"，可参考其工程博客。
 4. **节点身份族（Identity）**：机型、CPU 核数、内存大小、机房与机架、网络域、上线时长、近期是否做过 OS 升级。静态特征对"先验故障概率"贡献度极高，尤其是新上线 / 刚升级的节点。
-5. **应用层族（Application）**：YARN / K8s 的 pending container 数、作业重试次数、checkpoint 失败率、SQL 失败率（与 Data Agent 直接相关）。LinkedIn 在自研监控 *Infli* 公开论文里强调"**应用级特征比基础资源特征更具预测力**"。
+5. **应用层族（Application）**：YARN / K8s 的 pending container 数、作业重试次数、checkpoint 失败率、SQL 失败率（与 Data Agent 直接相关）。据 LinkedIn 在自研监控平台上的公开介绍，**应用级特征往往比基础资源特征更具预测力**（本节无法给出该平台相关论文的可核验出处，此处按【经验】档处理，引用时请自行查证）。
 6. **拓扑与依赖族（Topology）**：是否在机架顶端（ToR）交换机下、是否邻近热点数据、是否共享反亲和组、是否被多个关键作业引用。故障会"沿拓扑传播"，在数据中心尺度上非常有价值。
 
 **第三层：特征工程的工程化。**
@@ -326,13 +326,13 @@
 **5. 参考资料**
 
 - Uber Engineering《Feature Marketplace at Uber》——大规模特征仓库与在线 / 离线一致性的工业实践。
-- LinkedIn Engineering 关于 *Infli* 异常检测平台的公开论文——应用级特征在节点故障预测中的关键作用。
+- LinkedIn Engineering 关于其自研异常检测 / 监控平台的公开文章（具体平台名与论文标题待核验）——应用级特征在节点故障预测中的关键作用。
 - Databricks《Feature Store》官方文档——特征工程与模型服务一致化的现代范式。
 - 阿里《大数据之路》第 8 章"集群监控与故障预测"——国内超大集群特征工程的落地摘要。
 - 《Practical Lessons from Predicting Failures in a Large Server Fleet》（Microsoft Research 论文）——数据驱动故障预测的特征工程方法学。
 - SHAP / SHapley Additive exPlanations 论文（Lundberg & Lee 2017）——特征可解释性的事实标准。
 - **三一重工的设备故障预测体系** —— 在挖掘机/起重机场景中构建六族特征（资源 / 错误 / 负载 / 身份 / 应用 / 拓扑），并用 SHAP 给 SRE 与现场工程师输出可解释特征，是国内制造业公开案例。
-- **宁德时代电池产线的异常前兆预测** —— 融合电芯电压电流时序特征 + MES 工艺事件，构建故障前 30 分钟预警，行业会议与白皮书中均有论述。
+- **宁德时代电池产线的异常前兆预测** —— 融合电芯电压电流时序特征 + MES 工艺事件，构建"在故障发生前提前预警"的能力（本节无法给出该材料提及的预警提前时长与可核验出处，此处按【经验】档处理，引用时请自行查证）。
 - **中国电信 IDC 的节点故障预测** —— 在通信运营商级数据中心把"拓扑 + 应用 + 负载增量"三类特征联合训练，把故障召回率显著提升，公开技术报告中有说明。
 - **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
 - **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
@@ -520,7 +520,7 @@
 **5. 参考资料**
 
 - Google《Site Reliability Engineering》第 30 章"Reliable Product Launches at Scale"——A/B 实验在系统变更上的实践准则。
-- Microsoft Research *Emocut* / *Causal* 系列论文——反事实推理与 A/B 设计在故障处置中的应用。
+- Microsoft Research 在因果 / 反事实推理方向的公开论文（具体标题与年份待核验）——反事实推理与 A/B 设计在故障处置中的应用；本节无法给出可核验的论文清单，引用时请自行查证。
 - Uber *Michelangelo* 关于 A/B 与 Shadow 平台的工程分享——AIOps 模型上线的标准方法学。
 - LinkedIn *Doctor* 平台公开文章——在线 / 离线评估的指标体系。
 - 阿里《大数据之路》第 9 章"故障自愈评估"——国内超大集群自愈指标体系建设的范式。
@@ -625,7 +625,7 @@
 - Google《The Site Reliability Workbook》——Practical Postmortem 模板与 RACI 矩阵。
 - Kubernetes 官方文档关于 Pod Lifecycle、Graceful Shutdown、Kill Switch 的章节——容器级别的回滚与恢复机制。
 - 阿里《大数据之路》第 10 章"故障复盘"——国内超大集群事故复盘模板与实践。
-- Microsoft Research 关于"自动化决策错误"（*Mistaken Reinforcement Learning*）的论文——自动决策系统在生产环境中的常见失误模式。
+- Microsoft Research 关于"自动化决策在真实环境中出错"的公开研究（具体标题与年份待核验）——自动决策系统在生产环境中的常见失误模式；本节无法给出可核验的论文出处，引用时请自行查证。
 - Databricks / Snowflake 平台运维文档中的"事故响应"与"客户影响"模板——湖仓时代的事故响应范式。
 - **微医在线问诊系统的自愈事故复盘** —— 在医疗问诊侧对 AI 服务做 Kill Switch 与影响半径限制，行业会议分享中讨论了误杀事故复盘的 Action Items。
 - **货拉拉运单匹配系统的事故复盘** —— 在物流撮合场景因自动扩容误判触发雪球效应，公开材料中给出了"先止血、再排查、Kill Switch 即刻下线"的标准模板。
@@ -715,7 +715,7 @@
 
 **5. 参考资料**
 
-- OpenAI *WebGPT* 与 *RAG* 系列论文——RAG 在大型语言模型中降低幻觉的最早系统研究。
+- Lewis et al.《Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks》（Facebook AI, NeurIPS 2020）——检索增强生成的原始论文，也是该方向最早的系统性研究（归属为 Facebook AI，并非 OpenAI）；OpenAI *WebGPT*（Nakano et al., 2021）——浏览器辅助问答中结合检索与人类反馈的早期系统。
 - 《Self-Consistency Improves Chain of Thought Reasoning in Large Language Models》（Wang et al. 2022）——自一致性对事实性提升的基线。
 - Shinn et al.《Reflexion: Language Agents with Verbal Reinforcement Learning》（2023 NeurIPS）——Reflexion 范式的原始论文。
 - DeepSeek-Coder / Qwen2.5-Coder 关于代码生成幻觉的公开技术报告——code LLM 在 Text2SQL 上的幻觉治理。
@@ -795,7 +795,7 @@
 - **「LoRA 微调效果有限怎么办？」** 答：换全参数微调 / 增大学习率 / 扩数据量 / 用更长训练步；也要注意 LoRA rank 不是越大越好，常用 8 / 16 / 32。
 - **「SFT 数据怎么造？」** 答：用 GPT-4 + 私有语料自举 (instr, out) 对，再人工抽检。
 - **「怎么验证微调没引发遗忘？」** 答：用通用 benchmark + 私有任务 benchmark 做对比，分层打分。
-- **「Data Agent 微调最划算的场景是？」** 答：企业私有 Schema / 私有指标命名 / 私有方言（如方言函数），LoRA + 千级 SQL 对就能提 10 个点。
+- **「Data Agent 微调最划算的场景是？」** 答：企业私有 Schema / 私有指标命名 / 私有方言（如方言函数）——用 LoRA + 千级 SQL 对通常能带来可观提升（幅度随基线模型与任务难度而异，此处按【经验】档处理，本书不给出可溯源的具体点数）。
 
 **5. 参考资料**
 
@@ -888,7 +888,7 @@
 
 - Microsoft《Azure SRE Agent》与 *Copilot for ServiceNow* 官方文档——大模型在 SRE 场景中的典型任务集。
 - Databricks Genie 与 Snowflake Cortex Analyst 官方文档——Data Agent 主战场的产品形态。
-- 《AIOps in the LLM Era》Microsoft Research / Google Research 关于"LLM 用于告警降噪与归因"的论文列表。
+- Microsoft Research / Google Research 关于"LLM 用于告警降噪与归因"的公开论文（本节无法核验所引综述的具体标题与年份，此处按【待核验】档处理，引用时请自行查证）。
 - 阿里 QuickBI 智能助手 / 字节豆包数据分析公开材料——国内 LLM 在 AIOps / Data Agent 中的实际任务列表。
 - ServiceNow、PagerDuty 的 AI 产品发布材料——AIOps 商业产品的代表性任务与落地路径。
 - **京东数科的金融风控 LLM 助手** —— 在金融风控域以 RAG 注入风控规则与告警降噪，配合 Schema 约束与强制只读沙箱执行，相关行业活动与白皮书中均有论述。

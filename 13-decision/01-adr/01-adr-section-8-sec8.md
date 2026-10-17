@@ -160,7 +160,7 @@ GitHub 在 2016 年公开的 `github/architectural-decision-records` 仓库就�
 **4. 追问预测**
 
 - **「10 人小团队想用 MADR，怎么降本？」** 答：用 `adr-tools` CLI 自动填充 Date / Status 字段；用 MADR 的「轻量子集」——只保留 Decision Drivers / Considered Options / Decision Outcome，其它用 4 段平替（Consulted / Informed 等小团队不必要）。
-- **「AI 起草 ADR 用哪种模板？」** 答：MADR 更适合——字段多反而让 LLM 填空更稳；可用 Anthropic / OpenAI API 把 Context + 候选项输入，让模型直接生成完整 MADR，节省 70% 撰写时间。但**最终 Decision 字段必须人工拍板**，不能让 LLM 当 owner。
+- **「AI 起草 ADR 用哪种模板？」** 答：MADR 更适合——字段多反而让 LLM 填空更稳；可用 Anthropic / OpenAI API 把 Context + 候选项输入，让模型直接生成完整 MADR，撰写时间通常能明显缩短（缩短幅度取决于 Context 与候选项的完备程度，本节无法给出可溯源的统一百分比，此处按【经验】档处理）。但**最终 Decision 字段必须人工拍板**，不能让 LLM 当 owner。
 - **「战略级决策用什么模板？」** 答：Living ADR——在 MADR 基础上加「演进条件」「回滚条件」「监测指标」三段，因为战略决策通常持续 12+ 个月，必须显式记录「什么时候 supersede 自己」。
 - **「如何让团队从 Nygard 平滑迁移到 MADR？」** 答：先迁移 1–2 条**最重要的** ADR 做示范，让团队看到「重读时少花多少时间」；再写一份「扩展 ADR 时填什么字段」的对照表；最后用 lint 工具（自定义 markdownlint 规则）强制新 ADR 包含 Drivers / Options 两段。
 
@@ -366,7 +366,7 @@ Step 5 · ADR-0031 维护
 
 **5. 参考资料**
 
-- Michael Nygard《Documenting Architecture Decisions》（Cognitect 官方博客，2011 年）——明确指出 ADR 与 RFC 的「决策后 / 决策前」时序差异。
+- Michael Nygard《Documenting Architecture Decisions》（Cognitect 官方博客，2011 年）——ADR 概念的原始出处。本节把 ADR 与 RFC 的关系归纳为「决策后归档 / 决策前提议」的时序差异，这是本节自己的归纳、并未引自该文；本节也无法核验 Nygard 原文是否逐条讨论过 RFC。
 - GitHub 公开 ADR 仓库中 RFC 流程相关 ADR（如 GraphQL API 选型 ADR）——大型互联网公司 RFC → ADR 双层流程的样本。
 - Apache Kafka 社区 KIP 流程官方文档——开源项目 RFC（KIP）的最完整工业范本。
 - IETF RFC 流程官方文档——RFC 概念的源头，提供了 Engineering RFC 的命名沿革。
@@ -503,7 +503,7 @@ GitHub 在 `github/architectural-decision-records` 仓库的部分 ADR（如 ADR
 | 成本估算（元/月，按 50TB/日）(0.10) | 4（State 较大，RocksDB 后端） | 5（复用 Spark 集群） | 3（独立部署） |
 | 学习曲线 (0.10) | 2（陡） | 5（团队熟悉） | 2（陡） |
 | 社区活跃度 / 长期演进 (0.05) | 5（顶级 Apache 项目） | 5（顶级） | 3（商用公司主导） |
-| **加权总分** | 2×0.20 + 5×0.25 + 5×0.15 + 5×0.15 + 4×0.10 + 2×0.10 + 5×0.05 = **3.75** | 5×0.20 + 3×0.25 + 5×0.15 + 3×0.15 + 5×0.10 + 5×0.10 + 5×0.05 = **4.20** | 1×0.20 + 5×0.25 + 3×0.15 + 5×0.15 + 3×0.10 + 2×0.10 + 3×0.05 = **3.30** |
+| **加权总分** | 2×0.20 + 5×0.25 + 5×0.15 + 5×0.15 + 4×0.10 + 2×0.10 + 5×0.05 = **4.00** | 5×0.20 + 3×0.25 + 5×0.15 + 3×0.15 + 5×0.10 + 5×0.10 + 5×0.05 = **4.20** | 1×0.20 + 5×0.25 + 3×0.15 + 5×0.15 + 3×0.10 + 2×0.10 + 3×0.05 = **3.30** |
 
 **结论**：Spark Structured Streaming 总分 4.20 最高。但 Decision 应该选 Flink——因为 **延迟**是 P99 < 30s 这一**必须满足**的硬约束（不达标则上线不予通过），而矩阵里它只是 0.25 权重的「加法项」。
 
@@ -567,7 +567,7 @@ GitHub 在 `github/architectural-decision-records` 仓库的部分 ADR（如 ADR
 
 **1. 考察点**
 
-- 是否知道「**单向引用会腐烂**」——ADR 引用代码，代码引用 ADR，但任何一端变更都需要手动同步，半年后 50% 引用失效。
+- 是否知道「**单向引用会腐烂**」——ADR 引用代码，代码引用 ADR，但任何一端变更都需要手动同步，半年后就会有相当一部分引用失效（失效比例取决于同步机制的自动化程度与团队纪律，本节无法给出可溯源的统一数字，此处按【经验】档处理）。
 - 能否从「**正反向双向链接**」出发给出机制，而不是只说「在代码注释里写一行」。
 - 是否理解 CI 校验的意义——人工维护不可持续，必须用自动化防止「ADR-XXXX 已经 supersede 但代码还在引用」。
 - 加分项：能给出 grep 工具、自定义 GitHub Actions、Neo4j / KG 方案三种实现路径及其 trade-off。
@@ -750,11 +750,11 @@ Wiki 文章「数据仓库架构」
 - **「Wiki 平台迁移（如 Confluence → Notion）时 ADR 中的链接全失效，怎么办？」** 答：CI 校验时定期扫描所有 ADR 中的 wiki URL，发起「待重写」issue 给文档管理员；同时 ADR 中的链接最好用「**逻辑路径 + 平台前缀**」（如 `wiki:data-warehouse-arch`），便于迁移时改前缀即可。
 - **「不同业务线各有 wiki，跨 BU 怎么协同 ADR？」** 答：组织级 ADR 库（中央 ADR Repo）保持唯一一份 ADR 索引，wiki 各自维护，但所有跨 BU 决策的 ADR 必须归档到中央库，并用「**影响范围 = BU 名**」字段标注。
 - **「如果团队不习惯 Wiki 而习惯 Slack 文档怎么办？」** 答：Slack / 飞书文档可以成为 ADR 的「讨论区」——ADR 处于 Proposed 时讨论放 Slack thread，Accepted 后归档到代码库；避免 ADR 的核心字段飘在 Slack。
-- **「AI 能否帮 ADR 与 Wiki 自动同步？」** 答：当前可以——LLM 把 ADR supersede 事件生成「Wiki 同步草案」由 wiki 管理员审核，节省 50% 同步工作量；但**最终发布仍需人工**（wiki 修改应经 review）。
+- **「AI 能否帮 ADR 与 Wiki 自动同步？」** 答：当前可以——LLM 把 ADR supersede 事件生成「Wiki 同步草案」由 wiki 管理员审核，可显著减少同步工作量（减少幅度随文档数量与一致性要求而异，本节无法给出可溯源的统一百分比，此处按【经验】档处理）；但**最终发布仍需人工**（wiki 修改应经 review）。
 
 **5. 参考资料**
 
-- Michael Nygard《Documenting Architecture Decisions》（Cognitect 官方博客，2011 年）——明确指出 ADR 是「记录决策」，Wiki 是「记录事实」，二者分工清晰。
+- Michael Nygard《Documenting Architecture Decisions》（Cognitect 官方博客，2011 年）——ADR 概念的原始出处。「ADR 记录决策、Wiki 记录事实」的分工，是本节自己的归纳、并未引自该文；本节也无法核验 Nygard 原文是否做过这一对比。
 - Spotify Backstage ADR Plugin 官方文档（2024 年版）——Backstage Catalog 中 ADR 与 Wiki / TechDocs 的集成实现，是大型组织 ADR-Wiki 协同的开源参考。
 - ThoughtWorks Technology Radar 2020 年条目「Lightweight Architecture Decision Records」——明确 ADR 与 Wiki / Confluence 的边界：「Wiki 是百科，ADR 是决策日志」。
 - 字节跳动飞书「技术方案评审（TD）」与飞书文档的官方集成说明（字节公开分享）——中国企业典型的 ADR-Wiki 协同范本。
@@ -880,13 +880,13 @@ Pros/Cons 段 Good / Bad / Neutral 三栏必须都填且 Bad 不能敷衍。
 - **「LLM 起草 ADR 后 1 个月发现某项 Pro 是错的，怎么办？」** 答：写新 ADR 修正「事实错误」，supersede 错的——**绝不修改原 ADR**。这是 ADR 的不可变性原则。LLM 的事实错误不能成为违反 ADR 原则的理由。
 - **「如果 LLM 一直产出 Bad 一栏敷衍的内容，怎么办？」** 答：在 prompt 中加 few-shot 示例（让 LLM 模仿高质量 Bad）；或者用结构化约束（如「Bad 必须不少于 5 条且必须含具体风险，例如延迟、成本、学习曲线」）。
 - **「如何让 LLM 起草 ADR 与企业内部 ADR 库风格一致？」** 答：RAG（Retrieval Augmented Generation）——把团队历史 Accepted ADR（10–50 篇）作为语料，让 LLM 在起草前检索相似 ADR 模仿风格与粒度。这是 Anthropic / OpenAI 都推荐的做法。
-- **「私有化 LLM 的成本 vs 公有 API 怎么选？」** 答：成本敏感选私有化（一次性部署 + 推理算力），合规敏感选私有化（数据不出域），灵活优先选公有 API（按 token 计费，无需维护）。大厂 50% 选私有化 + 50% 公有 API 组合。
+- **「私有化 LLM 的成本 vs 公有 API 怎么选？」** 答：成本敏感选私有化（一次性部署 + 推理算力），合规敏感选私有化（数据不出域），灵活优先选公有 API（按 token 计费，无需维护）。大型企业多采用「私有化 + 公有 API」的混合路线（具体比例因合规要求与场景而异，本节无法给出可溯源的统一数字，此处按【经验】档处理）。
 
 **5. 参考资料**
 
 - Anthropic Claude 3.5 / Claude 4 官方文档中「Prompt Engineering for Long-Form Generation」章节——MADR 这种长文档生成的 prompt 设计参考。
 - Anthropic / OpenAI / 阿里 / 字节公开发布的「AI-assisted ADR」工具/论文——GitHub Copilot ADR 插件、AdrGPT 等。
-- Microsoft Research 2024 年论文《ADR-LLM: Using Large Language Models for Architecture Decision Review》——LLM 辅助 ADR 评审的学术框架。
+- Microsoft Research 2024 年关于 LLM 辅助 ADR 评审的论文——LLM 辅助 ADR 评审的学术框架（本节无法核验其确切篇名与作者，引用时请自行查证）。
 - ThoughtWorks Technology Radar 2024 年条目「AI-Assisted Architecture Decision Records」——明确「AI 起草 + 人 review」的工业范式。
 - Anthropic / OpenAI / 阿里 / 字节官方发布的 Agent / Prompt Engineering 最佳实践——私有化部署与 RAG 增强的具体实现方案。
 - **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
@@ -916,7 +916,7 @@ Pros/Cons 段 Good / Bad / Neutral 三栏必须都填且 Bad 不能敷衍。
 
 **第一层：定义——Decision Intelligence 是什么。**
 
-Decision Intelligence 是 Gartner 在 2022 年提出的概念，定义为「**将决策建模为数据科学问题，通过数据 / AI / 心理学等方法把决策从艺术升级为科学**」。DI 不是取代人决策，而是**用机器扩展人决策**——典型应用：欺诈风控、动态定价、医疗诊断、智能体路径选择。
+Decision Intelligence 是 Gartner 在 2022 年《Top Strategic Technology Trends》中列为顶级技术趋势、并给出定义的概念（本节无法核验 Gartner 是否为该术语的最早提出方，引用时请自行查证），其定义为「**将决策建模为数据科学问题，通过数据 / AI / 心理学等方法把决策从艺术升级为科学**」。DI 不是取代人决策，而是**用机器扩展人决策**——典型应用：欺诈风控、动态定价、医疗诊断、智能体路径选择。
 
 DI 平台（Decision Intelligence Platform, DIP）核心特征：
 - 融合多源数据（业务指标、ADR 库、实验数据、A/B 测试）；
@@ -1007,12 +1007,12 @@ DIP 自动创建 supersede 草案：ADR-0078（迁移到 Kafka 3.x）
 
 **5. 参考资料**
 
-- Gartner《Top Strategic Technology Trends 2022: Decision Intelligence》（2021 年发布）——DI 概念的标准出处，首次系统化提出 DI 的定义与组件。
+- Gartner《Top Strategic Technology Trends 2022: Decision Intelligence》（2021 年发布）——企业语境下 DI 的标准阐述来源之一，给出 DI 的定义与组件（是否「首次系统化提出」本节无法核验）。
 - Gartner《Decision Intelligence: A Complete Guide》（2023 年发布）——DI 平台的工程实施指南。
 - Palantir Foundry 官方文档——工业级 DI 平台的样本实现，含「本体 + 数据 + 决策」三件套。
-- Aera Technology 官方白皮书（Aera，2018 年成立）——供应链决策智能平台样本。
+- Aera Technology 官方白皮书——供应链决策智能平台样本（本节无法核验其篇名与发布年份，引用时请自行查证）。
 - ThoughtWorks Technology Radar 2024 / 2025 年系列条目「Decision Intelligence」——把 DI 标记为「Assess → Trial」的工业推荐。
-- Microsoft Research / IBM Research 2024 年关于 Decision Intelligence + LLMs 的论文——DI 与 LLM 结合的学术前沿。
+- Microsoft Research / IBM Research 2024 年关于 Decision Intelligence + LLMs 的论文——DI 与 LLM 结合的学术前沿（本节无法核验其具体篇名与作者，引用时请自行查证）。
 - **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
 - **京东数科** —— 京东数科的金融特征平台——支撑消费分期、信用支付等场景，特征口径与模型版本强一致。
 - **平安银行** —— 平安银行的数据分级与脱敏实践——把客户、账户、交易按敏感度分级，配合 ABAC 权限与脱敏网关，是国内金融业最完整的案例。
@@ -1215,7 +1215,7 @@ ADR-0021 实时湖仓（Flink + Iceberg）
 
 - **ThoughtWorks Technology Radar 2024** 明确把「Automated supersede detection」列为「Assess」——说明工业界正在从手动转向自动，但尚未成熟。
 - **log4brains** 工具内置 ADR 之间的「superseded」链接管理，支持 `supersedes` 标注——是半自动路线的代表工具。
-- **学术界**（如 2024 年相关论文）用 LLM 做 ADR 关系抽取，报告在人工标注数据集上准确率约 80%。
+- **学术界**已有用 LLM 做 ADR 关系抽取的探索；本节无法核验其论文、数据集与准确率数值，故此处不给出具体数字，引用时请自行查证。
 - **企业内部**（阿里 / 字节）多用「PR review 强制检查 + 语义检索辅助」的混合路径——纯全自动仍未普及。
 
 **3. 常见陷阱**
