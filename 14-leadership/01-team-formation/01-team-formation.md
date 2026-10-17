@@ -275,10 +275,6 @@ TalentDensity = |HighPerformers| / |Team|
 - 行为锚点：故障 Oncall 主动兜底；跨团队协作主动补位；项目交付承诺必达。
 - 反例：上游问题推下游；交付拖延无预警。
 
-- [§3. **坦诚直接 + 尊重专业**（Direct & Respectful）](01-team-formation-section-3-direct-respectful.md)
-- [§4. **持续学习 + 知识共享**（Learn & Share）](01-team-formation-section-4-learn-share.md)
-- [§5. **客户价值优先**（Customer Value First）](01-team-formation-section-5-customer-value-first.md)
-
 ---
 
 ## 章节内容导航
@@ -291,8 +287,5 @@ TalentDensity = |HighPerformers| / |Team|
 - [§6. 落地实践](01-team-formation-section-6-sec6.md)
 - [§7. 与其他方法对比](01-team-formation-section-7-sec7.md)
 - [§8. 面试真题集](01-team-formation-section-8-sec8.md)
-- [§3. **坦诚直接 + 尊重专业**（Direct & Respectful）](01-team-formation-section-3-direct-respectful.md)
-- [§4. **持续学习 + 知识共享**（Learn & Share）](01-team-formation-section-4-learn-share.md)
-- [§5. **客户价值优先**（Customer Value First）](01-team-formation-section-5-customer-value-first.md)
 
 ---

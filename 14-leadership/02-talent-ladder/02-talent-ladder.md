@@ -309,7 +309,6 @@ TeamOutput = TalentDensity × RetentionRate × PerCapitaProductivity
 | 领导力 | 2 | 2 | 3 |
 
 - [§3. 关键差距](02-talent-ladder-section-3-sec3.md)
-- [§4. 行动项](02-talent-ladder-section-4-sec4.md)
 - [§5. 资源](02-talent-ladder-section-5-sec5.md)
 ## 1. 自我介绍（2 分钟）
 - 工作年限 / 当前职级 / 团队角色
@@ -354,7 +353,6 @@ TeamOutput = TalentDensity × RetentionRate × PerCapitaProductivity
 - [§3. 设计模式与范式](02-talent-ladder-section-3-sec3.md)
 - [§4. 工程实现](02-talent-ladder-section-4-sec4.md)
 - [§3. 关键差距](02-talent-ladder-section-3-sec3.md)
-- [§4. 行动项](02-talent-ladder-section-4-sec4.md)
 - [§5. 资源](02-talent-ladder-section-5-sec5.md)
 - [§3. 技术深度与广度（5 分钟）](02-talent-ladder-section-3-sec3.md)
 - [§4. Q&A（30 分钟）](02-talent-ladder-section-4-q-a-30.md)

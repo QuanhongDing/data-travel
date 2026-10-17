@@ -255,7 +255,6 @@ ROI = (Benefits - Costs) / Costs
 - [§3. 关键项目](08-upward-management-section-3-sec3.md)
 - [§4. 风险与挑战](08-upward-management-section-4-sec4.md)
 - [§5. 资源需求](08-upward-management-section-5-sec5.md)
-- [§6. Q4 计划](08-upward-management-section-6-q4.md)
 - [§7. 讨论](08-upward-management-section-7-sec7.md)
 ## 1. 现状
 - 当前团队 15 人，人均产出 X
@@ -308,7 +307,6 @@ ROI = (Benefits - Costs) / Costs
 
 - [§3. 团队与组织（5 分钟）](08-upward-management-section-3-sec3.md)
 - [§4. 风险与挑战（5 分钟）](08-upward-management-section-4-sec4.md)
-- [§5. Q4 计划与资源需求（5 分钟）](08-upward-management-section-5-q4---5.md)
 - [§6. 讨论（3 分钟）](08-upward-management-section-6-sec6.md)
 
 ---
@@ -325,7 +323,6 @@ ROI = (Benefits - Costs) / Costs
 - [§3. 关键项目](08-upward-management-section-3-sec3.md)
 - [§4. 风险与挑战](08-upward-management-section-4-sec4.md)
 - [§5. 资源需求](08-upward-management-section-5-sec5.md)
-- [§6. Q4 计划](08-upward-management-section-6-q4.md)
 - [§7. 讨论](08-upward-management-section-7-sec7.md)
 - [§3. 资源需求](08-upward-management-section-3-sec3.md)
 - [§4. 预期 ROI](08-upward-management-section-4-roi.md)
@@ -340,7 +337,6 @@ ROI = (Benefits - Costs) / Costs
 - [§5. 双向输入（2 分钟）](08-upward-management-section-5-sec5.md)
 - [§3. 团队与组织（5 分钟）](08-upward-management-section-3-sec3.md)
 - [§4. 风险与挑战（5 分钟）](08-upward-management-section-4-sec4.md)
-- [§5. Q4 计划与资源需求（5 分钟）](08-upward-management-section-5-q4---5.md)
 - [§6. 讨论（3 分钟）](08-upward-management-section-6-sec6.md)
 
 ---

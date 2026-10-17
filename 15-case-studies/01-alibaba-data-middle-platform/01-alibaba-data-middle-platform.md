@@ -14,7 +14,7 @@
 | 双 11 数据洪峰怎么扛住的 | §3.5、§5.1 |
 | 中台组织怎么搭 | §4.3、§6.1 |
 | 阿里怎么把中台能力变成云上商业产品 | §4.4、§6.3 |
-| 大模型时代阿里中台怎么演进的 | §3.6、§4.5 |
+| 大模型时代阿里中台怎么演进的 | §3.6、§4.6 |
 | 哪些坑可以提前避免 | §5.1、§5.2、§5.3 |
 | 我司适合学哪些、不适合学哪些 | §6.1、§6.2 |
 
@@ -70,10 +70,8 @@
 - [§5. 关键决策](01-alibaba-data-middle-platform-section-5-sec5.md)
 - [§6. 踩坑与教训](01-alibaba-data-middle-platform-section-6-sec6.md)
 - [§7. 复用经验](01-alibaba-data-middle-platform-section-7-sec7.md)
-- [§8. 与同类案例对比](01-alibaba-data-middle-platform-section-8-sec8.md)
-- [§9. 面试真题集](01-alibaba-data-middle-platform-section-9-sec9.md)
-- [§10. 参考资料](01-alibaba-data-middle-platform-section-10-sec10.md)
 - [§8. 面试真题集](01-alibaba-data-middle-platform-section-8-sec8.md)
+- [§10. 参考资料](01-alibaba-data-middle-platform-section-10-sec10.md)
 
 ---
 
@@ -86,9 +84,7 @@
 - [§5. 关键决策](01-alibaba-data-middle-platform-section-5-sec5.md)
 - [§6. 踩坑与教训](01-alibaba-data-middle-platform-section-6-sec6.md)
 - [§7. 复用经验](01-alibaba-data-middle-platform-section-7-sec7.md)
-- [§8. 与同类案例对比](01-alibaba-data-middle-platform-section-8-sec8.md)
-- [§9. 面试真题集](01-alibaba-data-middle-platform-section-9-sec9.md)
-- [§10. 参考资料](01-alibaba-data-middle-platform-section-10-sec10.md)
 - [§8. 面试真题集](01-alibaba-data-middle-platform-section-8-sec8.md)
+- [§10. 参考资料](01-alibaba-data-middle-platform-section-10-sec10.md)
 
 ---

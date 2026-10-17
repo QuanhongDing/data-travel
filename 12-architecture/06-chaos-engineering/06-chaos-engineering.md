@@ -95,7 +95,7 @@
 
 **起源（2010-2014）**：
 
-- 2011：Netflix 推出 **Chaos Monkey**，随机 kill 生产环境 EC2 实例。
+- 2011：Netflix 推出 **Chaos Monkey**，随机 kill 生产环境 EC2 实例（Chaos Monkey / Simian Army 的公开年份本仓口径不一——另有章节记为 2010 年，此处按 2011 年之说，不锁定单一值）。
 - 2012：Netflix **Chaos Kong** 模拟整个 AWS Region 故障。
 - 2014：Netflix 公开 **Chaos Engineering Principles**，混沌工程学科化。
 - 2015：Netflix **Chaos Automation Platform (ChAP)** 发布，自动化编排。
@@ -103,8 +103,8 @@
 **工具化（2015-2020）**：
 
 - 2016：Gremlin 商业化混沌工程平台。
-- 2017：阿里 **ChaosBlade** 开源（基于阿里 AHAS 内部实践）。
-- 2018：Pinterest **Litmus**、CNCF **Chaos Mesh**（原名 xline）。
+- 2018：**Litmus**、CNCF **Chaos Mesh**（原名 xline）。
+- 2019：阿里 **ChaosBlade** 开源（基于阿里 AHAS 内部实践）。
 - 2019：CNCF **LitmusChaos** 成为 CNCF Sandbox 项目。
 
 **AI 原生阶段（2020+）**：

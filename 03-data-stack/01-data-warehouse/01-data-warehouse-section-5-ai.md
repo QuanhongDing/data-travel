@@ -61,7 +61,7 @@
 
 **学术进展**：
 
-- **DuckDB 论文（VLDB 2024）**：内嵌 OLAP 引擎的完整架构、向量执行优化、ACID 实现。
+- **DuckDB 的奠基论文（SIGMOD 2019 演示论文，Raasveldt & Mühleisen）**：内嵌 OLAP 引擎的架构、向量化执行与 ACID 实现。
 - **Snowflake 论文（SIGMOD 2024）**：存算分离架构、Cloud Services 层、Micro-partition 演进。
 - **StarRocks 论文（SIGMOD 2024）**：向量化执行 + CBO + Pipeline 执行引擎。
 - **Apache Paimon 论文（2024）**：流式表格式 + LSM Tree + 流批融合。

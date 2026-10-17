@@ -33,7 +33,7 @@
 
 #### 4.1.3 验证
 
-Iceberg 2024 年成为 Apache 顶级项目，Databricks / Snowflake / AWS / Google Cloud 等大厂都集成 Iceberg。
+Iceberg 2020 年成为 Apache 顶级项目，Databricks / Snowflake / AWS / Google Cloud 等大厂都集成 Iceberg。
 
 ### 4.2 决策 2：Keystone 实时管道
 

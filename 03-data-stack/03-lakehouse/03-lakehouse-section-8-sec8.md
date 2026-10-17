@@ -39,7 +39,7 @@
 - 是否理解「表格式（Table Format）」是湖仓一层的**语义层**——把 Parquet/ORC 这种文件格式提升为具备 Schema、ACID、Time Travel 的「表」。这是判断候选人是否真正理解湖仓的关键。
 - 能否说清四家各自的设计哲学（Netflix / Uber / Databricks / Alibaba-Flink 生态）背后的**取舍原点**，而不是只背特性对比表。
 - 是否区分**写模型（COW / MOR / LSM）**与**主键索引**这两个最影响工程代价的维度，并把 CDC 场景、AI 场景、跨引擎场景对号入座。
-- 加分项：能结合 Delta UniForm（2024）的「一份数据三协议」演进方向、Paimon 1.0 2024 毕业、Iceberg V3 规范的行级删除等 2024-2025 关键事件，谈**收敛趋势**而非四家并存。
+- 加分项：能结合 Delta UniForm（2023 随 Delta Lake 3.0 公布；论文见 SIGMOD 2024）的「一份数据三协议」演进方向、Paimon 1.0 2024 毕业、Iceberg V3 规范的删除向量等 2024-2025 关键事件，谈**收敛趋势**而非四家并存。
 
 **2. 参考答案框架**
 
@@ -49,7 +49,7 @@
 
 - **Apache Iceberg（Netflix / Apple 主导）**：设计原点是「让任何引擎都能安全读」。Catalog 与物理路径完全解耦，metadata 文件层级 `metadata.json -> manifest list -> manifest -> data file`。**写模型默认 COW**，Spark / Trino / Flink / StarRocks 全兼容，社区最广。**代价**是主键索引弱、依赖墨菲条（`MERGE INTO`）做 upsert，性能不如 Hudi MOR。
 - **Apache Hudi（Uber 主导）**：设计原点是「CDC 主键 upsert」。Timeline + Record-Level Index 让 upsert 在 PB 级也能秒级完成，**CDC 场景通常显式切到 MOR** 让写快读时合并（Hudi 的默认表类型其实是 COW，与 Iceberg 一致）。代价是 Flink 集成偏后、社区贡献者比 Iceberg 少。Uber 把 Hudi 用在 UberEats 的实时订单流，是 CDC 路线最深的工业案例。
-- **Delta Lake（Databricks）**：设计原点是「Spark 之上最强 ACID」。Transaction Log（`_delta_log`）以 JSON+Parquet 维护，**Spark API 集成最深**，配合 Unity Catalog 与 Vector Search 形成 AI 一体化闭环。**代价**是 Flink 写入生态比较薄（2024 之前的痛点）；2024 年的 **Delta UniForm** 通过写一份 Delta 同时发布 Iceberg/Hudi 元数据开始回应这一问题。
+- **Delta Lake（Databricks）**：设计原点是「Spark 之上最强 ACID」。Transaction Log（`_delta_log`）以 JSON+Parquet 维护，**Spark API 集成最深**，配合 Unity Catalog 与 Vector Search 形成 AI 一体化闭环。**代价**是 Flink 写入生态比较薄（2024 之前的痛点）；随 Delta Lake 3.0（2023）公布的 **Delta UniForm** 通过写一份 Delta 同时发布 Iceberg/Hudi 元数据开始回应这一问题。
 - **Apache Paimon（Alibaba / Flink 生态）**：设计原点是「流批一体的 LSM 树」。LSM 让流式写入天然防小文件、Changelog Producer 输出变更流直接驱动物化视图增量刷新。代价是 Trino / StarRocks 的批端兼容性还在追赶。
 
 **第三层：选型的四个真实约束。**
@@ -59,12 +59,12 @@
 3. **生态与人才**：选表格式就是选社区，建议优先选公司已有团队经验的；最差的选择是为了「先进性」换一个团队都不熟的格式。
 4. **总拥有成本**：含 Catalog 选型（Hive Metastore / Glue / Unity Catalog / Polaris / Nessie）、Compaction 成本、跨云一致性。Netflix 在公开技术博客中介绍过 Iceberg 替代 Hive 后的成本与查询改善（本节无法给出该博客的可核验数字，引用时请自行查证），这是工业界最常被引用的 ROI 锚点方向。
 
-**第四层：工程上的多格式共存现实。** 真实大厂往往**不止一种格式**：阿里用 Paimon 做实时入湖 + Iceberg 做离线主仓；字节 DataFinder 用 Paimon+Flink+StarRocks 跑秒级实时数仓；招行湖仓建设用 Iceberg 做统一底座、辅以 Hudi MOR 处理高频额度变更；Databricks 2024 推 Delta UniForm 试图用「一份 Delta 三协议读」抹平差异。
+**第四层：工程上的多格式共存现实。** 真实大厂往往**不止一种格式**：阿里用 Paimon 做实时入湖 + Iceberg 做离线主仓；字节 DataFinder 用 Paimon+Flink+StarRocks 跑秒级实时数仓；招行湖仓建设用 Iceberg 做统一底座、辅以 Hudi MOR 处理高频额度变更；Databricks 随 Delta Lake 3.0（2023）推出 Delta UniForm，试图用「一份 Delta 三协议读」抹平差异。
 
 **第五层：2024-2025 的关键收敛信号。**
 
 - **Delta UniForm（2024 SIGMOD 论文）**：写一次 Delta，下游可选 Iceberg / Hudi 协议读。
-- **Iceberg V3 规范（2024）**：行级删除 + Variant 类型 + 向量类型，缩小与 Delta 的「能力差」。
+- **Iceberg V3 规范（2024）**：删除向量 + Variant 类型 + 向量类型（行级删除文件机制自 v2 规范起已提供），缩小与 Delta 的「能力差」。
 - **Paimon 1.0 Apache 毕业（2024）+ Paimon 1.1（2025）**：LSM 调优、Changelog 增强，确认「流批一体底座」路线。
 
 选型不再是非此即彼，而要回答「**主用谁、补位谁、互认层怎么搭**」。
@@ -79,7 +79,7 @@
 
 **4. 追问预测**
 
-- **「Delta UniForm 和 Iceberg V3 都是「一份数据多协议读」，它们解决的问题有何本质差异？」** 答：UniForm 是从 Delta 出发在 commit 时同步发出 Iceberg/Hudi 元数据，保持 Delta 写入主路径；Iceberg V3 是规范本身扩展（行级删除 + 向量），让任何对接 V3 的引擎天然支持新语义。前者解决**多协议互认**，后者解决**单协议能力上限**。
+- **「Delta UniForm 和 Iceberg V3 都是「一份数据多协议读」，它们解决的问题有何本质差异？」** 答：UniForm 是从 Delta 出发在 commit 时同步发出 Iceberg/Hudi 元数据，保持 Delta 写入主路径；Iceberg V3 是规范本身扩展（删除向量 + 向量类型），让任何对接 V3 的引擎天然支持新语义。前者解决**多协议互认**，后者解决**单协议能力上限**。
 - **「Paimon 的 LSM 写模型和小文件治理是什么关系？为什么它被称作自然不产生小文件？」** 答：LSM 用追加写 + 后台 compaction 的天然结构，写入先落小文件，由后台线程合并成大文件，整个生命周期对小文件是「应收尽收」——Hudi / Iceberg 需要额外的 Compaction 调度（Paimon 几乎不用）。
 - **「如果公司要求 5 年内不绑定单一厂商，技术栈怎么搭？」** 答：底座用对象存储 + Iceberg 协议；Catalog 用开源 Polaris 或 Nessie；引擎层用 Trino 做联邦查询；写端按场景拆分——CDC 走 Flink+Paimon、批走 Spark+Iceberg。这是「格式中立 + 引擎多元化」的最大公约数栈。
 - **「华米欧薇大厂为什么不用 Delta Lake？」** 答：历史包袱（Spark 主导 vs Flink 主导）+ Delta 与 Databricks 商业版深度绑定 + 国内合规要求多云中立。当前国内主流是 Iceberg + Paimon + Hudi 三足鼎立，而非 Delta。
@@ -263,7 +263,7 @@
 - 是否能从「**写放大 vs 读放大**」的根上理解 COW 与 MOR，而不是背特性。
 - 能否说清 Hudi 的 Timeline + Record Index、MOR 的 base file + log file、读时合并怎么实现。
 - 是否能把 **Paimon 的 LSM 实现**与 Hudi MOR 的「读合并」做一个清晰映射。
-- 加分项：能结合 Iceberg V3 的**行级删除（delete files）**展望 COW/MOR 的边界是否在融合。
+- 加分项：能结合 Iceberg V3 的**删除向量（deletion vectors）**展望 COW/MOR 的边界是否在融合。
 
 **2. 参考答案框架**
 
@@ -301,7 +301,7 @@ Paimon 本质是**把 LSM 树结构搬到了湖表**：写入先入 memtable，f
 - **低频大变更（用户画像夜间全量）**：COW 更省心，不需要每天手动 compaction。
 - **流批一体实时入湖**：Paimon 的 LSM 是当下最优解——LSM 把 background compaction 自然化 + Changelog 让下游增量刷新成为可能。
 
-**第六层：Iceberg V3 的「第三种」写模型。** Iceberg V3 引入**行级删除（Row-level Deletes / Delete Files）**，本质是**独立的 delete file + base file + read-time merge**——它在保留「读简单版」的同时允许流式高频删除。从这个角度看 Iceberg V3 也开始接受「读时合并」的代价以换取灵活，是 COW/MOR 边界融合的信号。
+**第六层：Iceberg V3 的「第三种」写模型。** Iceberg V3 在 v2 已有的**行级删除（Row-level Deletes / Delete Files）**之上引入**删除向量（deletion vectors）**，机制仍是**独立的 delete file + base file + read-time merge**——它在保留「读简单版」的同时允许流式高频删除。从这个角度看 Iceberg V3 也开始接受「读时合并」的代价以换取灵活，是 COW/MOR 边界融合的信号。
 
 **第七层：工程师真正关心的「代价」。**
 
@@ -315,13 +315,13 @@ Paimon 本质是**把 LSM 树结构搬到了湖表**：写入先入 memtable，f
 - **COW 配 CDC 也能撑。** 答案能撑，但**代价巨大**，单条变更放大 5-20 倍，存储与写入吞吐都会被破坏。
 - **把 Paimon 当 Hudi 的复刻。** Paimon 是 LSM 树，更接近 RocksDB / LevelDB 的工程结构；Hudi MOR 是「log + base」，调度逻辑不一样。
 - **用 MOR 跑离线全量重算。** 全量刷新的场景不需要 MOR 的写优势，反而被读时合并拖累。
-- **COW/MOR 选型一次定终身。** Iceberg V3（行级删除）+ Delta UniForm 让这件事可以**分场景混用**。
+- **COW/MOR 选型一次定终身。** Iceberg V3（删除向量）+ Delta UniForm 让这件事可以**分场景混用**。
 
 **4. 追问预测**
 
 - **「MOR 的 compaction 该跑在什么时机？怎么避免影响在线查询？」** 答：推荐**内嵌调度 + 异步触发**——`hoodie.compact.inline` + `hoodie.compact.schedule.inline` 联合控制；或者用单独的「compactor」Spark/Flink 任务与查询任务跑在**不同资源池**；业界常见做法是引入 Flink 流跑的「compaction 任务」与查询解耦。
 - **「Paimon 的 Changelog 流与 Debezium 的 CDC 是什么关系？」** 答：Debezium 是数据采集层（采 MySQL binlog 转换成 CDC 流），Paimon 是落地与消费层（落湖表后输出 Changelog）；两层可组合，即 Paimon 可以直接消费 Debezium，也可以消费 Flink CDC 的 canal/debezium-json。
-- **「Iceberg V3 引入 delete files，是不是意味着 COW 时代结束？」** 答：不会。V3 的 delete files 让 Iceberg 同时具备 COW 的「简单读」与 MOR 的「高频删」——本质是从「单一写模型」演化为「按操作类型选择最优写模式」。
+- **「Iceberg V3 的删除向量，是不是意味着 COW 时代结束？」** 答：不会。行级删除文件（v2 规范引入）加删除向量（V3 规范引入）让 Iceberg 同时具备 COW 的「简单读」与 MOR 的「高频删」——本质是从「单一写模型」演化为「按操作类型选择最优写模式」。
 - **「10 亿级 CDC 数据量，MOR 一天攒 1 万个 delta 文件，怎么救？」** 答：**立刻手动 compaction** 把所有 delta 文件合并成 base；然后**调整 compaction 调度频率**到「每小时一次」；同步监控 `delta_file_count` 与 `read_time` 关系，建立自动扩容触发策略。
 
 **5. 参考资料**
@@ -334,7 +334,7 @@ Paimon 本质是**把 LSM 树结构搬到了湖表**：写入先入 memtable，f
 - **美的工业互联网 Hudi MOR 实践** —— 设备状态每分钟级变更，Hudi MOR 替代原 COW Hive 表后写入性能有数量级改善（具体倍数随场景而异，本节无法给出可核验数字）。
 - **招商银行额度变更实时入湖（Hudi MOR + Flink CDC）** —— 高频额度变更场景下的 MOR 调优经验。
 - **字节跳动 DataFinder + Paimon LSM** —— Paimon 在流式入湖与实时 OLAP 一体的落地。
-- **Netflix Iceberg V3 行级删除调研** —— V3 在流式更新场景下的早期生产案例。
+- **Netflix 的 Iceberg 行级删除调研** —— 流式更新场景下的早期生产案例。
 
 ---
 

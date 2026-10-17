@@ -268,12 +268,12 @@
 - **图结构不准确。** 血缘不全 / 服务依赖缺失会让算法失效。
 - **算法输出不解释。** 黑盒排序 oncall 不信任。
 - **不验证图结构。** 血缘数据 stale 是 RCA 失效的第一原因。
-- **追求复杂算法。** 80% 场景随机游走已足够；GNN 是过度设计。
+- **追求复杂算法。** 多数场景（经验判断，非统计口径）随机游走已足够；GNN 是过度设计。
 
 **4. 追问预测**
 
 - **「图算法 vs 贝叶斯网络？」** 答：图算法基于拓扑；贝叶斯网络基于因果关系；贝叶斯更准但需要专家建模。
-- **「图规模多大时算法慢？」** 答：千万节点图 Louvain 仍可秒级；十亿节点需要分布式（图数据库）。
+- **「图规模多大时算法慢？」** 答：千万节点量级的图，Louvain 在优化实现下通常仍在秒级到数十秒量级（经验判断，非统计口径；实际耗时高度依赖具体实现与硬件）；十亿节点需要分布式（图数据库）。
 - **「如何融合变更事件？」** 答：在图边上加权（近期变更的边权重更高），让算法倾向选择"变更节点"。
 
 **5. 参考资料**
@@ -341,7 +341,7 @@
 - **Network retransmit**：> 0.1% 是网络问题；
 - **节点负载（load）**：> 2 × 核数是过载。
 
-**第六层：诊断顺序（按概率排序）。**
+**第六层：诊断顺序（按经验概率排序，非统计口径）。**
 1. **数据倾斜（40%）**：Stage 时长长尾；
 2. **GC 频繁（20%）**：JVM 堆使用率高；
 3. **IO 瓶颈（20%）**：磁盘 await / io_wait 高；
@@ -465,7 +465,7 @@
 **4. 追问预测**
 
 - **「Stage 卡死 vs 慢怎么区分？」** 答：看 task 状态变化——慢是 task 进度仍在前进；卡死是 task 状态长时间不变。
-- **「Shuffle fetch 失败怎么治？」** 答：调大 `spark.shuffle.file.buffer` + `spark.reducer.maxReqsInFlight`；启用 External Shuffle Service。
+- **「Shuffle fetch 失败怎么治？」** 答：调大 `spark.shuffle.io.maxRetries` 与 `spark.shuffle.io.retryWait`（fetch 重试次数与重试间隔）；把 `spark.reducer.maxReqsInFlight` **调小**（该项默认不设上限，取值过大反而会因单节点并发抓取过载而加剧 fetch 失败）；启用 External Shuffle Service。
 - **「AM 重启会丢状态吗？」** 答：DStream API 依赖 Checkpoint；Structured Streaming + WAL + Kafka offset 可恢复。
 
 **5. 参考资料**

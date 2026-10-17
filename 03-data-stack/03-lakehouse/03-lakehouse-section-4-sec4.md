@@ -142,7 +142,7 @@ CALL iceberg.system.remove_orphan_files(
 
 | 工具 | 版本 | 2024-2025 新特性 |
 | --- | --- | --- |
-| Apache Iceberg | 1.6.x | V3 规范：行级删除、增量读取、向量类型、Variant 类型 |
+| Apache Iceberg | 1.6.x | V3 规范：删除向量、增量读取、向量类型、Variant 类型（行级删除文件机制自 v2 规范起已提供） |
 | Apache Hudi | 1.0 | Timeline Server、Lakehood 集成 |
 | Delta Lake | 3.2.x | Delta UniForm（一份数据多引擎读取） |
 | Apache Paimon | 1.1 | LSM 优化、主键索引、流批融合 |

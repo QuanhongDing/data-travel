@@ -57,7 +57,7 @@
 
 **学术进展**：
 
-- **Apache Iceberg V3 规范（2024）**：行级删除、增量读取、Variant 类型、向量类型支持。
+- **Apache Iceberg V3 规范（2024）**：在 v2 已有的行级删除之上加入删除向量（deletion vectors）、增量读取、Variant 类型、向量类型支持。
 - **Apache Paimon 论文（VLDB 2024）**：LSM Tree + 流批融合的表格式设计。
 - **Delta UniForm 论文（SIGMOD 2024）**：一份 Delta 数据支持 Iceberg / Hudi 读取。
 - **Apache Hudi Timeline Server 论文（2024）**：元数据服务化、Hudi 1.0 架构升级。

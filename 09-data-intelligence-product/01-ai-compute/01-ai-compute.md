@@ -131,9 +131,9 @@
 
 **云原生阶段（2016-2020）**：
 
-- 2016：Databricks MLflow 开源，MLOps 概念诞生。
+- 2016：MLOps 概念诞生；Databricks 于 2018 年 6 月开源 MLflow（实验追踪与模型注册的通用件）。
 - 2017：Google TPU 2.0、AWS SageMaker 发布，云厂商深度学习服务起势。
-- 2018：Uber Michelangelo、Facebook FBLearner Flow 大规模公开，AI 平台内部化。
+- 2018：Uber Michelangelo（平台架构于 2017 年 9 月由 Uber 工程博客公开）、Facebook FBLearner Flow 等内部 AI 平台进入规模化，AI 平台内部化。
 - 2019：阿里 PAI、腾讯 TI-One、华为 ModelArts 上线，国内云厂商入场。
 - 2020：Kubeflow 1.0、Ray 1.0 成熟，KubeRay 成为 GPU 调度标配。
 

@@ -11,10 +11,8 @@
 | 小节 | 文件 |
 | --- | --- |
 | 3. 关键问题 | [10-team-rhythm-section-3-sec3.md](10-team-rhythm-section-3-sec3.md) |
-| 4. 改进措施 | [10-team-rhythm-section-4-sec4.md](10-team-rhythm-section-4-sec4.md) |
-| 5. Action Items Review（5 分钟） | [10-team-rhythm-section-5-action-items-review-5.md](10-team-rhythm-section-5-action-items-review-5.md) |
+| 4. 工程实现 | [10-team-rhythm-section-4-sec4.md](10-team-rhythm-section-4-sec4.md) |
 | 5. 前沿演进（AI 时代） | [10-team-rhythm-section-5-ai.md](10-team-rhythm-section-5-ai.md) |
-| 5. 下季度 OKR | [10-team-rhythm-section-5-okr.md](10-team-rhythm-section-5-okr.md) |
 | 6. 落地实践 | [10-team-rhythm-section-6-sec6.md](10-team-rhythm-section-6-sec6.md) |
 | 7. 与其他方法对比 | [10-team-rhythm-section-7-sec7.md](10-team-rhythm-section-7-sec7.md) |
 | 8. 面试真题集 | [10-team-rhythm-section-8-sec8.md](10-team-rhythm-section-8-sec8.md) |

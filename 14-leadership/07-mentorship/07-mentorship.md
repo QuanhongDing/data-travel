@@ -290,7 +290,7 @@ I：这让作者不知道代码质量是否过关，也影响团队 CR 质量
 | 领导力 | 2 | 2 | 3 |
 
 - [§3. 关键差距](07-mentorship-section-3-sec3.md)
-- [§4. 行动项](07-mentorship-section-4-sec4.md)
+- [§4. 工程实现](07-mentorship-section-4-sec4.md)
 - [§5. 资源](07-mentorship-section-5-sec5.md)
 - [§5. 前沿演进（AI 时代）](07-mentorship-section-5-ai.md)
 - [§6. 落地实践](07-mentorship-section-6-sec6.md)
@@ -306,7 +306,7 @@ I：这让作者不知道代码质量是否过关，也影响团队 CR 质量
 - [§3. 设计模式与范式](07-mentorship-section-3-sec3.md)
 - [§4. 工程实现](07-mentorship-section-4-sec4.md)
 - [§3. 关键差距](07-mentorship-section-3-sec3.md)
-- [§4. 行动项](07-mentorship-section-4-sec4.md)
+- [§4. 工程实现](07-mentorship-section-4-sec4.md)
 - [§5. 资源](07-mentorship-section-5-sec5.md)
 - [§5. 前沿演进（AI 时代）](07-mentorship-section-5-ai.md)
 - [§6. 落地实践](07-mentorship-section-6-sec6.md)

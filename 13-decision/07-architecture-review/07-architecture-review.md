@@ -22,7 +22,7 @@
 
 ### 1.1 是什么
 
-**学术定义**：架构评审（Architecture Review）是对软件 / 数据架构设计进行系统性、专家级审查的过程，确保架构满足业务需求、技术约束、质量标准、可治理性与可演化性。其前身可追溯到 1970s 的 Design Review，2000s 后演化出多种方法论：ATAM（Architecture Tradeoff Analysis Method, SEI 2000）、CBAM（Cost Benefit Analysis Method）、Active Reviews for Intermediate Designs（ARID, 2005）。
+**学术定义**：架构评审（Architecture Review）是对软件 / 数据架构设计进行系统性、专家级审查的过程，确保架构满足业务需求、技术约束、质量标准、可治理性与可演化性。其前身可追溯到 1970s 的 Design Review，2000s 后演化出多种方法论：ATAM（Architecture Tradeoff Analysis Method, SEI 2000）、CBAM（Cost Benefit Analysis Method）、Active Reviews for Intermediate Designs（ARID）。
 
 **工程定义**：在数据架构师手里，架构评审是「**在编码 / 实施前，对架构决策进行集体把关的工程仪式**」，包含五个核心要素：
 
@@ -82,7 +82,7 @@
 - **1970s**：Design Review 在硬件 / 航天领域成熟（NASA / 国防部）。
 - **1990s**：软件 Design Review 在企业 IT 普及。
 - **2000**：ATAM（SEI）成为架构评审标准方法。
-- **2005**：ARID（Active Reviews for Intermediate Designs）出现。
+- **2000 年前后**：ARID（Active Reviews for Intermediate Designs）出现（公开年份在可查材料中不统一，故不注具体年份）。
 - **2010s**：架构评审纳入敏捷 / DevOps 实践（Continuous Review）。
 - **2014**：AWS Well-Architected Review 成为云架构评审标杆。
 - **2018**：CNCF TAG App Delivery 推动跨团队架构评审标准化。

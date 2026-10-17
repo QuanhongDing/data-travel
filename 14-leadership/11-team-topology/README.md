@@ -10,7 +10,6 @@
 
 | 小节 | 文件 |
 | --- | --- |
-| 3. Germane（学习） | [11-team-topology-section-3-germane.md](11-team-topology-section-3-germane.md) |
 | 3. 设计模式与范式 | [11-team-topology-section-3-sec3.md](11-team-topology-section-3-sec3.md) |
 | 4. 改进措施 | [11-team-topology-section-4-sec4.md](11-team-topology-section-4-sec4.md) |
 | 5. 前沿演进（AI 时代） | [11-team-topology-section-5-ai.md](11-team-topology-section-5-ai.md) |

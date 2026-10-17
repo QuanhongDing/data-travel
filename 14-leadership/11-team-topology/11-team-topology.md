@@ -282,19 +282,6 @@ team:
 
 - [§3. 设计模式与范式](11-team-topology-section-3-sec3.md)
 - [§4. 工程实现](11-team-topology-section-4-sec4.md)
-## 1. Intrinsic（领域本质）
-- 领域复杂度：{电商业务 / 金融业务 / AI 平台}
-- 技术栈复杂度：{Spark + Kafka + Flink}
-- 数据规模：{TB 级 / PB 级}
-- 评估：{1-5 分}
-
-## 2. Extraneous（工作环境）
-- 跨团队协作：{多 / 中 / 少}
-- 平台支持：{充足 / 部分 / 不足}
-- 工具支持：{好 / 中 / 差}
-- 评估：{1-5 分}
-
-- [§3. Germane（学习）](11-team-topology-section-3-germane.md)
 - [§4. 改进措施](11-team-topology-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](11-team-topology-section-5-ai.md)
 - [§6. 落地实践](11-team-topology-section-6-sec6.md)
@@ -309,7 +296,6 @@ team:
 
 - [§3. 设计模式与范式](11-team-topology-section-3-sec3.md)
 - [§4. 工程实现](11-team-topology-section-4-sec4.md)
-- [§3. Germane（学习）](11-team-topology-section-3-germane.md)
 - [§4. 改进措施](11-team-topology-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](11-team-topology-section-5-ai.md)
 - [§6. 落地实践](11-team-topology-section-6-sec6.md)

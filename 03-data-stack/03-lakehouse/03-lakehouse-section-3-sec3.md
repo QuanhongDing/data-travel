@@ -120,7 +120,7 @@ LOCATION 's3://bucket/silver/orders';
 - **为什么这样设计有效**：因为表状态是可由日志回放出的确定快照，所以历史版本与变更记录天然可得，审计不需要额外埋点；因为训练、批处理与治理工具在同一生态内共享 catalog 与权限模型，所以「同一份数据既训练又分析」不需要再建一条搬运链路，治理策略只需维护一套。
 - **代价**：生态收益的另一面是绑定 —— 非该生态引擎的原生读写能力由格式规范与各引擎实现节奏决定，通常滞后于原生引擎；要让其它引擎以原生方式读到同一份数据，需要额外的格式互转机制，多出一个需要监控的转换环节。
 - **失效点**：当组织里 Flink 或 Trino 需要高频读写同一张表时，本模式「生态最深、工具最齐」的优点会反转成**格式边界成为工程瓶颈**，因为「能不能读」取决于各引擎对该格式的实现进度，而不是取决于你的需求；此时要么演进到开放格式，要么引入跨格式读取层。
-- **真实使用**：Delta Lake 由 Databricks 开源（【公开】Databricks 公告，2019）；Delta UniForm 让一份 Delta 数据可被其它格式的读者读取（【公开】Databricks 公告，2024）；Medallion 分层命名来自 Databricks 文档（【公开】来源形态：Databricks 官方文档的 Medallion 架构（Bronze / Silver / Gold）章节，2025 年核查；页面标题以官方文档站当前版本为准）。
+- **真实使用**：Delta Lake 由 Databricks 开源（【公开】Databricks 公告，2019）；Delta UniForm 让一份 Delta 数据可被其它格式的读者读取（【公开】随 Delta Lake 3.0 公布，2023；论文见 SIGMOD 2024）；Medallion 分层命名来自 Databricks 文档（【公开】来源形态：Databricks 官方文档的 Medallion 架构（Bronze / Silver / Gold）章节，2025 年核查；页面标题以官方文档站当前版本为准）。
 - **典型栈**：对象存储（S3）+ Delta + Databricks 计算 + Unity Catalog + MLflow + Vector Search。权限与目录由 Unity Catalog 统一、实验与模型资产由 MLflow 记录、向量检索由 Vector Search 承担 —— 这正是上文「训练、特征与模型资产处在同一治理边界内」在工具层的落点。
 
 #### 3.2.4 Hudi + CDC（更新密集场景）

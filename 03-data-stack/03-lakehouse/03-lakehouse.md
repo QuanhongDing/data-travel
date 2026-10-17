@@ -95,9 +95,9 @@
 **第三阶段：标准化与生态整合（2023-2024）**
 
 - 2023：Snowflake 推出 Iceberg Tables，三大云厂商全部支持 Iceberg。
+- 2023：Delta UniForm 随 Delta Lake 3.0 公布（一份 Delta 数据支持 Iceberg / Hudi 读取；论文见 SIGMOD 2024）。
 - 2024：Apache Paimon 1.0 毕业，进入 Apache 顶级项目。
-- 2024：Delta UniForm（一份 Delta 数据支持 Iceberg / Hudi 读取）。
-- 2024：Iceberg V3 规范发布，支持行级删除、增量读取、向量类型。
+- 2024：Iceberg V3 规范发布，在 v2 已有的行级删除之上加入删除向量、增量读取与向量类型。
 
 **第四阶段：AI 原生湖仓（2024-至今）**
 

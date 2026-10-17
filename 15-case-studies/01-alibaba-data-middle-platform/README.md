@@ -17,7 +17,6 @@
 | 6. 踩坑与教训 | [01-alibaba-data-middle-platform-section-6-sec6.md](01-alibaba-data-middle-platform-section-6-sec6.md) |
 | 7. 复用经验 | [01-alibaba-data-middle-platform-section-7-sec7.md](01-alibaba-data-middle-platform-section-7-sec7.md) |
 | 8. 面试真题集 | [01-alibaba-data-middle-platform-section-8-sec8.md](01-alibaba-data-middle-platform-section-8-sec8.md) |
-| 9. 面试真题集 | [01-alibaba-data-middle-platform-section-9-sec9.md](01-alibaba-data-middle-platform-section-9-sec9.md) |
 
 ## 返回
 

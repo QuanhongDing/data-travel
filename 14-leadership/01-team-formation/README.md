@@ -10,12 +10,9 @@
 
 | 小节 | 文件 |
 | --- | --- |
-| 3. **坦诚直接 + 尊重专业**（Direct & Respectful） | [01-team-formation-section-3-direct-respectful.md](01-team-formation-section-3-direct-respectful.md) |
 | 3. 设计模式与范式 | [01-team-formation-section-3-sec3.md](01-team-formation-section-3-sec3.md) |
-| 4. **持续学习 + 知识共享**（Learn & Share） | [01-team-formation-section-4-learn-share.md](01-team-formation-section-4-learn-share.md) |
 | 4. 工程实现 | [01-team-formation-section-4-sec4.md](01-team-formation-section-4-sec4.md) |
 | 5. 前沿演进（AI 时代） | [01-team-formation-section-5-ai.md](01-team-formation-section-5-ai.md) |
-| 5. **客户价值优先**（Customer Value First） | [01-team-formation-section-5-customer-value-first.md](01-team-formation-section-5-customer-value-first.md) |
 | 6. 落地实践 | [01-team-formation-section-6-sec6.md](01-team-formation-section-6-sec6.md) |
 | 7. 与其他方法对比 | [01-team-formation-section-7-sec7.md](01-team-formation-section-7-sec7.md) |
 | 8. 面试真题集 | [01-team-formation-section-8-sec8.md](01-team-formation-section-8-sec8.md) |

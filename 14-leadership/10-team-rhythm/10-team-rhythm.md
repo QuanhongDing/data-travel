@@ -272,7 +272,6 @@ MeetingTimeHealth = MeetingHours / TotalHours
 
 - [§3. 关键问题讨论（20 分钟）](10-team-rhythm-section-3-sec3.md)
 - [§4. 跨团队协调（10 分钟）](10-team-rhythm-section-4-sec4.md)
-- [§5. Action Items Review（5 分钟）](10-team-rhythm-section-5-action-items-review-5.md)
 - [§3. 设计模式与范式](10-team-rhythm-section-3-sec3.md)
 - [§4. 工程实现](10-team-rhythm-section-4-sec4.md)
 ## 1. 上周进展（10 分钟）
@@ -285,7 +284,6 @@ MeetingTimeHealth = MeetingHours / TotalHours
 
 - [§3. 关键问题讨论（20 分钟）](10-team-rhythm-section-3-sec3.md)
 - [§4. 跨团队协调（10 分钟）](10-team-rhythm-section-4-sec4.md)
-- [§5. Action Items Review（5 分钟）](10-team-rhythm-section-5-action-items-review-5.md)
 ## 1. 上季度 OKR 完成度
 | OKR | 目标 | 实际 | 完成度 |
 | --- | --- | --- | --- |
@@ -299,8 +297,7 @@ MeetingTimeHealth = MeetingHours / TotalHours
 3. ______
 
 - [§3. 关键问题](10-team-rhythm-section-3-sec3.md)
-- [§4. 改进措施](10-team-rhythm-section-4-sec4.md)
-- [§5. 下季度 OKR](10-team-rhythm-section-5-okr.md)
+- [§4. 工程实现](10-team-rhythm-section-4-sec4.md)
 - [§6. 资源需求](10-team-rhythm-section-6-sec6.md)
 - [§5. 前沿演进（AI 时代）](10-team-rhythm-section-5-ai.md)
 - [§6. 落地实践](10-team-rhythm-section-6-sec6.md)
@@ -315,15 +312,12 @@ MeetingTimeHealth = MeetingHours / TotalHours
 
 - [§3. 关键问题讨论（20 分钟）](10-team-rhythm-section-3-sec3.md)
 - [§4. 跨团队协调（10 分钟）](10-team-rhythm-section-4-sec4.md)
-- [§5. Action Items Review（5 分钟）](10-team-rhythm-section-5-action-items-review-5.md)
 - [§3. 设计模式与范式](10-team-rhythm-section-3-sec3.md)
 - [§4. 工程实现](10-team-rhythm-section-4-sec4.md)
 - [§3. 关键问题讨论（20 分钟）](10-team-rhythm-section-3-sec3.md)
 - [§4. 跨团队协调（10 分钟）](10-team-rhythm-section-4-sec4.md)
-- [§5. Action Items Review（5 分钟）](10-team-rhythm-section-5-action-items-review-5.md)
 - [§3. 关键问题](10-team-rhythm-section-3-sec3.md)
-- [§4. 改进措施](10-team-rhythm-section-4-sec4.md)
-- [§5. 下季度 OKR](10-team-rhythm-section-5-okr.md)
+- [§4. 工程实现](10-team-rhythm-section-4-sec4.md)
 - [§6. 资源需求](10-team-rhythm-section-6-sec6.md)
 - [§5. 前沿演进（AI 时代）](10-team-rhythm-section-5-ai.md)
 - [§6. 落地实践](10-team-rhythm-section-6-sec6.md)

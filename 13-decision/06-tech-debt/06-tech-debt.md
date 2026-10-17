@@ -22,7 +22,7 @@
 
 ### 1.1 是什么
 
-**学术定义**：技术债（Technical Debt）由 Ward Cunningham 于 1992 年首次提出，用金融债务的隐喻描述「为获得短期收益而做出的次优技术决策所产生的长期成本」。Martin Fowler 2004 年扩展该概念，提出「技术债象限」（Deliberate / Inadvertent × Reckless / Prudent），将技术债系统化为工程管理问题。
+**学术定义**：技术债（Technical Debt）由 Ward Cunningham 于 1992 年首次提出，用金融债务的隐喻描述「为获得短期收益而做出的次优技术决策所产生的长期成本」。Martin Fowler 随后扩展该概念，撰写《TechnicalDebtQuadrant》提出「技术债象限」（Deliberate / Inadvertent × Reckless / Prudent），将技术债系统化为工程管理问题。
 
 **工程定义**：在数据架构师手里，技术债是「**代码 / 架构 / 数据中所有『用未来的成本换今天的收益』的选择**」，包含五种形态：
 
@@ -81,7 +81,7 @@
 ### 1.4 演进历程
 
 - **1992**：Ward Cunningham 提出 Technical Debt 概念（OOPSLA 大会）。
-- **2004**：Martin Fowler 提出 Technical Debt Quadrant（刻意 vs 无意 × 鲁莽 vs 谨慎）。
+- **2000 年代中后期**：Martin Fowler 撰文《TechnicalDebtQuadrant》，提出技术债四象限（刻意 vs 无意 × 鲁莽 vs 谨慎）（martinfowler.com；该文的具体年份未能回查核对，故不写死）。
 - **2009**：Steve McConnell《Managing Technical Debt》系统化。
 - **2012**：Philippe Kruchten / Robert Nord / Ipek Ozkaya 提出技术债管理框架。
 - **2014**：Cutter Consortium / CAST / SonarQube 等工具推动技术债度量。
