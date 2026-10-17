@@ -105,7 +105,7 @@ _delta_log/
 
 **失效点**：当 `clean` 按「保留最近 N 个 commit」配置而 schema 变更是稀疏事件时，回溯能力会在无人察觉的情况下缩水，因为保留单位是提交数而不是时间——一张低频表保留 N 个 commit 可能只覆盖几天，一次大变更前的 schema 早被清掉。
 
-**真实使用**：【公开】Apache Hudi 的 Timeline 与 Clean 机制（Hudi 2016 年开源、2019 年进入 ASF，其官方文档 Timeline 章节可自行核验）——同样只给出机制出处，不指名采用方，也无法给出采用时长与代价。判断一张 Hudi 表会不会在回溯时被 schema 历史坑到：看 `clean` 的保留策略是按 `hoodie.cleaner.commits.retained`（提交数）还是按小时数配的——按提交数配的低频表，N 个 commit 可能只覆盖几天。
+**真实使用**：【公开】Apache Hudi 的 Timeline 与 Clean 机制（Hudi 2017 年开源、2019 年进入 ASF，其官方文档 Timeline 章节可自行核验）——同样只给出机制出处，不指名采用方，也无法给出采用时长与代价。判断一张 Hudi 表会不会在回溯时被 schema 历史坑到：看 `clean` 的保留策略是按 `hoodie.cleaner.commits.retained`（提交数）还是按小时数配的——按提交数配的低频表，N 个 commit 可能只覆盖几天。
 
 #### 3.2.4 Avro / Protobuf + Schema Registry
 
