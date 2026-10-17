@@ -86,9 +86,10 @@
 - 2016：Spark Structured Streaming。
 - 2017-2018：Spark Streaming 主导实时。
 
-**第三阶段：Flink 时代（2016-2022）**
+**第三阶段：Flink 时代（2014-2022）**
 
-- 2016：Flink 1.0，Apache 顶级项目。
+- 2014：Flink 从 Apache 孵化器毕业，成为顶级项目。
+- 2016：Flink 1.0 发布【公开：Apache Flink 官方发布记录；「1.0 发布」与「2014 年毕业为顶级项目」是两件事，早期资料常把两者并作一行】。
 - 2018：Flink 1.5 + Blink 合并，阿里主导。
 - 2020：Flink 1.11 + CDC，Flink 中文社区壮大。
 

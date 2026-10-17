@@ -281,7 +281,6 @@ team:
 ---
 
 - [§3. 设计模式与范式](11-team-topology-section-3-sec3.md)
-- [§4. 工程实现](11-team-topology-section-4-sec4.md)
 - [§4. 改进措施](11-team-topology-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](11-team-topology-section-5-ai.md)
 - [§6. 落地实践](11-team-topology-section-6-sec6.md)
@@ -295,7 +294,6 @@ team:
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
 - [§3. 设计模式与范式](11-team-topology-section-3-sec3.md)
-- [§4. 工程实现](11-team-topology-section-4-sec4.md)
 - [§4. 改进措施](11-team-topology-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](11-team-topology-section-5-ai.md)
 - [§6. 落地实践](11-team-topology-section-6-sec6.md)
