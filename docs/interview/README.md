@@ -42,6 +42,6 @@
 
 ## 推荐学习路径
 
-- 配套阅读 [Ch8 · 决策与权衡](../../08-decision-and-tradeoff/) 与 [Ch9 · 团队与领导力](../../09-team-and-leadership/)
-- 配套阅读 [Ch10 · 案例库](../../10-case-studies/) 作为面试弹药
+- 配套阅读 [Ch13 · 决策与权衡](../../13-decision/) 与 [Ch14 · 团队与领导力](../../14-leadership/)
+- 配套阅读 [Ch15 · 案例库](../../15-case-studies/) 作为面试弹药
 - 配套阅读 [docs/career/](../career/) 了解 数据架构师能力模型

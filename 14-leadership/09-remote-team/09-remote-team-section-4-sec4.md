@@ -224,8 +224,8 @@ Accepted
 - 社区版本持续更新
 
 ## 参考
-- [Milvus vs Pinecone Benchmark](link)
-- [团队讨论 Slack 链接](link)
+- Milvus vs Pinecone Benchmark（此处填内部 benchmark 链接）
+- 团队讨论 Slack 链接（此处填内部 Slack 链接）
 ```
 
 **示例 2：AI 异步会议摘要 Prompt**
