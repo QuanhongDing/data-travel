@@ -14,12 +14,12 @@
 
 | 案例 | 规模量级 | 业务形态 | 监管强度 | 组织形态 | 存量约束 | 时间窗 | 档位与来源 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 字节跳动 | 多 App 矩阵；头部单 App 日活在数亿量级（约 7 亿，公开口径，引用须带年份）【公开】 | 内容 + 推荐 + 电商 | 高（内容审核 + 跨境多法域） | 平台 + 业务自治 | 从 MySQL / Hadoop 长起；OLAP 自研自 2017 年立项【公开】 | 2012 年成立；AB 平台自 2015 年起【公开】 | 【公开】成立年份与平台时间线见本仓 [03-byte-data-architecture.md](03-byte-data-architecture.md) §1.1（其依据为字节跳动 / 火山引擎的公开演讲与产品发布）；日活为公开口径 |
-| 阿里 | 数据目录口径 30 万+ 表【公开】 | 电商 + 云 | 中 | 中台（口径与实体集中定义） | 从 Hive 与自研分布式计算（ODPS → MaxCompute）长起 | 数据体系自 2009 年前后起步【公开】 | 【公开】30 万+ 表见本仓 [04-data-assetization/08-data-catalog §6 案例 8.1](../../04-data-assetization/08-data-catalog/08-data-catalog-section-6-sec6.md)（阿里 DataWorks 数据地图，2016–2024 口径） |
+| 字节跳动 | 多 App 矩阵；头部单 App（抖音）日活在数亿量级（本仓 [03-byte-data-architecture.md](03-byte-data-architecture.md) §1.1 记「7 亿+」，为公开口径的约数，本章按区间使用）【经验】 | 内容 + 推荐 + 电商 | 高（内容审核 + 跨境多法域） | 平台 + 业务自治 | 从 MySQL / Hadoop 长起；OLAP 自研自 2017 年立项【公开】 | 2012 年成立；AB 平台自 2015 年起【公开】 | 【公开】成立年份与平台时间线见本仓 [03-byte-data-architecture.md](03-byte-data-architecture.md) §1.1 的逐年时间线（2012 成立 / 2015 AB 平台 V1 / 2017 ByteHouse 立项） |
+| 阿里 | 数据目录口径 30 万+ 表【公开】 | 电商 + 云 | 中 | 中台（口径与实体集中定义） | 从 Hive 与自研分布式计算（ODPS → MaxCompute）长起 | 数据体系 2003–2007 年各 BU 各自建仓、2008 年「集团数据仓库」项目启动【公开】 | 【公开】30 万+ 表见本仓 [04-data-assetization/08-data-catalog §6 案例 8.1](../../04-data-assetization/08-data-catalog/08-data-catalog-section-6-sec6.md)（阿里 DataWorks 数据地图，2016–2024 口径）；2003–2008 年的起点与集团数仓启动见本仓 [01-alibaba-data-middle-platform.md](../01-alibaba-data-middle-platform/01-alibaba-data-middle-platform.md) §1.1 的逐年时间线 |
 | 美团 | 未公开统一表口径；特征平台口径为 10 万+ 特征、30+ 算法团队【公开】 | 本地生活 + 履约 | 中 | 业务驱动 + 平台化 | 从离线数仓长起（Hive / Spark 跑批 + Flink 实时） | Feature Store 2018 年 V1、2019 年 V2【公开】 | 【公开】见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md) §1.1、§2.2.1、§2.3.1 |
 | Netflix | 全球付费会员 3 亿量级【公开】 | 内容 + 推荐 | 中 | 领域自治 + 中央平台 | 存量是 Hive 表，不能停机迁移 | Iceberg 2018 年开源、2018-11 进入 Apache 孵化器、2020-05 成为顶级项目【公开】 | 【公开】付费会员见 Netflix 2025 年 Q1 财报（股东信）披露的全球流媒体付费会员数；Iceberg 时间线见 Apache Iceberg 项目页（iceberg.apache.org） |
 
-关于「可比性」还有两条必须说明：其一，**美团在这一组里的公开工程材料相对最少**。本章对它的描述以「业务驱动 + 平台化」这一公开定位为主，凡是推到机制层面的推断都会显式标注【经验】档，不会以精确数字的形式出现——证据密度不同，结论的强度就不同。其二，**公开材料少不等于不对外输出**：美团 2022 年起有 ToB 商业化（美团零售 / 美团企业版对外输出，见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md) §1.1），它的出口是「窄口径」而不是「零口径」——这一条在 7.2.4 展开。原表把这一列写成「基本不对外」，是与同仓材料冲突的误述，本章予以更正。
+关于「可比性」还有两条必须说明：其一，**美团在这一组里的公开工程材料相对最少**。本章对它的描述以「业务驱动 + 平台化」这一公开定位为主，凡是推到机制层面的推断都会显式标注【经验】档，不会以精确数字的形式出现——证据密度不同，结论的强度就不同。其二，**公开材料少不等于不对外输出**：美团 2022 年起有 ToB 商业化（美团零售 / 美团企业版对外输出，见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md) §1.1），它的出口是「窄口径」而不是「零口径」——这一条在 7.2.4 展开。
 
 这四家其实可以分成三族，**先分族再选，能省掉一半的比较**：
 
@@ -83,7 +83,7 @@
 | 字节 | ByteHouse（基于 ClickHouse 自研改造）、Spark、Flink | Iceberg 湖仓 | Flink + 实时数仓 | 推荐中台、Feature Store、AB 平台 | 先成为重度使用者，再按场景改造 | 有别人没有的场景（推荐特征查询、毫秒级 OLAP） |
 | 阿里 | MaxCompute（原 ODPS）、Blink（基于 Flink 自研）、Hologres | Hive + 湖表格式 | Blink / Flink | PAI、PAI FeatureStore | 从内部平台长成产品，再对外商业化 | 规模足以摊平自研成本，且要对外售卖 |
 | 美团 | ClickHouse、Spark、Flink | Hive + 湖表格式 | Flink → 在线 KV（Redis） | 美团 ML 平台、Feature Store（美团特征平台） | 选用成熟组件 + 场景化改造 | 场景不特殊到需要重写引擎 |
-| Netflix | Spark、Flink | Iceberg | Keystone（流批共用一份逻辑定义） | 内部推荐与 ML 平台（原 § 7 记为 Maia）；公开可核验的同层锚点是 Metaflow（2019 年开源）与 Maestro（Netflix 工程博客，2022） | 自研格式，但不自研全部引擎 | 问题足够通用，开源能换回生态 |
+| Netflix | Spark、Flink | Iceberg | Keystone（Netflix 2018 年公开的实时流处理与数据投递平台）【公开：Netflix 工程博客《Keystone Real-time Pipeline》, 2018】 | 内部推荐与 ML 平台；同层可核验的公开锚点是 Metaflow（2019 年开源）与 Maestro（Netflix 工程博客，2022）【公开】 | 自研格式，但不自研全部引擎 | 问题足够通用，开源能换回生态 |
 
 表里有一处必须讲清的口径问题：**「自研程度」在这四家身上是分层的，不是非黑即白**。阿里自研计算引擎（MaxCompute）并在 Flink 上分叉出 Blink；字节只改造了 OLAP 这一层（ByteHouse），湖仓层用的是开放表格式 Iceberg 加主流引擎 Spark / Flink；美团基本不重写引擎，用 ClickHouse + Spark + Flink 这类成熟组件做场景化组合；Netflix 自研的是表格式与编排（Iceberg、Maestro），计算仍交给 Spark / Flink。**把「自研 vs 采用」当成一个整体二选一，是读这张表最常见的错误——真正要决策的是「哪一层自研」。**
 
@@ -114,7 +114,7 @@
 
 **这个差异由什么约束导致**：因为字节把一个决策变成一次实验的**边际成本被平台压得很低**（分流、显著性、指标计算都由平台承担），所以「凭经验决策」在内部失去合法性——**不是文化先变了，而是工具让实验比争论更便宜**。反过来，如果没有统一的指标口径，实验结论无法跨实验比较，实验就会退化成局部优化；这正是 [§ 6](03-byte-data-architecture-section-6-sec6.md) 记录的「指标平台集中定义、引用而非复制」要解决的问题。而阿里之所以把重心放在报表与口径上，是因为它的核心矛盾是「几十个 BU 的数字对不上」，不是「决策不够快」。
 
-**公开证据**：本书 [§ 4.2](03-byte-data-architecture-section-4-sec4.md) 记录了 AB 平台的关键设计（哈希分桶、互斥分层、流量调拨、显著性检验与早停），并指出 AB 平台已作为对外产品提供——ToB 侧的对应产品是火山引擎的「A/B 测试」（[火山引擎官网产品页「A/B 测试」]，该产品线自 2018 年起对外，见本仓 [§ 3.3](03-byte-data-architecture-section-3-sec3.md)）。Netflix 长期在 Netflix 工程博客公开其实验与因果推断相关的实践，其中《Keystone Real-time Pipeline》（2018）与关于 Maestro 编排器的文章（2022）是本章引用最多的两篇。
+**公开证据**：本书 [§ 4.2](03-byte-data-architecture-section-4-sec4.md) 记录了 AB 平台的关键设计（哈希分桶、互斥分层、流量调拨、显著性检验与早停），并指出 AB 平台已作为对外产品提供——ToB 侧的对应产品是火山引擎的「A/B 测试」（[火山引擎官网产品页「A/B 测试」]，该产品线自 2018 年起对外，见本仓 [§ 3.2](03-byte-data-architecture-section-3-sec3.md)）。Netflix 长期在 Netflix 工程博客公开其实验与因果推断相关的实践，其中《Keystone Real-time Pipeline》（2018）与关于 Maestro 编排器的文章（2022）是本章引用最多的两篇。
 
 **对读者的意义**：先确定你的核心矛盾是「决策太慢」还是「数字对不上」。前者要建的是实验能力与统一指标（字节路线），后者要建的是口径治理与模型分层（阿里路线）。**两者都做，但要分先后**——没有统一口径的实验平台，只会产出无法比较的结论。
 
@@ -137,7 +137,7 @@
 | 美团 | 对内为主 + 窄口径 ToB | 美团零售 / 美团企业版等对外输出（2022 年起） | 平台与数据资产 |
 | Netflix | 开源 | 表格式与工程工具（Iceberg、Metaflow、Maestro） | 内容与推荐的核心资产 |
 
-**这个差异由什么约束导致**：字节的对外路线把**差异化定位放在应用与平台层**——从强项（推荐、AB、视频、数据中台、大模型）切入；因为通用基础设施层的竞争比的是长期规模与价格，而这块位置已有厂商占据多年，新进入者在这里只能拼价格而不是拼差异。**这里要更正一个常见误述**：说字节「不做基础设施」是不准确的，火山引擎的公开产品线里包含计算、存储、网络等基础层产品；准确的说法是它的**差异化定位与对外叙事在应用与平台层**，基础层按标准云产品供给——**这个区分可以自行核验：打开火山引擎官网的产品列表，看基础层产品的有无与位置；至于「哪一层是它的相对强项」，用采购结构核验比用能力评价可靠。** 而因为 Netflix 不打算卖平台，所以它把内部解决的能力做成开放标准的边际成本最低、长期收益最高（降低自家适配成本 + 换取生态位）。阿里则同时具备规模与云基础设施，因此有能力做全栈对外。
+**这个差异由什么约束导致**：字节的对外路线把**差异化定位放在应用与平台层**——从强项（推荐、AB、视频、数据中台、大模型）切入；因为通用基础设施层的竞争比的是长期规模与价格，而这块位置已有厂商占据多年，新进入者在这里只能拼价格而不是拼差异。**基础层它并不是不做，而是按标准云产品供给**——这个区分可以自行核验：打开火山引擎官网的产品列表，看基础层产品的有无与位置；至于「哪一层是它的相对强项」，用采购结构核验比用能力评价可靠。而因为 Netflix 不打算卖平台，所以它把内部解决的能力做成开放标准的边际成本最低、长期收益最高（降低自家适配成本 + 换取生态位）。阿里则同时具备规模与云基础设施，因此有能力做全栈对外。
 
 **公开证据**：火山引擎自 2019 年成立后公开的产品线与其对外叙事可在其官网产品目录中逐项核对（ByteHouse、DataFinder / DataLeap / DataWind、A/B 测试、智能推荐、豆包大模型与扣子 / Coze，[火山引擎官网产品页]，2021–2024）；本仓 [§ 3.5](03-byte-data-architecture-section-3-sec3.md) 记录了同一份产品清单。Iceberg 进入 Apache 顶级项目（[Apache Iceberg 项目页](https://iceberg.apache.org/)，2020）是「开源换生态」的直接证据；美团侧的对外出口见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md) §1.1 记录的 2022 年 ToB 商业化。
 
@@ -180,18 +180,18 @@
 | 维度 | 字节 | 阿里 | 美团 | Netflix | 档位与来源 |
 | --- | --- | --- | --- | --- | --- |
 | 资产规模 | 未公开统一表口径 | 数据目录口径 30 万+ 表 | 未公开统一表口径 | 未公开统一表口径 | 【公开】30 万+ 表见本仓 [04-data-assetization/08-data-catalog §6 案例 8.1](../../04-data-assetization/08-data-catalog/08-data-catalog-section-6-sec6.md)（阿里 DataWorks 数据地图，2016–2024 口径）；其余三格为「未公开」，不是「为零」 |
-| 核心 OLAP 路线 | ByteHouse（基于 ClickHouse 自研改造） | MaxCompute + Hologres | ClickHouse（成熟组件 + 场景化改造） | Iceberg 表格式 + Spark / Flink | 【公开】ByteHouse / Hologres / ClickHouse 均为各家公开产品与公开技术文章所载；美团一列仅到「用 ClickHouse」这一粒度，更深细节按【经验】处理 |
-| 特征 / ML 平台 | 推荐中台、Feature Store、AB 平台 | PAI、PAI FeatureStore | 美团 ML 平台、Feature Store | Metaflow（2019 开源）、Maestro（2022 公开） | 【公开】字节侧见本仓 [§ 4.4、§ 4.5](03-byte-data-architecture-section-4-sec4.md)；美团侧见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md)；Netflix 侧见 github.com/Netflix/metaflow 与 Netflix 工程博客（2022） |
+| 核心 OLAP 路线 | ByteHouse（基于 ClickHouse 自研改造） | MaxCompute + Hologres | ClickHouse（成熟组件 + 场景化改造） | Iceberg 表格式 + Spark / Flink | 【公开】ByteHouse / Hologres / ClickHouse 均为各家公开产品与公开技术文章所载（ClickHouse 2016 年由 Yandex 开源，见 7.2.2）；美团一列只到「用 ClickHouse」这一粒度 |
+| 特征 / ML 平台 | 推荐中台、Feature Store、AB 平台 | PAI、PAI FeatureStore | 美团 ML 平台、Feature Store | Metaflow（2019 年开源）、Maestro（2022 年公开） | 【公开】字节侧见本仓 [§ 4.4、§ 4.5](03-byte-data-architecture-section-4-sec4.md)（Feature Store 平台化见 [主文件 § 1.1](03-byte-data-architecture.md) 的 2021 年节点）；美团侧见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md) §1.1 的 2018 年 V1 / 2019 年 V2；Netflix 侧见 github.com/Netflix/metaflow（2019）与 Netflix 工程博客（2022） |
 | 决策依据 | AB 实验 | 统一口径报表 | 业务与履约指标复盘 | 内容与观看指标 + 实验 | 【经验】由各家公开定位归纳，非单一官方原文 |
 | 定义权归属 | 指标集中定义 + 业务自治 | 中台集中 | 平台化 + 业务定义目标 | 领域自治 | 【经验】同上 |
-| 对外出口 | 火山引擎（差异化定位在应用与平台层；基础层按标准云产品供给） | 阿里云（全栈） | 对内为主 + 窄口径 ToB（美团零售 / 美团企业版） | 开源（Iceberg / Metaflow / Maestro） | 【公开】各家官网产品目录与项目公告；美团侧见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md) §1.1 |
-| AI 侧投入 | 豆包大模型 + 扣子（Coze）智能体平台 + 一站式 AI 服务 | 通义千问 + 百炼平台 | 公开信息有限，不以产品名断言 | 推荐与内容理解为主 | 【公开】字节与阿里两侧见本仓 [§ 3.6、§ 4.6](03-byte-data-architecture-section-4-sec4.md) 与 [01-alibaba-data-middle-platform §4.6](../01-alibaba-data-middle-platform/01-alibaba-data-middle-platform-section-4-sec4.md)；美团与 Netflix 两格因公开材料密度不足，仅作方向性对比 |
+| 对外出口 | 火山引擎（差异化定位在应用与平台层；基础层按标准云产品供给） | 阿里云（全栈） | 对内为主 + 窄口径 ToB（美团零售 / 美团企业版） | 开源（Iceberg / Metaflow / Maestro） | 【公开】火山引擎产品目录见本仓 [§ 3.5](03-byte-data-architecture-section-3-sec3.md)（2019–2024 时间线）；Iceberg 于 2020-05 成为 Apache 顶级项目、Metaflow 于 2019 年开源；美团 ToB 自 2022 年起，见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md) §1.1 |
+| AI 侧投入 | 豆包大模型 + 扣子（Coze）智能体平台 + 一站式 AI 服务 | 通义千问 + 百炼平台 | 美团大模型（原 § 7 表的条目；未查到可核验的具名产品，本章不据此断言）【经验】 | Netflix Maia（原 § 7 表的条目；其能力边界本章不做断言，可自行核验 Netflix 技术博客）【经验】 | 【公开】字节侧见本仓 [§ 3.6](03-byte-data-architecture-section-3-sec3.md)（AI Native 数据栈，2023–2025）与 [§ 4.6](03-byte-data-architecture-section-4-sec4.md)（大模型 + 数据中台）；阿里侧见本仓 [01-alibaba-data-middle-platform §4.6](../01-alibaba-data-middle-platform/01-alibaba-data-middle-platform-section-4-sec4.md)（AI 中台，2020–2024）；美团与 Netflix 两格为原 § 7 表条目，本章未核到公开来源 |
 | 编制归属 | 平台团队 + 业务数据团队 | 中台 + BU 数据团队 | 平台化 + 业务团队 | 中央平台 + 领域团队 | 【经验】公开材料中的组织描述归纳 |
 | 数据链路形态 | 开发 / 调度 / 血缘 / 质量 / 指标在同一元数据上 | 集成 / 开发 / 治理 / 服务一体化 | 平台能力 + 业务链路 | 领域链路 + 中央基础设施 | 【经验】同上 |
 
 第一个【推算】说明「口径分裂」的代价量级：若一个核心指标在 10 个业务各有一份实现，一次定义调整需要改 10 处并回归验证；按每处 1 人日推算，单次调整约 10 人日。若这类核心指标有 50 个、每年各调整 2 次【经验】推算，年成本约 1,000 人日（推导：10 × 1 × 50 × 2 = 1,000）。**这个量级足以解释为什么「集中定义、引用而非复制」在跨业务组织里是刚需，而在单业务组织里不成立**——后者的人日数要小一到两个数量级。
 
-第二个【推算】说明「在线代价与内容总量解耦」的收益量级：若内容库规模在亿级，朴素的逐个比较每次请求的代价随内容量线性增长；把内容侧预计算、在线只算一个用户向量再做近似检索后，在线代价与内容总量无关。两者相差约 8 个数量级（1 亿 ≈ 10^8）【推算】；实际差距会被向量维度与索引精度压缩到 3–4 个数量级【经验】，但**量级的差别本身就决定了「毫秒级」是否可能**，而不只是快慢之别。
+第二个【推算】说明「在线代价与内容总量解耦」的收益量级：设内容库规模 N ≈ 10^8（亿级）。朴素做法是每次请求对全部内容各做一次比较，代价 ≈ c₁ × N；把内容侧预计算、在线只算一个用户向量再做近似检索后，每次请求实际访问的候选数降到 10^2–10^3 量级，代价 ≈ c₂ × 10^2。**解耦真正改变的是 N 的幂次（从 1 降到 0 附近），而不是一个固定倍数**——按访问次数算，两者相差 5–6 个数量级（10^8 ÷ 10^2–10^3）【推算】；但因为索引访问的常数项 c₂ 远大于标量比较的 c₁（内存随机访问、量化误差、候选重排），端到端代价的实际差距会被压缩到 3–4 个数量级【经验】。这两个数字回答的不是同一个问题：前者是复杂度里的幂次，后者是工程端到端代价。而无论取哪一个，**它都决定了「毫秒级 + 亿级内容库」能否共存**，不只是快慢之别。
 
 ### 7.5 决策树（我该学谁）
 
@@ -254,7 +254,7 @@
 - **字节的代价：为了「数据驱动 + 实验优先」，必须让每个决策都可度量**
   - 它换到了什么：决策速度快、争论成本低、平台能力被反复复用并最终对外产品化（AB 平台 → 火山引擎「A/B 测试」）。
   - 什么条件下反噬：**难以度量的工作会在资源争夺中系统性吃亏**——长期基础设施、内容生态、探索性研究都属于这一类；而当竞争从「优化现有指标」转向「找到一个新指标」时，这套机制会失灵。
-  - 公开痕迹：内部「AB 实验优先」的公开描述，以及 AB 平台被作为对外产品提供（火山引擎官网产品页「A/B 测试」；本仓 [§ 3.3](03-byte-data-architecture-section-3-sec3.md)）。
+  - 公开痕迹：内部「AB 实验优先」的公开描述，以及 AB 平台被作为对外产品提供（火山引擎官网产品页「A/B 测试」；本仓 [§ 3.2](03-byte-data-architecture-section-3-sec3.md) 记该产品线 2018 年对外）。
   - 正确做法：为「暂时无法度量的工作」保留一条显式的资源通道与评估口径，否则它会持续被数据说话的机制挤出去。
 
 - **Netflix 的代价：为了「领域自治」，把数据所有权下放、中央只做基础设施**
