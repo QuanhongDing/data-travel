@@ -76,7 +76,7 @@ Consumer 读取消息时，传统路径是「磁盘 → 内核缓冲区 → 用�
 
 **3. 常见陷阱**
 
-- **把 Kafka 当作「内存队列」**：Kafka 强在磁盘吞吐，但写入延迟 = PageCache 写入延迟 + 异步刷盘延迟；若强制 `acks=all` + 同步刷盘，延迟会大幅上升（典型 5-50ms）。
+- **把 Kafka 当作「内存队列」**：Kafka 强在磁盘吞吐，但写入延迟 = PageCache 写入延迟 + 异步刷盘延迟；若强制 `acks=all` + 同步刷盘，延迟会大幅上升（该幅度属【经验】档表述，随磁盘类型、批大小与副本数而异，本节无法给出可溯源的统一数字）。
 - **忽略 Partition 数规划**：单 Partition 封顶 ~10MB/s，要按"未来 1-2 年峰值 / 10MB/s"预留。
 - **把 PageCache 当业务缓存**：PageCache 是 OS 资源，进程崩溃时内容可能丢失（虽然有副本兜底）；业务强一致场景不能依赖 PageCache。
 - **以为"顺序写就够"**：没有零拷贝，Consumer 端 GC 压力会让 JVM 频繁 Full GC，TPS 暴跌。
@@ -85,7 +85,7 @@ Consumer 读取消息时，传统路径是「磁盘 → 内核缓冲区 → 用�
 
 **4. 追问预测**
 
-- **「Kafka 的 LEO（Log End Offset）和 HW（High Watermark）是什么？」** 答：LEO 是 Partition 当前最新 offset（下一条消息的写入位置）；HW 是 Consumer 可见的最早 offset（已被所有 ISR 同步）。Consumer 只能读到 HW 之前的消息，保证读到的不被回滚。
+- **「Kafka 的 LEO（Log End Offset）和 HW（High Watermark）是什么？」** 答：LEO 是 Partition 当前最新 offset（下一条消息的写入位置）；HW 是「已被所有 ISR 同步」的边界 offset（它标记的是「所有 ISR 都复制到了哪」，而不是「最早可读的 offset」；LEO 与 HW 之间可能还有一段尚未被全部 ISR 复制的消息）。Consumer 只能读到 HW 之前的消息，保证读到的不被回滚。
 - **「Producer 的 acks=0/1/all 怎么选？」** 答：acks=0 最快不保证（可能丢）；acks=1 等 leader 写入（leader 挂掉丢）；acks=all 等所有 ISR 同步（强一致）。生产环境关键业务必用 acks=all。
 - **「PageCache 在进程崩溃后会丢吗？」** 答：会。PageCache 是 OS 页缓存，进程崩溃但 OS 没崩时内容还在；OS 崩溃或断电时丢失。所以必须靠副本（replication）+ `min.insync.replicas` 兜底。
 - **「为什么 Kafka 不用内存映射文件（mmap）？」** 答：Kafka 3.x 已经在用 mmap 优化索引文件（`.index` / `.timeindex`）。但 `.log` 数据文件仍走 PageCache + sendfile，避免 mmap 带来的内存锁定和缺页中断风险。
@@ -94,16 +94,16 @@ Consumer 读取消息时，传统路径是「磁盘 → 内核缓冲区 → 用�
 
 **5. 参考资料**
 
-- LinkedIn 工程团队 2010-2011 年关于 Kafka 设计原型的公开技术分享——Kafka 的"日志即存储"哲学的最初提出，是理解"为什么 Kafka 高吞吐"的必读材料。
+- LinkedIn 工程团队关于 Kafka 设计原型的公开技术分享（约 2010-2011 年；本节无法给出该分享的标题与链接，引用时请自行查证）——Kafka 的"日志即存储"哲学的最初提出，是理解"为什么 Kafka 高吞吐"的必读材料。
 - Apache Kafka 官方文档的"Design"章节——`sendfile`、PageCache、Segment 文件组织的官方论述，是性能调优的权威。
-- Confluent 的 `KIP-1030 / KIP-1080`（Kafka 4.0 路线）——新版本在零拷贝、PageCache 利用率上的进一步优化。
-- **LinkedIn Kafka 每天数万亿消息的工程实践** —— LinkedIn 自家 Kafka 集群是其广告、Feed、搜索等核心业务的"主干道"，依赖顺序写 + PageCache + 副本机制支撑 PB 级写入，是 Kafka 持久化机制最大规模的工业实证。
-- **Netflix Keystone Kafka 每天数万亿事件** —— Netflix 的 Keystone 流式平台把 Kafka 当成"事件主干道"，依赖 Log Segment 文件组织做长期归档，对应持久化机制在流媒体场景的落地。
-- **腾讯万台 Kafka 集群支撑微信/QQ/游戏实时数据** —— 在万台规模下顺序写 + NVMe SSD 成为标配，PageCache 调优是常规运维动作，是国内超大规模 Kafka 实践的代表。
-- **京东 PB 级订单流（618 / 双 11）** —— 大促场景下日订单量是日常 5–10 倍，靠"顺序写 + 批量发送 + 多 Partition"组合扛住峰值，是电商场景 Kafka 持久化机制的工程实证。
+- Apache Kafka 社区的 `KIP-1030` / `KIP-1080`（Kafka 4.0 路线）——KIP 是 Apache Kafka 项目的提案文档（不是 Confluent 的产物）；本节不据编号断言其内容与状态，新版本在零拷贝、PageCache 利用率方向上的优化请以 KIP 页面的状态字段与目标版本 release note 为准。
+- **LinkedIn Kafka 每天数万亿消息的工程实践** —— LinkedIn 自家 Kafka 集群是其广告、Feed、搜索等核心业务的"主干道"，依赖顺序写 + PageCache + 副本机制支撑 PB 级写入，是 Kafka 持久化机制最大规模的工业实证（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
+- **Netflix Keystone Kafka 每天数万亿事件** —— Netflix 的 Keystone 流式平台把 Kafka 当成"事件主干道"，依赖 Log Segment 文件组织做长期归档，对应持久化机制在流媒体场景的落地（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
+- **腾讯万台 Kafka 集群支撑微信/QQ/游戏实时数据** —— 在万台规模下顺序写 + NVMe SSD 成为标配，PageCache 调优是常规运维动作，是国内超大规模 Kafka 实践的代表（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
+- **京东 PB 级订单流（618 / 双 11）** —— 大促场景下日订单量是日常 5–10 倍，靠"顺序写 + 批量发送 + 多 Partition"组合扛住峰值，是电商场景 Kafka 持久化机制的工程实证（上述规模数字与倍数均属【经验】档表述，本节无法给出可核验出处）。
 - **米哈游游戏日志流（原神 / 崩坏系列）** —— 玩家行为日志高并发写入 Kafka 集群，靠顺序写 + PageCache 撑住峰值日志量，对应游戏行业 Kafka 落地的典型。
 - **网易雷火游戏日志流** —— 与米哈游类似，依赖 Kafka 高吞吐持久化承接游戏服务端日志，是国内游戏行业 Kafka 的代表案例。
-- **顺丰运单状态实时流** —— 每日数十亿运单状态变更写入 Kafka，顺序写 + 多 Partition 满足峰值吞吐，是物流行业 Kafka 落地的代表。
+- **顺丰运单状态实时流** —— 每日数十亿运单状态变更写入 Kafka，顺序写 + 多 Partition 满足峰值吞吐，是物流行业 Kafka 落地的代表（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
 
 ---
 
@@ -179,16 +179,16 @@ Consumer 读取消息时，传统路径是「磁盘 → 内核缓冲区 → 用�
 
 **5. 参考资料**
 
-- LinkedIn 工程团队 2010 年关于 Kafka 起源的设计文档——理解"为什么 Kafka 是单体架构"的原始动机。
-- Yahoo 工程团队 2014 年关于 Pulsar 的原始论文与 StreamNative 后续商业化文档——Pulsar "计算存储分离"的最初设想。
-- 阿里中间件团队 2015 年关于 RocketMQ 开源的公开材料——RocketMQ 在阿里双 11 的诞生背景。
-- **LinkedIn Kafka 每天数万亿消息** —— 单体架构在超大规模下的工程实证，验证"Broker 本地盘"在足够运维成熟时也能撑住 PB 级。
-- **Uber Kafka 万亿级消息流（Uber 实时订单 + 司机画像）** —— Uber 的 Kafka 集群支持实时订单分发、动态定价、ETA 预测，是单体架构在出行行业的最大规模实践。
-- **Netflix Keystone（每天数万亿事件）** —— 流媒体场景下 Kafka 单体架构支撑秒级仪表盘更新，验证"日志即存储"在超大规模流处理中的可行性。
-- **阿里 RocketMQ 双 11 万亿级消息** —— 双 11 期间零故障，验证 RocketMQ 在事务消息、强一致场景的工程能力，是 RocketMQ 在电商场景的最大规模实证。
-- **腾讯万台 Kafka 集群** —— 万台规模下 KRaft 改造是核心动作，验证 Kafka 4.0 路线在国内的落地能力。
+- LinkedIn 工程团队关于 Kafka 起源的设计文档（同属约 2010-2011 年的公开材料；本节无法给出该文档的标题与链接，引用时请自行查证）——理解"为什么 Kafka 是单体架构"的原始动机。
+- Yahoo 工程团队关于 Pulsar 的原始论文（约 2014 年）与 StreamNative 后续商业化文档（本节无法给出该论文的标题与该文档的链接，年份亦请自行查证）——Pulsar "计算存储分离"的最初设想。
+- 阿里中间件团队关于 RocketMQ 开源的公开材料（约 2015 年；本节无法给出该材料的标题与链接，引用时请自行查证）——RocketMQ 在阿里双 11 的诞生背景。
+- **LinkedIn Kafka 每天数万亿消息** —— 单体架构在超大规模下的工程实证，验证"Broker 本地盘"在足够运维成熟时也能撑住 PB 级（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
+- **Uber Kafka 万亿级消息流（Uber 实时订单 + 司机画像）** —— Uber 的 Kafka 集群支持实时订单分发、动态定价、ETA 预测，是单体架构在出行行业的最大规模实践（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
+- **Netflix Keystone（每天数万亿事件）** —— 流媒体场景下 Kafka 单体架构支撑秒级仪表盘更新，验证"日志即存储"在超大规模流处理中的可行性（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
+- **阿里 RocketMQ 双 11 万亿级消息** —— 双 11 期间零故障，验证 RocketMQ 在事务消息、强一致场景的工程能力，是 RocketMQ 在电商场景的最大规模实证（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
+- **腾讯万台 Kafka 集群** —— 万台规模下 KRaft 改造是核心动作，验证 Kafka 4.0 路线在国内的落地能力（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
 - **招行 Kafka 支付场景** —— 招商银行用 Kafka 支撑支付链路实时风控，单体架构在金融场景的合规与高可用要求。
-- **京东 PB 级订单流（618 / 双 11）** —— 京东零售在双 11 用 Kafka 撑住日常 5-10 倍峰值流量，是电商场景 Kafka 的代表。
+- **京东 PB 级订单流（618 / 双 11）** —— 京东零售在双 11 用 Kafka 撑住日常 5-10 倍峰值流量，是电商场景 Kafka 的代表（上述规模数字与倍数均属【经验】档表述，本节无法给出可核验出处）。
 
 ---
 
@@ -199,7 +199,7 @@ Consumer 读取消息时，传统路径是「磁盘 → 内核缓冲区 → 用�
 - 是否真正理解 EOS 不是单一系统特性，而是"Producer + Broker + Consumer + Sink"四端协作的端到端能力。
 - 能否说清 **幂等 Producer（Idempotent Producer）**、**事务性 Producer（Transactional Producer）**、**两阶段提交（2PC）** 三个核心机制的协同逻辑。
 - 是否知道 EOS 在 Flink 端的具体实现——Checkpoint + Barrier + 两阶段 Sink——以及"为什么单独 Kafka 不能保证端到端 EOS"。
-- 加分项：能指出 EOS 的代价（吞吐下降 ~20-30%、延迟上升）与替代方案（幂等 + 业务去重）的取舍。
+- 加分项：能指出 EOS 的代价（吞吐下降幅度显著、延迟上升；该幅度属【经验】档表述，随批大小、分区数与事务时长而异，本节无法给出可溯源的统一数字）与替代方案（幂等 + 业务去重）的取舍。
 
 **2. 参考答案框架**
 
@@ -249,8 +249,8 @@ Consumer 读取消息时，传统路径是「磁盘 → 内核缓冲区 → 用�
 
 **第四层：EOS 的代价与替代方案。**
 
-- **吞吐代价**：事务 + 幂等会让 Producer 吞吐下降 20-30%，延迟增加。
-- **延迟代价**：事务消息在提交前对 Consumer 不可见，引入额外的等待（通常 100-500ms）。
+- **吞吐代价**：事务 + 幂等会让 Producer 吞吐下降显著（该幅度属【经验】档表述，随批大小、分区数与事务时长而异，本节无法给出可溯源的统一数字），延迟增加。
+- **延迟代价**：事务消息在提交前对 Consumer 不可见，设置 `isolation.level=read_committed` 的 Consumer 必须等到事务提交才能读到，端到端延迟因此多出一个「提交周期」。该周期的上限受 `transaction.timeout.ms` 约束（默认 1 分钟，见下文「事务超时」条目），实际时长属【经验】档表述，随事务时长、批大小与分区数而异，本节无法给出可溯源的统一数字。
 - **资源代价**：Flink 端需要更多状态后端容量；Kafka 端需要 `transaction.state.log.replication.factor` 副本。
 
 **替代方案**：
@@ -288,7 +288,7 @@ Consumer 读取消息时，传统路径是「磁盘 → 内核缓冲区 → 用�
 
 - Apache Kafka 官方文档关于"Idempotent Producer"和"Transactions API"的章节——幂等与事务的官方定义。
 - Flink Forward 与 Flink 官方文档关于"Two-Phase Commit Sink"的设计文档——Flink 2PC + Kafka 事务的协同细节。
-- Confluent 团队的公开博客关于 EOS 端到端落地的工程经验——EOS 代价、性能数字与生产配置。
+- Confluent 团队的公开博客关于 EOS 端到端落地的工程经验（本节无法给出该博客的标题与链接，引用时请自行查证）——EOS 代价、性能数字与生产配置。
 - **Uber 的 Kafka EOS 落地（实时订单 + 司机画像）** —— Uber 的实时订单分发、动态定价依赖 Flink + Kafka EOS 保证金额不重不丢，是出行行业 EOS 的最大规模实践。
 - **Netflix 的 Keystone EOS（实时仪表盘）** —— Netflix 的实时数据流从 Kafka Source → Flink → Kafka Sink 全链路 EOS，是流媒体行业 EOS 的代表。
 - **字节跳动 DataFinder 的 EOS 落地（实时特征）** —— 字节实时特征链路依赖 Flink + Kafka EOS 保证特征不重不丢，对应推荐与广告的实时场景。
@@ -303,7 +303,7 @@ Consumer 读取消息时，传统路径是「磁盘 → 内核缓冲区 → 用�
 **1. 考察点**
 
 - 是否真正理解 Kafka 的"日志模型"赋予了**天然可重放**的能力——这是它与传统 MQ（消费即删）的本质区别。
-- 能否说清 `auto.offset.reset`、`seek()`、`seekToBeginning()`、`seekToEnd()`、`assign()` 五种 offset 控制方式的差异。
+- 能否说清 `auto.offset.reset`、`seek()`、`seekToBeginning()`、`seekToEnd()`、`offsetsForTimes()` 五种 offset 控制方式的差异。
 - 是否理解 Consumer Group 的 offset 存储（`__consumer_offsets` Topic）以及重平衡（rebalance）对回溯的影响。
 - 加分项：能结合实际场景给出"何时用 reset、什么时候用新的 consumer group、什么时候用 timestamp"的最佳实践。
 
@@ -328,7 +328,7 @@ Kafka 的数据存储在 Partition Log 中，**只要数据还在（未到保留
 - `none`：没有 offset 时抛异常。
 - **生效时机**：仅当 Consumer Group 是**全新**（无 offset 提交记录）时生效。已提交过 offset 的 Group 重启时不会重置。
 
-**2. `seek(TopicPartitionIndexPartition, long offset)`**：
+**2. `seek(TopicPartition partition, long offset)`**：
 
 - 手动指定 offset，从指定位置开始读。
 - 不依赖 Consumer Group 历史，灵活但需自己管理 offset 持久化。
@@ -398,7 +398,7 @@ Consumer Group 的 offset 提交到 Kafka 内部 Topic `__consumer_offsets`，�
 
 - **把 `seek()` 当万能解药**：`seek()` 只在当前 Consumer 进程内生效，重启后除非配置持久化 offset，否则会丢失 seek 结果。
 - **回溯时不区分 Partition**：不同 Partition 进度不同，回溯时应按 Partition 单独 seek，不能一刀切。
-- **忽略冷数据访问成本**：Tiered Storage 冷数据在对象存储上，回溯冷数据的延迟比热数据高 10-100ms。
+- **忽略冷数据访问成本**：Tiered Storage 冷数据在对象存储上，回溯冷数据的延迟明显高于热数据（该幅度属【经验】档表述，随对象存储类型与网络条件而异，本节无法给出可溯源的统一数字）。
 - **回溯期间生产还在继续**：回溯期间 Producer 仍在写入，回放过程中会"追上"实时数据，下游状态可能错乱——**回溯应在隔离环境运行**，或回溯完成后用 idempotent + 版本号机制做合并。
 - **重复消费 vs 消息丢失混淆**：回溯期间一定是重复（不是丢失），下游必须幂等设计。
 - **不理解 Group Coordinator 切换**：Consumer Group 第一次连上某 Broker 时，该 Broker 成为 Coordinator；若 Coordinator 迁移，会触发 rebalance 并可能短暂影响 offset 读取。
@@ -416,7 +416,7 @@ Consumer Group 的 offset 提交到 Kafka 内部 Topic `__consumer_offsets`，�
 
 - Apache Kafka 官方文档关于 "Managing Consumer Position" 的章节——offset 提交、重置、回溯的官方论述。
 - Confluent 团队的《Kafka: The Definitive Guide》第 4 章——Consumer Group 与 offset 管理的权威材料。
-- **LinkedIn Kafka 每天数万亿消息的回溯实践** —— LinkedIn 自家 Kafka 集群每天触发大量回溯任务（数据修复、A/B 实验、对账），是最大规模的工业实证。
+- **LinkedIn Kafka 每天数万亿消息的回溯实践** —— LinkedIn 自家 Kafka 集群每天触发大量回溯任务（数据修复、A/B 实验、对账），是最大规模的工业实证（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
 - **Uber Kafka 实时订单 + 司机画像的回溯场景** —— Uber 用 Kafka 回溯做实时数据修复、A/B 实验数据重算，是出行行业回溯的代表。
 - **Netflix Keystone 实时仪表盘的回溯能力** —— Netflix 实时数据修复依赖 Kafka 回溯 + 下游幂等重建，是流媒体行业回溯的典型。
 - **阿里 RocketMQ / Notify 的回溯** —— 阿里在电商场景广泛使用回溯做数据修复与对账，是国内电商场景的代表。
@@ -436,7 +436,7 @@ Consumer Group 的 offset 提交到 Kafka 内部 Topic `__consumer_offsets`，�
 
 **2. 参考答案框架**
 
-**第一层：先定义三种数据保留策略。**
+**第一层：先定义四种数据保留策略。**
 
 Kafka 的数据保留有两种维度的策略，可以组合：
 
@@ -466,13 +466,13 @@ Kafka 的数据保留有两种维度的策略，可以组合：
 
 - **dirty ratio**（脏比例）：Partition 中"未压缩"的 Segment 占总 Segment 的比例。
 - **cleaner**：后台线程，定期扫描 Segment，按 Key 合并。
-- **offset 保留**：被压缩删除的消息不会真正消失——它们只是不再"可读"，但 offset 仍递增，Consumer 不会读到（因为相同 Key 的新值会覆盖）。
+- **offset 保留**：Compaction 不会回收 offset——被清除的旧值在压缩后的 Segment 中不再存在，但它们占用的 offset 位置不会被回收，offset 仍严格递增；Consumer 顺序读时读不到这些位置（相同 Key 的新值会替代旧值）。
 
 **Compaction 过程**：
 
 1. Cleaner 选择脏比例超阈值的 Partition（默认 `min.cleanable.dirty.ratio=0.5`，即超过 50% 未压缩才触发）。
 2. 扫描 Segment 中的消息，按 Key 排序。
-3. 同一 Key 的多条消息，**只保留 offset 最大的那条**（最新值），其余标记为"tombstone"（墓碑）。
+3. 同一 Key 的多条消息，**只保留 offset 最大的那条**（最新值），其余在压缩后的 Segment 中被清除（术语提示：tombstone 特指 value 为 null 的「删除该 Key」标记，不是被覆盖掉的旧值，详见下文关键细节）。
 4. 写出压缩后的新 Segment，删除旧 Segment。
 
 **关键细节：tombstone（墓碑）消息**：
@@ -541,7 +541,7 @@ Kafka 的数据保留有两种维度的策略，可以组合：
 - **tombstone 没被 Consumer 及时看到**：Consumer 启动后没等够 `delete.retention.ms`，可能错过 tombstone，导致"幽灵 Key"被当作存在。
 - **把"业务事件流"也用 Compaction**：订单事件每个 Key 只出现一次（订单 ID 唯一），Compaction 无效，反而浪费 CPU。Compaction 适合"变更流"（相同 Key 多次出现）。
 - **Compaction 不替代分区归档**：长期保留场景（合规审计）仍需 Tiered Storage，Compaction 只压缩"每个 Key 的最新值"。
-- **忽略冷数据访问延迟**：Compacted Topic 在 Tiered Storage 下访问冷数据仍需从对象存储拉取，延迟比热数据高 10-100ms。
+- **忽略冷数据访问延迟**：Compacted Topic 在 Tiered Storage 下访问冷数据仍需从对象存储拉取，延迟明显高于热数据（该幅度属【经验】档表述，随对象存储类型与网络条件而异，本节无法给出可溯源的统一数字）。
 
 **4. 追问预测**
 
@@ -555,9 +555,9 @@ Kafka 的数据保留有两种维度的策略，可以组合：
 **5. 参考资料**
 
 - Apache Kafka 官方文档关于 "Log Compaction" 的章节——Compaction 的工作原理与配置。
-- Kafka: The Definitive Guide 第 6 章 "Log Compaction"——Compaction 的工业实践与配置调优。
+- Kafka: The Definitive Guide 中关于 Log Compaction 的章节——Compaction 的工业实践与配置调优（原稿记为「第 6 章 "Log Compaction"」；该书的章号与章名本节无法核实，引用前请自行核对目录）。
 - Debezium 官方文档关于 "Kafka Topic 的 Compaction 配置"——CDC 场景下的 Compaction 最佳实践。
-- **LinkedIn Kafka 数万亿消息的 Compaction 实践** —— LinkedIn 在 CDC、配置中心等场景大量使用 Compaction，是最大规模的工业实证。
+- **LinkedIn Kafka 数万亿消息的 Compaction 实践** —— LinkedIn 在 CDC、配置中心等场景大量使用 Compaction，是最大规模的工业实证（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
 - **Netflix 的 Keystone Compaction Topic 实践** —— Netflix 用 Compaction Topic 维护服务路由表、用户状态，是流媒体场景的代表。
 - **Uber Kafka CDC + Compaction 的司机画像维护** —— Uber 用 CDC + Compaction 维护司机状态（位置、评分、车辆），是出行行业 Compaction 的典型。
 - **阿里 RocketMQ 的 Compaction 等价能力** —— 阿里在电商场景用 Compaction 维护商品库存、订单状态快照，是国内电商的代表。
@@ -680,17 +680,17 @@ Kafka 的顺序保证是**Partition 内严格 FIFO + 跨 Partition 无序**：
 - **「partition key 加盐后，下游怎么聚合？」** 答：消息 value 里仍带原始 user_id / order_id，Consumer 按原始 ID 聚合。或者用一致性 hash 把同一 user_id 路由到固定 Partition（避免随机 salt 导致的乱序）。
 - **「Consumer 端能不能保证全局顺序？」** 答：单 Consumer 串行消费单 Partition 就能保证该 Partition 顺序，但跨 Partition 仍无序。全局顺序只能通过单 Consumer 串行消费单 Partition 实现（牺牲并行）。
 - **「Kafka Streams 的 KTable 怎么保证状态有序？」** 答：KTable 是"按 Key 物化的表"，依赖 Partition 内 FIFO + 按 Key 分组，保证同一 Key 的更新按顺序应用。
-- **「Kafka 4.0 对顺序有什么改进？」** 答：KIP-1030（幂等 Producer 性能优化）+ KIP-1080（事务优化），高并发下顺序保证更稳定。
+- **「Kafka 4.0 对顺序有什么改进？」** 答：4.0 路线在 Producer 与事务路径上持续做性能优化，高并发下顺序保证更稳定；所涉具体编号为 `KIP-1030` / `KIP-1080`（KIP 是 Apache Kafka 项目的提案文档），本节不据编号断言其内容与状态——编号与内容的对应关系请以 KIP 页面的状态字段与目标版本 release note 为准。
 
 **5. 参考资料**
 
 - Apache Kafka 官方文档关于 "Partitioning" 与 "Producer Configuration" 的章节——partition key 与顺序保证的官方论述。
 - Kafka: The Definitive Guide 第 3 章 "Kafka Producers"——Producer 顺序保证的配置与陷阱。
-- **LinkedIn Kafka 每天数万亿消息的 partition key 设计经验** —— LinkedIn 在广告、Feed 等场景的 partition key 设计经验，是最大规模的工业实证。
+- **LinkedIn Kafka 每天数万亿消息的 partition key 设计经验** —— LinkedIn 在广告、Feed 等场景的 partition key 设计经验，是最大规模的工业实证（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
 - **Uber 实时订单 + 司机画像的 partition key 实践** —— Uber 用 `order_id` / `driver_id` 作 partition key，是出行行业的典型。
 - **Netflix Keystone 实时事件流的 partition key 设计** —— Netflix 在用户行为、内容事件等场景的 partition key 选择，是流媒体行业的代表。
 - **阿里 RocketMQ 的顺序消息能力（MessageQueueSelector）** —— RocketMQ 用 MessageQueueSelector 实现"同一业务 key 进同一队列"，是国内消息中间件顺序保证的代表。
-- **京东 PB 级订单流的 partition key 设计** —— 京东用 `order_id` 作 partition key 撑住双 11 峰值，是电商场景的代表。
+- **京东 PB 级订单流的 partition key 设计** —— 京东用 `order_id` 作 partition key 撑住双 11 峰值，是电商场景的代表（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
 - **米哈游游戏日志的 partition key 实践** —— 米哈游用 `player_id` 作 partition key 保证玩家行为序列准确，是游戏行业的工程实证。
 - **招行 Kafka 支付链路的 partition key 设计** —— 招行用 `transaction_id` 作 partition key 保证支付事件有序，是金融场景的代表。
 - **滴滴实时订单分发的 partition key 实践** —— 滴滴用 `order_id` 作 partition key 保证订单处理有序，是出行实时调度的工程实证。
@@ -737,7 +737,7 @@ Kafka 的顺序保证是**Partition 内严格 FIFO + 跨 Partition 无序**：
 **优势**：
 
 - 原生支持，无需外部组件。
-- 18 个延迟级别覆盖 95% 业务场景。
+- 18 个固定延迟级别覆盖了绝大多数「秒级到小时级、且落在预设档位上」的业务场景（该覆盖判断属【经验】档表述，本节无法给出可核验出处）。
 - 性能稳定，单 Broker 支持百万级延迟消息。
 
 **限制**：
@@ -852,7 +852,7 @@ Kafka **没有**原生延迟队列。常见变通方案：
 - Apache RocketMQ 官方文档关于 "Scheduled Messages" 的章节——18 个延迟级别的官方论述。
 - Apache Pulsar 官方文档关于 "Delayed Message Delivery" 的章节——Pulsar 任意延迟时长的实现。
 - Apache RabbitMQ 官方文档关于 "TTL" 与 "Dead Letter Exchange" 的章节——RabbitMQ TTL + DLX 的延迟模拟方案。
-- **阿里 RocketMQ 双 11 万亿级延迟消息** —— 双 11 订单超时关闭、支付回调重试都依赖 RocketMQ 延迟消息，是国内电商场景最大规模的工业实证。
+- **阿里 RocketMQ 双 11 万亿级延迟消息** —— 双 11 订单超时关闭、支付回调重试都依赖 RocketMQ 延迟消息，是国内电商场景最大规模的工业实证（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
 - **字节跳动 Kafka 多级延迟 Topic 实践** —— 字节在游戏、视频等场景用 Kafka + 多级延迟 Topic 模拟延迟队列，是国内 Kafka 变通方案的最大规模实践。
 - **美团外卖订单超时关闭的延迟队列** —— 美团外卖用 RocketMQ 延迟消息做订单超时关闭，是外卖行业延迟队列的代表。
 - **招行 Kafka 支付回调重试的延迟方案** —— 招行用 Kafka + 多级延迟 Topic + Redis ZSET 做支付回调重试，是金融场景 Kafka 变通延迟队列的典型。

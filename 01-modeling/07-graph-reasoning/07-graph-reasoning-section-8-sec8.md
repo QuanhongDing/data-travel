@@ -60,23 +60,23 @@
 
 **第四层：工业实践佐证。**
 
-- **Pinterest PinSage**：发表于 KDD 2018，处理 30 亿节点、180 亿边的 Pin-Board 图。核心贡献就是「短随机游走 + 重要性采样 + 负采样」，把 GraphSAGE 推到亿节点规模。推荐 hit rate +25%。
-- **阿里 EGES（Enhanced Graph Embedding with Side Information）**：发表于 KDD 2018，处理淘宝用户-商品-店铺-类目异构图。用 GraphSAGE 风格聚合 + Side Information 拼接，节点数 50 亿+，边 1000 亿+，CTR 提升 5-15%，长尾商品曝光 +30%。
-- **Uber Eats / Didi（滴滴）**：公开分享中均提到用 GraphSAGE 配合序列模型（DIN / Transformer）做用户行为建模，DNN 主模型负责序列，GNN 负责引入图结构信号。
+- **Pinterest PinSage**：发表于 KDD 2018，处理 30 亿节点、180 亿边的 Pin-Board 图。核心贡献就是「短随机游走 + 重要性采样 + 负采样」，把 GraphSAGE 推到亿节点规模，线上推荐命中率相对基线有明显提升（论文报告的具体幅度以原文为准，本节无法核验该数字，引用时请自行查证）。
+- **阿里 EGES（Enhanced Graph Embedding with Side Information）**：出自 KDD 2018 论文《Billion-scale Commodity Embedding for E-commerce Recommendation in Alibaba》（Wang et al.），处理淘宝用户-商品-店铺-类目异构图。用 GraphSAGE 风格聚合 + Side Information 拼接，图规模为亿级节点量级（论文标题即「Billion-scale」，具体节点数与边数以论文原文为准，本节无法核验），线上 CTR 与长尾商品曝光均有提升（数值高度依赖场景与口径，本节无法给出该论文中可核验的统一数字，此处按【经验】档处理）。
+- **Uber Eats / Didi（滴滴）**：公开分享中均提到用 GraphSAGE 配合序列模型（DIN / Transformer）做用户行为建模，DNN 主模型负责序列，GNN 负责引入图结构信号（本节无法给出这些分享的可核验出处，引用时请自行查证）。
 - **LLM 推理系统优化的图建模尝试**：有公开研究将「请求-Token-KV 缓存」建模为图结构，用 GraphSAGE 预测 cache 命中以辅助 cache 替换，效果优于 LRU——这是 GraphSAGE 用于系统优化领域的非典型案例（学术界有相关方向，具体厂商实践以公开论文为准）。
 
 **3. 常见陷阱**
 
 - **把「图卷积」理解为「像 CNN 一样的卷积」**：GCN 推导自谱图卷积的简化，工程上等价于「邻居均值 + 度归一化」，与图像卷积在卷积核大小、感受野、参数共享上完全不同。
-- **认为 GAT 一定比 GraphSAGE 准**：在 Cora / Citeseer 这种转导式小图上，GAT 略胜；但在归纳式大图上，二者差距很小，GAT 的训练成本高 3-5 倍。
+- **认为 GAT 一定比 GraphSAGE 准**：在 Cora / Citeseer 这种转导式小图上，GAT 略胜；但在归纳式大图上，二者差距很小，GAT 的训练成本明显更高（倍数随图规模、采样实现与硬件而异，本节给不出可溯源的统一数字）。
 - **混淆转导 / 归纳与半监督 / 监督**：转导 / 归纳指的是「能不能泛化到新节点」，跟是否有标签是两个维度，GNN 的归纳式变体仍然可以做监督学习。
 - **默认 GNN 可以深堆**：超过 5 层几乎一定退化，JK-Net / APPNP 是补救但有副作用，资深架构师应当默认「浅而宽」而非「深而窄」。
 - **忽略特征查找服务（feature store）**：GraphSAGE 能冷启动的前提是有可靠的「邻居特征查找服务」（Feast / 阿里 FeatureDB），否则新节点的特征缺失仍然无法打分。
 
 **4. 追问预测**
 
-- **「PinSage 和 GraphSAGE 最大的差别是什么？」** 答：在「如何选邻居」上。GraphSAGE 直接按邻接表采样一到两跳邻居，PinSage 做的是「从目标节点出发做短随机游走，按访问频次做重要性采样」，相当于用游走次数代替跳数。重要性采样比均匀采样收敛快 10 倍，这是 PinSage 能扩展到 30 亿节点的核心。
-- **「GNN 在生产里的标准推理延迟是多少？怎么保证 100ms 以内？」** 答：在线打分通常 20-50 ms，子图采样 + ANN 检索 + 模型推理分阶段并行；典型做法是「离线预计算嵌入 + 在线只做 ANN 召回 + 必要时补 1-hop 邻居」，让绝大部分请求不需要重算图遍历。
+- **「PinSage 和 GraphSAGE 最大的差别是什么？」** 答：在「如何选邻居」上。GraphSAGE 直接按邻接表采样一到两跳邻居，PinSage 做的是「从目标节点出发做短随机游走，按访问频次做重要性采样」，相当于用游走次数代替跳数。重要性采样比均匀采样收敛更快（具体倍数取决于实验设定与图规模，本节给不出可溯源的统一数字），这是 PinSage 能扩展到 30 亿节点的核心。
+- **「GNN 在生产里的标准推理延迟是多少？怎么保证 100ms 以内？」** 答：在线打分通常 20-50 ms（工程经验目标值，按【经验】档处理），子图采样 + ANN 检索 + 模型推理分阶段并行；典型做法是「离线预计算嵌入 + 在线只做 ANN 召回 + 必要时补 1-hop 邻居」，让绝大部分请求不需要重算图遍历。
 - **「过平滑怎么破？」** 答：四板斧——控制层数（≤ 5 层）、加残差（JK-Net / APPNP）、加归一化（PairNorm / NodeNorm）、加 DropEdge / DropNode。工业上首选控制层数，工程成本最低。
 - **「GraphSAGE 与 PinSage 的对比说明，是否能用一句话让业务方听懂？」** 答：GraphSAGE 是「直接看邻居」，PinSage 是「沿着图随机漫步一圈，看哪几个邻居对我最重要」——后者更准但更慢，适合离线训练 + 在线嵌入的场景。
 
@@ -86,7 +86,7 @@
 - William Hamilton, Rex Ying, Jure Leskovec《Inductive Representation Learning on Large Graphs》（NeurIPS 2017）——GraphSAGE 的原始论文，定义归纳式学习的标准范式。
 - Petar Veličković et al.《Graph Attention Networks》（ICLR 2018）——GAT 原始论文，理解注意力权重与可解释性的入口。
 - Rex Ying et al.《Graph Convolutional Neural Networks for Web-Scale Recommender Systems》（KDD 2018）——Pinterest PinSage 的工业实践，是亿节点规模 GNN 训练的最权威案例。
-- 阿里《EGES: Enhanced Graph Embedding with Side Information》（KDD 2018）——国内电商推荐 GraphSAGE 工程化的代表，揭示了「用户-商品-类目异构图 + Side Information」的标准做法。
+- 阿里《Billion-scale Commodity Embedding for E-commerce Recommendation in Alibaba》（Wang et al., KDD 2018）——即 EGES（Enhanced Graph Embedding with Side Information）方法所在的论文，国内电商推荐 GraphSAGE 工程化的代表，揭示了「用户-商品-类目异构图 + Side Information」的标准做法。
 - PyTorch Geometric 官方文档关于邻居采样（NeighborSampler / Cluster-GCN / GraphSAINT）的章节——大规模训练的工程实现细节。
 - Jure Leskovec《Snap / Stanford Network Analysis Project》公开材料——GraphSAGE 与 PinSage 的工程演进。
 - **米哈游的游戏用户兴趣表示与特征工程** —— 公开分享中提到的玩家关系建模公开实践。
@@ -147,14 +147,14 @@
 **第四层：工业落地的常见选择。** 实际生产里几乎不会只选一个：
 
 - **首选 HAN 思路 + 简化的元路径集**：阿里电商推荐的 EGES / ESMM 体系，就是按用户-商品-类目-店铺几条核心元路径分别做 GraphSAGE，然后加权聚合。这种「手工元路径 + GraphSAGE 加权」的工程门槛最低，效果稳定可控。
-- **HGT 用在大图 + 关系丰富的 KG 场景**：蚂蚁金融风控、R-GCN 系列在 KG 补全上仍是主流，HGT 更适合关系类型 5-20 种、节点类型 ≤ 5 种的异构图。
+- **HGT 用在大图 + 关系丰富的 KG 场景**：蚂蚁金融风控、R-GCN 系列在 KG 补全上仍是主流，HGT 更适合关系类型 5-20 种、节点类型 ≤ 5 种的异构图（蚂蚁相关分享本节无法给出可核验出处，引用时请自行查证）。
 - **R-GCN 专门用于 KG 推理**：在企业知识图谱、KG Completion（链接预测）任务里仍是标准选择，但生产中通常会配上 TransE / ComplEx / RotatE 作为关系打分函数。
 - **MAGNN / HGT 适合学术追求**：在工业界落地比例仍不高，主要因为工程复杂度过高。
 
 **第五层：元路径选择的工程经验。**
 
 - **数量控制在 3-6 条**：元路径不是越多越好。太多路径会引入噪声，模型难以分辨；太少路径会丢失信号。经验值是 3-6 条核心路径 + 1-2 条正则化路径。
-- **必须做路径筛选**：用注意力机制（AHP / HAN 的元路径注意力）或离线 ablation 选出有效路径。噪声路径加进模型后 AUC 可能下降 1-3 个百分点。
+- **必须做路径筛选**：用注意力机制（AHP / HAN 的元路径注意力）或离线 ablation 选出有效路径。噪声路径加进模型后 AUC 可能明显下降（幅度随噪声路径比例与模型而异，本节按【经验】档处理，不给单一数字）。
 - **元路径的语义必须业务可解释**：每条路径都要能向业务方说清楚「这条路径在表达什么」。否则下游出问题无法归因。
 - **异构图必须配合 meta-path specific 邻居采样**：否则不同类型邻居被同等对待，类型信号丢失。
 
@@ -170,7 +170,7 @@
 
 - **「HAN / HGT / R-GCN 在一个亿节点异构图上跑不动，怎么办？」** 答：用子图采样（Cluster-GCN / GraphSAINT / HGT-Sampling），按节点类型分桶采样；配合 PyTorch-DDP / DeepSpeed 做分布式。HGT 的相对位置编码需要在采样时同步传递类型信息。
 - **「如何验证某个元路径真的有效？」** 答：离线 ablation + 业务可解释性双轨。离线：把元路径权重可视化，看是否集中到少数几条；业务：让风控 / 推荐的业务方对每条路径打分「是不是我们想要的信号」。
-- **「元路径选择不当会怎么样？给出真实案例。」** 答：金融风控里如果加入「user-shop-user」但没控制时间窗口，会把历史上合法团购的用户关联到一起，误报率上升 30% 以上——这是蚂蚁公开分享中提过的反面案例。
+- **「元路径选择不当会怎么样？给出真实案例。」** 答：金融风控里如果加入「user-shop-user」但没控制时间窗口，会把历史上合法团购的用户关联到一起，导致误报率明显上升——这类反面案例在蚂蚁的公开分享中被提过（本节无法给出该分享的可核验出处与具体幅度，引用时请自行查证）。
 - **「HAN 和 HGT 在你的场景里怎么选？」** 答：业务方能解释元路径 → HAN；关系类型多、要自适应 → HGT；KG 补全 / 链接预测为主 → R-GCN + KG 嵌入。
 
 **5. 参考资料**
@@ -178,7 +178,7 @@
 - Xin Wang et al.《Heterogeneous Graph Attention Network》（WWW 2019 / HAN）——按元路径分层的标准方法。
 - Ziniu Hu et al.《Heterogeneous Graph Transformer》（WWW 2020 / HGT）——把 Transformer 位置编码扩展到异构图的代表工作。
 - Michael Schlichtkrull et al.《Modeling Relational Data with Graph Convolutional Networks》（ESWC 2018 / R-GCN）——KG 推理的基础架构。
-- 阿里《EGES: Enhanced Graph Embedding with Side Information》（KDD 2018）——电商推荐异构图 + Side Information 拼接的工业实现。
+- 阿里《Billion-scale Commodity Embedding for E-commerce Recommendation in Alibaba》（Wang et al., KDD 2018 / EGES）——电商推荐异构图 + Side Information 拼接的工业实现。
 - 阿里《Entire Space Multi-Task Model: An Effective Approach for Estimating Post-Click Conversion Rate》（SIGIR 2018 / ESMM）——多任务 + 异构图的推荐范式。
 - 蚂蚁集团公开分享中关于 R-GCN + 路径证据链在金融风控的落地——元路径筛选的工程经验。
 - **美团到店业务的 POI 与商家异构图** —— 公开分享中提到的元路径聚合与长尾商家推荐公开实践。
@@ -260,7 +260,7 @@ LLM 生成答案（含溯源）
 
 **第四层：工程代价——三件必须说清楚的事。**
 
-- **构建成本极高**：LLM 抽取实体关系的 Token 消耗比 embedding 高 2 个数量级。Microsoft 的报告里处理 1M token 文档集，调 LLM 约 200-500 美元。这是 GraphRAG 不能无差别落地的核心约束。
+- **构建成本极高**：LLM 抽取实体关系的 Token 消耗比 embedding 高 2 个数量级；Microsoft 的 GraphRAG 报告里以 1M token 量级的文档集为例，给出过走 LLM 抽取的构建费用量级（该报告见本节参考资料；随模型定价、抽取粒度与重试次数而异，本节无法核验其中可引用的统一金额，此处按【经验】档处理）。这是 GraphRAG 不能无差别落地的核心约束。
 - **增量更新难**：LLM 抽取的 KG 是「那个时间点」的快照，新增 / 修改文档需要重新抽取和合并。LightRAG（HKU 2024）、FastGraphRAG（2025）的核心改进就是降低增量更新代价。
 - **评估比 Naive RAG 复杂**：向量 RAG 可以用 Recall@K / MRR 评估，GraphRAG 必须多维度评估——事实准确率、多跳准确率、社区 summary 覆盖度、可解释性、业务人员满意度。
 
@@ -273,25 +273,25 @@ LLM 生成答案（含溯源）
 
 **3. 常见陷阱**
 
-- **把 GraphRAG 当作「向量 RAG 的完全替代」**：实际上 2024-2026 主流是 Hybrid（向量 + BM25 + 图），三者各有强项。Microsoft 自己也在文档里说「GraphRAG 与向量 RAG 互补」。
-- **忽略构建成本**：把 LLM 抽 KG 想得很简单，实际上一份 10 万份文档的语料库，构建 KG 的 LLM 调用成本可达 5-10 万美元。
+- **把 GraphRAG 当作「向量 RAG 的完全替代」**：实际上 2024-2026 主流是 Hybrid（向量 + BM25 + 图），三者各有强项。Microsoft 的 GraphRAG 官方文档也强调「GraphRAG 与向量 RAG 互补」（出处见本节参考资料，即 Microsoft Research 2024 年的 GraphRAG 论文与配套工程索引）。
+- **忽略构建成本**：把 LLM 抽 KG 想得很简单，实际上十万份量级的文档语料库，构建 KG 的 LLM 调用成本可达数万至十万美元的量级（随模型定价、抽取粒度与文档长度而异，本节按【经验】档处理，不引用单一区间）。
 - **不区分 local / global 检索**：Local 是「找相关节点回答具体问题」，Global 是「找相关社区做主题总结」，二者解决的问题不同，索引构建方式也不同。
-- **忽视社区发现参数的影响**：Leiden 的 resolution 参数直接决定社区粒度，太细导致信息碎片、太粗导致召回粗糙。Microsoft 报告里把这一参数列为最关键的 tuning 之一。
+- **忽视社区发现参数的影响**：Leiden 的 resolution 参数直接决定社区粒度，太细导致信息碎片、太粗导致召回粗糙。Microsoft 报告里把这一参数列为最关键的 tuning 之一（该报告出处见本节参考资料）。
 - **默认 GraphRAG 比向量 RAG 准确**：在「找一段事实」这种单跳任务上，向量 RAG 反而更快更准。GraphRAG 的优势集中在多跳与跨文档总结。
 
 **4. 追问预测**
 
 - **「GraphRAG 的 KG 用什么数据库存？」** 答：Neo4j / NebulaGraph 是首选，开源 + 支持 Graph 模式 + 支持 Cypher 查询 + 图算法库完善；学术项目常用 NetworkX + 内存存储；轻量级场景用 Kùzu（嵌入式）。向量部分通常用 Milvus / Faiss。
-- **「社区 summary 索引怎么设计？」** 答：两种方案——把 summary 文本用 embedding 存向量库（local 检索快，但失去图结构）；把 summary 当作图节点存回图库（global 检索走得通，但 local 慢）。Microsoft 是两者都支持。
+- **「社区 summary 索引怎么设计？」** 答：两种方案——把 summary 文本用 embedding 存向量库（local 检索快，但失去图结构）；把 summary 当作图节点存回图库（global 检索走得通，但 local 慢）。Microsoft 的实现是两者都支持（该文档出处见本节参考资料）。
 - **「GraphRAG 与 LLM-as-Reasoner over KG 是什么关系？」** 答：GraphRAG 是「离线抽取 + 在线检索」路线（Microsoft 标准实现）；LLM-as-Reasoner（ToG / RoG）是「在线让 LLM 生成路径 + 检索」路线（适合动态 / 增量场景）。两者可混合使用。
-- **「如果资源有限，团队该如何起步？」** 答：从 LiteGraphRAG 开始——先用 LLM 抽取实体关系存简易 KG（NetworkX 即可），用户问题走向量召回 + KG 二次过滤，把构建成本控制在「1 万份文档 + 1000 美元 LLM 成本」以内，再考虑上 Microsoft GraphRAG / Ant GraphRAG 完整方案。
+- **「如果资源有限，团队该如何起步？」** 答：从 LiteGraphRAG 开始——先用 LLM 抽取实体关系存简易 KG（NetworkX 即可），用户问题走向量召回 + KG 二次过滤，把构建成本控制在「万份量级文档 + 千美元量级 LLM 成本」的目标区间内（此为起步阶段的目标预算量级，非可溯源的实测值，随模型定价与抽取粒度而异，本节按【经验】档处理），再考虑上 Microsoft GraphRAG / Ant GraphRAG 完整方案。
 - **「GraphRAG 与 LangChain / LlamaIndex 集成方式？」** 答：LangChain 有 `langchain-graph-retriever`、`langchain-neo4j` 等官方集成；LlamaIndex 有 `PropertyGraphIndex` + `GraphRAGExtractor`。两者都把 GraphRAG 作为「一个 Retriever」插入现有 RAG pipeline。
 
 **5. 参考资料**
 
 - Microsoft Research《From Local to Global: A Graph RAG Approach to Query-Focused Summarization》（2024）——Microsoft GraphRAG 的官方论文 / 报告，是 GraphRAG 路线的工业里程碑。
 - Microsoft GraphRAG 2024 公开发布的工程索引（具体仓库与版本号见其官方论文附录）——完整流水线代码、社区发现参数与增量更新策略的实现细节。
-- HKU《LightRAG: Simple and Efficient Retrieval-Augmented Generation》（2024）——增量友好的轻量 GraphRAG，构建成本降低 80%。
+- HKU《LightRAG: Simple and Efficient Retrieval-Augmented Generation》（2024）——增量友好的轻量 GraphRAG，相较 GraphRAG 类完整方案显著降低构建成本（具体幅度以论文原文为准，本节无法核验，引用时请自行查证）。
 - 阿里 / 蚂蚁《Ant Group GraphRAG》公开分享——金融场景下 GraphRAG + KG + 向量的混合架构。
 - NebulaGraph 官方文档《GraphRAG with NebulaGraph》——国产图数据库 + GraphRAG 的工程范式。
 - Neo4j《NaLLM / Neo4j LLM Knowledge Graph Builder》（2024）——Neo4j 5.x 原生集成的 GraphRAG 方案。
@@ -346,7 +346,7 @@ LLM 生成答案（含溯源）
 
 **第四层：路径生成（ToG / RoG）的工程细节。**
 
-- **ToG（Sun et al., ICLR 2024）**：把 KG 推理建模成「树搜索」，LLM 在每一步决定「扩展哪个邻居节点、是否终止」，最终输出推理路径与答案。优点是多跳准确率高（HotpotQA 等 benchmark 提升 5-10%）；缺点是 Token 消耗大（每步都要 LLM 调用）。
+- **ToG（Sun et al., ICLR 2024）**：把 KG 推理建模成「树搜索」，LLM 在每一步决定「扩展哪个邻居节点、是否终止」，最终输出推理路径与答案。优点是多跳准确率高（在 HotpotQA 等多跳 benchmark 上相对基线有提升；具体幅度以论文报告为准，本节无法核验，不宜引用单一区间）；缺点是 Token 消耗大（每步都要 LLM 调用）。
 - **RoG（Retrieval-augmented On Graphs, 2024）**：先用 LLM 生成 relation paths（候选路径模板），再用 KG 检索填充实体，最后让 LLM 基于事实生成答案。优点是显式分离「路径规划」与「答案生成」，可解释性极强；缺点是路径模板的覆盖率受训练数据影响。
 - **工业取舍**：在风控证据链 / 多跳问答场景，ToG / RoG 的可解释性是核心价值；在客服 / FAQ 场景，NL2Cypher 的工程成本更低。
 
@@ -359,14 +359,14 @@ LLM 生成答案（含溯源）
 **3. 常见陷阱**
 
 - **混淆「GraphRAG」与「LLM-as-Reasoner over KG」**：GraphRAG 是「离线抽取 KG + 在线检索」路线，本质是 RAG；LLM-as-Reasoner 是「在线让 LLM 做推理」路线，二者可结合但概念不同。
-- **让 LLM 直接做语义解析而不加 schema 注入**：LLM 会编字段名（`company_name` vs `Company.name`），执行率低于 30%。
+- **让 LLM 直接做语义解析而不加 schema 注入**：LLM 会编字段名（`company_name` vs `Company.name`），Cypher 执行率显著偏低（幅度随 schema 复杂度、模型与问题分布而异，本节给不出可溯源的统一数字）。
 - **不做 Cypher 安全护栏**：Cypher 危险操作可能被 prompt injection 利用，**删库事故在 LLM 时代是新的攻击面**。
 - **ToG 路径爆炸不控制**：长路径会触发 LLM 上下文超限，必须限制最大跳数（如 3 跳）+ 路径去重 + 提前终止条件。
 - **忽略 Judge 偏差**：用同一个 LLM 既做回答又做 Judge 会形成循环偏见，必须用不同模型或不同 temperature。
 
 **4. 追问预测**
 
-- **「NL2Cypher 的执行率一般是多少？怎么提升？」** 答：在 schema 注入 + few-shot 条件下，简单查询 70-85%，多跳查询 40-60%。提升手段：示例检索（从历史 query 库动态找示例）、prompt 工程、错误回退链路、用 Cypher-aware 模型（而不是通用 LLM）。
+- **「NL2Cypher 的执行率一般是多少？怎么提升？」** 答：在 schema 注入 + few-shot 条件下，简单查询的执行率明显高于多跳查询（具体区间随模型、schema 复杂度与问题写法而异，本节按【经验】档处理，给不出可溯源的统一数字）。提升手段：示例检索（从历史 query 库动态找示例）、prompt 工程、错误回退链路、用 Cypher-aware 模型（而不是通用 LLM）。
 - **「如果 KG 与 LLM 答案冲突，以谁为准？」** 答：默认以 KG 为准（事实优先），LLM 只负责「基于事实生成答案」；冲突时 LLM 应该回答「KG 中没有此事实」。这正是 Neo4j NaLLM 的标准做法。
 - **「ToG 与 Chain-of-Thought 是什么关系？」** 答：CoT 是「LLM 内部推理」，不可解释；ToG 是「LLM 在 KG 上推理」，每一步都是显式图操作，可溯源。**ToG = 可解释的 CoT**。
 - **「工业上怎么混合这三种路线？」** 答：漏斗式——先用 NL2Cypher 走快路径，成功就返回；失败回退到路径生成（ToG / RoG）；最终答案前用 LLM-as-Judge 做事实校验。三层兜底是当前 GraphRAG 系统的常见设计。
@@ -407,7 +407,7 @@ LLM 生成答案（含溯源）
 - 是否具备**亿节点规模的工程直觉**——瓶颈通常在「延迟、吞吐、显存、嵌入更新」四个维度，而不是模型本身。
 - 能否分层回答：**离线图构建 → 离线嵌入训练 → 在线 ANN 召回 → 子图补全 → 业务调用**。
 - 是否知道「**离线预计算嵌入 + 在线 ANN 召回**」是工业标准做法，而不是把 GNN 实时推理搬到线上。
-- 加分项：能给具体延迟数据（目标 100ms、典型分布 20-50ms），并指出常见故障（嵌入更新延迟、ANN 索引漂移、邻居采样超时）。
+- 加分项：能给具体延迟数据（目标 100ms、典型分布 20-50ms，均按【经验】档的目标值处理），并指出常见故障（嵌入更新延迟、ANN 索引漂移、邻居采样超时）。
 
 **2. 参考答案框架**
 
@@ -418,7 +418,7 @@ LLM 生成答案（含溯源）
 - **嵌入一致性**：离线训练的嵌入和在线查询的嵌入在版本上必须严格一致，否则会出现「离线 AUC 高、在线效果差」的最常见故障。
 - **冷启动 / 增量更新**：每日新增的节点必须能在 24h 内有可用嵌入，否则会被业务投诉。
 
-**第二层：分层架构（工业标准实践）。** PinSage / 阿里 EGES / 蚂蚁 Ant Graph 都是这套分层架构：
+**第二层：分层架构（工业标准实践）。** PinSage / 阿里 EGES / 蚂蚁 Ant Graph 都是这套分层架构（其中 PinSage 与阿里 EGES 的出处见本节参考资料；蚂蚁 Ant Graph 的具体实践本节无法给出可核验出处，引用时请自行查证。下图中与本节各层给出的延迟数字均为工程经验目标值，按【经验】档处理，实际随部署形态、硬件与图规模而异）：
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -463,20 +463,20 @@ LLM 生成答案（含溯源）
 - **把 GNN 在线推理误解为「端到端实时计算」**：把图遍历 + GNN forward 全部放在线上，结果一次请求 500ms+，无法满足 100ms SLA。正确做法是「离线算 embedding + 在线只做 ANN 召回」。
 - **不监控嵌入版本一致性**：离线 AUC 0.85、在线 CTR 不动，多半是嵌入版本没对齐，但没人发现。
 - **不做 A/B 直接全量推**：GNN 上线全量推，反向回滚困难。必须 1-2 周影子流量。
-- **图数据库性能假设过高**：NebulaGraph / Neo4j 在亿节点上单跳查询能达到 100ms 以内，但跨集群、跨 region 会翻 5-10 倍。
+- **图数据库性能假设过高**：NebulaGraph / Neo4j 在亿节点上单跳查询可以做到百毫秒量级，但跨集群、跨 region 会成倍放大（倍数随网络拓扑与部署形态而异）。
 - **冷启动节点直接丢分**：新节点打分空，会让业务覆盖率明显下降，必须有兜底策略。
 
 **4. 追问预测**
 
 - **「如果 ANN 召回不准，会怎么样？」** 答：线上指标（CTR / 欺诈召回率）会下降，且不容易归因。建议用「黄金集」每天跑离线对比：当日 embedding + 真实 label 计算 AUC，与历史版本对比，差距 > 阈值告警。
-- **「GraphScope / Ant Graph 在这套架构里的位置？」** 答：GraphScope 提供从离线训练到在线推理的一站式；Ant Graph 在蚂蚁风控场景提供分布式图推理引擎与子图采样 API。它们都把上述分层架构封装成平台能力，但业务侧仍要做嵌入一致性 + 灰度发布。
+- **「GraphScope / Ant Graph 在这套架构里的位置？」** 答：GraphScope 提供从离线训练到在线推理的一站式（出处见本节参考资料）；Ant Graph 在蚂蚁风控场景提供分布式图推理引擎与子图采样 API（该平台能力描述本节无法给出可核验出处，引用时请自行查证）。它们都把上述分层架构封装成平台能力，但业务侧仍要做嵌入一致性 + 灰度发布。
 - **「什么场景不能分层，必须 GNN 在线 forward？」** 答：少数对实时性要求极高的场景（毫秒级 fraud 决策），且图规模可控（≤ 1000 万节点）。这时才上 DGL Online / GraphScope Online + 小模型。**绝大多数场景不要这条路**。
 - **「embedding 写入与 ANN 索引构建之间的不一致窗口，多久合适？」** 答：经验值 5-30 分钟。可以通过「双写 + 切换」缩短到秒级——线上同时跑两套索引，按 key 路由到目标版本。代价是双倍存储。
 
 **5. 参考资料**
 
 - Rex Ying et al.《Graph Convolutional Neural Networks for Web-Scale Recommender Systems》（KDD 2018 / PinSage）——定义了「离线训练 + 在线 ANN 召回」的标准范式。
-- 阿里《EGES》（KDD 2018）——电商推荐场景的离线 / 在线分层实践，含嵌入一致性保障。
+- 阿里《Billion-scale Commodity Embedding for E-commerce Recommendation in Alibaba》（Wang et al., KDD 2018 / EGES）——电商推荐场景的离线 / 在线分层实践，含嵌入一致性保障。
 - 阿里 GraphScope 官方文档与 KDD 2024 论文《GraphScope: A Unified Engine for Large-Scale Graph Computation》——一站式图计算平台。
 - Meta MariusGNN / PyTorch BigGraph 系列公开材料——亿节点嵌入的分布式训练与部署。
 - Uber Engineering 关于 Michelangelo 与 DeepETA / 拼车 ETA 的公开分享——图嵌入与在线系统的协同。
@@ -530,12 +530,12 @@ LLM 生成答案（含溯源）
 
 **第三层：每层的具体选型。**
 
-- **L1 GNN 概率分**：GraphSAGE + 注意力（GAT） 或 R-GCN（关系型图）。蚂蚁金融风控公开分享里提到 R-GCN + 注意力 + 路径证据的组合，节点 / 边类型包含人、设备、IP、账号、卡号、商户。
-- **L2 子图解释器**：GNNExplainer（Ying et al., NeurIPS 2019）输出最重要的 K 个边作为解释；PGExplainer（Lu et al., 2020）用参数化模型预测边的掩码，可解释多个实例；SubgraphX 用蒙特卡洛树搜索找关键子图。**生产首选 PGExplainer**，因为它支持批量推理与训练，延迟可控。
+- **L1 GNN 概率分**：GraphSAGE + 注意力（GAT） 或 R-GCN（关系型图）。蚂蚁金融风控公开分享里提到 R-GCN + 注意力 + 路径证据的组合，节点 / 边类型包含人、设备、IP、账号、卡号、商户（本节无法给出这些分享的可核验出处，引用时请自行查证）。
+- **L2 子图解释器**：GNNExplainer（Ying et al., NeurIPS 2019）输出最重要的 K 个边作为解释；PGExplainer（Luo et al., NeurIPS 2020）用参数化模型预测边的掩码，可解释多个实例；SubgraphX 用蒙特卡洛树搜索找关键子图。**生产首选 PGExplainer**，因为它支持批量推理与训练，延迟可控。
 - **L3 路径证据**：PRA（Path Ranking Algorithm）是经典；DRUM（RNN+Logic）用神经网络学路径；ToG（Think-on-Graph）用 LLM 在线生成路径。**金融场景首选 ToG / RoG**，因为路径必须可被业务方直接理解。
 - **L4 LLM-as-Translator**：用 LLM 把「节点 + 边 + 路径」JSON 翻译成自然语言。如「账户 A 风险评分 0.92，证据链：账户 A → 设备 D（共用 3 次）→ IP 段 X（与黑名单账户 B 重合）→ 黑名单账户 B（确认欺诈）」。
 
-**第四层：蚂蚁集团公开实践。** 蚂蚁集团在多次公开分享中提到的金融风控图推理架构包含：
+**第四层：蚂蚁集团公开实践。** 蚂蚁集团在多次公开分享中提到的金融风控图推理架构包含（本节无法给出这些分享的可核验出处，节点 / 边类型数量级以公开材料的表述为准）：
 
 - **三层图**：商户-设备-账户-卡-资金链路的多层异构图，节点类型 ≥ 6，边类型 ≥ 10。
 - **R-GCN + 注意力**：处理多关系异构图，节点嵌入 + 边嵌入同时学习。
@@ -560,7 +560,7 @@ LLM 生成答案（含溯源）
 
 **4. 追问预测**
 
-- **「ToG 在生产里怎么用？单条推理成本多高？」** 答：典型 ToG 单次推理需要 3-5 轮 LLM 调用（GPT-4o 级别），单次成本 0.1-0.5 美元，延迟 5-15 秒。适合「少量高风险样本 + 异步审核」场景；不能用在同步决策链路。
+- **「ToG 在生产里怎么用？单条推理成本多高？」** 答：典型 ToG 单次推理需要数轮 LLM 调用（GPT-4o 级别通常 3-5 轮），单次成本在零点几美元量级、延迟在数秒到十几秒量级（随模型定价、跳数与检索宽度而异，本节按【经验】档处理，不引用单一区间）。适合「少量高风险样本 + 异步审核」场景；不能用在同步决策链路。
 - **「GNNExplainer 与 PGExplainer 的核心差别？」** 答：GNNExplainer 是「单实例优化」（慢、但准），PGExplainer 是「参数化预测」（快、可批量）。生产首选 PGExplainer。
 - **「怎么验证解释的真实性？（不能解释是编的）」** 答：用「faithfulness」指标——把解释中的关键节点 / 边去掉，看模型分数是否大幅下降。如果分数变化不显著，说明解释不忠实。
 - **「联邦图学习 + 可解释性怎么兼容？」** 答：跨机构图推理的中间结果不可对外暴露，因此 L4 自然语言翻译需要在本机构内做，不依赖跨机构信息源；L3 路径证据可以从跨机构联邦特征中推，但只暴露「是否有这条路径」而非「节点具体值」。

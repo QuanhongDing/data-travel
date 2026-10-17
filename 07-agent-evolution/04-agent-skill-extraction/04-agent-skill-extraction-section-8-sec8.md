@@ -36,7 +36,7 @@
 
 **2. 参考答案框架**
 
-**第一层：先立轴——三种"知识注入方式"的对照。**
+**第一层：先立轴——四种"知识注入方式"的对照。**
 
 | 维度 | Prompt Engineering | RAG | Fine-tuning | Skill Extraction |
 | --- | --- | --- | --- | --- |
@@ -46,11 +46,11 @@
 | 典型回答 | "你是 XX 角色" | "根据文档…Q3 营收…" | "永远用古文回答" | "按退款流程：①验证订单…" |
 | 主要回答的问题 | 指令 / 风格 / 边界 | What（是什么） | 行为模式 / 风格 | How（怎么做） |
 
-**第二层：Skill Extraction 解决 RAG 不解决的问题。** RAG 的本质是「**知识检索**」——把外部文档里的事实拉进上下文，它的检索单元是「事实块」「段落」「向量」，擅长回答"知识是 X / 制度是 Y"类问题。但 Agent 真正在生产里消耗的是多步骤操作——退款要"先验证订单、再算金额、再调支付、再通知用户"，这是一个**带因果顺序的程序**，RAG 检索回的知识块不会自动帮你排序与执行，更不会帮你处理分支与失败回滚。Skill Extraction 恰恰把"如何做一个多步骤任务"沉淀为可执行模板，可被 Agent 在合适意图下直接调用，这恰好补上了 RAG 的空白。Anthropic 在《Building effective agents》（2024）的工程总结里把 Agent 工具与 Skill 的区别概括为："Tools 提供原子能力，Skills 编排原子能力"。
+**第二层：Skill Extraction 解决 RAG 不解决的问题。** RAG 的本质是「**知识检索**」——把外部文档里的事实拉进上下文，它的检索单元是「事实块」「段落」「向量」，擅长回答"知识是 X / 制度是 Y"类问题。但 Agent 真正在生产里消耗的是多步骤操作——退款要"先验证订单、再算金额、再调支付、再通知用户"，这是一个**带因果顺序的程序**，RAG 检索回的知识块不会自动帮你排序与执行，更不会帮你处理分支与失败回滚。Skill Extraction 恰恰把"如何做一个多步骤任务"沉淀为可执行模板，可被 Agent 在合适意图下直接调用，这恰好补上了 RAG 的空白。Tools 与 Skills 之间的分工可以概括为一句话："Tools 提供原子能力，Skills 编排原子能力"（这是本书对这一分工的归纳性表述，非引自某一具名文献；本节无法为该提法给出一条可核验的原始出处，引用时请自行查证）。
 
-**第三层：Skill Extraction 相对微调的优势。** 微调是"内化能力"——改的是模型参数，成本是 GPU 小时数与数据集构建。Skill 是"**外挂能力**"——它以结构化文本形式存在，可以**秒级热更新、A/B 实验、按租户隔离**。这一点对生产系统至关重要：当某条业务规则（如合规口径）变化时，等重训模型上线要等几天，而改一个 Skill 的步骤几乎是即时生效。Cognition Labs 公开介绍 Devin 的演进路线时也强调，**将"会做的事"外化为可审计的 Skill**，比持续微调模型更可控。
+**第三层：Skill Extraction 相对微调的优势。** 微调是"内化能力"——改的是模型参数，成本是 GPU 小时数与数据集构建。Skill 是"**外挂能力**"——它以结构化文本形式存在，可以**秒级热更新、A/B 实验、按租户隔离**。这一点对生产系统至关重要：当某条业务规则（如合规口径）变化时，等重训模型上线要等几天，而改一个 Skill 的步骤几乎是即时生效。Cognition Labs 公开介绍 Devin 的演进路线时也强调，**将"会做的事"外化为可审计的 Skill**，比持续微调模型更可控（本节无法核验该说法的公开出处，引用时请自行查证）。
 
-**第四层：不可替代性——Skill Extraction 是 Agent 的"程序性记忆"。** 这一观点在学术与工业界有清晰对应：DeepMind 在 2024 年发表的 **Reflexion**（Shinn et al., NeurIPS 2024）明确把 Self-Reflection 沉淀为「**verbal reinforcement**」（语言化强化记忆），把成功经验变成可重读的"反思文本"——这本质上就是 Skill Extraction。NVIDIA 与斯坦福在 **Voyager**（Wang et al., 2023-11）中更进一步：在 Minecraft 中用一个常驻的 **Skill Library**（不断增长的代码技能库）让 Agent 终身学习，并把每个 Skill 写成可组合、可检索的描述块——这正是 Skill Extraction 不可替代的工业实证。
+**第四层：不可替代性——Skill Extraction 是 Agent 的"程序性记忆"。** 这一观点在学术与工业界有清晰对应：**Reflexion**（Shinn et al., NeurIPS 2024）明确把 Self-Reflection 沉淀为「**verbal reinforcement**」（语言化强化记忆），把成功经验变成可重读的"反思文本"——这本质上就是 Skill Extraction。NVIDIA 与斯坦福在 **Voyager**（Wang et al., 2023-11）中更进一步：在 Minecraft 中用一个常驻的 **Skill Library**（不断增长的代码技能库）让 Agent 终身学习，并把每个 Skill 写成可组合、可检索的描述块——这正是 Skill Extraction 不可替代的工业实证。
 
 **第五层：落点——Skill Extraction 在自进化体系中的位置。** 一句话：**Skill Extraction 是 Agent 自进化"经验→资产"的最后一公里**。它连接"行为日志"与"资产注册中心"，只有它能把离散的轨迹沉淀为可复用、可治理、可计量的资产。这是 RAG / 微调都做不到的——前者不沉淀执行经验，后者改了不可热替换。
 
@@ -64,15 +64,15 @@
 **4. 追问预测**
 
 - **「Skill 和 Tool 怎么区分？边界在哪？」** 答：**Tool 是原子动作**（一次 API 调用、一个数据库查询），**Skill 是 Tool 的编排**（多个 Tool 的有序组合 + 成功标准 + 失败回滚）。工程上 Tool 数量通常在几十到几百，Skill 数量可以扩到数千。
-- **「RAG 和 Skill 同时使用，怎么避免冲突？」** 答：分层语义——RAG 给"是什么"的上下文，Skill 给"怎么做"的执行模板；调用顺序是 Query 理解 → RAG 拉事实 → 选 Skill → 按 Skill 步骤执行。中后台可见 Anthropic 在 2024 年公开的多 Agent 工程实践。
+- **「RAG 和 Skill 同时使用，怎么避免冲突？」** 答：分层语义——RAG 给"是什么"的上下文，Skill 给"怎么做"的执行模板；调用顺序是 Query 理解 → RAG 拉事实 → 选 Skill → 按 Skill 步骤执行。可参考 Anthropic 在 2024 年公开的多 Agent 工程实践。
 - **「Skill Extraction 适合所有 Agent 场景吗？」** 答：不是。**稳定高频任务**（客服常规操作、代码重构模式）收益最大；**开放式生成**（创意写作、研究探索）反而可能因 Skill 库"过度结构化"压制多样性。
 - **「和 Procedural Memory（程序性记忆）是什么关系？」** 答：Procedural Memory 是认知科学里的概念（与 Semantic / Episodic 并列），**Skill Extraction 是 Procedural Memory 的工程化实现**——前者是抽象类别，后者是具体产出形式。
 
 **5. 参考资料**
 
-- Noah Shinn 等（DeepMind / Northeastern 等）《Reflexion: Language Agents with Verbal Reinforcement Learning》，NeurIPS 2024——把"自我反思 → 语言化强化记忆 → 沉淀为可复用 Skill"作为完整闭环提出，是 Skill Extraction 学术定义的关键来源。
+- Noah Shinn 等（Northeastern 等）《Reflexion: Language Agents with Verbal Reinforcement Learning》，NeurIPS 2024——把"自我反思 → 语言化强化记忆 → 沉淀为可复用 Skill"作为完整闭环提出，是 Skill Extraction 学术定义的关键来源。
 - Guanzhi Wang 等（NVIDIA / Stanford / Caltech）《Voyager: An Open-Ended Embodied Agent with Large Language Models》，2023-11 arXiv——Minecraft 中"自动技能库发现 + Skill Library 终身增长"的原始系统，是 Skill Extraction 在开放环境里的标志工作。
-- Anthropic Engineering Blog《Building effective agents》（2024-10）——对 Tool / Skill / Prompt / Workflow 关系的清晰工程总结，强调 Skills 是"工具的编排"。
+- Anthropic Engineering Blog《Building effective agents》（2024-10）——对 Tool / Prompt / Workflow 关系的清晰工程总结；该文对「Skills 是工具的编排」这一提法的表述，本节无法核验，引用时请对照原文。
 - Lilian Weng（前 OpenAI）博客《LLM-powered Autonomous Agents》——程序性记忆 vs 陈述性记忆的概念区分及其在 Agent 中的落地。
 - Harrison Chase 等（LangChain）公开工程文档与 LangGraph 设计材料——Agent 状态 / 长期记忆 / Skill 工具化的工程实现范式。
 - **蚂蚁集团的金融风控 Agent** —— 把「反欺诈识别 → 拦截 → 申诉处理」的多步流程沉淀为可热更新的 Skill Library，对比微调模型可秒级替换合规口径，是 Skill「外挂能力 vs 内化能力」论点的典型工业印证。
@@ -123,15 +123,15 @@
 
 **第二层：每段的技术要点。**
 
-- **① Trajectory Storage**：Agent 每一步（tool call / LLM 决策 / 中间观察）需要完整埋点。一个标准 schema 是 `{session_id, step_idx, ts, intent, action, observation, reward}`。**工程关键**是事件顺序必须按 wall-clock 与逻辑序双向标记，便于事后分析成败因果。LangGraph 在 2024 年的 StateGraph 设计中明确把每步状态作为一等公民写入持久化层。存储选型上，**ClickHouse / Parquet on Iceberg** 是工业界偏好的方案（写吞吐 + 列存压缩 + 时间分区），Cursor 公开技术博客提到他们使用近实时事件管道收集每个 Composer 调用的轨迹。
+- **① Trajectory Storage**：Agent 每一步（tool call / LLM 决策 / 中间观察）需要完整埋点。一个标准 schema 是 `{session_id, step_idx, ts, intent, action, observation, reward}`。**工程关键**是事件顺序必须按 wall-clock 与逻辑序双向标记，便于事后分析成败因果。LangGraph 在 2024 年的 StateGraph 设计中明确把每步状态作为一等公民写入持久化层。存储选型上，**ClickHouse / Parquet on Iceberg** 是工业界偏好的方案（写吞吐 + 列存压缩 + 时间分区），Cursor 公开技术博客提到他们使用近实时事件管道收集每个 Composer 调用的轨迹（本节无法核验该说法的公开出处，引用时请自行查证）。
 
-- **② Cleaning & Normalization**：三件事——**截断失败轨迹**（用 reward 信号剔除半完成会话）、**参数归一化**（时间戳统一 UTC、参数键标准化，便于后续 embedding）、**去重**（同一意图的执行路径常常高度相似，去重是后续聚类质量的前提）。失败剔除的阈值通常取"完成度 + 至少一次成功子步"。Alibaba 通义实验室在公开材料里强调"日志质量直接决定 Skill 质量"。
+- **② Cleaning & Normalization**：三件事——**截断失败轨迹**（用 reward 信号剔除半完成会话）、**参数归一化**（时间戳统一 UTC、参数键标准化，便于后续 embedding）、**去重**（同一意图的执行路径常常高度相似，去重是后续聚类质量的前提）。失败剔除的阈值通常取"完成度 + 至少一次成功子步"。Alibaba 通义实验室在公开材料里强调"日志质量直接决定 Skill 质量"（本节无法核验该说法的公开出处，引用时请自行查证）。
 
-- **③ Embedding & Clustering**：轨迹先用 LLM Encoder（如 `text-embedding-3-large`、`BGE-M3`、`Sentence-BERT`）编码成向量；接下来聚类，主流是 **HDBSCAN**（自动选 ε，密度不均的簇也能识别）。Voyager 系统的设计明确指出："**Skill Library 用常驻向量库做近邻检索**"。生产中还会做第二层聚类（按参数类型归并）。
+- **③ Embedding & Clustering**：轨迹先用 LLM Encoder（如 `text-embedding-3-large`、`BGE-M3`、`Sentence-BERT`）编码成向量；接下来聚类，主流是 **HDBSCAN**（自动选 ε，密度不均的簇也能识别）。Voyager 系统的 **Skill Library** 以常驻向量库做近邻检索（本节无法核验其原文的确切表述，引用时请对照论文）。生产中还会做第二层聚类（按参数类型归并）。
 
-- **④ LLM-based Abstraction**：把每个轨迹簇喂给 LLM（GPT-4 / Claude / Gemini-Pro），prompt 强制产出**结构化 Skill 模板**——含步骤列表、参数、触发条件、成功标准、失败回滚。**关键工程约束**：prompt 必须包含"参数化""可验证""含回滚"三条硬要求，否则 LLM 容易产出"叙事型"而非"可执行型" Skill。Anthropic 在 Claude 工具用法的工程文档里给出过类似的"结构化工具定义"范式。
+- **④ LLM-based Abstraction**：把每个轨迹簇喂给 LLM（GPT-4 / Claude / Gemini-Pro），prompt 强制产出**结构化 Skill 模板**——含步骤列表、参数、触发条件、成功标准、失败回滚。**关键工程约束**：prompt 必须包含"参数化""可验证""含回滚"三条硬要求，否则 LLM 容易产出"叙事型"而非"可执行型" Skill。Anthropic 在 Claude 工具用法的工程文档里给出过类似的"结构化工具定义"范式（本节无法核验该说法的公开出处，引用时请自行查证）。
 
-- **⑤ Verification**：双轨——**离线**在保留标注集上跑命中率（hit_rate）和准确率（quality），**在线**做 A/B 实验，监控真实业务指标（CSAT / 解决率 / Token 节省率）。**关键阈值**：通常 `hit_rate ≥ 80%` 才能进入生产路径，低于阈值回炉抽象。Devin 的工程公开材料强调"verification 不是事后审核，而是流水线的一等模块"。
+- **⑤ Verification**：双轨——**离线**在保留标注集上跑命中率（hit_rate）和准确率（quality），**在线**做 A/B 实验，监控真实业务指标（CSAT / 解决率 / Token 节省率）。**关键阈值**：通常 `hit_rate ≥ 80%` 才能进入生产路径，低于阈值回炉抽象。Devin 的工程公开材料强调"verification 不是事后审核，而是流水线的一等模块"（本节无法核验该说法的公开出处，引用时请自行查证）。
 
 - **⑥ Skill Library**：入库到 **结构化的 Skill Store**（Postgres + Vector 索引 / 专用 Skill DB），含 Owner、版本号、Skill Hash、上游 Cluster Id、评估报告等元数据。Schema 应强制结构化——YAML / JSON Schema，避免 Skill 描述失控。这一层与第六章"资产化 / Asset Registry"天然联动。
 
@@ -141,7 +141,7 @@
 
 - **轨迹量级**：成熟 Agent 单日轨迹可达 100 万+ 级。Embedding 算力昂贵，应做**粗筛 + 精筛**两段（按意图分类后只对高频意图做精 Embedding）。
 - **聚类可扩展性**：HDBSCAN 在 50 万级向量上单机能跑；超过要走 **Spark / Ray 分布式**或**增量聚类**（仅重算受新轨迹影响的簇）。
-- **LLM 抽象的成本**：大簇抽象一次要消耗数万 token；用**轻量模型（GPT-4o-mini / Claude Haiku）预筛候选再用大模型精抽**是常见解法。阿里通义实验室公开提到这一策略。
+- **LLM 抽象的成本**：大簇抽象一次要消耗数万 token；用**轻量模型（GPT-4o-mini / Claude Haiku）预筛候选再用大模型精抽**是常见解法。阿里通义实验室公开提到这一策略（本节无法核验该说法的公开出处，引用时请自行查证）。
 - **幻觉 Skill**：LLM 偶尔会输出"看起来合理但执行会炸"的步骤，必须靠验证集+回放机制兜底。
 - **Skill 漂移**：业务变化后旧 Skill 命中率下降，需要**自动退役机制**（命中率 7 天下降超 30% 自动标红）。
 - **冷启动**：没有任何轨迹时，回退到"**种子 Skill 库** + Self-Play 生成初始轨迹"。
@@ -168,7 +168,7 @@
 
 - **「如果日增 100 万条轨迹，聚类怎么扩？」** 答：两段式——先用意图分类模型粗筛到 N 个桶，每个桶内部独立 Embedding + 聚类；同时维护增量聚类（只对受新轨迹影响的簇做局部重聚）。背景可参考 LangChain 与 LlamaIndex 在 RAG 增量索引上的实践思路。
 - **「LLM 抽象时怎么防幻觉？」** 追问见 §7.4.4。
-- **「Skill 入库时如何决定 Owner？」** 答：**业务域映射规则**（客服类归客服团队 Owner），同时强制无 Owner Skill 不能上生产路径。Cognition Labs 内部 Skill Library 的公开材料强调明确 Owner 是治理的第一步。
+- **「Skill 入库时如何决定 Owner？」** 答：**业务域映射规则**（客服类归客服团队 Owner），同时强制无 Owner Skill 不能上生产路径。Cognition Labs 内部 Skill Library 的公开材料强调明确 Owner 是治理的第一步（本节无法核验该说法的公开出处，引用时请自行查证）。
 - **「Skill 检索怎么避免召回过多无关 Skill？」** 答：**意图路由 → Embedding Top-K → LLM 重排**三段；Top-K 不能大（≤ 5），否则 LLM 选不准；同时 Skill 的"触发条件（trigger）"字段必须显式描述意图，便于意图路由过滤。
 - **「怎么评估整条流水线的成本？」** 追问见 §7.4.6。
 
@@ -177,12 +177,12 @@
 - Guanzhi Wang 等《Voyager: An Open-Ended Embodied Agent with Large Language Models》，arXiv 2023-11——端到端 Skill Library 构建流水线的开创性系统。
 - Noah Shinn 等《Reflexion》，NeurIPS 2024——离线 + 在线自我反思 + Skill 积累的具体机制。
 - LangChain / LangGraph 官方文档——Agent 状态与轨迹持久化的工程范式。
-- Anthropic Engineering Blog《Building effective agents》（2024-10）——工具与 Skill 编排的工程纪律。
+- Anthropic Engineering Blog《Building effective agents》（2024-10）——Tool 定义与 Workflow 编排的工程纪律；该文对「Skill 编排」的表述本节无法核验，引用时请对照原文。
 - Lilian Weng（前 OpenAI）博客《LLM-powered Autonomous Agents》——长期记忆 / 程序性记忆 / Trajectory 结构化存储的方法论总结。
 - Alibaba 通义实验室、字节 Coze、智谱 GLM 等公开技术博客中关于 Agent 平台 Skill 治理与冷启动的工程经验（2024-2025）。
 - **宁德时代电池质检工业大数据平台** —— 把电池缺陷检测工程师的操作轨迹按「埋点 → 清洗 → 聚类 → LLM 抽象 → 离线回放验证」流水线沉淀为「缺陷识别 Skill Library」，用于辅助新员工上岗，体现制造场景下行为日志到 Skill 的端到端闭环。
 - **滴滴的司机端调度 Agent** —— 从每日亿级司机行为轨迹中挖掘「高峰调度、判责申诉、运力调度」等高频流程的 Skill 模板，验证百万级轨迹规模下的「粗筛 + 精筛」两段聚类与增量抽象策略。
-- **京东零售客服行为日志聚类** —— 基于售后客服坐席的真实会话轨迹做 Embedding + 抽象，沉淀覆盖 70+ 高频售后场景的「售后处理 Skill Library」，证明电商客服域 Skill Mining 流水线的可复用性。
+- **京东零售客服行为日志聚类** —— 基于售后客服坐席的真实会话轨迹做 Embedding + 抽象，沉淀为覆盖多个高频售后场景的「售后处理 Skill Library」，证明电商客服域 Skill Mining 流水线的可复用性（覆盖的场景数与案例出处本书无法核验，引用时请自行查证）。
 - **京东物流** —— 京东物流仓储数据中台——AGV、库存、订单的多源整合与实时监控。
 - **滴滴** —— 滴滴实时订单与司机画像——万级 Flink 作业 + Iceberg 增量读下的冲突与 compaction 治理。
 - **货拉拉** —— 货拉拉城配实时调度——Flink 实时订单分发 + Spark 离线对账 + 路径优化。
@@ -226,7 +226,7 @@
 - **原理**：层次化 DBSCAN——先构造 mutual-reachability 距离，再凝聚式构建簇树，最后按 stability 选择稳定簇。核心优势是**无需预设 ε** 且**天然支持多密度簇**。
 - **优势**：① ε 不敏感——自动选密度阈值；② 在密度极不均的轨迹分布上仍能识别出小簇；③ 兼容 DBSCAN 的噪声点处理；④ 计算稳定（复杂度 O(N log N)）。
 - **劣势**：① `min_cluster_size` 仍要设置，太大吞小簇，太小碎屑簇；② 比 DBSCAN 慢（多一遍层次化计算）；③ 高维下同样要先降维；④ 簇边界不锐利——同一轨迹在不同 `min_cluster_size` 下可能被划入不同簇。
-- **参数经验**：`min_cluster_size = 50~500` 视数据量与噪声容忍度；推荐**两层 HDBSCAN**——先大簇、再小簇（Recompute within each big cluster）。Voyager 系统的实现里就是这么做的。
+- **参数经验**：`min_cluster_size = 50~500` 视数据量与噪声容忍度；推荐**两层 HDBSCAN**——先大簇、再小簇（Recompute within each big cluster）。这是工程上常见的一种分层聚类做法（本节无法核验 Voyager 原文是否采用同一实现，引用时请对照论文）。
 
 **第四层：基于 Transformer 的序列聚类。**
 
@@ -268,7 +268,7 @@
 
 - Ricardo J. G. B. Campello 等《Hierarchical Density Estimates for Data Clustering, Visualization, and Outlier Detection》，ACM TKDD 2015——HDBSCAN 的原始论文。
 - Martin Ester 等《A Density-Based Algorithm for Discovering Clusters in Large Spatial Databases with Noise》，KDD 1996——DBSCAN 的原始论文。
-- Guanzhi Wang 等《Voyager》，arXiv 2023-11——Miner-T / Skill Library 实现中 HDBSCAN 与增量聚类的具体用法。
+- Guanzhi Wang 等《Voyager: An Open-Ended Embodied Agent with Large Language Models》，arXiv 2023-11——Minecraft 中"自动课程 + Skill Library 终身增长"的原始系统；该文的 Skill Library 以 LLM 生成技能 + 向量检索为主，其聚类环节本节无法核验。
 - McInnes L. 等《UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction》，arXiv 2018——HDBSCAN 前置降维的常用搭配。
 - LlamaIndex / LangChain 官方文档——轨迹 Embedding 与语义检索在 Agent 平台中的工程实现。
 - Hugging Face / Sentence-Transformers 官方文档——轨迹 Encoder 选型与训练范式。
@@ -333,7 +333,7 @@
 - **离线回放校验**：把 Skill 喂回沙箱 Agent 跑历史任务分布，看 hit_rate / quality。这一步是命中率红线。
 - **在线 A/B 校验**：灰度上线 1% ~ 5% 流量，监控真实业务指标（CSAT、解决率、Token 节省率）。
 - **LLM-as-Judge 抽样审核**：每天随机抽 5% 已上线 Skill，让一个独立的 LLM Judge 对照原始轨迹重审"语义一致性 + 步骤完备性 + 危险操作审查"。异常标红回炉。
-- **人类兜底**：高风险域（金融、医疗、合规）的 Skill 必须有 **Human-in-the-Loop** 强制审核；首次入库前必须有 Owner 与 Reviewer 双签。Cognition Labs 的 Devin 工程实践与阿里通义的 Skill 治理都明确"高风险 Skill 上线必须人工复核"。
+- **人类兜底**：高风险域（金融、医疗、合规）的 Skill 必须有 **Human-in-the-Loop** 强制审核；首次入库前必须有 Owner 与 Reviewer 双签。Cognition Labs 的 Devin 工程实践与阿里通义的 Skill 治理都明确"高风险 Skill 上线必须人工复核"（本节无法核验该说法的公开出处，引用时请自行查证）。
 - **过期退役**：Skill 命中阈值监控——7 天 hit_rate 下降超 30% 自动冻结、推送 Reviewer。
 
 **第五层：验证集如何构建。**
@@ -346,7 +346,7 @@
 
 实践做法：
 
-- **冷启动阶段**：用人工标注构造基准验证集（数百到数千条带 Skill 标注与预期结果的样本）。Anysphere Cursor 公开提到他们的 Code Skill 评估以"人工标注目录 + LLM Judge 二审"为基准。
+- **冷启动阶段**：用人工标注构造基准验证集（数百到数千条带 Skill 标注与预期结果的样本）。Anysphere Cursor 公开提到他们的 Code Skill 评估以"人工标注目录 + LLM Judge 二审"为基准（本节无法核验该说法的公开出处，引用时请自行查证）。
 - **运行阶段**：滚动收集线上未识别 Skill 的失败案例，定期补充到验证集，防止"分布漂移——验证集过好看线上一塌糊涂"。
 - **对抗样本**：故意构造含诱导性参数的轨迹（如参数被伪装成实际安全参数的形态），测试 Skill 抽象是否会"上当"。
 
@@ -454,7 +454,7 @@
 - **Skill 沉淀**：
   - 成功 → 把"读 Issue → 复现 Bug → 定位 → 修 → 验证"的步骤序列沉淀为 Skill；
   - 失败 → 拆解失败原因（定位错 / 编译错 / 测试不全），尝试在 Skill Library 中**新增**细分 Skill（"读 stack trace 找异常类""反向 trace 调用栈"）。
-- **真实工业验证**：Cognition Labs 的 **Devin** 在 SWE-bench 上的领先结果，部分依赖了 Self-Play + Self-Reflection 训练范式；Cursor 公开技术博客提到 Composer 内部也用 Self-Play 生成多语言重构训练样例。DeepMind 的 **AlphaProof** 与 **AlphaCode 2** 是更宏观层面的 Self-Play 在数学与算法上的成功。
+- **真实工业验证**：Cognition Labs 的 **Devin** 在 SWE-bench 上的领先结果，部分依赖了 Self-Play + Self-Reflection 训练范式；Cursor 公开技术博客提到 Composer 内部也用 Self-Play 生成多语言重构训练样例（本节无法核验该说法的公开出处，引用时请自行查证）。DeepMind 的 **AlphaProof** 与 **AlphaCode 2** 是更宏观层面的 Self-Play 在数学与算法上的成功。
 
 **第六层：场景适配——哪些适合 Self-Play，哪些不适合。**
 
@@ -473,7 +473,7 @@
 - **把 Self-Play 当万能解。** 它的前提是"任务可机器判定"——在客服、医疗、法律等主观任务上根本玩不转。
 - **忽视奖励黑客。** Self-Play 的最大反模式——Agent 用投机取巧骗过奖励信号，Skill Library 看起来在涨，但实质能力没提升。
 - **没有区分 Self-Play 与 Synthetic Data Generation。** Self-Play 是"在交互中学"，纯合成数据生成（如用 LLM 批量造训练样本）只是数据增广，不是 Self-Play。
-- **忽略计算成本。** 一轮 Self-Play 往往消耗数百到数千 GPU 小时，Cerebras / DeepMind 等机构都配备专用算力。
+- **忽略计算成本。** 一轮 Self-Play 往往消耗数百到数千 GPU 小时（该量级属【经验】档表述，本节无法给出可核验的公开出处），Cerebras / DeepMind 等机构都配备专用算力。
 
 **4. 追问预测**
 
@@ -593,7 +593,7 @@ ROI 是 Skill Library 上线决策的关键依据，需要从**收益侧**与**�
 1. **Token 节省收益**：`ΔToken = (原每任务 token) - (用 Skill 后每任务 token)` → `节省费用 = ΔToken × Token 单价 × 月调用次数`。
 2. **一致性收益**：CSAT / 解决率提升带来的业务价值 = `ΔCSAT × 单会话业务权重 × 月调用次数`。
 3. **人力节省**：自动提取减少的人工 Skill 编写工时 = `Δ工程师时 × 时薪 × 半年 Skill 总数`。
-4. **新场景加速**：冷启动从 2 周降至 1 天——按业务 ROI 折算。
+4. **新场景加速**：冷启动周期从周级缩短到天级——按业务 ROI 折算（该幅度属【经验】档示例，本节无法给出可核验的公开出处）。
 
 **成本侧**：
 - **平台建设成本**：Embed 服务器 + 聚类 + LLM 抽象 + 存储 + 检索服务的建设摊销。
@@ -607,7 +607,7 @@ ROI = (Token 节省 + 一致性提升 + 人力节省 + 冷启动加速收益)
         / (平台建设 + 运行 + 治理成本)
 ```
 
-**经验阈值**（来自 Anysphere Cursor / Cognition Devin / 阿里通义等公开材料）：
+**经验阈值**（【经验】档：以下为经验参考值，本书无法为这些数值给出可核验的公开出处，引用时请自行查证）：
 - 健康 ROI 通常在 12-18 个月内达到 ≥ 3×。
 - Token 节省在稳定场景下可达 30-50%。
 - CSAT 提升在客服场景下约 5-15%（一致性收益）。
@@ -642,16 +642,16 @@ ROI = (Token 节省 + 一致性提升 + 人力节省 + 冷启动加速收益)
 **5. 参考资料**
 
 - LangChain Hub、Hugging Face Spaces 等 Skill / Prompt 共享平台的公开材料——跨组织 Skill 共享的工程范式。
-- Meta AI《Faiss: A Library for Efficient Similarity Search》——大规模向量检索的工业实现（涵盖 HNSW / IVF 等索引）。
-- Yu. A. Malkov 与 D. A. Yashunin（HSE 等）《Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs》——HNSW 原始论文，是 Milvus / HNSWlib / FAISS-HNSW 等工业向量库的算法基础。
-- Anthropic Engineering Blog《Building effective agents》（2024-10）——Skill 治理、版本控制、权限审计的工程纪律。
+- Johnson / Douze / Jégou（Meta AI Research）《Billion-scale Similarity Search with GPUs》，IEEE Trans. Big Data（2019；arXiv 2017 预印本）——Faiss 库的配套论文，大规模向量检索的工业实现（涵盖 HNSW / IVF 等索引）。
+- Yu. A. Malkov 与 D. A. Yashunin（HSE 等）《Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs》，IEEE TPAMI 2020（arXiv 2016 预印本）——HNSW 原始论文，是 Milvus / HNSWlib / FAISS-HNSW 等工业向量库的算法基础。
+- Anthropic Engineering Blog《Building effective agents》（2024-10）——Agent Workflow 与 Tool 设计的工程总结；Skill 治理、版本控制、权限审计的工程纪律不宜归给该文（本节无法为该归属给出可核验的出处，引用时请自行查证）。
 - Lilian Weng（前 OpenAI）博客《LLM-powered Autonomous Agents》——长期记忆的检索架构与容量管理。
-- Anysphere / Cursor 公开技术博客——Composer Skill Library 的多语言重构、Token 节省与一致性提升案例。
-- Cognition Labs 关于 Devin 的公开技术报告——SWE-bench 上的 Skill 命中率与 ROI 数据。
+- Anysphere / Cursor 公开技术博客——Composer Skill Library 的多语言重构与一致性实践；其中 Token 节省与一致性提升的具体数字，本书无法给出可核验的公开出处（同 §7.4.6 的说明），引用时请自行查证。
+- Cognition Labs 关于 Devin 的公开技术报告——Devin 的训练与评测工程实践；SWE-bench 上的 Skill 命中率与 ROI 数据，本书无法给出可核验的公开出处（同 §7.4.6 的说明），引用时请自行查证。
 - 阿里通义实验室、字节 Coze 等公开材料——大规模 Agent 平台的 Skill 治理经验（2024-2025）。
-- **京东数科金融风控 10 万+ Skill 库** —— 采用「意图路由 → Embedding 召回 → LLM 重排」三段式检索架构，强制 Top-K ≤ 5，并对核心风控 Skill 做双链路热备 + 全量审计日志，体现金融域 Skill 在权限 / 合规 / 检索精度上的最严要求。
+- **京东数科的金融风控 Skill 库** —— 采用「意图路由 → Embedding 召回 → LLM 重排」三段式检索架构，强制 Top-K ≤ 5，并对核心风控 Skill 做双链路热备 + 全量审计日志，体现金融域 Skill 在权限 / 合规 / 检索精度上的最严要求（该案例的 Skill 库规模与出处本书无法核验，引用时请自行查证）。
 - **中信证券投研 Agent 的分级 Skill Library** —— 按 P0/P1/P2 分级治理投研类 Skill，对高风险 Skill（涉及交易信号生成）做强制双签 + 灰度上线 + 过期自动冻结，体现证券域 Skill 的合规治理与版本管控范式。
-- **屈臣氏零售 CRM Agent 的 1 万+ 营销 Skill 治理** —— 按业务域划 Owner、每月清理僵尸 Skill、用 Embedding 余弦相似度做重复 Skill 合并，体现零售域跨门店 / 跨业态复用场景下的 Skill 生命周期管理实践。
+- **屈臣氏零售 CRM Agent 的营销 Skill 治理** —— 按业务域划 Owner、每月清理僵尸 Skill、用 Embedding 余弦相似度做重复 Skill 合并，体现零售域跨门店 / 跨业态复用场景下的 Skill 生命周期管理实践（该案例的 Skill 库规模与出处本书无法核验，引用时请自行查证）。
 - **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
 - **京东数科** —— 京东数科的金融特征平台——支撑消费分期、信用支付等场景，特征口径与模型版本强一致。
 - **平安银行** —— 平安银行的数据分级与脱敏实践——把客户、账户、交易按敏感度分级，配合 ABAC 权限与脱敏网关，是国内金融业最完整的案例。

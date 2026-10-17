@@ -84,13 +84,13 @@
 - **「Coordinator 挂了怎么办？」** 答：Coordinator 自身无状态，关键路径上的内存（规划结果、运行时统计）都不持久化；部署上启用多 Coordinator + 客户端轮询（Trino CLI / JDBC 自动 failover）。Worker 上的 Task 会被**作废**（不在 Stage 中点持久化），需要客户端重发查询。Trino 较新版本引入 Exchange Manager（基于对象存储）实现部分容错，正在向 SPof-free 演进。
 - **「一条 Stage 里有 1000 个 Driver 跑慢，怎么办？」** 答：先看 Web UI 的 Stage 详情页——若 Driver 间输入大小差异巨大（长尾），定位数据倾斜键；若输入相近但耗时差异大，查 GC、网络/磁盘抖动；若所有 Driver 都慢，看数据源是否到达瓶颈（MySQL 连接池满 / Hive 文件数过多）。
 - **「Trino 怎么做到毫秒级 Stage 启动？」** 答：内存流水线 + JVM JIT + 零拷贝 Page（编码后的列存块跨 Driver 共享）+ 预热 JIT（HOT 方法内联）。代价是首次启动慢（JIT 预热阶段）。
-- **「你会在生产上跑多大集群？Coordinator 撑得住吗？」** 答：Meta Presto 集群规模 1000+ Worker 单集群，单 Coordinator 撑住（规划极轻）；但仍会**水平拆 Coordinator**（独立承接不同部门、不同 Resource Group），避免单点规划压力。
+- **「你会在生产上跑多大集群？Coordinator 撑得住吗？」** 答：Meta Presto 单集群规模在 1000+ Worker（该节点数量级本节无法给出可核验的具体出处，按【经验】档处理），单 Coordinator 撑住（规划极轻）；但仍会**水平拆 Coordinator**（独立承接不同部门、不同 Resource Group），避免单点规划压力。
 
 **5. 参考资料**
 
 - Trino 官方文档 Architecture 章节——Coordinator、Worker、Exchange 的权威定义与配置项。
-- Martin Grund 等《Presto: SQL on Everything》（IEEE Data Engineering Bulletin 2019）——Presto 的架构论文，Coordinator/Worker 模型的原始出处。
-- Raghav Sethi 等《Presto Architecture》（Meta Engineering Blog 公开材料）——Meta 把 Presto 从 0 推到 1000+ 节点的实战总结。
+- 《Presto: SQL on Everything》（ICDE 2019）——Presto 的架构论文，Coordinator/Worker 模型的原始出处。（原稿在本节不同条目里把该论文的第一作者分别记为 Martin Grund、Piotr Findeisen，发表刊物也记为 IEEE Data Engineering Bulletin 2019；本仓其它章节统一写作「Presto: SQL on Everything，ICDE 2019」，本节按后者统一，作者首位与发表刊物以论文原文为准，引用前请自行核对。）
+- Raghav Sethi 等关于 Presto 架构的 Meta Engineering Blog 公开材料（题名与发布年份本节无法核实，引用前请自行查证）——Meta 把 Presto 从 0 推到 1000+ 节点的实战总结。
 - Starburst（Trino 商业化公司）的《Trino Engineering Blog》——Trino 400+ 版本架构演进、Exchange Manager 容错、Resource Group 设计的官方权威材料。
 - **Netflix 的 Presto 集群调度演进** —— 从单 Coordinator 到多 Coordinator 集群（按部门拆分），把规划压力与查询负载解耦，是大型互联网企业 Presto/Trino 部署的真实形态。
 - **LinkedIn 的 Presto on Pinot 联邦查询** —— Presto 既查湖（Hive）又查 OLAP（Pinot），Coordinator 通过 Connector SPI 把两种统计信息都拉进 CBO，是跨源 CBO 的代表性案例。
@@ -100,7 +100,7 @@
 - **中国石油** —— 中国石油勘探数据湖——地震、测井、钻井多源异构数据入湖 + AI 油气识别。
 - **京东物流** —— 京东物流仓储数据中台——AGV、库存、订单的多源整合与实时监控。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客；其中以「XX 公司 + 公开实践 / 公开介绍」形式出现的条目，以及各条中的规模量级（节点数、数据量、PB / EB 级等）与性能类数字（延迟、可用率、加速倍数等；以上参考资料各条中的性能类数字已在相应条目内逐条标注档位），本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -145,7 +145,7 @@ Trino 把内存分为**三层 Pool**：
 | TopN / Order By | 是 | 中间 Top N 结果 spill |
 | TableScan / Exchange / Filter | 否 | 这些不持有"中间状态"，不需 spill |
 
-**关键认知**：Spill 会**显著拖慢查询**（5–10x 慢），且 IO 抖动可能引发 Stage 重做。生产上"让查询跑得稳"靠的是**控制进入 Worker 内存的数据量**（分区裁剪、谓词下推），而不是靠 spill 兜底。
+**关键认知**：Spill 会**显著拖慢查询**（幅度随算子、数据量与 spill 盘类型而异，本节无法给出可溯源的统一数字，此处按【经验】档处理），且 IO 抖动可能引发 Stage 重做。生产上"让查询跑得稳"靠的是**控制进入 Worker 内存的数据量**（分区裁剪、谓词下推），而不是靠 spill 兜底。
 
 **第四层：大查询 OOM 规避策略。**
 
@@ -173,7 +173,7 @@ Trino 把内存分为**三层 Pool**：
 
 **4. 追问预测**
 
-- **「OOM 后 spill 落盘，磁盘写满了怎么办？」** 答：Worker 配置 `spiller-spill-path` 用独立盘，且**监控 spill 目录磁盘用量**；当 spill 目录不足时，Driver 会拒绝 spill 直接 OOM kill，这是 last-resort 兜底。生产上需要给 spill 目录**预留 2-3x 内存大小**的磁盘。
+- **「OOM 后 spill 落盘，磁盘写满了怎么办？」** 答：Worker 配置 `spiller-spill-path` 用独立盘，且**监控 spill 目录磁盘用量**；当 spill 目录不足时，Driver 会拒绝 spill 直接 OOM kill，这是 last-resort 兜底。生产上需要给 spill 目录**预留 2-3x 内存大小**的磁盘（比例按【经验】档处理，随算子类型与数据分布而异）。
 - **「Hash Join 大表 Join 大表，怎么不让它 OOM？」** 答：让 CBO 选 HashPartitionedExchange（按 Join Key shuffle 两边到对应 Worker），而不是 BroadcastExchange——后者会把一侧全量复制到所有 Worker，必然 OOM。
 - **「Trino 和 Spark 都能 spill，区别是什么？」** 答：Spark 的 spill 走 Tungsten 的 Page 序列化（堆外 + 二进制紧凑），spill 粒度细；Trino 走 Page + 编码，spill 粒度粗。生产上**Spark 对单列宽表 spill 更友好**（典型如 Parquet 单列读），**Trino 对多列混合 spill 更友好**（典型如多维分析）。
 - **「内存 vs 线程数，哪个瓶颈更常见？」** 答：Trino 默认 Driver 数随数据量增长（`task.concurrency`），**内存瓶颈更普遍**。线程数到瓶颈通常出现在 Driver 内 IO 等待场景（如 Connector 慢响应）。
@@ -181,17 +181,17 @@ Trino 把内存分为**三层 Pool**：
 **5. 参考资料**
 
 - Trino 官方文档 Memory Management 章节——Memory Pool、Reserved Pool、User Query Memory 的权威定义与配置项。
-- Piotr Findeisen 等《Presto: SQL on Everything》——Presto 内存管理的原始论述，含 Memory Revoke 与 Spill 的实现细节。
-- Reynold Xin 等《Apache Spark: The First Decade》（ACM SIGMOD 2019）——Spark 与 Presto 内存模型的对比材料。
+- 《Presto: SQL on Everything》（ICDE 2019）——Presto 内存管理的原始论述，含 Memory Revoke 与 Spill 的实现细节。
+- Reynold Xin 等《Apache Spark: The First Decade》（ACM SIGMOD 2019）——Spark 与 Presto 内存模型的对比材料（该题名、作者与会议信息本节无法核实，引用前请自行查证）。
 - Starburst Engineering 关于 Trino Spill 改进的系列博客——Spillable Operator 的设计与生产经验。
 - **Meta Presto 内存治理实战** —— Meta 在 1000+ Worker 上把 General/Reserved Pool 配额精确到 Resource Group，按查询类型分级，是超大集群内存治理的工业范本。
-- **字节跳动 Trino 大查询治理** —— 字节通过 Resource Group + Killing 大查询 + 限并发三项措施，把集群可用率维持在 99.9%+，是国内大厂 Trino 内存治理的代表。
+- **字节跳动 Trino 大查询治理** —— 字节通过 Resource Group + Killing 大查询 + 限并发三项措施，把集群可用率维持在高位（可用率数字本节无法给出可核验的具体出处，量级按【经验】档处理），是国内大厂 Trino 内存治理的代表。
 - **阿里 MaxCompute 与自研查询引擎内存模型** —— 阿里在 MaxCompute 与自研查询引擎中对内存池的设计思想，对应国内大厂对"内存 vs 线程 vs 队列"的工程取舍。
 - **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
 - **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
 - **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客；其中以「XX 公司 + 公开实践 / 公开介绍」形式出现的条目，以及各条中的规模量级（节点数、数据量、PB / EB 级等）与性能类数字（延迟、可用率、加速倍数等；以上参考资料各条中的性能类数字已在相应条目内逐条标注档位），本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -201,7 +201,7 @@ Trino 把内存分为**三层 Pool**：
 
 - 是否理解 Connector 不是"插件"，而是**一套完整的 SPI**——它把数据源的能力（schema 读取、统计信息、谓词下推、数据读取、数据写入）**全部抽象**，让 Trino 的 CBO 能跨源做联合优化。
 - 能否说清**谓词下推的代价模型**：CBO 必须知道"哪些 Filter 能下推""下推后能减少多少数据量"，否则可能**下推错**（下推一个非确定谓词，结果不一致）。
-- 是否知道 Trino 自带**300+ Connector**（Hive / Iceberg / MySQL / Kafka / ES / Redis ...），每个 Connector 的能力差异巨大——这是"为什么 Connector 是 Trino 最大资产"的根本原因。
+- 是否知道 Trino 自带**数量众多的 Connector**（Hive / Iceberg / MySQL / Kafka / ES / Redis ...；具体计数随版本增长，本节无法给出可核验的数字，以所用版本的官方文档为准），每个 Connector 的能力差异巨大——这是"为什么 Connector 是 Trino 最大资产"的根本原因。
 - 加分项：能解释**元数据缓存**（Coordinator 缓存 Metastore schema/统计信息）与 Connector 的关系——大集群上 Metastore 是隐性瓶颈，**Connector 必须主动刷新 + 失效缓存**才能保证 CBO 决策正确。
 
 **2. 参考答案框架**
@@ -238,7 +238,7 @@ Trino 把内存分为**三层 Pool**：
 3. Optimizer 把 Project 下推到 TableScan——TableScan 只读这两列的 Parquet column chunk，跳过其他列的 IO 与解码。
 4. 如果下游还有 Join / Aggregation，过滤列进一步压缩到 `Page` 的列数。
 
-**关键收益**：列剪裁在大宽表（数百列）上收益最大——一次查询可能只读 5 列，省掉 95% 的 IO 与解码代价。
+**关键收益**：列剪裁在大宽表（数百列）上收益最大——一次查询可能只读数百列中的寥寥几列，省下的 IO 与解码代价相当可观（省下的比例取决于表的列宽分布与读取列数，本节无法给出可溯源的统一数字，此处按【经验】档处理）。
 
 **第五层：自定义 Connector 接入内部系统的步骤。**
 
@@ -262,13 +262,13 @@ Trino 把内存分为**三层 Pool**：
 
 - **「怎么判断一个谓词能不能下推？」** 答：基于数据源的物理能力——能利用索引的（等值 / `IN / 范围）下推；带函数的（`UPPER(name) = 'X'`）若数据源有相应函数（如 HBase 的 `ColumnPrefixFilter`）则可下推；带非确定性函数（`RAND()`、`NOW()`）一律不下推。
 - **「MySQL Connector 为什么很慢？」** 答：MySQL Connector 默认**不下推聚合/Join**——所有计算都在 Trino Worker，MySQL 只当数据源。生产优化手段：① 启用 `join-pushdown.enabled=true`（MySQL 8.0+ 才支持真正的 Join 下推）；② 加 `mysql.partition.column` 提升并行度；③ 用 `EXPLAIN` 看是否走了 IndexScan。
-- **「Hive Metastore 是 Connector 的瓶颈吗？」** 答：是的。**HMS 的 RPC 延迟**（通常 50-200ms）会让 Connector 启动慢，且**元数据缓存刷新不及时**会让 CBO 拿不到最新统计信息。生产上需要独立部署 HMS、用 Thrift 连接池、并对大型表开启 `hive.metastore-notification-based-refresh` 事件驱动刷新。
+- **「Hive Metastore 是 Connector 的瓶颈吗？」** 答：是的。**HMS 的 RPC 延迟**（通常是百毫秒量级的往返开销；该量级随 HMS 的部署形态、元数据规模与网络环境而异，本节无法给出可核验的具体出处，此处按【经验】档处理）会让 Connector 启动慢，且**元数据缓存刷新不及时**会让 CBO 拿不到最新统计信息。生产上需要独立部署 HMS、用 Thrift 连接池、并对大型表开启 `hive.metastore-notification-based-refresh` 事件驱动刷新。
 - **「Iceberg 和 Hive Connector 的本质区别？」** 答：Hive Connector 通过 HMS 拿 schema/统计信息；Iceberg Connector 通过 Iceberg 的 manifest 拿 schema/统计信息，**绕开 HMS 的瓶颈**——这是 Iceberg 在大表场景下比 Hive 快的核心原因。
 
 **5. 参考资料**
 
 - Trino 官方文档 Connector SPI 章节——四大件套接口的权威定义与示例代码。
-- Piotr Findeisen 等《Presto: SQL on Everything》——Connector 抽象的原始论述。
+- 《Presto: SQL on Everything》（ICDE 2019）——Connector 抽象的原始论述。
 - Apache Iceberg 官方文档 Time Travel 与 Statistics 章节——Iceberg Connector 如何利用 manifest 提供 CBO 统计信息。
 - Starburst 关于 JDBC Connector、Elasticsearch Connector、Kafka Connector 的官方文档——各 Connector 的能力差异与生产经验。
 - **Netflix 自研 Iceberg Connector 的演进** —— Netflix 在 Hive Connector 基础上扩展 Iceberg 支持，绕过 HMS 瓶颈，实现 EB 级 Iceberg 表的联邦查询。
@@ -279,7 +279,7 @@ Trino 把内存分为**三层 Pool**：
 - **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
 - **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客；其中以「XX 公司 + 公开实践 / 公开介绍」形式出现的条目，以及各条中的规模量级（节点数、数据量、PB / EB 级等）与性能类数字（延迟、可用率、加速倍数等；以上参考资料各条中的性能类数字已在相应条目内逐条标注档位），本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -308,7 +308,7 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 | 字段 | 含义 | 典型值 |
 | --- | --- | --- |
 | `softMemoryLimit` | 软上限——Group 内的查询**总量**到达此值后开始排队 | 集群内存的 50% |
-| `hardMemoryLimit` | 硬上限——Group 内查询**单 query** 内存上限 | `query.max-memory`（如 50GB） |
+| `hardMemoryLimit` | 硬上限——Group 的**聚合内存**越过此值后开始 kill 组内查询（与 `softMemoryLimit` 同为「组内聚合内存」口径，是「排队」与「kill」两道闸门，**不是单 query 上限**） | 不低于 `softMemoryLimit`；具体默认取值以所用版本的官方文档为准 |
 | `maxQueued` | 排队上限——超过此值的查询直接拒绝 | 50-100 |
 | `schedulingPolicy` | 调度策略——`weighted-fair`、`weighted`，或 `query-priority-hierarchical` | weighted-fair |
 | `softConcurrencyLimit` | 软并发上限 | 集群 CPU 核数 |
@@ -337,7 +337,8 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 [Step 4: 实时监控]                ← Prom + Grafana，看 Stage 进度、内存水位
    │
    ↓
-[Step 5: 超时 Killing]            ← query.max-run-time（默认 5 天）
+[Step 5: 超时 Killing]            ← query.max-run-time（默认取值随版本变化，
+                                    请以所用版本的 Trino Query management 官方文档为准）
                                     内存超 OOM 直接 kill
                                     排队超时 kill
    │
@@ -355,8 +356,8 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 **第六层：真实生产经验。**
 
 - **Meta Presto** —— Meta 用 Resource Group 按业务部门 + 用户类型建树（data scientist / data analyst / ETL），配额精确到 CPU 与并发数，超时交互查询直接 kill。
-- **字节 Trino 大查询治理** —— 字节通过 Resource Group + Killing 大查询 + 限并发三项措施，把集群可用率维持在 99.9%+。具体做法：① ETL 走独立 Group，配额较小；② Ad-hoc 走独立 Group，配额最大但不允许过夜任务；③ 24h+ 的任务迁移到 Spark/Flink 离线平台。
-- **Netflix Trino 限流** —— Netflix 在 Resource Group 上叠加"按表大小过滤"——CBO 在规划阶段估算查询数据量，超过 1TB 的大查询走单独的 Resource Group，配额小且排长队。
+- **字节 Trino 大查询治理** —— 字节通过 Resource Group + Killing 大查询 + 限并发三项措施，把集群可用率维持在高位（该可用率数字本节无法给出可核验的具体出处，量级按【经验】档处理）。具体做法：① ETL 走独立 Group，配额较小；② Ad-hoc 走独立 Group，配额最大但不允许过夜任务；③ 24h+ 的任务迁移到 Spark/Flink 离线平台。
+- **Netflix Trino 限流** —— Netflix 在 Resource Group 上叠加"按表大小过滤"——CBO 在规划阶段估算查询数据量，超过某个体量阈值的大查询走单独的 Resource Group，配额小且排长队（该阈值的具体数值本节无法给出可核验的具体出处，量级按【经验】档处理）。
 
 **3. 常见陷阱**
 
@@ -376,7 +377,7 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 
 - Trino 官方文档 Resource Groups 章节——Resource Group 配置的权威定义。
 - Trino 官方文档 Query Management 章节——超时、Kill、Killing 策略的权威定义。
-- Martin Grund 等《Presto: SQL on Everything》——Presto 在 Meta 内部 Resource Group 的设计。
+- 《Presto: SQL on Everything》（ICDE 2019）——Presto 在 Meta 内部 Resource Group 的设计。
 - Starburst Engineering Blog 关于 Resource Group 调优的文章——Trino 400+ Resource Group 的演进与生产经验。
 - **字节跳动 Trino 大查询治理** —— 字节是国内 Trino 大查询治理最成熟的企业之一，公开材料含 Resource Group + Killing + 限并发的具体配置。
 - **Meta Presto Resource Group 设计** —— Meta 把 Resource Group 按业务部门 + 用户类型精细化分树，是全球最大 Presto 集群的治理范本。
@@ -386,7 +387,7 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 - **中国海油** —— 中国海油海上生产数据平台——钻井平台、船舶、生产数据的实时采集与监控。
 - **中国石油** —— 中国石油勘探数据湖——地震、测井、钻井多源异构数据入湖 + AI 油气识别。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客；其中以「XX 公司 + 公开实践 / 公开介绍」形式出现的条目，以及各条中的规模量级（节点数、数据量、PB / EB 级等）与性能类数字（延迟、可用率、加速倍数等；以上参考资料各条中的性能类数字已在相应条目内逐条标注档位），本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -396,7 +397,7 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 
 - 是否理解**查询引擎与计算引擎的本质差异**——Trino/Presto 是查询引擎（无本地存储 + 联邦），Spark 是计算引擎（Micro-Batch + 多范式），Impala 是 CDH 时代的 SQL-on-Hadoop 标杆，Drill 是 Schema-free 的无模式查询引擎。
 - 能否说清**性能差异的根本原因**——内存流水线 vs 批处理、向量化 vs Row-at-a-Time、Coordinator/Worker vs Driver/Executor。
-- 是否知道**Trino 取代 PrestoDB 的背景——社区分裂**——Trino 是 PrestoDB 的分叉，由原 PrestoDB 创始人 Martin Traverso 牵头，**主干比 PrestoDB 更活跃**。
+- 是否知道**Trino 取代 PrestoDB 的背景——社区分裂**——Trino（前身 PrestoSQL）由 Presto 原作者 Martin Traverso 等人从原 Presto 项目分叉而来，PrestoDB 是留在原项目命名下的另一支，**Trino 主干比 PrestoDB 更活跃**。
 - 加分项：能给出具体的性能数据（典型查询的秒级 vs 分钟级差异），并能用真实案例（Meta / Netflix / Uber / LinkedIn / Cloudera）支撑选型决策。
 
 **2. 参考答案框架**
@@ -421,11 +422,11 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 
 | 引擎 | Connector 数量 | 代表 Connector |
 | --- | --- | --- |
-| **Trino** | 300+ | Hive / Iceberg / MySQL / Kafka / ES / Pinot / Druid / Redis / Cassandra |
-| **PrestoDB** | 50+ | Hive / MySQL / Kafka / ES（社区版偏少） |
-| **Impala** | 5-10 | Hive / Kudu / HDFS（局限于 CDH 生态） |
+| **Trino** | 最多（具体计数随版本增长，以官方文档为准） | Hive / Iceberg / MySQL / Kafka / ES / Pinot / Druid / Redis / Cassandra |
+| **PrestoDB** | 数量众多（具体计数随版本增长，以官方文档为准） | Hive / MySQL / Kafka / ES（社区版偏少） |
+| **Impala** | 数量少（具体计数随版本增长，以官方文档为准） | Hive / Kudu / HDFS（局限于 CDH 生态） |
 | **Spark SQL** | 内置 JDBC | 通过 Spark DataSource API（需要写代码） |
-| **Drill** | 10+ | MongoDB / Cassandra / S3 / HDFS（Schema-free 特色） |
+| **Drill** | 数量少（具体计数随版本增长，以官方文档为准） | MongoDB / Cassandra / S3 / HDFS（Schema-free 特色） |
 
 **关键洞察**：Trino 的 Connector 生态是**它最大的护城河**——联邦查询场景下，**Trino 是事实标准**。
 
@@ -439,6 +440,8 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 | **批处理（数 TB）** | 5-30 min | 10-30 min | 5-30 min（AQE） | 10-30 min |
 | **Schema-free 半结构化** | 中（JSON / Map） | 弱 | 弱 | 强 |
 | **小查询（< 1s）** | < 1s | < 1s | 5-30s | 1-5s |
+
+> 表中是典型场景下的量级估计，用来说明四种引擎的相对差异；具体耗时会随数据规模、集群配置与查询形态大幅变化，本节无法给出可溯源的统一数字，此处按【经验】档处理。
 
 **第五层：选型决策树。**
 
@@ -460,9 +463,9 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 
 **第六层：行业实践。**
 
-- **Meta Presto** —— Meta 是 Presto 的诞生地，主用 Presto 替代 Hive + Spark 做交互式查询，PB 级 Hive 表 + 跨源 MySQL 维表。
+- **Meta Presto** —— Meta 是 Presto 的诞生地，主用 Presto 替代 Hive + Spark 做交互式查询，数据规模在 PB 级（该规模量级本节无法给出可核验的具体出处，按【经验】档处理），并跨源接 MySQL 维表。
 - **Uber Presto + AresDB** —— Uber 用 Presto 查 Hive + AresDB（自研时序 OLAP），统一跨源入口。
-- **Netflix Trino + Iceberg** —— Netflix 用 Trino 替代 Hive + Spark 即席查询，EB 级 Iceberg 表，Trino 是事实标准。
+- **Netflix Trino + Iceberg** —— Netflix 用 Trino 替代 Hive + Spark 即席查询，Iceberg 表规模在 EB 级（该规模量级本节无法给出可核验的具体出处，按【经验】档处理），Trino 是事实标准。
 - **LinkedIn Presto + Pinot** —— LinkedIn 用 Presto 既查湖（Hive）又查 OLAP（Pinot），统一跨源查询入口。
 - **Cloudera Impala** —— Cloudera 推 Impala 作为 CDH 生态的 SQL-on-Hadoop 标杆，Hue + Impala 是 CDH 的标配。
 - **Apache Drill** —— Drill 由 MapR（被 HPE 收购）发起，主打 Schema-free 半结构化查询，是 NoSQL 数据源 SQL 化的代表。
@@ -476,26 +479,26 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 
 **4. 追问预测**
 
-- **「同样的 SQL，Trino 比 Spark SQL 快多少？」** 答：交互式小查询（< 1s）Trino 比 Spark SQL 快 **5-10 倍**——主要差距在 DAG 调度延迟（Trino 毫秒级 vs Spark 秒级）。但大查询（数十分钟）Spark SQL 反而更稳（AQE + 倾斜治理更成熟）。
+- **「同样的 SQL，Trino 比 Spark SQL 快多少？」** 答：交互式小查询（< 1s）Trino 明显快于 Spark SQL（常见量级是数倍，随查询形态、并发与集群配置而异，本节无法给出可溯源的统一倍数，此处按【经验】档处理）——主要差距在 DAG 调度延迟（Trino 毫秒级 vs Spark 秒级）。但大查询（数十分钟）Spark SQL 反而更稳（AQE + 倾斜治理更成熟）。
 - **「Trino 和 StarRocks 的关系？」** 答：Trino 是**查询引擎（联邦）**，StarRocks 是**OLAP 引擎（单源高性能）**——定位互补，不是替代关系。生产上是 Trino（跨源入口）+ StarRocks（高频 OLAP）的组合。
 - **「Impala 是不是过时了？」** 答：在 CDH 生态内 Impala 仍然活跃（Cloudera 持续维护），但**新项目几乎不选 Impala**——Trino + Iceberg 已经替代了 Impala 的多数场景。
 - **「Drill 还有未来吗？」** 答：Drill 社区活跃度较低，**生产上很少见**——但 Schema-free + 半结构化查询的场景仍是 Drill 的优势区间（如 MongoDB 大规模 JSON 查询）。
 
 **5. 参考资料**
 
-- Martin Grund 等《Presto: SQL on Everything》（IEEE Data Engineering Bulletin 2019）——Presto 与其他 SQL-on-Hadoop 引擎的对比。
-- Mostafa Mokhtar《Presto + Hive + Spark: SQL-on-Hadoop 的现状和未来》（公开演讲材料）。
-- Reynold Xin 等《Apache Spark: The First Decade》（ACM SIGMOD 2019）——Spark SQL 的设计哲学与性能特征。
+- 《Presto: SQL on Everything》（ICDE 2019）——Presto 与其他 SQL-on-Hadoop 引擎的对比。
+- Mostafa Mokhtar《Presto + Hive + Spark: SQL-on-Hadoop 的现状和未来》（公开演讲材料；该演讲的年份与发布渠道本节无法核实，引用前请自行查证）。
+- Reynold Xin 等《Apache Spark: The First Decade》（ACM SIGMOD 2019）——Spark SQL 的设计哲学与性能特征（该题名、作者与会议信息本节无法核实，引用前请自行查证）。
 - Marcel Kornacker 等《Impala: A Modern, Open-Source SQL Engine for Hadoop》（CIDR 2015）——Impala 的原始论文，LLVM 代码生成的奠基。
 - **Meta Presto 性能基准** —— Meta 定期发布 Presto 性能基准对比，涵盖 Presto vs Hive vs Spark 的查询延迟与吞吐。
-- **Netflix Trino 替代 Hive + Spark 即席查询** —— Netflix 公开材料中 Trino 性能比 Hive + Spark 快 10x 的实测数据。
+- **Netflix Trino 替代 Hive + Spark 即席查询** —— Netflix 公开材料中 Trino 在即席查询上明显快于 Hive + Spark 的对照数据（具体倍数本节无法给出可核验的具体出处，量级按【经验】档处理）。
 - **Cloudera Impala 性能白皮书** —— Cloudera 发布的 Impala vs Hive vs Spark 性能对比。
 - **阿里内部查询引擎 Holmes / MaxCompute SQL** —— 阿里内部的查询引擎在性能与生态上的设计思路，对应国内大厂的查询引擎选型参考。
 - **中国海油** —— 中国海油海上生产数据平台——钻井平台、船舶、生产数据的实时采集与监控。
 - **中国石油** —— 中国石油勘探数据湖——地震、测井、钻井多源异构数据入湖 + AI 油气识别。
 - **南方电网** —— 南方电网营销数据中台——客户、电价、计费、服务的统一数据底座。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客；其中以「XX 公司 + 公开实践 / 公开介绍」形式出现的条目，以及各条中的规模量级（节点数、数据量、PB / EB 级等）与性能类数字（延迟、可用率、加速倍数等；以上参考资料各条中的性能类数字已在相应条目内逐条标注档位），本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -514,7 +517,7 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 
 | 动机 | 典型场景 | 代表案例 |
 | --- | --- | --- |
-| **超大规模特定场景** | 单集群 1000+ Worker、超大宽表（PB 级）、超长查询 | Meta Presto 内部深度定制 |
+| **超大规模特定场景** | 单集群 1000+ Worker、超大宽表（PB 级）、超长查询（该规模量级本节无法给出可核验的具体出处，按【经验】档处理） | Meta Presto 内部深度定制 |
 | **内部系统深度集成** | 内部 KV / 图存储 / 时序 DB 需要作为 Connector | Uber AresDB / 字节 Kafka 流式 |
 | **性能极致优化** | LLVM 代码生成、SIMD 向量化、GPU 加速 | Apache Impala / 字节 Bytedance Query Engine |
 | **License 与商业策略** | 避免 Starburst 商业 License、独立可控 | 字节内部版本 / 阿里内部版本 |
@@ -570,17 +573,17 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 
 **4. 追问预测**
 
-- **「自研查询引擎的 ROI 怎么算？」** 答：核心是**节省的成本 vs 投入的成本**。节省的成本包括：① License 费用（Starburst 商业版每年数十万到数百万美元）；② 性能提升带来的硬件节省（查询延迟 50% 下降 ≈ 节点数减半）。投入的成本包括：① 团队工资（10+ 人 × 数年）；② 运维成本（持续 rebase + 排障）。**通常 500+ Worker 规模才值得自研**。
+- **「自研查询引擎的 ROI 怎么算？」** 答：核心是**节省的成本 vs 投入的成本**。节省的成本包括：① License 费用（Starburst 商业版年费在数十万到数百万美元量级；该价格量级随版本、集群规模与商务条款而异，本节无法给出可核验的具体出处，此处按【经验】档处理）；② 性能提升带来的硬件节省（延迟改善能否换算成节点数下降，取决于集群瓶颈在延迟还是吞吐，本节无法给出可溯源的统一换算比，此处按【经验】档处理）。投入的成本包括：① 团队工资（10+ 人 × 数年）；② 运维成本（持续 rebase + 排障）。**通常 500+ Worker 规模才值得自研**（该阈值与本节前面自研边界一节的「经验法则」同源，本节无法给出可核验的具体出处，按【经验】档处理）。
 - **「fork Trino 后怎么 rebase 上游？」** 答：用 Git 的 rebase/merge 策略，长期保持与上游 trunk 同步；**关键补丁独立提交到上游**（避免重复维护）。Meta / Uber 等大厂的 fork 通常有专门的"代码同步团队"。
 - **「Apache Velox / DataFusion 是自研的替代品吗？」** 答：是。Velox 是 Meta 开源的**向量化执行库**，可作为 Presto/Trino 的执行层；DataFusion 是 Rust 的**查询引擎框架**，可内嵌。**两者都是"用开源替代自研"的成熟路径**——比 fork Trino 更轻量。
 - **「未来查询引擎会怎么演进？」** 答：① 向量化执行（Velox / DataFusion）；② AI 原生（CBO 用 ML 预测）；③ 嵌入式（Notebook + 边缘计算）；④ 联邦向量查询（结构化 + 向量统一）。**Trino 社区已经吸收了部分趋势（如 Iceberg V3、向量索引）**，但深度定制仍是大厂的选择。
 
 **5. 参考资料**
 
-- Martin Grund 等《Presto: SQL on Everything》（IEEE Data Engineering Bulletin 2019）——Presto 的可扩展性与社区生态。
+- 《Presto: SQL on Everything》（ICDE 2019）——Presto 的可扩展性与社区生态。
 - Starburst Engineering Blog 关于 Trino 商业化的系列文章——商业版 vs 社区版的边界与 License。
-- Reynold Xin 等《Velox: A Unified Velox Execution Library》（Meta 开源项目文档）——Velox 作为下一代查询引擎执行层的设计。
-- Wes McKinney《DataFusion: A Rust Native Query Engine》（公开演讲材料）——DataFusion 的设计哲学。
+- Apache Velox（Meta 开源）的官方仓库与文档——Velox 作为下一代查询引擎执行层（C++ 向量化执行库）的设计（原稿此处记为「Reynold Xin 等《Velox: A Unified Velox Execution Library》」；本文件其它条目与本仓其它章节均把 Velox 记为 Meta 发起的开源项目而非某位作者的个人论文，该题名与作者归属本节无法核实，引用前请以 Velox 官方仓库与文档为准）。
+- Wes McKinney《DataFusion: A Rust Native Query Engine》（公开演讲材料；该演讲的年份与发布渠道本节无法核实，引用前请自行查证）——DataFusion 的设计哲学。
 - **Meta Presto 深度定制的演进** —— Meta 是 Presto 的诞生地，Presto 在 Meta 内部经过深度定制，覆盖 1000+ Worker、数万日活用户，是 fork 定制的全球最大案例。
 - **Uber Presto + AresDB 联邦查询** —— Uber 通过自研 AresDB + 内部 Presto 定制，实现跨源（湖 + 时序）联邦查询。
 - **字节跳动 Bytedance Query Engine** —— 字节是国内最深的 Trino 改造者之一，公开材料含 Kafka 流式 Connector + 内部资源调度集成。
@@ -593,7 +596,7 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 - **中国电信** —— 中国电信的 BSS 数据湖——计费、营账、客户数据统一入湖 + 实时营销推荐。
 - **中国石油** —— 中国石油勘探数据湖——地震、测井、钻井多源异构数据入湖 + AI 油气识别。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客；其中以「XX 公司 + 公开实践 / 公开介绍」形式出现的条目，以及各条中的规模量级（节点数、数据量、PB / EB 级等）与性能类数字（延迟、可用率、加速倍数等；以上参考资料各条中的性能类数字已在相应条目内逐条标注档位），本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 

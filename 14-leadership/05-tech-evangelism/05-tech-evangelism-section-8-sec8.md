@@ -60,7 +60,7 @@
 - **跨团队联办**：与数据团队、AI 团队、安全团队联办，让分享成为「**跨团队协商的副产品**」。
 - **新员工入职专场**：把每月 Tech Talk 做成新员工必看材料，缩短 onboarding 周期。
 
-**第五层：AI 时代的演进。** 2024 年以后，LLM 让 Tech Talk 准备效率 5-10 倍提升：
+**第五层：AI 时代的演进。** 2024 年以后，LLM 显著降低了 Tech Talk 的准备成本（【经验】：幅度高度依赖主题与个人习惯；按同章 §7 的成本口径，AI 压缩的是提纲与材料整理这类机械环节，量级上不是「数倍提效」，本节不另给统一倍数）：
 
 - **AI 辅助提纲**：分享者把主题丢给 LLM，让它生成 5 种开场方式、3 种结构模板。
 - **AI 自动转录 + 摘要**：录播视频自动转录 + 关键观点摘要，新人可 5 分钟看完一场。
@@ -85,10 +85,10 @@
 
 **5. 参考资料**
 
-- **Google Engineering Productivity Research** —— 关于内部知识共享与「**20% 时间**」文化的公开研究——内部分享对工程师留任与产出影响的实证依据。
+- **Google Engineering Productivity Research** —— 关于内部知识共享与「**20% 时间**」文化的公开材料——讨论内部分享与工程师留任、产出的关系（该研究的具体题名与年份本节无法核到，引用前请自行查证）。
 - **Netflix Engineering Blog 关于高绩效团队文化的系列文章** —— 自由与责任（Freedom and Responsibility）文化下，内部技术分享与外部技术品牌的关系。
 - **Cloudflare Engineering Blog** —— 「Building a global engineering brand from tech talks」类的内部文化文章——小团队如何用 Tech Talk 建立雇主品牌。
-- **LinkedIn Engineering Blog** —— 关于工程师内部 Glue Talk 与跨团队知识共享机制的公开材料——内部分享与组织效能的相关性。
+- **LinkedIn Engineering Blog** —— 关于工程师内部 Glue Talk 与跨团队知识共享机制的公开材料——讨论内部分享与组织效能的关系（该篇的具体标题与链接本节无法核到，引用前请自行查证）。
 - **Stripe Engineering Blog** —— 关于技术写作与公开透明的工程师文化——「**Default to writing things down**」的工程实践。
 - **阿里云云栖大会 Tech Talk 专场** —— 阿里内部「**阿里日 / 工程师文化**」与「**ATA（阿里技术协会）**」的内部技术分享与跨界开放机制。
 - **字节跳动技术沙龙 ByteTech** —— 字节内部「**技术双周会 / ByteSalon**」的开放与外部技术沙龙联动机制。
@@ -107,7 +107,7 @@
 
 **1. 考察点**
 
-- 是否理解 **Conference 演讲是一次性高强度投入** —— 平均需要 60-100 小时准备，回报是「**1 小时的现场 + 永久的视频回放 + 雇主品牌的延伸**」。
+- 是否理解 **Conference 演讲是一次性高强度投入** —— 准备成本在几十到上百小时量级（【经验】：具体小时数随主题与个人经验而异），回报是「**1 小时的现场 + 永久的视频回放 + 雇主品牌的延伸**」。
 - 能否从 **选题 / CFP / 内容设计 / 预演 / 现场** 五个阶段结构化回答，而不是只回答「**做一份 PPT**」。
 - 是否知道 **Storytelling 的工程价值** —— 为什么国际 Conference 的顶级讲师几乎都用「**故事开场 + 踩坑收尾**」的结构。
 - 加分项：是否考虑过 **AI 辅助 PPT 制作**（Gamma / Tome）、**视频彩排反馈**、**跨语言适配** 等 2024+ 的新工具。
@@ -116,14 +116,14 @@
 
 **第一层：立目标——演讲不是「**讲完拉倒**」。** Conference 演讲的真实价值是「**放大影响力**」：
 
-- **个人 IP**：1 次演讲触达 500-2000 名听众，长期视频回放 5,000-50,000 次观看。
+- **个人 IP**：1 次演讲触达数百到上千名听众，长期视频回放的观看量可达数千至数万次（【经验】：量级随会议规模与话题热度差异很大）。
 - **团队品牌**：让同行知道「**这个团队在做什么**」，雇主品牌的延伸。
 - **业务翻译机会**：听众中的潜在业务方、行业伙伴、合作方。
 - **个人成长**：结构化表达能力的硬训练，是晋升到技术 leader 的必经之路。
 
 **第二层：选题（Topic Selection）。** 选题决定上限，要满足三个条件：
 
-- **听众关心**：能命中「**正在做 / 即将做 / 踩过坑**」三类听众的需求。**反模式**是选题太新潮或太古早——Andrej Karpathy 在 2023-2024 年的 LLM 教学视频精准命中「**正在做**」的人群，每条视频百万级观看。
+- **听众关心**：能命中「**正在做 / 即将做 / 踩过坑**」三类听众的需求。**反模式**是选题太新潮或太古早——Andrej Karpathy 在 2023-2024 年的 LLM 教学视频精准命中「**正在做**」的人群（播放量等量级数字以平台公开页面为准，本节不给数字——与 05-tech-evangelism-section-5-ai.md §5.4 的口径一致）。
 - **自己有独特视角**：避免讲「**所有人都在讲的**」通识——通识别人讲得更好。**独特视角**通常来自一线踩坑、独特架构决策、非典型数据。
 - **可落地**：可给出可复用的工程实践，避免「**PPT 架构师**」式的悬浮。
 
@@ -217,12 +217,12 @@ Kubernetes、Prometheus、Envoy 等 CNCF 顶级项目的核心 maintainer 演讲
 - **可发现性差**：没有 Conference 演讲背书、没有技术博客、没有第三方对比评测。
 - **生态孤岛**：缺少与同类项目（同类向量库、调度系统）的差异化定位。
 
-Milvus 从 2019 年开源到 2024 年 GitHub Star 30K+ 的关键不只是「**功能强**」，更是「**运营节奏 + Conference + 社区**」三位一体。TensorFlow、Kubernetes 的开源成功同样遵循这一规律。
+Milvus 从 2019 年开源到 2024 年 GitHub Star 30K+ 的关键不只是「**功能强**」，更是「**运营节奏 + Conference + 社区**」三位一体（Star 数与时间点以项目 GitHub 页面当前显示为准）。TensorFlow、Kubernetes 的开源成功同样遵循这一规律。
 
 **第二层：可达性（Discoverability）改善。** 让搜索引擎找到你：
 
 - **README 改造**：加 Badges（Build / Coverage / License / Release）、Quick Start、Architecture Diagram、Comparison with Alternatives（与 LangChain / LlamaIndex 对比）。
-- **文档站**：用 VitePress / Docusaurus 建独立文档站，比纯 README 强 10 倍。
+- **文档站**：用 VitePress / Docusaurus 建独立文档站，可检索、可分层组织、可挂版本，比纯 README 更容易被搜索引擎收录、也更容易被新人用起来（【经验】：幅度高度依赖文档完整度，本书无法给出可核验的统一倍数）。
 - **SEO**：让每个 API 都有独立 URL，Google 能索引示例代码。
 - **第三方评测**：主动投稿 InfoQ、掘金、知乎、CSDN 等社区技术评测。
 
@@ -241,7 +241,7 @@ Milvus 从 2019 年开源到 2024 年 GitHub Star 30K+ 的关键不只是「**�
 - **Roadmap 透明**：用 GitHub Projects 公开 Roadmap，让用户知道下一步。
 - **Maintainer 轮值**：多个 maintainer，避免单点失联。
 
-CNCF 项目（Kubernetes / Prometheus / Envoy）的运营范式几乎都是 SLA 透明 + Roadmap 公开 + 社区响应承诺。Milvus 早期突破同样靠「**每周三场 Office Hour**」+「**1 个月内必回 Issue**」的硬承诺。
+CNCF 项目（Kubernetes / Prometheus / Envoy）的运营范式几乎都是 SLA 透明 + Roadmap 公开 + 社区响应承诺。Milvus 早期突破同样靠「**高频、固定节奏的 Office Hour**」+「**明确的 Issue 响应时限承诺**」这类硬承诺（【经验】：具体频次与时限本节无法给出可核验出处，引用时请以项目公开的运行记录为准）。
 
 **第五层：可发现性（Visibility）改善。** 让更多人知道你：
 
@@ -291,7 +291,7 @@ CNCF 项目（Kubernetes / Prometheus / Envoy）的运营范式几乎都是 SLA 
 - **CNCF TOC（Technical Oversight Committee）公开材料** —— CNCF 项目毕业标准——是开源项目从 Sandbox → Incubating → Graduating 的标准化路径。
 - **Apache Software Foundation（ASF）公开治理文档** —— Apache Way 的「**Meritocracy + Consensus + Transparency**」治理范式。
 - **Linux Foundation 关于开源商业化的公开研究** —— Open Core、SaaS、Support 三种主流商业化路径的优劣对比。
-- **Milvus / Zilliz 关于开源运营的公开演讲** —— 从 800 Star 到 30K Star 的真实运营节奏与方法。
+- **Milvus / Zilliz 关于开源运营的公开演讲** —— 从 800 Star 到 30K Star 的真实运营节奏与方法（Star 数与时间点以项目 GitHub 页面当前显示为准）。
 - **Kubernetes / CNCF KubeCon 演讲集** —— Kubernetes 治理、Contributor 培养、社区健康的最佳实践集。
 - **TensorFlow 早期博客与社区运营材料** —— Google 主导的开源项目如何从 0 到主导整个生态。
 - **腾讯开源联盟 / 腾讯蓝鲸 / TARS 系列公开材料** —— 国内大厂开源项目从内部工具到开源社区的运营实践。
@@ -311,7 +311,7 @@ CNCF 项目（Kubernetes / Prometheus / Envoy）的运营范式几乎都是 SLA 
 
 **1. 考察点**
 
-- 是否理解 **技术博客是「低成本、高频次」的影响力载体** —— 1 篇好博客的边际成本接近 0，但影响力可延续 3-5 年。
+- 是否理解 **技术博客是「低成本、高频次」的影响力载体** —— 1 篇好博客的边际成本接近 0，而影响力的长尾可持续数年（【经验】：具体年数取决于题材半衰期，本书无法给出可核验的统一年限）。
 - 能否从 **选题 / 标题 / 结构 / 图表 / 推广 / 复用** 六个维度结构化回答。
 - 是否知道 **跨平台传播的渠道特性** —— 各平台的算法偏好与读者画像不同。
 - 加分项：是否考虑过 **AI 辅助写作**（LLM 初稿 + 人工润色）、**多模态分发**（博客 → 短视频 → 直播）、**SEO / AEO**（answer engine optimization）。
@@ -334,7 +334,7 @@ Netflix Engineering Blog、Uber Engineering、Airbnb Engineering、Stripe Engine
 
 **选题反模式**：避免「**介绍 X 技术**」式通识题；避免「**未来展望**」式空对空；避免「**X 是什么**」式入门科普（除非读者是新人）。
 
-**第三层：标题——3 秒决胜负。** 标题决定 80% 的点击率：
+**第三层：标题——3 秒决胜负。** 标题在很大程度上决定点击率：
 
 - **数字型**：「把 RAG 准确率从 65% 提到 85% 的 5 个工程实践」——可量化、有 before/after、有可数解法。
 - **痛点型**：「RAG 准确率上不去？这 5 个工程细节你做错了」——直接命中痛点。
@@ -380,10 +380,10 @@ Netflix Engineering Blog、Uber Engineering、Airbnb Engineering、Stripe Engine
 - **SEO 优化**：核心关键词埋点、内链外链、Schema 标记。
 - **AEO（Answer Engine Optimization）**：让 LLM 检索到——结构化问答段落、明确 take-aways。
 - **二次复用**：转成 Conference 演讲、转成短视频、转成 Podcast 主题、转成 Newsletter 一期。
-- **系列化**：写「**RAG 系列 5 篇**」比 1 篇传播强 5 倍。
+- **系列化**：写「**RAG 系列 5 篇**」比 1 篇更能积累稳定的检索来源与读者认知（【经验】：幅度高度依赖选题与渠道，本书无法给出可核验的统一倍数）。
 - **数据反馈**：追踪阅读量、完读率、收藏量、转载量，用数据优化下一篇。
 
-**第八层：AI 辅助写作（2024+）。** LLM 让生产效率 5-10 倍提升：
+**第八层：AI 辅助写作（2024+）。** LLM 显著压缩了写作中的机械性工作量（【经验】：幅度高度依赖题材；同章 §7 的产能推算给出的量级是——AI 压缩的是写作与校对环节（约一半），折算到一篇文章约占总量的一到两成，不宜读作倍数关系）：
 
 - **LLM 写初稿**：基于技术要点 + 业务背景 + 目标读者生成 80% 内容。
 - **AI 校对**：消除错别字、优化语句连贯性、调整语气。
@@ -525,7 +525,7 @@ Stripe、Twilio、Datadog 等 SaaS 公司都有客户大使机制。阿里数据
 - **Netflix Internal Tools & Platform Engineering 文化公开材料** —— Netflix 内部平台团队如何通过「**Freedom and Responsibility**」文化让业务方自助接入。
 - **Uber Engineering 关于 Michelangelo / 内部 ML 平台的公开材料** —— Uber 早期推广 ML 平台时如何找灯塔业务方、联合共建、规模化推广。
 - **Airbnb Engineering 关于 Data University 的公开材料** —— Airbnb 内部数据课程让业务方懂数据、自助使用数据平台的真实路径。
-- **LinkedIn Engineering 关于内部数据平台的公开材料** —— LinkedIn 内部数据平台如何通过大使机制推广到上千业务方。
+- **LinkedIn Engineering 关于内部数据平台的公开材料** —— LinkedIn 内部数据平台如何通过大使机制推广到上千业务方（该材料的具体题名与年份本节无法核到，这一规模口径也无法核验，引用前请自行查证）。
 - **Stripe Engineering 关于内部数据基础设施的公开材料** —— Stripe 如何让业务方自助接入数据能力。
 - **Datadog / Twilio / Snowflake 等 SaaS 公司 customer advocacy 文化** —— SaaS 行业客户大使与客户成功的实操经验。
 - **Salesforce / ServiceNow 等 SaaS 公司 customer journey 公开材料** —— 大客户成功案例反哺产品迭代的范式。
@@ -570,7 +570,7 @@ Stripe、Twilio、Datadog 等 SaaS 公司都有客户大使机制。阿里数据
 - **第 4 年（建立思想领导力）**：写一本书 / 出具行业白皮书 / 主导行业标准；成为 conference 评审委员会成员。
 - **第 5 年（沉淀方法论）**：从「**做**」升级到「**立说**」——出书 / 主导行业标准 / 输出方法论文档。
 
-Andrej Karpathy 从斯坦福 CS231n 教学视频开始，5 年构建了 LLM 时代顶级个人 IP；Simon Willison 用 10 年构建了 LDM / Web 领域的顶级个人 IP；Netflix 早期的 Adrian Cockcroft 用 5 年构建了 Cloud Native 时代的顶级个人 IP——都是「**长期稳定产出 + 真实独到观点**」的范式。
+Andrej Karpathy 从斯坦福 CS231n 教学视频开始，5 年构建了 LLM 时代顶级个人 IP；Simon Willison 用 10 年构建了 LLM / Web 领域的顶级个人 IP；Netflix 早期的 Adrian Cockcroft 用 5 年构建了 Cloud Native 时代的顶级个人 IP——都是「**长期稳定产出 + 真实独到观点**」的范式（【经验】：三人各自的起算点与所处渠道不同，这里的年数是量级描述而非可核验的精确年限，本节无法给出统一口径）。
 
 **第三层：团队品牌的 5 年路径。** 这是「**团队最被业界记住的能力**」：
 
@@ -580,7 +580,7 @@ Andrej Karpathy 从斯坦福 CS231n 教学视频开始，5 年构建了 LLM 时�
 - **第 4 年（行业影响力）**：主导行业标准 / 联合发布白皮书 / 开源项目成为 CNCF Sandbox 级别。**目标：让团队成为行业标准的制定者**。
 - **第 5 年（组织级反哺）**：团队品牌反哺公司品牌——招聘候选人主动找上门、业务方主动合作、行业伙伴主动共建。
 
-Netflix Engineering 团队从 2010 年起 5 年构建了分布式系统领域顶级团队品牌；Uber Engineering 团队 5 年构建了大数据领域顶级团队品牌；Milvus 团队 5 年构建了向量检索领域顶级团队品牌。
+Netflix Engineering 团队从 2010 年起 5 年构建了分布式系统领域顶级团队品牌；Uber Engineering 团队 5 年构建了大数据领域顶级团队品牌；Milvus 团队 5 年构建了向量检索领域顶级团队品牌（【经验】：三家的起算点与投入强度不同，这里的年数是量级描述而非可核验的精确年限，本节无法给出统一口径）。
 
 **第四层：公司品牌的 5 年路径。** 这是「**公司在行业中的认知**」：
 
@@ -590,7 +590,7 @@ Netflix Engineering 团队从 2010 年起 5 年构建了分布式系统领域顶
 - **第 4 年（标准制定参与）**：主导 / 参与国家标准 / 行业标准制定；进入 SIGKDD / VLDB / SIGMOD 等顶级会议。
 - **第 5 年（行业心智占位）**：成为行业人士提到某技术领域必想起的公司。
 
-阿里云、字节跳动、华为云、腾讯云、京东云、美团技术、蚂蚁集团 等国内大厂都经历了类似的 5 年品牌沉淀路径。
+阿里云、字节跳动、华为云、腾讯云、京东云、美团技术、蚂蚁集团 等国内大厂都经历了类似的 5 年品牌沉淀路径（【经验】：这里的年数是量级描述而非可核验的精确年限，各家的起算点与投入强度不同，本节无法给出统一口径）。
 
 **第五层：三层品牌的反哺机制——飞轮效应。** 三层必须形成飞轮：
 
@@ -647,17 +647,17 @@ Netflix Engineering 团队从 2010 年起 5 年构建了分布式系统领域顶
 - **Tom Peters《The Brand Called You》** —— 个人品牌建设的奠基文章——回答「**你是谁、你做什么、为什么重要**」的 3 个问题。
 - **Dorie Clark《Reinventing You》与《Stand Out》** —— 个人品牌长期建设的实操方法。
 - **Seth Godin《Tribes》** —— 「**小群 + 强连接 + 一致使命**」的社区化品牌建设哲学。
-- **Netflix Technology Blog 长期运营材料** —— Netflix Engineering 文化与品牌的 10 年沉淀史。
-- **Uber Engineering 长期运营材料** —— Uber 从 2015 年至今的工程品牌建设。
-- **Stripe Press 与工程博客的长期运营** —— Stripe 「**Default to writing things down**」文化的 10 年沉淀。
-- **Cloudflare Engineering 长期运营材料** —— Cloudflare 工程师文化的 10 年沉淀。
+- **Netflix Technology Blog 长期运营材料** —— Netflix Engineering 文化与品牌的 10 年沉淀史（【经验】：年份与年数为量级描述，非可核验的精确年限，本节无法给出统一口径）。
+- **Uber Engineering 长期运营材料** —— Uber 从 2015 年至今的工程品牌建设（【经验】：年份与年数为量级描述，非可核验的精确年限，本节无法给出统一口径）。
+- **Stripe Press 与工程博客的长期运营** —— Stripe 「**Default to writing things down**」文化的 10 年沉淀（【经验】：年份与年数为量级描述，非可核验的精确年限，本节无法给出统一口径）。
+- **Cloudflare Engineering 长期运营材料** —— Cloudflare 工程师文化的 10 年沉淀（【经验】：年份与年数为量级描述，非可核验的精确年限，本节无法给出统一口径）。
 - **Microsoft / Google / Meta Engineering Blog 的长期运营** —— 顶级大厂技术品牌的长期建设与传承。
-- **GitHub Octocat 的开源社区运营材料** —— GitHub 如何从开源工具成长为「**开源代名词**」的 10 年品牌史。
+- **GitHub Octocat 的开源社区运营材料** —— GitHub 如何从开源工具成长为「**开源代名词**」的 10 年品牌史（【经验】：年份与年数为量级描述，非可核验的精确年限，本节无法给出统一口径）。
 - **CNCF / LF / Apache 基金会的社区运营材料** —— 开源基金会的品牌建设与生态搭建。
-- **阿里 / 字节 / 美团 / 京东 / 腾讯 / 华为 / 蚂蚁 长期技术品牌建设** —— 国内大厂技术品牌的 5-10 年路径。
+- **阿里 / 字节 / 美团 / 京东 / 腾讯 / 华为 / 蚂蚁 长期技术品牌建设** —— 国内大厂技术品牌的 5-10 年路径（【经验】：年份与年数为量级描述，非可核验的精确年限，本节无法给出统一口径）。
 - **CNCF KubeCon 主旨演讲集** —— Kubernetes / Istio / Envoy 等顶级项目的 maintainer 个人 IP 建设样本。
 - **Netflix Engineering Blog 的 Adrian Cockcroft 个人品牌建设** —— 早期 Cloud Native 个人 IP 的范本。
-- **Andrej Karpathy 的 5 年个人 IP 建设** —— LLM 时代顶级个人 IP 的范本。
+- **Andrej Karpathy 的 5 年个人 IP 建设** —— LLM 时代顶级个人 IP 的范本（【经验】：年份与年数为量级描述，非可核验的精确年限，本节无法给出统一口径）。
 - **丁香园** —— 丁香园的医学知识图谱——药品、疾病、症状、指南的多跳查询与推理。
 - **中国海油** —— 中国海油海上生产数据平台——钻井平台、船舶、生产数据的实时采集与监控。
 - **中国石油** —— 中国石油勘探数据湖——地震、测井、钻井多源异构数据入湖 + AI 油气识别。
@@ -679,7 +679,7 @@ Netflix Engineering 团队从 2010 年起 5 年构建了分布式系统领域顶
 
 **参考答题的通用心法**：技术布道这一主题的所有问题，面试官真正想听的是**「**你如何把影响力转化为业务/招聘/组织变革的成果**」**，而不是「**你做过哪些分享**」。准备这个问题的方法：
 
-1. **用数据量化**：「**月均 1-2 篇博客、季度 1 次 Conference**」比「**写过博客**」强 10 倍。
+1. **用数据量化**：「**月均 1-2 篇博客、季度 1 次 Conference**」比「**写过博客**」更能说明产出的持续性（【经验】：幅度依赖产出节奏与渠道，本书无法给出可核验的统一倍数；同章 §7 的产能推算也表明 AI 对写作环节的压缩只占一篇文章总量的一到两成，不宜读作倍数关系）。
 2. **用案例代替概念**：每个原则配一个你做过的真实案例（哪怕简化）。
 3. **承认代价**：每个机制都有代价，主动说清楚比被反问更显成熟。
 4. **跟上 AI 时代**：LLM 辅助创作、AEO / Skills Graph、多模态布道——不知道这些会显得停在 2022 年。

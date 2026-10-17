@@ -4,7 +4,7 @@
 
 > 本节内容由编者基于本章 §1–§7 主题自编，参照《大数据平台架构师》（创脉思 cms365.cn，版本 2025-11-25）题库的形式与编号约定。题号沿用「§X.Y.Z」风格，便于读者按章节定位。
 >
-> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Cohere / BAAI / Stanford ColBERT / Vespa / Microsoft Research / Notion / Stripe 等），便于读者进一步溯源。
+> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业与主流开源项目的公开架构实践**（Cohere / BAAI / Stanford ColBERT / Vespa / Microsoft Research / Notion / Stripe 等）；其中以「具体企业名 + 结论」形式出现、且无法给出可核验文档名与链接的条目，均按【经验】档表述，读者可按机构与主题自行检索核验。
 
 ### 8.1 全景视图
 
@@ -48,7 +48,7 @@
 
 **第二层：单一向量检索的经典失败模式。**
 
-- **实体 / 型号 / 编号错配**：「iPhone 15 Pro Max」「订单号 O-20240815-0001」「SQL 报错代码 ORA-00904」——这些**对精确字面值高度敏感**的查询，向量检索几乎必然召回语义近似但型号错的文档。Stripe 的工程博客在公开介绍其文档检索系统时专门提到，开发者文档里代码片段与错误码的检索必须保留 lexical 通道。
+- **实体 / 型号 / 编号错配**：「iPhone 15 Pro Max」「订单号 O-20240815-0001」「SQL 报错代码 ORA-00904」——这些**对精确字面值高度敏感**的查询，向量检索几乎必然召回语义近似但型号错的文档。Stripe 的工程博客在公开介绍其文档检索系统时专门提到，开发者文档里代码片段与错误码的检索必须保留 lexical 通道（本节无法给出该分享的可核验文档名与链接，此处按【经验】档处理）。
 - **罕见词 / 专业术语**：「Rett 综合征」「苯磺酸氨氯地平」——这类低频词在向量空间里的密度极低，相邻位置被高频语义词主导，检索常常被「看起来相关」的科普词拽偏。BM25 的 IDF 项对罕见词会给予高权重，恰好补位。
 - **数字 / 时间 / 排序**：用户问「2024 年 Q3 营收」「200 元以下的商品」，向量无法捕捉离散维度上的精确过滤。
 - **新词 / 未登录词**：Embedding 模型有训练截止与词表边界，BM25 没有——任何词只要分词器认识，都能命中。
@@ -65,7 +65,7 @@
 
 - **互补性最优**：BM25 覆盖 lexical、向量覆盖 semantic——二者在失败模式上几乎不重叠，合在一起的召回率天花板最高。
 - **工程成本最低**：BM25 引擎（Elasticsearch / OpenSearch / Meilisearch）成熟稳定且低成本，向量引擎（Milvus / Qdrant / Weaviate / pgvector）也是现成基础设施，组合即可使用。
-- **生态完备**：LangChain `EnsembleRetriever`、LlamaIndex `QueryFusionRetriever`、Vespa、Weaviate 均把「BM25 + 向量」作为一等公民的融合能力内置。Cohere 在 Rerank 3 的产品文档中明确建议前置召回用 BM25 + 向量融合。
+- **生态完备**：LangChain `EnsembleRetriever`、LlamaIndex `QueryFusionRetriever`、Vespa、Weaviate 均把「BM25 + 向量」作为一等公民的融合能力内置。Cohere 在 Rerank 3 的产品文档中明确建议前置召回用 BM25 + 向量融合（本节无法给出该材料的可核验文档名与版本，此处按【经验】档处理）。
 - **可解释性**：BM25 的打分是可解释的（你能告诉业务方「这个词命中了、那个词命中了」），向量相似度则不能。混合检索天然具备「为什么召回这条」的证据能力。
 - **学术背书**：Cormack 等人 2009 年在 TREC 上的实验证明，简单的 RRF 融合即可显著优于任何单一通道，是这条路线在工程界被广泛接受的学术起点。
 
@@ -90,7 +90,7 @@
 
 **5. 参考资料**
 
-- Robertson & Zaragoza《The Probabilistic Relevance Framework: BM25 and Beyond》——BM25 的原始文献与后续改进，是本题的学术基石。
+- Robertson & Zaragoza《The Probabilistic Relevance Framework: BM25 and Beyond》（Foundations and Trends in Information Retrieval, 2009）——BM25 的原始文献与后续改进，是本题的学术基石。
 - Cormack, Clarke, Buettcher《Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods》（SIGIR 2009）——RRF 融合的原始实验，证明了简单融合即可显著超越单通道。
 - LangChain 官方文档中 `EnsembleRetriever`（BM25 + 向量加权融合）章节——主流框架对「BM25 + 向量」标配的最佳实践。
 - Cohere 官方文档关于 Rerank 3 的前置召回建议——明确推荐 BM25 + 向量作为前置通道，再叠 Reranker。
@@ -99,7 +99,7 @@
 - **京东商品搜索的 BM25 + 向量融合召回** —— 商品标题 / 型号由 BM25 兜底精确匹配，相似款与语义相关召回由向量通道完成，二者在长尾型号词与口语化 query 上形成互补。
 - **中国移动 10086 智能客服的知识库检索** —— 电话号码 / 套餐编号 / 业务工单号等离散字段必须 lexical 命中，向量通道补足用户口语化提问，是运营商客服混合检索的代表性场景。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客；其中以「具体企业名 + 结论」形式出现的条目（即直接以某企业的公开实践作论据、却未给出文档名与链接的条目），本节无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -147,7 +147,7 @@
 - **业务对单通道高置信度极敏感**（如风控、医疗） → **加权融合 + 通道门限**：低置信度的通道不参与融合，避免被稀释。
 - **学术界与开源框架默认** → **RRF**：Weaviate、Vespa、Cohere、LangChain `EnsembleRetriever`、LlamaIndex `QueryFusionRetriever` 都把 RRF 设为默认或内置。
 
-**第六层：进阶组合——RRF + 加权的混合。** 工业实践里越来越多团队采用**两阶段融合**：先用 RRF 在异构通道（向量 / BM25 / KG）上聚合，再用加权融合把 RRF 结果与精排分数拼起来。这样既保留了 RRF 对异构通道的鲁棒性，又让精排信号有可调权重。Cohere 的官方 RAG 最佳实践文档中明确提到这种「RRF 召回 + Rerank 精排」的两阶段结构。
+**第六层：进阶组合——RRF + 加权的混合。** 工业实践里越来越多团队采用**两阶段融合**：先用 RRF 在异构通道（向量 / BM25 / KG）上聚合，再用加权融合把 RRF 结果与精排分数拼起来。这样既保留了 RRF 对异构通道的鲁棒性，又让精排信号有可调权重。Cohere 的官方 RAG 最佳实践文档中明确提到这种「RRF 召回 + Rerank 精排」的两阶段结构（本节无法给出该材料的可核验文档名与版本，此处按【经验】档处理）。
 
 **3. 常见陷阱**
 
@@ -174,7 +174,7 @@
 - **网易雷火玩家文档检索的两阶段融合** —— 多源异构语料（玩家口语 query + 攻略文档 + 任务文本）采用 RRF 召回 + 加权精排，工程上把 RRF 的无参数特性与加权融合的可调权重结合。
 - **顺丰科技客服知识库的召回融合** —— 物流订单号（精确字面值通道）与场景化描述（语义通道）双路并行，工程实践以 RRF 为默认融合方式，再叠加业务权重做兜底。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客；其中以「具体企业名 + 结论」形式出现的条目（即直接以某企业的公开实践作论据、却未给出文档名与链接的条目），本节无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -196,7 +196,7 @@
 **第一层：两种编码器的数学结构。**
 
 - **Bi-Encoder（双塔）**：query 与 doc **各自独立**编码成向量 d_q、d_doc，相似度由 cos / IP / L2 算。doc 侧编码可离线批量完成，query 侧在线编码后做 ANN 检索。**优点**：doc 离线编码后可被百万级查询复用，复杂度与文档量解耦。**缺点**：query 与 doc 之间没有 token 级交互，**细微语义差异丢失**——例如「苹果公司」与「苹果手机」在向量空间里可能非常接近，但 query 在问的是水果时 Bi-Encoder 区分不开。
-- **Cross-Encoder（交叉编码器）**：把 query 与 doc **拼接**在一起 `[CLS] q [SEP] d [SEP]` 一起过 Transformer，最后一层用 [CLS] 向量接分类头输出 0–1 相关性分数。**优点**：query 与 doc 在每一层都有 token 级的注意力交互，**精度显著高于 Bi-Encoder**——Cohere Rerank 3 的官方文档明确给出 Cross-Encoder 比 Bi-Encoder 在 NDCG@10 上高 5–15 个百分点的典型差距。**缺点**：每对 (query, doc) 都要过一次完整 Transformer——百万级文档库下，单条 query 做全量精排不现实。
+- **Cross-Encoder（交叉编码器）**：把 query 与 doc **拼接**在一起 `[CLS] q [SEP] d [SEP]` 一起过 Transformer，最后一层用 [CLS] 向量接分类头输出 0–1 相关性分数。**优点**：query 与 doc 在每一层都有 token 级的注意力交互，**精度显著高于 Bi-Encoder**——Cohere Rerank 3 的产品材料给出的正是这一方向性结论（排序模型优于纯向量召回）；具体的 NDCG@10 差距随语料、标注与模型而异，本节无法核验该材料的原始表述与出处，也不宜引用单一的百分点数，此处按【经验】档处理。**缺点**：每对 (query, doc) 都要过一次完整 Transformer——百万级文档库下，单条 query 做全量精排不现实。
 
 **第二层：召回阶段为什么不能直接用 Cross-Encoder。**
 
@@ -204,20 +204,20 @@
 - **不可离线预计算**：Cross-Encoder 必须 query 与 doc 同时存在才能算，无法提前把 doc 编码成可索引的向量；这就彻底打碎了 ANN 索引的可行性。
 - **资源代价不可摊薄**：Bi-Encoder 的 doc 侧编码是一次性投入、百万查询复用；Cross-Encoder 是每次查询都要重新算 N 次，资源消耗与查询量线性相关——成本结构完全不同。
 
-Cohere 与 Hugging Face 公开的 benchmark 都验证：在百万级语料上，纯 Cross-Encoder 召回的延迟（分钟级）与 Bi-Encoder 召回（毫秒级）相差 2–3 个数量级。
+在百万级语料上，纯 Cross-Encoder 召回的延迟（分钟级）与 Bi-Encoder 召回（毫秒级）相差 2–3 个数量级（此处按【经验】档处理：该倍数属工程量级估算，本节无法给出可溯源的统一 benchmark 出处，具体倍数随模型规模、序列长度与硬件而变化）。
 
 **第三层：精排阶段为什么必须用 Cross-Encoder。**
 
-- **召回的 Top-K 通常是 50–200**，候选量小，Cross-Encoder 可承受：BGE-reranker-v2-m3 在 100 条候选上推理延迟约 50–150ms（在 A10 / T4 量级 GPU），满足精排 SLA。
-- **精度收益显著**：召回阶段 Bi-Encoder 在 Top-K=100 上 Recall@100 可能只有 80%，但里面**前 10 条与后 90 条的相关性差距极大**。Cross-Encoder 在这 100 条上做精细排序，可以把「相关但被向量粗排压到第 50 名」的文档抬到 Top-10。
-- **工业证据充分**：Cohere 在 Rerank 3 发布博客中给出对照——在企业 RAG 评测集上，BM25 + 向量召回 + Rerank 3 精排的答案准确率比「BM25 + 向量召回无精排」高 15–25 个百分点。Anthropic 在介绍其 Contextual Retrieval 时也明确把 Reranker 作为标准组件之一。
+- **召回的 Top-K 通常是 50–200**，候选量小，Cross-Encoder 可承受：BGE-reranker-v2-m3 在 100 条候选上推理延迟约 50–150ms（在 A10 / T4 量级 GPU）——此处按【经验】档处理：该量级属工程量级估算，随 GPU 型号、batch 大小与序列长度而变化，本节无法给出可溯源的统一 benchmark 出处——满足精排 SLA。
+- **精度收益显著**：召回阶段 Bi-Encoder 在 Top-K=100 上 Recall@100 可能只有 80% 上下（【经验】档：该量级随语料、切分方式与所用模型而异，本节无法给出可溯源的统一数字），但里面**前 10 条与后 90 条的相关性差距极大**。Cross-Encoder 在这 100 条上做精细排序，可以把「相关但被向量粗排压到第 50 名」的文档抬到 Top-10。
+- **工业证据充分**：Cohere 在 Rerank 3 的发布材料中给出的是「加精排后答案准确率明显提升」的对照结论——具体百分点随评测集、领域与评测口径而异，本节无法核验该材料的原始表述与出处，此处按【经验】档处理。Anthropic 在介绍其 Contextual Retrieval 时也明确把 Reranker 作为标准组件之一。
 
 **第四层：ColBERTv2 / Late Interaction 的中间路线。**
 
 - **核心思想**：把 query 与 doc **各自编码成 token 级向量**（每个 token 一个向量），相似度用 `Σ_{q_token} max_{d_token} cos(q_emb, d_emb)`——max-sim 操作。这样既保留了 token 级交互（精度高于 Bi-Encoder），又允许 doc 侧离线编码（效率高于 Cross-Encoder）。
-- **存储代价**：每个 token 一个向量，文档越长、向量越多。ColBERTv2 实际工程经验是 doc 侧存储开销约为 Bi-Encoder 的 5–10 倍——百万级文档 × 平均 256 token × 128 维 ≈ 数 TB 级索引，比 Bi-Encoder 大一个数量级。
+- **存储代价**：每个 token 一个向量，文档越长、向量越多。doc 侧存储开销显著高于 Bi-Encoder——按 [§7.3.2](04-hybrid-search-section-7-sec7.md) 的推算，未压缩的 token 向量约为双塔的 16×（【推算】：按每篇 128 token、每 token 128 维 16-bit 存放计，百万级文档的 token 向量约 32 GB；双塔只存「每篇一个向量」（1024 维 16-bit）约 2 GB，两者相差约 16×）；ColBERTv2 的残差压缩能把占用降低 6–10 倍（【公开】ColBERTv2, NAACL 2022），压缩后仍高于双塔、但已不是数量级差距（具体倍数随量化方式、文档长度与维度而变）。
 - **查询代价**：query 侧在线编码 + max-sim 遍历，时间复杂度与候选文档 token 总数线性相关——比 Cross-Encoder 便宜很多（不用全 Transformer 推理），比 Bi-Encoder 贵（多了 max-sim 操作）。
-- **精度位置**：ColBERTv2 在 BEIR 等学术评测上 NDCG@10 接近 Cross-Encoder（差 1–3 个百分点），远高于 Bi-Encoder（差 5–10 个百分点）。
+- **精度位置**：ColBERTv2 在 BEIR 等学术评测上的 NDCG@10 位于 Bi-Encoder 与 Cross-Encoder 之间——明显高于单向量 Bi-Encoder，接近但仍略低于 Cross-Encoder（具体百分点差随数据集与训练语料而异，本节无法给出可溯源的统一数字，此处按【经验】档处理）。
 - **工业落地**：Vespa 把 ColBERT 作为其「hybrid_colbert_rerank」模板的内置通道；Stanford 团队公开了 ColBERTv2 的训练代码与索引格式；后续的 ColPali（多模态版本）由 Stanford 与 Voyage AI 合作推进。开源实现成熟，是高价值 RAG 场景的主流精排选项之一。
 
 **第五层：精排选型决策树。**
@@ -230,29 +230,29 @@ Cohere 与 Hugging Face 公开的 benchmark 都验证：在百万级语料上，
 **第六层：常见工程细节。**
 
 - **召回 Top-K 与精排 Top-N 的关系**：典型配比是「Bi-Encoder 召回 Top-100 → Cross-Encoder 精排 Top-10」。N 太小则精排收益未榨干；N 太大则延迟爆炸。
-- **精排缓存**：相同 query 缓存精排结果是降本关键——Reranker API 调用是按量计费，重复 query 直接命中缓存可降本 30%+。
+- **精排缓存**：相同 query 缓存精排结果是降本关键——Reranker API 调用是按量计费，重复 query 命中缓存能显著摊薄精排开销（降幅取决于重复 query 占比与缓存命中率，本节无法给出可溯源的统一比例，此处按【经验】档处理）。
 - **路由策略**：简单 query（高置信度召回）跳过精排，复杂 query 才走精排——这是成本与精度的平衡杠杆。
 
 **3. 常见陷阱**
 
 - **混淆 Cross-Encoder 与 Bi-Encoder 的成本结构。** Cross-Encoder 没有「离线编码 doc」这一步，所有 doc 都要等 query 来才能算。
 - **把 Reranker 当万能药。** Reranker 只能在「召回已经找到正确答案」的前提下把它排前面；如果召回没召回正确答案，Reranker 救不回来——所以召回的 Recall@K 必须先达标。
-- **不知道 ColBERTv2 的存储代价。** Late Interaction 不是「免费升级」——token 级向量让存储膨胀 5–10 倍，必须提前评估成本。
+- **不知道 ColBERTv2 的存储代价。** Late Interaction 不是「免费升级」——token 级向量让存储明显膨胀：按 [§7.3.2](04-hybrid-search-section-7-sec7.md) 的【推算】（前提为【经验】档的文档 token 数与向量维度假设），未压缩时约为双塔的 16×，ColBERTv2 的残差压缩把这一倍数降到约 1.6–2.7×；压缩后仍高于双塔、且随文档长度增长，必须提前评估成本。
 - **精排 LLM 直接打分当默认。** LLM-as-Reranker 精度高但成本极高（每条 (query, doc) 对要 GPT-4 一次调用），只在 Top-K 极小时可用。
 - **把 ColBERT / ColBERTv2 / ColPali 混为一谈。** ColPali 是多模态版本，处理图像 + 文本，与纯文本版用途不同。
 
 **4. 追问预测**
 
 - **「召回 Top-100，精排 Top-10，怎么确定这两个 K 值？」** 答：K 取决于评测集上的 Recall@K 曲线——通常 Recall@100 应 ≥ 90%，Recall@10 在精排前不应过高（留出精排的优化空间）。最佳做法是在评测集上画 Recall@K 曲线找拐点。
-- **「精排模型的训练数据怎么准备？」** 答：两种来源——一是公开数据集（MS MARCO、BEIR）做通用预训练，再用业务 query-log + 业务人工标注做领域微调（BGE-reranker-v2 的训练就遵循这个范式）。业务标注量级通常 5k–50k 条 query–doc 对就足够显著提升精排精度。
+- **「精排模型的训练数据怎么准备？」** 答：两种来源——一是公开数据集（MS MARCO、BEIR）做通用预训练，再用业务 query-log + 业务人工标注做领域微调（BGE-reranker-v2 的训练就遵循这个范式）。业务标注量级通常在 5k–50k 条 query–doc 对这个区间就能带来明显收益（具体门槛随任务难度与预训练模型而异，本节无法给出可溯源的统一数字，此处按【经验】档处理）。
 - **「Cohere Rerank 3 与 BGE-reranker 怎么选？」** 答：中文 + 自托管 → BGE-reranker（开源、可私有化）；多语言 + SaaS 化 + 不希望运维 GPU → Cohere Rerank 3（API 稳定、延迟低）；极端定制（需微调）→ BGE-reranker。
-- **「ColBERTv2 在中文场景的可行性？」** 答：可行。ColBERTv2 与分词器解耦，可用中文分词器训练；Stanford 与 BAAI 都有中文 ColBERT 变体的公开实践。但 token 向量存储代价仍要评估。
-- **「LLM-as-Reranker 与 Cross-Encoder 怎么权衡？」** 答：LLM-as-Reranker 在 Listwise 排序上通常优于 Pairwise 的 Cross-Encoder，但单次调用成本高（GPT-4 一次精排 100 条候选约 1–3 美元）。生产里通常 Cross-Encoder 为主、LLM-as-Reranker 仅在 Top-5 重排用。
+- **「ColBERTv2 在中文场景的可行性？」** 答：可行。ColBERTv2 与分词器解耦，可用中文分词器训练；Stanford 与 BAAI 都有中文 ColBERT 变体的公开实践（本节无法给出该实践的可核验文档名与链接，此处按【经验】档处理）。但 token 向量存储代价仍要评估。
+- **「LLM-as-Reranker 与 Cross-Encoder 怎么权衡？」** 答：LLM-as-Reranker 在 Listwise 排序上通常优于 Pairwise 的 Cross-Encoder，但单次调用成本高（GPT-4 一次精排 100 条候选约 1–3 美元，随模型版本、候选长度与计价方式而变，此处按【经验】档处理）。生产里通常 Cross-Encoder 为主、LLM-as-Reranker 仅在 Top-5 重排用。
 
 **5. 参考资料**
 
 - Khattab, Zaharia《ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT》（SIGIR 2020）——Late Interaction 的原始论文，奠定了 ColBERT 路线。
-- Khattab 等《ColBERTv2: Effective and Efficient Retrieval via Lightweight Late Interaction》（NAACL 2022）——ColBERTv2 的工程化改进，把 token 向量量化大幅压缩存储。
+- Santhanam 等《ColBERTv2: Effective and Efficient Retrieval via Lightweight Late Interaction》（NAACL 2022）——ColBERTv2 的工程化改进，把 token 向量量化大幅压缩存储。
 - Cohere 官方博客关于 Rerank 3 的技术介绍——给出 Cross-Encoder 在企业 RAG 上的精度增益与最佳实践。
 - BAAI 关于 BGE-reranker-v2 的公开论文与 GitHub 仓库——中文 Reranker 的开源 SOTA。
 - Vespa 官方文档关于 `hybrid_colbert_rerank` 模板——Yahoo 工程团队对 Late Interaction 工业化的实现参考。
@@ -261,7 +261,7 @@ Cohere 与 Hugging Face 公开的 benchmark 都验证：在百万级语料上，
 - **宁德时代工业文档检索场景** —— 工业型号 / 工艺书 / 电池型号等长尾术语检索场景，制造业 RAG 用 Late Interaction 类方法以存储代价换取精度的代表性方向。
 - **平安好医生医疗文献检索的精排路径** —— 医疗文献召回后用 Cross-Encoder 兜底精排，是医疗问答类 RAG 的工程标配，体现医疗行业对精排精度的严苛要求。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客；其中以「具体企业名 + 结论」形式出现的条目（即直接以某企业的公开实践作论据、却未给出文档名与链接的条目），本节无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -311,7 +311,7 @@ Cohere 与 Hugging Face 公开的 benchmark 都验证：在百万级语料上，
   - 离线可重建——同一模型可在稀疏与稠密之间迁移部署。
 - **边界**：
   - **sparse 向量不能完全替代 BM25**：BM25 有 30 年工程积累（高亮、位置加权、phrase 查询），BGE-M3 sparse 是学到的稀疏权重，不能复现 phrase 搜索（"iPhone 15 Pro" 加引号的精确匹配）。
-  - **推理开销大**：单模型同时输出三类向量，推理时间约为单一 dense 输出的 2–3 倍。
+  - **推理开销大**：单模型同时输出三类向量，推理时间明显高于只输出 dense（常见量级是数倍，随 batch 大小与硬件配置而异，此处按【经验】档处理）。
   - **存储代价**：ColBERT 输出的 token 向量存储开销仍如 §B.1 所述，远大于 Bi-Encoder。
   - **微调成本**：如果业务领域与训练语料差异大（医学、法律），三类向量都要重新评估，业务级微调代价高于 BM25。
 
@@ -334,7 +334,7 @@ Cohere 与 Hugging Face 公开的 benchmark 都验证：在百万级语料上，
 
 - **Query Understanding 在前、混合检索在后**：先做 Query Rewrite / HyDE，再把改写后的 query 喂给 BM25 + 向量融合 + Reranker。这是目前企业级 RAG 的标准前处理管线。
 - **不是替代，而是补强**：Query Understanding 不会替代 BM25 / 向量 / Rerank 中的任何一环，它解决的是「query 表达不足」的问题，下游链路仍然需要保证召回与精排。
-- **成本与收益**：每次 query 增加一次 LLM 调用（GPT-3.5 约 $0.001–0.003）——必须评估「加一次 LLM 换 5% Recall@10 提升」是否划算。低 query 量高价值场景（医生问诊、法律检索）收益最大。
+- **成本与收益**：每次 query 增加一次 LLM 调用（GPT-3.5 约 $0.001–0.003）——必须评估「加一次 LLM 调用换 Recall@10 的提升」是否划算（上述调用成本量级与召回提升幅度均属【经验】档表述：前者随模型版本、token 长度与计价方式而变，后者随评测集与 query 类型而异，本节无法给出可溯源的统一数字）。低 query 量高价值场景（医生问诊、法律检索）收益最大。
 
 **3. 常见陷阱**
 
@@ -348,21 +348,21 @@ Cohere 与 Hugging Face 公开的 benchmark 都验证：在百万级语料上，
 
 - **「BGE-M3 与 NV-Embed 怎么选？」** 答：NV-Embed（NVIDIA 2024）在 MTEB 英文榜上 SOTA，BGE-M3 在中文 + 多语言上更强；业务以英文为主选 NV-Embed，中文 + 多语言选 BGE-M3。
 - **「HyDE 与 Query Rewrite 哪个更好？」** 答：两者不是替代而是互补——Query Rewrite 解决「query 表达不充分」，HyDE 解决「query–doc 语义鸿沟」。生产里通常两者都做（先 Rewrite 再 HyDE），或者根据 query 类型路由。
-- **「BGE-M3 sparse 倒排索引怎么建？」** 答：sparse 向量是高维稀疏向量（约 30k 维、有效非零 < 100），可以直接用 Lucene 的 `SparseVectorField` 字段或 Qdrant / Milvus 的稀疏向量字段存储；不需要传统分词器。
+- **「BGE-M3 sparse 倒排索引怎么建？」** 答：sparse 向量是高维稀疏向量——维度覆盖模型的词表，而单条文本的有效非零维度通常只有几十到上百（具体维度与稀疏度请以 BGE-M3 官方模型卡为准），可以直接用 Lucene 的 `SparseVectorField` 字段或 Qdrant / Milvus 的稀疏向量字段存储；不需要传统分词器。
 - **「HyDE 用哪个 LLM？成本怎么控？」** 答：HyDE 不需要强推理——GPT-3.5 / 通义千问 / Claude Haiku 即可；用 temperature 0.7 + 多采样融合是性价比最高的范式。必须做缓存：相同 query 的 HyDE 结果可缓存数小时。
 
 **5. 参考资料**
 
 - BAAI Chen 等《BGE M3-Embedding: Multi-Linguality, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation》——BGE-M3 的原始论文，含三个 Multi 的完整技术说明。
 - NVIDIA《NV-Embed: Improved Techniques for Training LLMs as Generalist Embedding Models》——NV-Embed 的论文与训练策略，对照理解多功能 Embedding 趋势。
-- Gao, Ma, Lin, Callan《Precise Zero-Shot Dense Retrieval without Relevance Labels》（SIGIR 2023）——HyDE 技术的原始论文，方法名为 Hypothetical Document Embeddings。
+- Gao, Ma, Lin, Callan《Precise Zero-Shot Dense Retrieval without Relevance Labels》（arXiv 2022；ACL 2023）——HyDE 技术的原始论文，方法名为 Hypothetical Document Embeddings。
 - LangChain `MultiQueryRetriever` 与 LlamaIndex `QueryFusionRetriever` 官方文档——Multi-Query Retrieval 路径的工程实现。
 - LlamaIndex 关于 Query Rewriting / HyDE / Step-Back 的官方文档——Query Understanding 三件套在主流框架中的实现。
 - **字节跳动豆包 / 抖音搜索中 BGE 系列多功能向量的部署** —— 单模型同时输出 dense + sparse + colbert 三类向量，简化多语种 / 多模态检索的工程架构，是多功能 Embedding 在大流量 C 端场景的工业化路径。
 - **网易雷火玩家 NPC 对话中的 HyDE 实践** —— 玩家口语化提问属于典型低信息 query，用 HyDE 让 LLM 假写一段答案风格文本再去做 embedding 检索，有效弥补 query-doc 语义鸿沟。
 - **中国电信 10000 号智能客服的 Query Rewrite 路线** —— 口语化提问被 LLM 改写成"业务检索词"（如把"我上次那个套餐"改写为"2024 年发布的 XX 套餐"）后再走混合检索，是运营商客服 RAG 的标准前处理管线。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客；其中以「具体企业名 + 结论」形式出现的条目（即直接以某企业的公开实践作论据、却未给出文档名与链接的条目），本节无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -397,11 +397,11 @@ Cohere 与 Hugging Face 公开的 benchmark 都验证：在百万级语料上，
 
 **生产实践的搭配**：召回层用 **Recall@10 / Recall@20**，精排层用 **nDCG@10**，对话式问答用 **MRR**。三者结合才能完整评估。
 
-**第三层：典型量级（来自公开 benchmark 与企业实践）。**
+**第三层：典型量级（【经验】档：以下均为学术基准上的量级参考，本节无法给出可溯源的统一数字；同章 §5 亦明确不给出「晚交互比双塔准多少」的通用数字，此处同样只给量级、不给可引用的单点值）。**
 
-- **Recall@10**：BEIR 基准上最好的单向量方法约 60–75%；BM25 + 向量融合 + Reranker 可达 85–95%。企业级 RAG 通常要求 Recall@10 > 90%。
-- **MRR**：在 MS MARCO 等公开问答集上，BGE-M3 + Reranker 通常在 0.35–0.45 区间。
-- **nDCG@10**：在 BEIR 上最好的 Late Interaction + Reranker 组合可达 0.65–0.75。
+- **Recall@10**：BEIR 基准上最好的单向量方法约 60–75%；BM25 + 向量融合 + Reranker 可达 85–95%（【经验】档，量级参考，随数据集与评测口径变化）。企业级 RAG 通常要求 Recall@10 > 90%。
+- **MRR**：在 MS MARCO 等公开问答集上，BGE-M3 + Reranker 通常在 0.35–0.45 区间（【经验】档，同上）。
+- **nDCG@10**：在 BEIR 上最好的 Late Interaction + Reranker 组合可达 0.65–0.75（【经验】档，同上）。
 
 注意：这些数字是**学术基准**的参考量级，**业务数据集上的真实数字取决于领域匹配度与标注质量**——领域匹配差时数字可低 10–20 个百分点。
 
@@ -424,7 +424,7 @@ Cohere 与 Hugging Face 公开的 benchmark 都验证：在百万级语料上，
 **第五层：在线评估与 LLM-as-Judge。**
 
 - **在线 A/B**：离线指标好不等于线上好——必须做 A/B 测试，把召回结果喂给真实 RAG 流程，比较下游答案的「用户满意度 / 任务完成率」。
-- **LLM-as-Judge**：用 GPT-4 / Claude 对召回 doc 与最终答案打分（5 分制），快速大批量评估。研究表明 LLM-as-Judge 与人工标注的一致性可达 0.7–0.8（Kappa 系数），可作为离线评估的近似。
+- **LLM-as-Judge**：用 GPT-4 / Claude 对召回 doc 与最终答案打分（5 分制），快速大批量评估。LLM-as-Judge 与人工标注的一致性可观但并不完美，足以作为离线评估的近似（一致性系数随任务、评分粒度与 judge 模型而异，本节无法给出可溯源的统一数字，此处按【经验】档处理）。
 - **三段式评估管线**：离线 Recall@K / MRR / nDCG（迭代期）→ 影子流量回放（灰度期）→ 在线 A/B + 用户反馈（正式期）。这是企业级 RAG 评测的标准流程。
 
 **3. 常见陷阱**
@@ -433,13 +433,13 @@ Cohere 与 Hugging Face 公开的 benchmark 都验证：在百万级语料上，
 - **用合成 query 评测。** 合成 query 往往过于「完美」，无法反映真实用户的口语化与模糊性。
 - **忽略 ground truth 的完备性。** 一个 query 可能有多条相关 doc，标注时只标一条会低估 Recall@K。
 - **不区分离线与在线。** 离线指标好但在线差的常见原因——评测 doc 池与生产 doc 池不一致、用户意图多样、行为分布漂移。
-- **认为 LLM-as-Judge 可完全替代人工。** LLM-as-Judge 与人工的相关性 0.7–0.8，不算高；在边界 case 上仍需人工兜底。
+- **认为 LLM-as-Judge 可完全替代人工。** LLM-as-Judge 与人工的一致性并不完美（低于人工之间的一致性），在边界 case 上仍需人工兜底。
 
 **4. 追问预测**
 
 - **「Recall@10 达到 95% 还需要继续优化吗？」** 答：看场景——如果召回的 5% 错误全是用户痛点 query，需要继续；如果都是长尾低价值 query，可以接受。同时看 Recall@10 与 Recall@100 的差距——差距过大说明精排压力大，可优化召回覆盖。
 - **「nDCG@10 与 MRR 同时用会不会矛盾？」** 答：nDCG 衡量整体排序，MRR 衡量首条命中——两者可能错位（如「Top-1 错、Top-2/3 对」MRR 低但 nDCG 中等）。同时用是合理的，能反映不同用户行为。
-- **「标注成本高怎么办？」** 答：用 LLM 预标注 + 人工校验的流水线——LLM 先批量生成候选 ground truth，人工抽样校验与纠错，可降低 60–80% 标注成本。
+- **「标注成本高怎么办？」** 答：用 LLM 预标注 + 人工校验的流水线——LLM 先批量生成候选 ground truth，人工抽样校验与纠错，能显著降低标注成本（降幅取决于抽样校验比例与质检强度，本节无法给出可溯源的统一比例，此处按【经验】档处理）。
 - **「评测集多久更新一次？」** 答：业务稳定期 3–6 个月更新一次；业务迭代期（文档频繁新增 / 业务规则变化）建议每月更新至少 20% 样本。
 
 **5. 参考资料**
@@ -453,7 +453,7 @@ Cohere 与 Hugging Face 公开的 benchmark 都验证：在百万级语料上，
 - **滴滴司机文档检索的 LLM-as-Judge 评估闭环** —— 出行行业的高合规要求驱动了"离线指标 + LLM-as-Judge + 人工抽检"的多段评测管线，是出行 / 物流行业评测模型抗漂移的代表案例。
 - **网易雷火的玩家意图识别评测集** —— 游戏行业 RAG 评测把"赛季 / 版本更新事件"作为参照基线纳入评测集设计，降低季节性漂移带来的误判，体现游戏业务对评估偏差控制的特殊关注。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客；其中以「具体企业名 + 结论」形式出现的条目（即直接以某企业的公开实践作论据、却未给出文档名与链接的条目），本节无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
@@ -463,7 +463,7 @@ Cohere 与 Hugging Face 公开的 benchmark 都验证：在百万级语料上，
 
 - 是否理解**元数据过滤不是可选项**——在企业级 RAG 里，缺了它会引发安全与时效事故。
 - 能否说清**权限隔离**的至少两种工程实现路径（pre-filter / post-filter）及其代价。
-- 是否知道**成本工程的三大杠杆**：精排缓存、路由策略、模型蒸馏。
+- 是否知道**成本工程的四个杠杆**：精排缓存、路由策略、模型蒸馏、批处理与异步。
 - 加分项：能讲清 Agentic Hybrid Search 与 GraphRAG 各自的边界与典型适用场景。
 
 **2. 参考答案框架**
@@ -484,21 +484,21 @@ Cohere 与 Hugging Face 公开的 benchmark 都验证：在百万级语料上，
 - **混合策略**：pre-filter 缩小大范围（如部门级），post-filter 处理细粒度（如文档级 ACL）。这是工业实践的常见折中。
 - **多租户**：如果系统是多租户 SaaS，通常直接用**租户 ID 作为 partition key**，ANN 索引按租户分片，召回天然隔离。
 
-在多租户场景下，**ACL-aware retrieval**（带访问控制感知的检索）的工程核心就是 pre-filter + post-filter 的组合 + 按租户分片。该范式在多个 SaaS 系统的公开分享中被反复讨论：Notion 的 AI 检索系统在公开分享中提到其采用了「workspace 级 pre-filter + page 级 ACL post-filter」的方案；同类设计也见于 GitHub Copilot、Slack、Linear 等以 workspace/tenant 为边界的多租户 AI 产品。
+在多租户场景下，**ACL-aware retrieval**（带访问控制感知的检索）的工程核心就是 pre-filter + post-filter 的组合 + 按租户分片。该范式在多个 SaaS 系统的公开分享中被反复讨论：Notion 的 AI 检索系统在公开分享中提到其采用了「workspace 级 pre-filter + page 级 ACL post-filter」的方案（本节无法给出该分享的可核验文档名与链接，此处按【经验】档处理）；同类设计也见于 GitHub Copilot、Slack、Linear 等以 workspace/tenant 为边界的多租户 AI 产品。
 
-**第三层：成本工程——三大杠杆。**
+**第三层：成本工程——四个杠杆。**
 
-- **杠杆 1：精排缓存**。Reranker API 按调用计费——缓存相同 (query, candidate_set) 的精排结果是直接降本 30%+ 的最有效手段。LangChain 的 `CacheBackedEmbeddings` 与各类 SaaS Reranker 自带的请求缓存机制都是为这个场景设计的。
+- **杠杆 1：精排缓存**。Reranker API 按调用计费——缓存相同 (query, candidate_set) 的精排结果是最直接的降本手段（降幅取决于重复 query 占比，本节无法给出可溯源的统一比例，此处按【经验】档处理）。LangChain 的 `CacheBackedEmbeddings` 与各类 SaaS Reranker 自带的请求缓存机制都是为这个场景设计的。
 - **杠杆 2：路由策略**。不是所有 query 都需要走完整管线——
   - 高置信度召回（向量相似度 > 0.9 + BM25 高分）→ 跳过 Reranker，直接出结果。
   - 简单事实型 query（短 query + 高频）→ 走 BM25 单通道，跳过向量。
   - 复杂多跳 query → 完整管线（含 Reranker）。
   - 路由判断本身可以由一个小分类模型或 LLM 完成。
 - **杠杆 3：模型蒸馏与降阶**。生产里常见的成本工程是——
-  - 把 GPT-4 Reranker 蒸馏到 BGE-reranker / 自研小模型（精度损失 1–3%，成本降 50%+）。
+  - 把 GPT-4 Reranker 蒸馏到 BGE-reranker / 自研小模型（精度损失与成本下降相互牵制，幅度随任务与蒸馏数据量而异，本节无法给出可溯源的统一数字，此处按【经验】档处理）。
   - 把 LLM Query Rewrite 蒸馏到小模型（T5-Flan / Qwen-1.5B 微调）。
   - 把生成端 LLM 用 Claude / GPT-3.5 替代 GPT-4（仅在精度可接受时）。
-- **杠杆 4：批处理与异步**。Reranker 支持 batch 推理（一次处理 N 条候选）——单条请求延迟可能 150ms，batch=32 时单条平均延迟可降至 30ms。
+- **杠杆 4：批处理与异步**。Reranker 支持 batch 推理（一次处理 N 条候选）——单条请求自身的延迟不变，但按 batch 摊销后的平均单条处理时间会显著下降（具体数值随显卡型号、batch 大小与序列长度而异，此处按【经验】档处理）。
 
 **第四层：Agentic Hybrid Search——智能体决定检索策略。**
 
@@ -558,7 +558,7 @@ Cohere 与 Hugging Face 公开的 benchmark 都验证：在百万级语料上，
 - **中国移动云客服的成本工程实践** —— 10086 大流量客服场景下路由 + 缓存 + 精排跳过的组合，体现运营商级别的 RAG 成本优化方向。
 - **国家电网调度知识库的 GraphRAG 方向** —— 能源政企场景下实体关系（设备 → 调度 → 故障）丰富，关系推理在能源行业是被持续关注的方向。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客；其中以「具体企业名 + 结论」形式出现的条目（即直接以某企业的公开实践作论据、却未给出文档名与链接的条目），本节无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
 
 ---
 
