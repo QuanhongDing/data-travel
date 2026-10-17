@@ -43,7 +43,7 @@
 - **维度建模**：服务于「数仓的指标计算与查询性能」。事实表 + 维度表，反范式优先——是为 OLAP / BI 报表设计的。
 - **本体建模**：服务于「跨域语义对齐 + 可推理」。Class + Property + Axiom，关注概念的形式化定义、可推理性、可验证性——是为「跨系统 / 跨业务 / 跨企业」的语义层设计的。
 
-**第二层：四个维度对比（核心）。**
+**第二层：四个维度对比（核心），另附三个工程维度。**
 
 | 维度 | ER 建模 | 维度建模 | 本体建模 |
 | --- | --- | --- | --- |
@@ -60,7 +60,7 @@
 - **「我只要报表 / BI」→ 维度建模**。比如阿里 OneData 体系，本体不是必须的。DWS/ADS 层用维度建模性价比最高。
 - **「我要做主数据统一」→ MDM / OneID + 维度建模**。这是蚂蚁、阿里、京东的标配——主数据用 ID-Mapping 解决，结构用维度建模落地。本体在这一层是「可选项」，不是必选项。
 - **「我要做跨域语义对齐 / 多源概念统一 / AI 推理」→ 本体建模**。三个典型工业场景：
-  - **金融反欺诈**：蚂蚁集团 TuGraph 金融知识图谱用 OWL 2 RL 表达风控规则 + SHACL 校验——本体是「规则的语义骨架」。
+  - **金融反欺诈**：蚂蚁集团 TuGraph 金融知识图谱用 OWL 2 RL 表达风控规则 + SHACL 校验（出处见本题参考资料中的蚂蚁 TuGraph 条目，未附链接）——本体是「规则的语义骨架」。
   - **医疗知识图谱**：SNOMED CT 是顶层本体，三甲医院用本体做罕见病识别（参考资料：阿里云 GraphScope 医疗行业本体实践）。
   - **AI 时代的 GraphRAG**：Microsoft GraphRAG 2024 年开源后，KG 必须有本体 schema 约束才能稳定生产（否则「同义不同类」问题会爆发）。
 
@@ -77,7 +77,7 @@
 
 - **「如果你公司在做数仓，要不要立刻引入本体？」** 答：分阶段——先把维度建模做扎实，主数据用 MDM/OneID 解决；只有当出现「跨域语义对齐 / 跨 BU 概念冲突 / AI 场景需要语义骨架」三个需求时，才启动本体工程。提前做是过度工程。
 - **「本体和大模型知识有什么区别？」** 答：LLM 的知识是「隐式 / 概率 / 不可溯源」的；本体是「显式 / 形式化 / 可推理 / 可溯源」的。Neuro-Symbolic AI 把两者组合——LLM 做自然语言理解，本体做事实校验与推理。
-- **「蚂蚁金融知识图谱用本体还是不用？」** 答：用。TuGraph 平台在 2024 年的公开材料里明确提到用 OWL 2 RL 表达风控规则，SHACL 校验数据质量，本体是金融风控的「规则语义层」。
+- **「蚂蚁金融知识图谱用本体还是不用？」** 答：用。据蚂蚁 TuGraph 团队 2024 年的公开技术分享介绍，其用 OWL 2 RL 表达风控规则、用 SHACL 校验数据质量（出处见本题参考资料中的蚂蚁 TuGraph 条目，未附链接），本体是金融风控的「规则语义层」。
 - **「GraphRAG 必须依赖本体吗？」** 答：弱依赖——GraphRAG 抽取阶段不强制要本体，但生产环境必须叠加本体做后置校验与对齐，否则会有「同义不同类」的事故。
 
 **5. 参考资料**
@@ -85,7 +85,7 @@
 - Tom Gruber 1993 年论文《A Translation Approach to Portable Ontology Specifications》——本体（Ontology）的原始定义，是所有「本体是什么」问题的标准答案。
 - W3C 标准文档 RDF / RDFS / OWL 2 / SHACL / SKOS 系列——本体工程的语言层标准。
 - Microsoft Research 2024 年发表的 GraphRAG 论文与开源仓库——把本体 + KG + RAG 的工业范式推到一线。
-- 蚂蚁集团 TuGraph 团队 2024 年公开技术分享——金融知识图谱中 OWL 2 RL 与 SHACL 的工业级实践。
+- 蚂蚁集团 TuGraph 团队 2024 年公开技术分享及其公开技术博客《TuGraph 反欺诈平台架构演进》——金融知识图谱中 OWL 2 RL 与 SHACL 的工业级实践。
 - 阿里云 GraphScope 行业本体白皮书（2024）——金融、医疗、政务领域本体的落地范本。
 - Ralph Kimball《The Data Warehouse Toolkit》第 1-3 章——对照阅读，理解维度建模与本体建模的目标差异。
 - **微医的医疗知识图谱 Hatalyst** —— 用 OWL 表达 SNOMED CT 顶层本体下疾病-症状-药品-检查的语义网络，跨医院跨科室的概念对齐只能靠本体而非维度表，是医疗行业"跨域语义统一必须用本体"的代表案例。
@@ -123,7 +123,7 @@
 | --- | --- | --- | --- | --- |
 | **OWL 2 EL** | EL++ | **PTime-Complete** | ELK、Snorocket、Konclude | 术语推理（Subsumption）：擅长分类、层次推理 |
 | **OWL 2 QL** | DL-Lite_R | **AC⁰**（查询重写为 SQL） | Quonto、Ontop | 大数据量查询：本体改写为关系查询 |
-| **OWL 2 RL** | Datalog（规则系统） | **PTime**（数据相关） | HermiT（部分）、OWL RL 推理机、Stardog Rules | 规则系统：擅长业务规则、传递性推理 |
+| **OWL 2 RL** | Datalog（规则系统） | **PTime**（数据相关） | RDFox、Apache Jena（规则推理）、Stardog Rules（HermiT 等 OWL DL 推理机对 RL 本体亦可部分处理） | 规则系统：擅长业务规则、传递性推理 |
 
 **关键差异**：
 
@@ -135,13 +135,13 @@
 
 - **业务特征**：反欺诈规则多是「if A then B」的规则（如「同一身份证 24h 内有 3 笔以上异地交易 → 触发风控」），加上设备指纹、IP 关联等关系推理。规则推理密集，数据量中等（千万级交易 / 日），但要求**毫秒级决策**。
 - **推荐选型**：**OWL 2 RL**。理由：① 表达力刚好——RL 支持 `TransitiveProperty`、`FunctionalProperty`、`InverseFunctionalProperty`，能覆盖反欺诈常见推理；② 推理复杂度 PTime，可承载高并发；③ 可直接对接图数据库（Stardog / Neo4j），用规则引擎跑流式查询。
-- **工业案例**：蚂蚁集团 TuGraph 反欺诈平台（2024 年公开材料）——用 OWL 2 RL 表达风控规则 + SHACL 校验数据质量，Pellet 与自研规则引擎混部，毫秒级返回决策。
+- **工业案例**：蚂蚁集团 TuGraph 反欺诈平台（2024 年公开材料）——用 OWL 2 RL 表达风控规则 + SHACL 校验数据质量，反欺诈决策在毫秒级返回（出处见本题参考资料中的蚂蚁 TuGraph 条目，未附链接）。
 
 **第四层：医疗知识图谱选型——EL。**
 
 - **业务特征**：医学概念有深层次分类（疾病 → 罕见病 → 神经纤维瘤 → 1 型神经纤维瘤病），且需要术语推理（subsumption：「1 型神经纤维瘤病」is-a「神经纤维瘤」is-a「罕见病」）。SNOMED CT 顶层本体用 EL profile 设计就是这个原因。
 - **推荐选型**：**OWL 2 EL**。理由：① EL 专为术语推理优化，**PTime-Complete** 保证分类推理可终止；② ELK reasoner 是 EL profile 的事实标准，100 万级概念分类分钟级完成；③ 与 SNOMED CT 等行业本体直接兼容。
-- **工业案例**：阿里云 GraphScope 医疗知识图谱（2024 年白皮书）——基于 SNOMED CT 顶层本体，用 EL profile + ELK 推理机，罕见病识别准确率提升 30%。
+- **工业案例**：阿里云 2024 年《行业知识图谱白皮书》中的 GraphScope 医疗知识图谱实践——基于 SNOMED CT 顶层本体，用 EL profile + ELK 推理机做疾病分类与罕见病识别；相对无本体基线，识别准确率方向一致地提升，幅度高度依赖本体覆盖度与病历数据质量（【经验】档：本书未附该白皮书的链接，出处见本题参考资料中的同名条目，请按条目名称自行检索核验）。
 
 **第五层：QL 的适用场景。** QL 在国内工业落地相对少，主要在「数据联邦」「企业数据目录」场景——把 OWL 当 SQL 的语义扩展，把数据留在原系统，本体只做查询重写。Ontop 工具是 QL 的事实标准实现。
 
@@ -154,7 +154,7 @@
 
 **4. 追问预测**
 
-- **「已经用了 OWL DL，迁移到 profile 怎么迁？」** 答：先用 OWL2XML Profile 工具检查本体是否兼容目标 profile；不兼容的部分要「降级表达」——例如把 General Concept Inclusion 拆成多条 SubClassOf 链。
+- **「已经用了 OWL DL，迁移到 profile 怎么迁？」** 答：先用 OWL API 的 profile 校验（`OWLProfileReport`）或 Protégé 的 OWL 2 Profiles 检查插件，检查本体是否兼容目标 profile；不兼容的部分要「降级表达」——例如把 General Concept Inclusion 拆成多条 SubClassOf 链。
 - **「reasoner 跑不动怎么办？」** 答：三板斧——① 选更轻量的 profile；② 模块化（Module Extraction）拆分推理任务；③ 增量推理（Incremental Reasoning）避免全量重算。
 - **「能不能三个 profile 混用？」** 答：可以但复杂。用 `owl:imports` 让多个 profile 本体共存，分别推理；或者用 Stardog 这种支持多 profile 的混合 reasoner。
 - **「SNOMED CT 为什么选 EL？」** 答：SNOMED CT 的设计目标是「全球医学术语统一」，需要深层次分类推理（一个疾病有 10+ 层父类），且概念集极大（30 万+）。EL profile 是唯一能在工业时间内完成分类推理的选择。
@@ -163,7 +163,7 @@
 
 - W3C OWL 2 规范第 3 部分《Mapping to RDF Graphs》与 Profiles 章节——三个 profile 的形式化定义与边界。
 - W3C 工作组《OWL 2 Web Ontology Language Profiles》（Recommendation 2009-10-27）——EL/QL/RL 的标准出处。
-- Markus Krötzsch《Description Logic Reasoning with Decision Forests》论文——ELK reasoner 的核心论文，EL profile 工业化的关键工作。
+- Markus Krötzsch《Description Logic Reasoning with Decision Forests》论文——EL profile 推理实现路线的相关工作；该论文的发表年份与会议本题未附，请按题名与作者自行检索核验。
 - Stardog 官方文档关于 OWL 2 Reasoning 的章节——工业图数据库对三个 profile 的支持矩阵与最佳实践。
 - 蚂蚁集团 2024 年公开技术博客《TuGraph 反欺诈平台架构演进》——OWL 2 RL 在金融风控的工业实践。
 - 阿里云 2024 年《行业知识图谱白皮书》——SNOMED CT + EL profile 在医疗知识图谱中的落地路径。
@@ -199,7 +199,7 @@
 - **OWL 公理（SubClassOf / EquivalentClass / DisjointClasses / Property Restriction）**：表达**「概念之间的关系应该是什么」**。OWL 是**推理语言**——给定公理与实例，Reasoner 推导出隐含的事实。OWL 的目标是「让机器理解业务规则的语义」。
 - **SHACL（Shapes Constraint Language）**：表达**「数据节点必须满足什么形状」**。SHACL 是**校验语言**——给定 RDF 数据和形状约束，SHACL 引擎告诉你哪些节点违反约束。SHACL 的目标是「让机器拒绝不合规的数据」。
 
-**第二层：四个维度的对比。**
+**第二层：七个维度的对比。**
 
 | 维度 | OWL 公理 | SHACL |
 | --- | --- | --- |
@@ -242,8 +242,8 @@
 - **Stardog**：同时支持 OWL 推理 + SHACL 校验，是工业事实标准。
 - **TopBraid SHACL Validator**：SHACL 引擎的最完整实现。
 - **W3C SHACL 规范（2017 年推荐标准）**：SHACL 的标准定义。
-- **阿里数据中台**：OWL 表达语义层 + SHACL 校验主数据质量。
-- **蚂蚁 TuGraph**：OWL 2 RL 表达风控规则 + SHACL 校验交易数据。
+- **阿里数据中台**：OWL 表达语义层 + SHACL 校验主数据质量（出处见本题参考资料中的阿里云白皮书条目，未附链接）。
+- **蚂蚁 TuGraph**：OWL 2 RL 表达风控规则 + SHACL 校验交易数据（出处见本题参考资料中的蚂蚁 TuGraph 条目，未附链接）。
 
 **3. 常见陷阱**
 
@@ -257,7 +257,7 @@
 - **「SHACL 写得过严，业务数据全被拒收怎么办？」** 答：SHACL 分等级——必须（Violation 必须修复）/ 推荐（Warning 但不阻断）/ 警告（Info）。违规数据进「准生产区」，由 ETL 修复后再入主区。
 - **「OWL 与 SHACL 的优先级谁更高？」** 答：OWL 是「先验的」（建模时定义），SHACL 是「后验的」（数据进来时校验）。生产路径是 OWL 建模 → SHACL 校验 → Reasoner 推理 → 数据入湖。
 - **「SHACL 能校验非 RDF 数据吗？」** 答：可以。SHACL-SPARQL 通过 SPARQL 查询校验关系数据库；TopBraid Enterprise Data Platform 支持 SHACL 校验 JSON、CSV、XML 数据。
-- **「SHACL 与 JSON Schema 是什么关系？」** 答：SHACL 是 JSON Schema 的「语义升级版」——SHACL 不仅能校验数据结构，还能校验「数据是否满足本体约束」。Schema.org 的 JSON-LD schema 实际上是 SHACL 思想的轻量化实现。
+- **「SHACL 与 JSON Schema 是什么关系？」** 答：SHACL 是 JSON Schema 的「语义升级版」——SHACL 不仅能校验数据结构，还能校验「数据是否满足本体约束」。但要注意 Schema.org 与 JSON-LD 并不等于 SHACL：Schema.org 提供的是共享词汇表（概念怎么命名、怎么关联），JSON-LD 只是它的序列化格式，做形状校验的仍是 SHACL，二者是互补关系而不是「轻重两个版本」。
 
 **5. 参考资料**
 
@@ -364,7 +364,7 @@
 
 **5. 参考资料**
 
-- 国际标准 ISO 23830《Cross-domain data sharing using RDF》——跨域数据共享的标准框架。
+- 跨域数据共享领域的国际标准（ISO 与 W3C 均设有相关标准工作；具体标准编号与题名请以 ISO 官方目录与 W3C 官方文档目录的当前版本为准）——跨域数据共享的标准框架。
 - Microsoft Research 关于 Entity Resolution 的系列论文——把本体对齐与图神经网络结合，是工业级方法论。
 - 阿里《大数据之路》第 11 章「OneID」——OneID 体系的方法论与工业实践。
 - 蚂蚁集团 2024 年公开技术博客《金融实体库架构演进》——OneID + 本体组合的工业范本。
@@ -392,7 +392,7 @@
 
 - 是否真正理解 LLM 在本体工程中的「能力边界」——能做初稿生成，不能做语义保证。
 - 能否设计一条「LLM + 专家 + Reasoner + SHACL」的多层校验流水线。
-- 是否知道 OntoGPT / DeepOnto / Ontogenia 等 2024 年新工具的能力与不足。
+- 是否知道 OntoGPT / DeepOnto / Ontogenia 等 2023–2024 年出现的新工具的能力与不足。
 - 加分项：能举出「LLM 幻觉本体」的具体例子（如 LLM 生成的公理自相矛盾），并能给出工程上的检测方法。
 
 **2. 参考答案框架**
@@ -431,7 +431,7 @@
 - **校验内容**：必填字段、格式约束、枚举值、关联存在性。
 - **失败处理**：违规数据进「待修复区」，由 ETL 修复或人工审核。
 
-**第三层：四步之外的关键步骤——专家审核与版本管理。**
+**第三层：四步之外的关键步骤——专家审核、版本管理与影响分析。**
 
 - **专家审核**：业务方与本体工程师一起 review 初稿本体，确认概念命名、业务规则、公理正确性。
 - **版本管理**：用 Git + 语义化版本（MAJOR.MINOR.PATCH）管理本体变更；用 `owl:versionInfo`、`owl:priorVersion` 记录演化历史。
@@ -467,12 +467,12 @@
 
 **5. 参考资料**
 
-- OntoGPT 论文与开源仓库（2023 年由 University of Florida 发布）——LLM 本体生成的代表性工作。
+- OntoGPT / SPIRES 论文与开源仓库（Monarch Initiative，2023 年公开）——LLM 本体生成的代表性工作；作者与发表信息请以项目仓库与论文页面为准。
 - DeepOnto（2024 年 ISWC 论文）——本体工程与 LLM 深度集成的工具包。
 - Microsoft GraphRAG 论文与开源仓库（2024 年）——LLM + 本体 + KG + RAG 的工业级参考实现。
 - 阿里云 2024 年《行业知识图谱白皮书》——LLM 辅助本体构建的落地范本。
 - OOPS!（Ontology Pitfall Scanner）——本体反模式检测工具，是本体质量评估的事实标准。
-- W3C 关于 Ontology Engineering 与 LLM 集成的研究报告（2024 年）——本体工程方法论的最新进展。
+- W3C 本体工程相关标准与工作组公开材料（本体工程与 LLM 结合方向的具体 W3C 文档名本题未附；W3C 的正式产出以 Recommendation 与 Note 为主，请以 W3C 官方文档目录的当前版本为准）——本体工程方法论的标准侧依据。
 - **丁香园的医学知识库构建流水线** —— 用 LLM 辅助生成疾病-药物-症状的候选本体，结合专家审核 + Reasoner 一致性推理 + SHACL 校验，是医疗行业"LLM 辅助本体工程"安全流水线的代表实践。
 - **网易雷火的游戏领域本体构建** —— 用 LLM 抽取角色-技能-剧情-道具的实体关系，配合专家审核与 SHACL 校验避免业务幻觉，是游戏行业"LLM 不能独立完成本体工程"的典型案例。
 - **丁香园** —— 丁香园的医学知识图谱——药品、疾病、症状、指南的多跳查询与推理。

@@ -4,7 +4,7 @@
 
 > 本节整合自题库《大数据平台架构师》（创脉思 cms365.cn，版本 2025-11-25）的真实面试题，题号沿用原题库编号（PDF §X.Y 第 K 题），便于读者回溯原题。
 >
-> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Netflix / Uber / Meta / LinkedIn / Confluent / 阿里 / 字节 / 招行 等），便于读者进一步溯源。
+> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Netflix / Uber / Meta / LinkedIn / Confluent / 阿里 / 字节 / 招行 等），便于读者按机构与主题自行检索核验；其中以「具体企业名 + 具体数字」形式给出、本节未附文档名与链接的条目，均属【经验】档表述，引用时请自行查证。
 
 ### 8.1 全景视图
 
@@ -49,7 +49,7 @@
 
 **第一层：定义与存储边界。**
 
-- **数据仓库（Data Warehouse）**：以 Snowflake / Redshift / Teradata / MaxCompute 为代表，强 Schema、专有存储或优化列存（Snowflake 微攒）、高压缩比、高并发 BI 友好。**代价**：存算耦合或存算分离但存储私有、与 AI/ML 生态脱节。
+- **数据仓库（Data Warehouse）**：以 Snowflake / Redshift / Teradata / MaxCompute 为代表，强 Schema、专有存储或优化列存（Snowflake 微分区）、高压缩比、高并发 BI 友好。**代价**：存算耦合或存算分离但存储私有、与 AI/ML 生态脱节。
 - **数据湖（Data Lake）**：以 S3/OSS + `Parquet/ORC` 为代表，开放格式、低成本、弹性大、支持 AI 训练（直接读 Parquet 进 PyTorch / TensorFlow）。**代价**：弱治理（小文件、孤儿文件、Schema 不一致），易形成"数据沼泽"。
 - **湖仓一体（Lakehouse）**：以 Databricks / Iceberg + Spark / Flink + StarRocks 为代表，**对象存储 + 开放表格式 + 多引擎共享**，兼具湖的灵活与仓的治理。**代价**：架构复杂度高、需要专业团队、运维成熟度仍在演进。
 
@@ -66,8 +66,8 @@
 **第三层：决策矩阵（按企业规模 + 业务诉求）。**
 
 - **金融/电信/政府（强治理优先、数据量 TB–PB、AI 需求弱）** → **数据仓库**。**招行** 在核心交易分析采用 GaussDB / Teradata + MaxCompute 双轨，强审计 + 低延迟 BI。
-- **互联网 / 电商（日志多 + AI 重 + 数据 PB–EB）** → **湖仓一体**。**字节跳动 ByteLake** 用 OSS + Iceberg + Spark/Flink + StarRocks/ClickHouse，PB 级替代传统 Lambda，成本降 40%、性能升 10×。
-- **创业公司 / 数据量 < 10TB、只报表** → **云数仓（Snowflake / BigQuery）**。免运维、按查询付费，**Snowflake 在 SaaS 行业** 用 DWaaS 模式承载 80% 客户。
+- **互联网 / 电商（日志多 + AI 重 + 数据 PB–EB）** → **湖仓一体**。**字节跳动 ByteLake** 用 OSS + Iceberg + Spark/Flink + StarRocks/ClickHouse，PB 级替代传统 Lambda，成本与性能均有显著改善（【经验】档：本节无法给出可溯源的降幅与倍数）。
+- **创业公司 / 数据量 < 10TB、只报表** → **云数仓（Snowflake / BigQuery）**。免运维、按查询付费，**Snowflake 在 SaaS 行业** 被广泛采用、占据领先份额，以 DWaaS 模式承载了大量客户（【经验】档：本节无法给出可溯源的市场份额数字）。
 - **跨国集团 / 多云合规** → **联邦湖仓**。**Databricks Unity Catalog + Iceberg** 提供跨云统一的元数据治理。
 
 **第四层：场景反推与演进路径。**
@@ -102,11 +102,11 @@
 
 - Apache Iceberg 官方规范 V3——表格式 + ACID + 多引擎的官方定义。
 - Databricks Engineering Blog《What is a Lakehouse?》——Lakehouse 原始论文与工业实践。
-- Snowflake 官方文档《Architecture Overview》——存算分离 + 微攒的数仓架构。
+- Snowflake 官方文档《Architecture Overview》——存算分离 + 微分区（Micro-Partition）的数仓架构。
 - Martin Kleppmann《Designing Data-Intensive Applications》第 3 部分「Derived Data」——数据栈架构的形式化讨论。
 - **Netflix Keystone 数据栈** —— Netflix EB 级数据用 Kafka + Flink + Iceberg + Pinot 流批一体替代传统 Lambda。
 - **Uber 从 Hive 到 Lakehouse 的演进** —— Uber 2018–2024 期间从 Hive + Presto 迁移到 Iceberg + Spark 的工程实践。
-- **字节跳动 ByteLake** —— 字节跳动自研 Lakehouse 平台，PB 级替代 Lambda，成本降 40%、性能升 10×。
+- **字节跳动 ByteLake** —— 字节跳动自研 Lakehouse 平台，PB 级替代 Lambda，成本与性能均有显著改善（【经验】档：本节无法给出可溯源的降幅与倍数）。
 - **阿里 MaxCompute + Hologres 双引擎** —— 阿里双 11 期间 PB 级数仓 + 秒级 OLAP 实时查询的双引擎架构。
 - **Snowflake Cortex 与 Databricks AI Functions** —— 数仓原生 AI 能力的两条路径对比。
 - **招行 GaussDB + MaxCompute 双轨数仓** —— 金融强治理场景的数仓选型案例。
@@ -154,7 +154,7 @@
 - **电商 / 互联网（高吞吐 + 准实时 + AI）**：
   - 推荐 **流批一体（Flink + Paimon + StarRocks）** 或 **Lakehouse（Iceberg + Spark/Flink + StarRocks）**。
   - **Netflix Keystone**（Kafka + Flink + Iceberg + Pinot）EB 级数据用 Lakehouse 流批融合，支撑 AB 测试。
-  - **字节 ByteLake** 用 OSS + Iceberg + Spark/Flink + StarRocks/ClickHouse，替代传统 Lambda，成本降 40%。
+  - **字节 ByteLake** 用 OSS + Iceberg + Spark/Flink + StarRocks/ClickHouse，替代传统 Lambda，成本有显著下降（【经验】档：本节无法给出可溯源的降幅数字）。
 - **AI 平台 / 训练（高吞吐 + 重计算 + 复现性）**：
   - 推荐 **流批一体 + Lakehouse + AI 原生**。
   - **Databricks Data Intelligence Platform**（2024）Lakehouse + MLflow + LLM 一体化，AI 原生架构标杆。
@@ -171,13 +171,13 @@
 **第五层：常见工程权衡。**
 
 - **Lambda 的合并复杂度**：批流结果如何按时间窗口合并、晚到事件（late event）如何处理——是 Lambda 落地最大难点。**LinkedIn** 在 Lambda 实践中开发了专门的"merge view"服务做窗口合并。
-- **Kappa 的重放成本**：PB 级数据重放 6 小时起步——必须在 Kafka 上配 Tiered Storage（S3/OSS）+ Flink 增量 checkpoint。**Netflix Keystone** 用 Kafka Tiered Storage 把重放时间从 12 小时降到 2 小时。
-- **流批一体的引擎约束**：Flink 流模式 + 批模式要求引擎统一版本；Paimon 0.9+ 才支持完整的流批读写。**阿里 Flink + Paimon** 在阿里云实时计算 Flink 版上 SLA 99.99%。
+- **Kappa 的重放成本**：PB 级数据重放耗时以小时计（【经验】档：时长随数据量与集群规模而异，本节无法给出可溯源的统一数字）——必须在 Kafka 上配 Tiered Storage（S3/OSS）+ Flink 增量 checkpoint。**Netflix Keystone** 用 Kafka Tiered Storage 把重放耗时显著压缩（【经验】档：本节无法给出可溯源的压缩前后时长数字）。
+- **流批一体的引擎约束**：Flink 流模式 + 批模式要求引擎统一版本；Paimon 0.9+ 才支持完整的流批读写。**阿里 Flink + Paimon** 是阿里云实时计算 Flink 版上的生产可用组合（【经验】档：本节未附该组合的官方出处与 SLA，引用时请以阿里云官方文档为准）。
 
 **3. 常见陷阱**
 
 - **盲目追求 Lambda 双链路**。业务其实只需实时（如实时大屏），非要 Lambda 跑全量批，浪费资源。**正确**：业务驱动选型，纯实时优先 Kappa。
-- **盲目追求 Kappa**。业务有大量 T+1 历史报表（如月度财务），强上 Kappa 重放 8 小时——Lambda 更合适。
+- **盲目追求 Kappa**。业务有大量 T+1 历史报表（如月度财务），强上 Kappa 需长时间重放历史数据（【经验】档：重放时长随数据量与集群规模而异，本节无法给出可溯源的统一数字）——Lambda 更合适。
 - **混淆"流批一体"与"流批并存"**。流批并存 = Lambda；流批一体 = 一份代码。**字节跳动** 早期踩过这个坑，2018 年后统一到 Flink + Paimon 流批一体。
 - **忽视 Iceberg V2 流批读写**。Iceberg V2 + Flink 才支持完整流批；V1 只有 Spark Streaming 近似实现。**阿里 Flink + Iceberg** 在 V2 后才进入生产可用阶段。
 - **架构僵化**。业务变了架构不变——架构师必须有 ADR + 季度 Review 机制。
@@ -197,7 +197,7 @@
 - Apache Flink 官方文档《Streaming Concepts》——流批一体的工程基础。
 - Apache Paimon 官方文档《Streaming Lakehouse》——Paimon 流批一体的实现细节。
 - **Netflix Keystone（Kafka + Flink + Iceberg + Pinot）** —— Netflix EB 级数据用 Lakehouse 流批融合替代 Lambda 的工程实践。
-- **字节跳动 ByteLake** —— 字节跳动自研 Lakehouse，PB 级替代 Lambda，成本降 40%、性能升 10×。
+- **字节跳动 ByteLake** —— 字节跳动自研 Lakehouse，PB 级替代 Lambda，成本与性能均有显著改善（【经验】档：本节无法给出可溯源的降幅与倍数）。
 - **LinkedIn Lambda 合并实践** —— LinkedIn 内部"merge view"服务做批流窗口合并，是工业级 Lambda 标杆。
 - **阿里 MaxCompute + Hologres 双引擎** —— 阿里双 11 期间 PB 级数仓 + 实时 OLAP，Lambda + Kappa 混合架构。
 - **微众银行 Kappa 实时风控** —— 微众银行秒级风控用 Kappa 架构，Kafka + Flink + Iceberg 端到端 EOS。
@@ -226,7 +226,7 @@
 - **Iceberg**：分层元数据 = `metadata.json`（当前 schema + snapshot 列表 + partition spec）+ 每个 snapshot 指向一个 `manifest list` + 每个 manifest 指向一组 Parquet/ORC/Avro 数据文件。**字段 ID 永久存储**——schema 演进通过字段 ID 不变性保证 Backward 兼容。
 - **Hudi**：基于 Timeline（commit / delta_commit / compaction / replace_commit）+ Commit Metadata（`.hoodie` 元数据文件）。Copy-on-Write（CoW）每次 commit 生成新 base file；Merge-on-Read（MoR）保留 base + log 文件，**Hudi 内建 `_hoodie_commit_time` / `_hoodie_file_name` 字段**供 Time Travel。
 - **Delta Lake**：单层元数据 = `_delta_log/00000000000000000001.json`（每个事务一个 JSON）+ `00000000000000000010.checkpoint.parquet` 快照。JSON 是 append-only 顺序写；Schema + AddFile / RemoveFile 都在 JSON 中追加。
-- **Paimon**：基于 **LSM 树**（Log-Structured Merge Tree）+ 主键索引（类似 RocksDB / HBase），**专为流批一体设计**。数据先写 Log File，再后台 Compact 成 Sorted Run / Level 文件；主键索引支持高效点查 + 更新删除。**Flink CDC 场景**写入性能比 Iceberg/Hudi 高 3–10 倍。
+- **Paimon**：基于 **LSM 树**（Log-Structured Merge Tree）+ 主键索引（类似 RocksDB / HBase），**专为流批一体设计**。数据先写 Log File，再后台 Compact 成 Sorted Run / Level 文件；主键索引支持高效点查 + 更新删除。**Flink CDC 场景**写入性能明显优于 Iceberg/Hudi（【经验】档：倍数随写入模式、主键更新比例与并发而异，本节无法给出可溯源的统一数字）。
 
 **第二层：四维度量化对比。**
 
@@ -254,7 +254,7 @@
   - **Netflix** 训练特征表用 Iceberg V3 + snapshot tag，**Databricks** 用 Delta + MLflow run params 做训练复现。
 - **金融强审计（永久保留 + 严格回滚）**：
   - 推荐 **Delta Lake**（Databricks）+ 严格保留策略（365 天）。
-  - **Stripe** 用 Delta 做支付账本回滚，"用户投诉一笔 90 天前的订单 → 找到 version number → 1 分钟恢复"。
+  - **Stripe** 用 Delta 做支付账本回滚，"用户投诉一笔 90 天前的订单 → 找到 version number → 分钟级恢复"。
   - **招行** 用 Delta Lake 生产 SOP 规定 VACUUM 前必须确认无未关闭工单。
 
 **第四层：演进路径与生态判断。**
@@ -262,7 +262,7 @@
 - **Iceberg**：定位"**开放表格式标准**"，多引擎（Spark/Flink/Trino/StarRocks/Doris）共享，**2024 年事实标准**。
 - **Delta**：定位"**Databricks 一手生态**"，Spark 体验最佳，**Unity Catalog** + **MLflow** 闭环，外部引擎通过 Delta UniForm 接入。
 - **Hudi**：定位"**CDC + 增量处理**"，Uber 一手孵化，**MoR 表在 CDC 场景仍有优势**，但生态增量被 Paimon 蚕食。
-- **Paimon**：定位"**Flink 流批一体 + LSM 高性能**"，阿里 + Flink 社区共同推进，**2024–2025 增速最快**，CDC 场景首选。
+- **Paimon**：定位"**Flink 流批一体 + LSM 高性能**"，阿里 + Flink 社区共同推进，**2024–2025 增势领先**（【经验】档：本节无法给出可溯源的采用率与增速数据），CDC 场景首选。
 
 **第五层：常见工程权衡。**
 
@@ -295,10 +295,10 @@
 - Netflix Tech Blog《Iceberg V3 at Netflix》——Netflix 训练特征表用 Iceberg V3 + snapshot tag 复现。
 - **Uber Hudi CDC + Time Travel** —— Uber 用 Hudi MoR 接入 MySQL binlog，Timeline 提供秒级回滚。
 - **字节跳动 Paimon + Iceberg 双轨** —— 字节跳动在实时数仓用 Paimon、离线数仓用 Iceberg，两套 Time Travel 互为备份。
-- **阿里 Flink + Paimon 实时数仓** —— 阿里云实时计算 Flink 版默认推荐 Paimon，SLA 99.99%。
+- **阿里 Flink + Paimon 实时数仓** —— 阿里云实时计算 Flink 版默认推荐 Paimon（【经验】档：本节未附该组合的官方出处与 SLA，引用时请以阿里云官方文档为准）。
 - **米哈游 Paimon 实时游戏事件** —— 米哈游用 Paimon 落地实时游戏事件分析，CDC + 流批一体。
 - **Databricks Delta + MLflow 一体化** —— Databricks MLflow run params 引用 Delta snapshot tag 做训练复现。
-- **Stripe Delta 支付账本回滚** —— Stripe 用 Delta Lake 做支付账本回滚，1 分钟定位任意历史 version。
+- **Stripe Delta 支付账本回滚** —— Stripe 用 Delta Lake 做支付账本回滚，分钟级定位任意历史 version。
 - **招行 Delta Lake 生产 SOP** —— 招行金融场景 Delta Lake 的"VACUUM 前必须确认无未关闭工单"硬性规范。
 - **Shein** —— Shein 跨境供应链实时数据——日均千万订单走实时分发 + 离线对账，柔性供应链的核心。
 - **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
@@ -308,11 +308,11 @@
 
 ---
 
-#### §11.2.1 请从存储架构、查询模型、写入吞吐、JOIN 能力、生态成熟度五个维度系统对比 Apache Doris、Apache StarRocks、ClickHouse、Snowflake、Google BigQuery 五种主流 OLAP 引擎，并结合实时大屏、Ad-hoc 分析、湖仓加速三个场景说明选型决策。
+#### §11.2.1 请从存储架构、查询模型、写入吞吐、JOIN 能力、生态成熟度五个维度系统对比 Apache Doris、StarRocks、ClickHouse、Snowflake、Google BigQuery 五种主流 OLAP 引擎，并结合实时大屏、Ad-hoc 分析、湖仓加速三个场景说明选型决策。
 
 **1. 考察点**
 
-- 是否能讲清五种 OLAP 引擎的**架构差异**：Doris / StarRocks 的 MPP + 向量化、ClickHouse 的列存 + 预聚合、Snowflake 的存算分离 + 微攒、BigQuery 的无服务器 + 盘古文件系统。
+- 是否能讲清五种 OLAP 引擎的**架构差异**：Doris / StarRocks 的 MPP + 向量化、ClickHouse 的列存 + 预聚合、Snowflake 的存算分离 + 微分区、BigQuery 的无服务器 + Dremel / Capacitor / Jupiter 三层架构。
 - 是否能用「**写入吞吐、查询延迟、JOIN 能力、并发能力、TCO**」五个维度量化对比，而不是停留在"性能快慢"。
 - 是否能针对**实时大屏（高并发 + 低延迟）**、**Ad-hoc 分析（高吞吐 + 灵活 JOIN）**、**湖仓加速（Iceberg/Hudi 直接查询）** 三个场景给出可落地方案。
 - 加分项：能讲清"**StarRocks 之于 Doris**"——StarRocks 是 Doris 的下一代演进（向量化 + CBO + Lakehouse 直读），Doris 2020 年后逐步融合 StarRocks 的设计哲学。
@@ -322,10 +322,10 @@
 **第一层：底层架构对比。**
 
 - **Apache Doris**：MPP 架构 + 列存 + 向量化执行；前端 FE（Frontend）做 SQL 解析 + 调度，后端 BE（Backend）做存储 + 计算。**优**：MySQL 协议兼容、运维简单、单表查询极快；**劣**：JOIN 复杂场景弱于 StarRocks，Lakehouse 直读能力 2023 年后补齐。
-- **Apache StarRocks**：从 Doris 演进而来（早期叫 DorisDB），**CBO 优化器 + 向量化 + CBO + Lakehouse 直读**；FE + CNBE 多层架构。**优**：复杂 JOIN 强、湖仓直读（Iceberg/Hudi/Paimon）+ 主键模型 + 实时更新；**劣**：运维复杂度高于 Doris。
+- **StarRocks**：从 Doris 演进而来（早期叫 DorisDB），**CBO 优化器 + 向量化 + Lakehouse 直读**；FE + BE + CN（CN 为存算分离模式下的计算节点）多层架构。**优**：复杂 JOIN 强、湖仓直读（Iceberg/Hudi/Paimon）+ 主键模型 + 实时更新；**劣**：运维复杂度高于 Doris。
 - **ClickHouse**：列存 + 预聚合（Materialized View）+ 向量化；早期是单分片架构，后引入 Distributed 集群。**优**：单表查询极快、压缩比高、写入吞吐大；**劣**：JOIN 能力弱（早期版本不支持分布式 JOIN）、生态相对独立。
-- **Snowflake**：存算分离 + 微攒（Micro-Partition）+ 多云集群（AWS/Azure/GCP）。**优**：免运维、按查询付费、自动扩缩容、Time Travel 内置；**劣**：成本高（大型查询按秒计费）、专有存储不擅长 AI 训练。
-- **Google BigQuery**：无服务器（Serverless）+ 盘古文件系统（Capacitor）+ Dremel 查询引擎。**优**：按查询计费 + 自动扩缩容 + 与 GCP 生态深度集成；**劣**：冷查询延迟较高、专有云（GCP 主导）。
+- **Snowflake**：存算分离 + 微分区（Micro-Partition）+ 多云集群（AWS/Azure/GCP）。**优**：免运维、按查询付费、自动扩缩容、Time Travel 内置；**劣**：成本高（大型查询按秒计费）、专有存储不擅长 AI 训练。
+- **Google BigQuery**：无服务器（Serverless）+ Dremel 查询引擎 + Capacitor 列存 / Jupiter 网络（存算分离三层架构）。**优**：按查询计费 + 自动扩缩容 + 与 GCP 生态深度集成；**劣**：冷查询延迟较高、专有云（GCP 主导）。
 
 **第二层：五维度量化对比。**
 
@@ -347,8 +347,8 @@
   - **永辉超市** 用 Doris 支撑新零售实时库存大屏；**美的集团** 用 Doris 做工业互联网实时监控。
 - **Ad-hoc 分析（高吞吐 + 灵活 JOIN + 数据量 PB 级）**：
   - 推荐 **StarRocks**（JOIN 强 + 湖仓直读）+ **Snowflake**（免运维）。
-  - **携程 / 哔哩哔哩** 用 StarRocks 替代传统 Hive + Presto 做 Ad-hoc 分析；**Snowflake** 在 SaaS 行业占 80% 市场份额，Ad-hoc 体验最佳。
-  - **平安集团** 用 StarRocks + Iceberg 做风控分析，复杂 JOIN 性能比 Presto 高 5–10 倍。
+  - **携程 / 哔哩哔哩** 用 StarRocks 替代传统 Hive + Presto 做 Ad-hoc 分析；**Snowflake** 在 SaaS 行业占据领先份额，Ad-hoc 体验最佳（【经验】档：本节无法给出可溯源的市场份额数字）。
+  - **平安集团** 用 StarRocks + Iceberg 做风控分析，复杂 JOIN 性能明显优于 Presto（【经验】档：倍数随查询形态与数据布局而异，本节无法给出可溯源的统一数字）。
 - **湖仓加速（Iceberg/Hudi/Paimon 直接查询）**：
   - 推荐 **StarRocks**（原生湖仓直读）+ **Trino**（联邦查询）。
   - **字节跳动** 用 StarRocks + Iceberg 做湖仓加速，**Netflix** 用 StarRocks 替代部分 Hive 查询。
@@ -357,17 +357,17 @@
 **第四层：演进路径与生态判断。**
 
 - **Doris**：定位"**MySQL 兼容 + 单表极致 + 运维简单**"，**Apache 顶级项目**（2022），中文社区最强。
-- **StarRocks**：定位"**JOIN 强 + 湖仓直读 + 实时更新**"，**Apache 顶级项目**（2023），中国 + 北美双轨。
+- **StarRocks**：定位"**JOIN 强 + 湖仓直读 + 实时更新**"，**社区开源 + CelerData 商业发行**（Apache 2.0 许可），中国 + 北美双轨。
 - **ClickHouse**：定位"**单表极致 + 写入吞吐 + 预聚合**"，**俄罗斯 Yandex 开源**，北美生态强。
-- **Snowflake**：定位"**云数仓产品化 + 免运维**"，**SaaS 行业垄断**，DWaaS 标杆。
+- **Snowflake**：定位"**云数仓产品化 + 免运维**"，**SaaS 行业占据领先份额**，DWaaS 标杆（【经验】档：本节无法给出可溯源的市场份额数字）。
 - **BigQuery**：定位"**无服务器 + GCP 生态**"，**Google 内部生态**，GCP 客户首选。
 
 **第五层：常见工程权衡。**
 
-- **Doris vs StarRocks 的运维门槛**：Doris 单 binary 部署 + MySQL 协议，运维简单；StarRocks 多层架构（FE + CNBE），运维复杂度更高但 JOIN 性能更强。
+- **Doris vs StarRocks 的运维门槛**：Doris 单 binary 部署 + MySQL 协议，运维简单；StarRocks 多层架构（FE + BE + CN），运维复杂度更高但 JOIN 性能更强。
 - **ClickHouse 的 JOIN 弱**：ClickHouse 早期版本不支持分布式 JOIN，**2022 年后** 引入 Distributed JOIN 但仍弱于 StarRocks。**米哈游** 在 ClickHouse 上做"宽表预聚合"规避 JOIN。
-- **Snowflake 的成本控制**：Snowflake 按秒计费 + 自动扩缩容，**大型查询** 单次花费可达数千美元——必须配 Resource Monitor + 自动化 Query Tag。
-- **BigQuery 的冷查询**：BigQuery 是按列扫描计费，**冷查询延迟** 30 秒–1 分钟（盘古文件系统优化）；**热查询** 延迟 1–3 秒。
+- **Snowflake 的成本控制**：Snowflake 按秒计费 + 自动扩缩容，**大型查询** 单次花费可达数千美元量级（【经验】档：金额随扫描量、并发与折扣而异，本节无法给出可溯源的统一数字）——必须配 Resource Monitor + 自动化 Query Tag。
+- **BigQuery 的冷查询**：BigQuery 是按列扫描计费，**冷查询延迟** 为数十秒量级（冷数据未命中缓存，需从 Capacitor 列存直接读取）；**热查询** 延迟为秒级（【经验】档：绝对值随扫描量、缓存命中与并发而异，本节无法给出可溯源的统一数字）。
 
 **3. 常见陷阱**
 
@@ -375,29 +375,29 @@
 - **以为 Doris 与 StarRocks 完全等价**。Doris 单 binary + MySQL 协议 = 运维简单；StarRocks JOIN + 湖仓直读 + 实时更新 = 性能更强。**小米 / 美的 / 永辉** 用 Doris（简单），**携程 / 平安 / 字节** 用 StarRocks（复杂）。
 - **以为 Snowflake 一定比自建贵**。Snowflake 在**中等查询量**场景下比自建 StarRocks + 运维团队便宜；**大型查询量**场景下自建更划算。**TCO 对比必须按 5 年**。
 - **以为 BigQuery 只服务 GCP 客户**。BigQuery 通过 **BigQuery Omni** 支持 AWS/Azure 数据源，**多云场景**也可考虑。
-- **湖仓直读性能 ≠ 物理表性能**。StarRocks + Iceberg 直读比 StarRocks 内部表性能低 3–10 倍；**关键查询仍需导入 StarRocks 内部表**。
+- **湖仓直读性能 ≠ 物理表性能**。StarRocks + Iceberg 直读比 StarRocks 内部表性能明显更低（【经验】档：倍数随扫描量、分区裁剪效果与文件布局而异，本节无法给出可溯源的统一数字）；**关键查询仍需导入 StarRocks 内部表**。
 
 **4. 追问预测**
 
 - **「实时大屏 1000 QPS、亚秒延迟选哪个？」** 答：**StarRocks** / **Doris** 自建为主；**ClickHouse** 适合单表预聚合场景；**Snowflake** 适合"中等并发 + 免运维"。
 - **「JOIN 性能谁最强？」** 答：**StarRocks** + **Snowflake** + **BigQuery** 三家最强（Doris 次之，ClickHouse 最弱）。复杂 JOIN 场景优先 StarRocks。
-- **「湖仓直读会替代物理表吗？」** 答：**不会**。湖仓直读性能比物理表低 3–10 倍；**关键查询**仍走物理表，**临时查询 / 探索式查询**走湖仓直读。
-- **「OLAP 引擎选型错了能换吗？」** 答：能但代价大。SQL 方言不同（ClickStar vs ClickHouse SQL vs Snowflake SQL）、数据迁移成本高——必须 POC + ADR。
+- **「湖仓直读会替代物理表吗？」** 答：**不会**。湖仓直读性能明显低于物理表（【经验】档：倍数随查询形态而异，本节无法给出可溯源的统一数字）；**关键查询**仍走物理表，**临时查询 / 探索式查询**走湖仓直读。
+- **「OLAP 引擎选型错了能换吗？」** 答：能但代价大。SQL 方言不同（StarRocks SQL vs ClickHouse SQL vs Snowflake SQL 等）、数据迁移成本高——必须 POC + ADR。
 
 **5. 参考资料**
 
 - Apache Doris 官方文档《Architecture》——FE + BE + MPP 架构。
-- Apache StarRocks 官方文档《CBO Optimizer》——向量化 + CBO + 湖仓直读。
+- StarRocks 官方文档《CBO Optimizer》——向量化 + CBO + 湖仓直读。
 - ClickHouse 官方文档《Distributed Query》——Distributed JOIN 的最新实现。
-- Snowflake 官方文档《Micro-Partitions》——存算分离 + 微攒。
-- Google BigQuery 官方文档《Capacitor》——无服务器 + 盘古文件系统。
+- Snowflake 官方文档《Micro-Partitions》——存算分离 + 微分区。
+- Google BigQuery 官方文档《Capacitor》——Dremel / Capacitor / Jupiter 三层存储与执行分离架构。
 - **小米 / 快手 / 字节跳动 Doris 实时大屏** —— 亿级 DAU 实时大屏用 Doris / StarRocks 支撑。
 - **米哈游 ClickHouse 游戏运营** —— ClickHouse 支撑游戏运营实时监控，宽表预聚合规避 JOIN 弱。
 - **携程 / 哔哩哔哩 StarRocks Ad-hoc** —— StarRocks 替代 Hive + Presto 做 Ad-hoc 分析。
-- **Snowflake SaaS 行业垄断** —— Snowflake 在 SaaS 行业占 80% 市场份额，DWaaS 标杆。
+- **Snowflake SaaS 行业领先份额** —— Snowflake 在 SaaS 行业占据领先份额，DWaaS 标杆（【经验】档：本节无法给出可溯源的市场份额数字）。
 - **永辉超市 Doris 新零售** —— 永辉用 Doris 支撑新零售实时库存大屏。
 - **美的集团 Doris 工业互联网** —— 美的用 Doris 做工业互联网实时监控。
-- **平安集团 StarRocks + Iceberg 风控** —— 平安用 StarRocks + Iceberg 做风控分析，JOIN 比 Presto 高 5–10 倍。
+- **平安集团 StarRocks + Iceberg 风控** —— 平安用 StarRocks + Iceberg 做风控分析，JOIN 性能明显优于 Presto（【经验】档：倍数本节无法给出可溯源的统一数字）。
 - **字节跳动 StarRocks + Iceberg 湖仓加速** —— 字节用 StarRocks + Iceberg 做湖仓加速，替代部分 Hive 查询。
 - **Shein** —— Shein 跨境供应链实时数据——日均千万订单走实时分发 + 离线对账，柔性供应链的核心。
 - **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
@@ -453,7 +453,7 @@
 
 **第四层：流批一体的工程实践。**
 
-- **Spark Structured Streaming** 提供微批流处理（trigger interval），**2020 年后** 引入 Continuous Processing（毫秒级，但功能受限）。
+- **Spark Structured Streaming** 提供微批流处理（trigger interval），**Spark 2.3（2018）** 引入 Continuous Processing（毫秒级，但长期处于实验性、功能受限）。
 - **Flink** 在 1.15+ 完整支持流批一体（流模式 + 批模式），代码复用率最高。
 - **Paimon / Iceberg V2 + Flink** 是当前主流流批一体组合。
 - **Spark + Delta Lake + Structured Streaming** 是 Databricks 的流批一体路径。
@@ -551,13 +551,13 @@
 - **Airflow + K8s Executor**：通过 `KubernetesExecutor` 在 K8s 上动态创建 Pod 运行 Task——**字节跳动 / Uber** 在云上用 Airflow + K8s 做调度。
 - **Argo Workflows**：K8s 原生 DAG（CRD + Container），**Kubernetes 原生调度**首选。
 - **Apache DolphinScheduler + K8s**：通过 K8s 资源池做弹性，**阿里云 + DolphinScheduler** 提供 K8s 集成。
-- **Temporal**：分布式工作流引擎（Microsoft 主导），**高复杂度 + 多步骤**场景首选。
+- **Temporal**：分布式工作流引擎，**高复杂度 + 多步骤**场景首选。
 
 **第五层：常见工程权衡。**
 
-- **Airflow 的 DAG 膨胀**：DAG 数量到 5000+ 后，Web Server 加载慢——必须按业务域拆分 Airflow 集群 + 多 Web Server。**LinkedIn** 内部用 10+ Airflow 集群。
+- **Airflow 的 DAG 膨胀**：DAG 数量到数千个后，Web Server 加载明显变慢（【经验】档：阈值随 DAG 复杂度与解析方式而异，本节无法给出可溯源的统一数字）——必须按业务域拆分 Airflow 集群 + 多 Web Server。**LinkedIn** 内部用 10+ Airflow 集群。
 - **DolphinScheduler 的 DAG 复杂度**：DolphinScheduler 强项是"**可视化 + 多租户**"，弱项是"**动态 DAG**"——复杂 Python DAG 仍需 Airflow。
-- **Azkaban 的扩展性**：Azkaban 单 Executor Server 容量有限（5000+ 任务后性能下降），**LinkedIn 内部** 多集群部署。
+- **Azkaban 的扩展性**：Azkaban 单 Executor Server 容量有限（数千任务规模后性能下降，【经验】档：阈值随任务类型与并发而异，本节无法给出可溯源的统一数字），**LinkedIn 内部** 多集群部署。
 - **云原生调度的选型**：**K8s 上简单 DAG** → Argo Workflows；**K8s 上复杂 DAG + 数据集成** → Airflow + K8s Executor。
 
 **3. 常见陷阱**
@@ -566,7 +566,7 @@
 - **以为 DolphinScheduler 是 Airflow 平替**。DolphinScheduler 是**多租户 + 可视化**优先，**动态 DAG + Python** 不如 Airflow 灵活。
 - **以为 Azkaban 过时**。**LinkedIn 内部** 仍在大规模跑 Azkaban（存量 Hadoop 集群），**Hadoop 生态** Azkaban 是经典。
 - **忽视 DAG 版本控制**。Airflow 通过 Git 管理 DAG，DolphinScheduler 通过资源中心管理，**DAG 必须走 Git + CI/CD**。
-- **以为 K8s 上调度简单**。**Airflow K8s Executor** 每次 Task 创建 Pod 有 5–10 秒开销，**短任务（< 30 秒）** 不适合——必须用 Celery Executor。
+- **以为 K8s 上调度简单**。**Airflow K8s Executor** 每次 Task 创建 Pod 有数秒级开销（【经验】档：绝对值随镜像拉取与集群负载而异，本节无法给出可溯源的统一数字），**短任务** 不适合——必须用 Celery Executor。
 
 **4. 追问预测**
 
@@ -693,7 +693,7 @@ tools:
 
 - **「ADR 与决策矩阵的关系？」** 答：决策矩阵是**定量评估**（评分模型），ADR 是**定性记录**（决策文档）。两者绑定：决策矩阵评分 → ADR 备选方案 → ADR 决策。
 - **「AI 辅助选型的边界？」** 答：AI 只能辅助**信息收集 + 候选方案生成 + 风险评估**；**最终决策必须架构师做**——AI 不能替代架构师的责任。
-- **「金融场景 ADR 的特殊性？」** 答：金融场景 ADR 必须包含**监管影响 + 审计要求 + 回滚方案 + 应急预案 + 灰度方案**——监管级 ADR 比互联网 ADR 严格 10 倍。
+- **「金融场景 ADR 的特殊性？」** 答：金融场景 ADR 必须包含**监管影响 + 审计要求 + 回滚方案 + 应急预案 + 灰度方案**——监管级 ADR 在审批与留痕要求上远严于互联网团队的做法（【经验】档：严格程度随监管口径而异，本节无法给出可溯源的量化倍数）。
 - **「ADR 模板怎么选？」** 答：**MADR（Markdown Any Decision Records）** 是工业级标准模板，包含完整 6 要素；**AWS ADR 模板** + **Azure ADR 模板** 是云厂商参考；**自研模板** 需基于 MADR 演进。
 
 **5. 参考资料**

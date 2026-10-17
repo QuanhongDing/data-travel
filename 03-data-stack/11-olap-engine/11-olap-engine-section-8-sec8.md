@@ -46,7 +46,7 @@
 
 **2. 参考答案框架**
 
-**第一层：先把五款引擎的"出身"说清楚——背景决定设计取舍。** Doris 来自百度 2008 年的 Palo 体系，2017 年开源，2018 年原核心团队分叉出 StarRocks；ClickHouse 来自俄罗斯 Yandex 2016 年开源的 Metrica；Snowflake 是 2014 年成立的纯云原生公司；BigQuery 是 Google 2010 年推出的 Dremel 公有云版；Apache Druid / Pinot 则是面向超大规模实时 OLAP 的列存 + 预聚合路线。这个谱系决定了**Doris / StarRocks 偏"实时数仓 + 多表 Join"，ClickHouse 偏"单表大宽表极致性能"，Snowflake / BigQuery 偏"云上存算分离 SaaS"**。
+**第一层：先把五款引擎的"出身"说清楚——背景决定设计取舍。** Doris 来自百度 2008 年的 Palo 体系，2017 年开源，2018 年原核心团队分叉出 StarRocks；ClickHouse 来自俄罗斯 Yandex 2016 年开源的 Metrica；Snowflake 是 2012 年成立的纯云原生公司（2014 年公开亮相、2020 年上市）；BigQuery 是 Google 2010 年推出的 Dremel 公有云版；Apache Druid / Pinot 则是面向超大规模实时 OLAP 的列存 + 预聚合路线。这个谱系决定了**Doris / StarRocks 偏"实时数仓 + 多表 Join"，ClickHouse 偏"单表大宽表极致性能"，Snowflake / BigQuery 偏"云上存算分离 SaaS"**。
 
 **第二层：四个核心维度的对比。**
 
@@ -65,7 +65,7 @@
 | 云原生 SaaS | Snowflake / SelectDB | 存算分离 + 弹性 + 按查询计费 |
 | AI 应用 / 向量检索 | StarRocks 3.x / Snowflake | 原生向量索引 + AI Functions |
 
-**第五层：决策矩阵——四个变量。** 实际选型不是单选题，而是带权重的多目标决策：
+**第四层：决策矩阵——四个变量。** 实际选型不是单选题，而是带权重的多目标决策：
 
 1. **数据规模与延迟要求**：PB 级实时大屏 → StarRocks；TB 级明细分析 → ClickHouse
 2. **Join 复杂度**：高频多表 Join → StarRocks / Doris；几乎单表 → ClickHouse
@@ -77,7 +77,7 @@
 - **"性能谁最强"——这是伪问题。** 五款引擎在不同维度各有所长，用一个 benchmark 数字下结论是工程经验不足的表现。
 - **忽略 ClickHouse 的 Join 弱项。** ClickHouse 在单表聚合上是王者，但把 ClickHouse 当宽表 Join 多表的实时数仓是真实生产中常见的踩坑。
 - **混淆 Doris 和 StarRocks 的"血缘关系"。** 两者师出同源但路线分叉，StarRocks 走云原生 + 主键模型 + 向量索引；Doris 走更广的生态兼容（兼容 MySQL 协议、SelectDB 商业化）；不能简单视为"同款不同名"。
-- **把云数仓想得太美好。** Snowflake / BigQuery 按扫描量计费，复杂 Join 一次几千美元是真实账单；存算分离的弹性对延迟敏感型业务反而是副作用（冷启动 + 远端对象存储）。
+- **把云数仓想得太美好。** Snowflake / BigQuery 按扫描量计费，复杂 Join 的账单可达数千美元量级（本节无法核验其具体单价与账单，按【经验】档处理）；存算分离的弹性对延迟敏感型业务反而是副作用（冷启动 + 远端对象存储）。
 - **忽视运维成本。** ClickHouse 单机性能强但集群管理复杂（ZooKeeper 依赖、多分片拓扑），自建团队的隐性成本远超机器成本。
 
 **4. 追问预测**
@@ -89,12 +89,12 @@
 
 **5. 参考资料**
 
-- StarRocks 团队发表于 SIGMOD 2024 的论文《StarRocks: A Cost-Based Optimizer for Fast Analytics》——CBO + 向量化 + 物化视图的完整工程论述，是国产 OLAP 引擎最权威的工业论文。
-- ClickHouse 团队发表于 VLDB 2024 的论文《ClickHouse—Lightweight Data Warehouse for Analytical Queries》——MergeTree + 向量化 + 单表极致的设计哲学。
+- StarRocks 团队的架构论文《StarRocks: A Cost-Based Optimizer for Fast Analytics》——CBO + 向量化 + 物化视图的完整工程论述，是国产 OLAP 引擎最权威的工业论文（该论文的会议与年份请按题名在会议论文集页面核验后引用）。
+- ClickHouse 团队的架构论文《ClickHouse—Lightweight Data Warehouse for Analytical Queries》——MergeTree + 向量化 + 单表极致的设计哲学（该论文的会议与年份请按题名在会议论文集页面核验后引用）。
 - Apache Doris 官方文档中关于 Unique Key / Duplicate Key / Aggregate Key 三种数据模型的章节——主键模型如何承载实时 upsert。
-- Snowflake 团队发表于 SIGMOD 2020 的论文《The Snowflake Elastic Data Warehouse》——存算分离 + 虚拟仓库 + Data Sharing 的设计原典。
-- Google Dremel 论文（2010）+ BigQuery 官方文档——Dremel / Capacitor / Jupiter 三层存储与执行分离架构。
-- **京东 PB 级电商实时分析** —— 用 Doris 替代传统 Hive + Spark 数仓，618 大促下查询性能提升 10x，是国产开源 OLAP 在电商大促的代表落地。
+- Snowflake 团队发表于 SIGMOD 2016 的论文《The Snowflake Elastic Data Warehouse》——存算分离 + 虚拟仓库 + Data Sharing 的设计原典。
+- Dremel 论文《Dremel: Interactive Analysis of Web-Scale Datasets》（VLDB 2010）+ BigQuery 官方文档——Dremel / Capacitor / Jupiter 三层存储与执行分离架构。
+- **京东 PB 级电商实时分析** —— 用 Doris 替代传统 Hive + Spark 数仓，618 大促下查询性能有数量级的提升（本节无法核验其具体倍数，按【经验】档处理），是国产开源 OLAP 在电商大促的代表落地。
 - **小红书 PB 级实时数仓** —— Kafka + Flink + StarRocks 链路，端到端秒级刷新，对应"实时大屏"标准形态。
 - **字节跳动 ClickHouse 监控体系** —— 抖音 / TikTok 的亿级监控指标走 ClickHouse，对应"大宽表单表聚合"代表场景。
 - **米哈游游戏 OLAP 实时分层** —— 原神 / 崩坏系列的行为数据按"采集 → 实时明细 → StarRocks 汇总 → 应用"分层，是游戏行业实时 OLAP 的标准落地。
@@ -108,21 +108,21 @@
 **1. 考察点**
 
 - 是否真正理解 OLAP 性能的本质——**不是单一优化，而是 I/O / CPU / Network 三层的协同**。只背"列存 + 向量化"是入门，能说出三者如何**互相放大**是进阶。
-- 能否区分**行存 vs 列存**在 I/O 层面的代价（一次查询只读 5 列 vs 读 200 列），并量化压缩比差异（字典编码 + RLE 让列存压缩到行存的 1/5）。
-- 是否知道**Volcano（火山）模型**与**向量化模型**的差异——前者 1 行 1 次虚函数调用，后者 N 行（1024–8192）1 次调用 + SIMD，**5–20x 加速**。
+- 能否区分**行存 vs 列存**在 I/O 层面的代价（一次查询只读 5 列 vs 读 200 列），并量化压缩比差异（字典编码 + RLE 让列存压缩到行存的 1/5 上下，属【经验】档量级）。
+- 是否知道**Volcano（火山）模型**与**向量化模型**的差异——前者 1 行 1 次虚函数调用，后者 N 行（1024–8192）1 次调用 + SIMD，工程实测加速通常在 **5–20x** 量级（【经验】档，随算子与数据形态而异）。
 - 加分项：能说清 CBO 的代价模型 `Cost = α × I/O + β × CPU + γ × Network`，以及统计信息（NDV / Histogram / MinMax）不准确时 CBO 如何做出错误决策。
 
 **2. 参考答案框架**
 
-**第一层：列存——把 I/O 从 O(N) 降到 O(列数)。** 假设一张表 200 列、单行 1KB、1 亿行。在行存下"查询其中 5 列"，需要读取 100GB；列存只需要读 5 列的 2.5GB，**I/O 降低 40x**。再加上列存的高压缩（同列同质，字典 + 行程 + ZSTD），**实际 I/O 通常在 100x 量级**。列存的另一红利是**谓词下推 + Zone Map 跳过**——每个 Segment 维护 Min/Max 索引，查询引擎可以跳过 99% 不匹配的数据块。ClickHouse 在这一点上做到了极致，所以单表扫描性能无敌。
+**第一层：列存——把 I/O 从 O(N) 降到 O(列数)。** 假设一张表 200 列、单行 1KB、1 亿行。在行存下"查询其中 5 列"，需要读取 100GB；列存只需要读 5 列的 2.5GB，**I/O 降低 40x**。再加上列存的高压缩（同列同质，字典 + 行程 + ZSTD），**实际 I/O 通常在 100x 量级**（【经验】档量级）。列存的另一红利是**谓词下推 + Zone Map 跳过**——每个 Segment 维护 Min/Max 索引，查询引擎可以跳过大量不匹配的数据块（【经验】档量级，取决于数据有序度）。ClickHouse 在这一点上做到了极致，所以单表扫描性能无敌。
 
-**第二层：向量化执行——把 CPU 利用率从 20% 拉到 80%。** 传统 Volcano 模型对每行调用一次算子函数，函数调用开销 + 分支预测失败 + 无法用 SIMD 三重代价叠加，CPU 利用率通常只有 10–30%。向量化模型按 1024–8192 行为一批处理：
+**第二层：向量化执行——把 CPU 利用率从两成上下拉到八成上下（【经验】档量级，随算子与数据形态而异）。** 传统 Volcano 模型对每行调用一次算子函数，函数调用开销 + 分支预测失败 + 无法用 SIMD 三重代价叠加，CPU 利用率通常只有 10–30%（【经验】档，随算子与数据形态而异）。向量化模型按 1024–8192 行为一批处理：
 
 - **分支预测优化**：一批内分支一致，可以批量预测
 - **SIMD 指令**：`_mm256_add_epi32` 一条指令处理 8 个 int32，相当于"CPU 流水线 + 数据并行"双 buff
 - **缓存命中**：一批数据在 L1/L2 缓存内循环，计算更密集
 
-工程上的实测收益是**5–20x**，StarRocks / Doris / ClickHouse 都受益于这一红利。这也是为什么"列存 + 行存"在 OLAP 场景下不能打——行存无法做向量化 SIMD。
+工程上的实测收益通常在 **5–20x** 量级（【经验】档，随算子与数据形态而异），StarRocks / Doris / ClickHouse 都受益于这一红利。这也是为什么"列存 + 行存"在 OLAP 场景下不能打——行存无法做向量化 SIMD。
 
 **第三层：CBO——把执行计划从"能用"变成"最优"。** CBO 的本质是基于代价选执行计划，代价模型 `Cost = α × I/O + β × CPU + γ × Network`。它的输入是统计信息：
 
@@ -131,15 +131,15 @@
 - **Min/Max / Histogram**：估算过滤后行数
 - **数据分布**：决定 Broadcast Join vs Shuffle Join
 
-CBO 会枚举等价的执行计划（Join 顺序、聚合策略、Scan 方式），选代价最低的那个。**真正的难点是统计信息的准确性**——NDV 估算偏差 10x 会让 CBO 选错 Join 策略（把 Broadcast Join 选成 Shuffle Join，Shuffle Join 选成 Nested Loop Join），性能相差 100x 也是常见。
+CBO 会枚举等价的执行计划（Join 顺序、聚合策略、Scan 方式），选代价最低的那个。**真正的难点是统计信息的准确性**——NDV 估算偏差 10x 会让 CBO 选错 Join 策略（把 Broadcast Join 选成 Shuffle Join，Shuffle Join 选成 Nested Loop Join），性能相差百倍量级也很常见（【经验】档，随查询形态与数据分布而异）。
 
 **第四层：三件套如何互相放大。**
 
 - 列存**降低 I/O**（读 5 列而非 200 列）
-- 向量化**提升 CPU 利用率**（5–20x）
+- 向量化**提升 CPU 利用率**（5–20x，【经验】档量级，同第二层）
 - CBO**避免网络 / Shuffle 浪费**（Broadcast Join 减少 Shuffle）
 
-三者协同的最终效果：原本走 Hive + 跑分钟的 TPC-H 查询，在 StarRocks 上能跑到**亚秒级**，这是 100–1000x 量级的端到端提升。StarRocks 在 TPC-H 30TB 榜单上的成绩已经稳定做到这一点。
+三者协同的最终效果：原本走 Hive + 跑分钟的 TPC-H 查询，在 StarRocks 上能跑到**亚秒级**，这是 100–1000x 量级的端到端提升（【经验】档量级，随查询形态与集群规模而异）。以上是工程经验的量级判断，本节不引用任何厂商发布的测试成绩或榜单数字——TPC-H 的测试口径与集群配置对结果影响极大，如需引用具体数字请自行按 TPC-H 的官方测试规范复现核验。
 
 **第五层：CBO 的盲区与对策。** CBO 不是万能的：
 
@@ -151,7 +151,7 @@ CBO 会枚举等价的执行计划（Join 顺序、聚合策略、Scan 方式）
 
 **3. 常见陷阱**
 
-- **把"列存"当成"性能提升的充分条件"。** 列存只是 I/O 优化，没有向量化 + CBO 仍然只有 5–10x 提升，不会有 100x。
+- **把"列存"当成"性能提升的充分条件"。** 列存只是 I/O 优化，没有向量化 + CBO 仍然只有 5–10x 提升（【经验】档量级），不会有 100x。
 - **把"向量化"等同于"用 SIMD 指令"。** 真正的向量化是**算子按批处理 + 函数调用批量化 + SIMD 友好布局**三层，仅靠 SIMD 是片面的。
 - **混淆 CBO 与 RBO（Rule-Based Optimizer）。** RBO 按规则改写（如谓词下推），CBO 按代价选；CBO 不一定优于 RBO——统计信息不准确时 RBO 反而更稳。
 - **认为 CBO 能自动优化所有慢查询。** 错。统计信息 + 数据分布 + UDF 都可能让 CBO 失效。资深工程师的标志是**会读执行计划**，而不是相信自动优化。
@@ -166,13 +166,13 @@ CBO 会枚举等价的执行计划（Join 顺序、聚合策略、Scan 方式）
 
 **5. 参考资料**
 
-- StarRocks 团队发表于 SIGMOD 2024 的论文《StarRocks: A Cost-Based Optimizer for Fast Analytics》——CBO + 向量化 + 物化视图自动改写的完整工程论述。
+- StarRocks 团队的架构论文《StarRocks: A Cost-Based Optimizer for Fast Analytics》——CBO + 向量化 + 物化视图自动改写的完整工程论述（该论文的会议与年份请按题名在会议论文集页面核验后引用）。
 - ClickHouse 官方文档中关于 "Vectorized Query Execution" 的章节——向量化在 MergeTree 上的具体实现细节。
-- Apache Impala 论文（2015）+ Velox 论文（Meta 2022）——CBO + 向量化在工业界的演进路径。
-- TPC-H / TPC-DS 官方榜单——StarRocks / Doris / ClickHouse / Snowflake / BigQuery 的实测对比。
-- Andy Pavlo《Database Management Systems》课程中关于 Volcano 模型与 Codegen 的章节——执行模型的学术原典。
+- Marcel Kornacker 等《Impala: A Modern, Open-Source SQL Engine for Hadoop》（CIDR 2015）+ Apache Velox（Meta 2022 年开源的向量化执行引擎，见其官方仓库与文档）——CBO + 向量化在工业界的演进路径。
+- TPC-H / TPC-DS 标准基准的官方规范——测试口径与合规要求的原文，可在 TPC 官网免费下载；各引擎公布的成绩由厂商自行发布，口径与集群配置不一，引用前请按该规范核对成绩单或自行复现。
+- Andy Pavlo 的数据库课程（Database Systems / Advanced Database Systems）中关于 Volcano 模型与 Codegen 的章节——执行模型的学术原典。
 - **LinkedIn Pinot 的向量化实践** —— Pinot 在 LinkedIn 大规模监控场景下的向量化与实时摄入实现，是工业界向量化 + 实时 OLAP 的代表案例。
-- **Databricks Photon 向量化执行引擎** —— Photon 用 C++ 重写 Spark 的关键算子带来 5–10x 加速，是云数仓向量化的工业代表。
+- **Databricks Photon 向量化执行引擎** —— Photon 用 C++ 重写 Spark 的关键算子，带来数倍量级的加速（【经验】档，随查询类型与数据规模而异），是云数仓向量化的工业代表。
 - **Uber Argo 的实时 OLAP 实践** —— Uber 用 ClickHouse 替代 Elasticsearch 做 PB 级实时分析，对应"列存 + 向量化在出行行业的极限压力"。
 
 > 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
@@ -194,10 +194,10 @@ CBO 会枚举等价的执行计划（Join 顺序、聚合策略、Scan 方式）
 
 1. **写入延迟（Write Latency）**：从外部系统产生数据到 OLAP 落盘的时间
 2. **可见延迟（Visibility Latency）**：数据落盘到可被查询的时间
-4. **查询延迟（Query Latency）**：查询执行时间
-3. **一致性延迟（Consistency Latency）**：强一致查询所需等待的时间
+3. **查询延迟（Query Latency）**：查询执行时间
+4. **一致性延迟（Consistency Latency）**：强一致查询所需等待的时间
 
-OLAP 引擎的实时能力差异，**核心在"可见延迟"**——StarRocks 主键模型是亚秒级可见，Doris Unique Key 是准实时（1–5 秒），ClickHouse ReplacingMergeTree 是异步（分钟级到查询时合并）。
+OLAP 引擎的实时能力差异，**核心在"可见延迟"**——StarRocks 主键模型是亚秒级可见，Doris Unique Key 是准实时（1–5 秒；【经验】档量级，随 compaction 调度与写入压力而异），ClickHouse ReplacingMergeTree 是异步（分钟级到查询时合并）。
 
 **第二层：三款引擎的实时摄入机制。**
 
@@ -207,8 +207,8 @@ OLAP 引擎的实时能力差异，**核心在"可见延迟"**——StarRocks �
 
 **第三层：主键模型的本质差异。**
 
-- **StarRocks 主键模型**：Delete + Insert 合并，**写入即唯一**，不依赖后台 compaction，查询开销稳定。代价是写入时多一次 delete bitmap 更新，**写放大**约 1.5–2x。
-- **Doris Unique Key**：Merge-on-Read 配合 Sequence 列，**写入后通过 compaction 合并**，查询时读最新版本。可见性依赖 compaction 速度，**延迟约 1–5 秒**。代价是查询可能读多个版本（已合并的则不会），compaction 抖动会影响查询。
+- **StarRocks 主键模型**：Delete + Insert 合并，**写入即唯一**，不依赖后台 compaction，查询开销稳定。代价是写入时多一次 delete bitmap 更新，**写放大**明显（【经验】档量级，随主键列数与更新比例而异，本节无法给出可溯源的具体倍数）。
+- **Doris Unique Key**：Merge-on-Read 配合 Sequence 列，**写入后通过 compaction 合并**，查询时读最新版本。可见性依赖 compaction 速度，**延迟约 1–5 秒**（【经验】档量级，随 compaction 调度与写入压力而异）。代价是查询可能读多个版本（已合并的则不会），compaction 抖动会影响查询。
 - **ClickHouse ReplacingMergeTree**：**后台异步 compaction**，查询时多个版本可能并存，必须靠 `final` 关键字或应用层去重，**写入延迟最低但查询一致性最弱**。
 
 **第四层：Kafka → OLAP 实时链路的工程要点。**
@@ -221,7 +221,7 @@ OLAP 引擎的实时能力差异，**核心在"可见延迟"**——StarRocks �
 
 **第五层：典型案例参考。**
 
-- **美团外卖实时大屏**：MySQL Binlog → Flink CDC → Kafka → Flink → Doris，端到端 3–5 秒延迟，PB 级订单明细按用户 + 城市聚合。
+- **美团外卖实时大屏**：MySQL Binlog → Flink CDC → Kafka → Flink → Doris，端到端延迟在秒级（本节无法核验其具体秒数，按【经验】档处理），PB 级订单明细按用户 + 城市聚合。
 - **小米实时监控**：Kafka → Flink → ClickHouse，亿级指标秒级聚合，写入按分钟级攒批，查询亚秒级。
 - **LinkedIn Pinot 实时 OLAP**：Kafka → Pinot 摄入 + 实时聚合，支撑 LinkedIn 的实时分析仪表盘，是 Kafka → OLAP 实时链路的工业范本。
 
@@ -247,7 +247,7 @@ OLAP 引擎的实时能力差异，**核心在"可见延迟"**——StarRocks �
 - ClickHouse 官方文档中关于 Kafka Engine、ReplacingMergeTree、Materialized View 的章节——声明式摄入与异步合并的实现。
 - Apache Flink 官方文档中关于 Kafka Connector 与 Exactly-Once 的章节——Flink → OLAP 链路的偏移量管理。
 - Uber Engineering 关于实时 OLAP 的公开博客——Kafka → ClickHouse 在 Uber 内部 PB 级监控的落地。
-- **美团外卖 Doris 实时大屏** —— MySQL Binlog → Flink CDC → Doris 端到端 3–5 秒延迟，是 O2O 行业实时 OLAP 的代表。
+- **美团外卖 Doris 实时大屏** —— MySQL Binlog → Flink CDC → Doris 端到端延迟在秒级（本节无法核验其具体秒数，按【经验】档处理），是 O2O 行业实时 OLAP 的代表。
 - **京东 Doris 618 大促实时分析** —— 京东用 Doris 承担 618 / 双 11 的实时订单分析，PB 级明细秒级聚合，是电商大促的代表。
 - **米哈游 StarRocks 实时 OLAP** —— 原神 / 崩坏的玩家行为数据通过 Kafka → StarRocks 链路实时分析，是游戏行业实时 OLAP 的典型。
 - **招行基于 Doris 的实时风控** —— 招行信用卡交易走 Doris 实时 OLAP，亚秒级反欺诈决策，是金融行业实时 OLAP 的代表。
@@ -278,7 +278,7 @@ OLAP 引擎的实时能力差异，**核心在"可见延迟"**——StarRocks �
 **第二层：StarRocks 自动物化视图——三件套的工业范本。** StarRocks 的 MV 设计是当前 OLAP 引擎中最完整的：
 
 1. **查询改写（Transparent Query Rewrite）**：用户写 `SELECT user_id, dt, SUM(amount) FROM orders GROUP BY user_id, dt`，MV 表里已经按 `user_id, dt` 预聚合好了，CBO 自动改写为 `SELECT user_id, dt, SUM(gmv) FROM order_summary`，**对应用完全透明**。
-2. **自动增量刷新**：数据写入 orders 表时，MV 不需要全量重算，而是**通过增量 compaction 增量更新**，与原始表写入并行。这是 StarRocks MV 的核心创新——传统数据库的 MV 刷新是阻塞式（重算期间 MV 不可用），StarRocks 是流式增量。
+2. **自动增量刷新**：数据写入 orders 表时，MV 不需要全量重算，而是**按分区做增量刷新**（只重算基表发生变化的那部分数据），与原始表写入并行。这是 StarRocks MV 的核心创新——传统数据库的 MV 刷新是阻塞式（重算期间 MV 不可用），StarRocks 是流式增量。
 3. **一致性保证**：MV 的数据来自原始表的某个快照（Snapshot），查询改写时如果发现 MV 落后于原始表，会自动 fallback 到原始表查询，**保证最终一致**。
 
 **第三层：Doris Rollup / MV 的差异化设计。** Doris 的 MV 走两条路线：
@@ -297,12 +297,12 @@ MV 的设计哲学是"**按需预计算**"——只对真正被查询的聚合�
 1. **MV 选择**：高频聚合 + 中低变更频率。监控大屏按"天 × 城市 × 类目"聚合是典型 MV 场景。
 2. **刷新策略**：定时刷新（每小时 / 每天）+ 关键表变更触发刷新。StarRocks 的"分区级增量刷新"是最优解。
 3. **改写正确性**：CBO 的改写有边界——GROUP BY 维度顺序、JOIN 类型、WHERE / HAVING 子句都可能阻断改写。生产上必须用 `EXPLAIN` 验证。
-5. **存储成本**：MV 占用的存储通常占原始表的 10–30%，必须纳入数据资产成本核算。
-4. **失效回退**：MV 落后时查询必须能 fallback 到原始表，否则 SLA 会被打挂。StarRocks 的"落后期望一致性"机制是工业实现。
+4. **存储成本**：MV 占用的存储通常占原始表的 10–30%（【经验】档，随聚合维度与列裁剪程度而异），必须纳入数据资产成本核算。
+5. **失效回退**：MV 落后时查询必须能 fallback 到原始表，否则 SLA 会被打挂。StarRocks 的"落后期望一致性"机制是工业实现。
 
 **3. 常见陷阱**
 
-- **"建 MV 越多越好"——这是反模式。** 每个 MV 都是存储 + 维护开销，10 个 MV 的总成本可能超过原始表的 5 倍。原则是"高频查询 + 中等变更频率 + 高聚合代价"才值得 MV。
+- **"建 MV 越多越好"——这是反模式。** 每个 MV 都是存储 + 维护开销，建十个 MV 的总成本可能达到原始表的数倍（【经验】档，随 MV 数量与聚合粒度而异）。原则是"高频查询 + 中等变更频率 + 高聚合代价"才值得 MV。
 - **混淆 MV 与索引。** MV 是"另一张物理表"，索引是"原表的物理结构"。两者都可以加速查询，但 MV 改变数据冗余度。
 - **不验证改写正确性就上线。** CBO 改写不是 100% 正确的——GROUP BY 顺序、`DISTINCT`、复杂表达式都可能阻断。必须 `EXPLAIN` 验证 MV 命中。
 - **忽视 MV 的一致性延迟。** MV 落后于原始表时，查询结果可能"少算"——必须监控 MV 延迟，对延迟敏感业务回退原始表。
@@ -311,7 +311,7 @@ MV 的设计哲学是"**按需预计算**"——只对真正被查询的聚合�
 **4. 追问预测**
 
 - **「MV 落后于原始表 10 分钟，业务不能接受，怎么破？」** 答：① 缩短刷新周期（10 分钟 → 1 分钟）；② 改用流式增量刷新（StarRocks 的增量 MV）；③ 极端情况下**绕过 MV**，让查询直接命中原始表（牺牲延迟换准确性）。
-- **「MV 的存储成本怎么估？」** 答：粗估——MV 行数 ≈ 原始表去重后的 (聚合维度组合数)，存储 ≈ 原始表 × (MV 行数 / 原始行数) × (MV 列数 / 原始列数)。例如原始表 1 亿行 / 50 列，MV 按 (user_id, dt) 聚合到 100 万行 / 5 列，存储 ≈ 1 亿 × (100 万 / 1 亿) × (5 / 50) = 100 万，即原始表的 1%。
+- **「MV 的存储成本怎么估？」** 答：粗估——MV 行数 ≈ 原始表去重后的 (聚合维度组合数)，存储 ≈ 原始表 × (MV 行数 / 原始行数) × (MV 列数 / 原始列数)。例如原始表 1 亿行 / 50 列，MV 按 (user_id, dt) 聚合到 100 万行 / 5 列，存储 ≈ 1 亿 × (100 万 / 1 亿) × (5 / 50) = 10 万，即原始表的 0.1%。
 - **「MV 与 Cube 怎么选？」** 答：维度少（< 5）+ 维度基数低 + 查询极固定 → Cube；维度多 + 查询灵活 → MV。现代 OLAP 基本默认走 MV。
 - **「MV 失效的常见情形？」** 答：① GROUP BY 维度顺序与 MV 不一致；② JOIN 类型不匹配（如 MV 是 INNER JOIN，查询是 LEFT JOIN）；③ HAVING 子句存在；④ 表达式变换（如 `YEAR(dt) = 2025` vs `dt BETWEEN`）。
 
@@ -320,7 +320,7 @@ MV 的设计哲学是"**按需预计算**"——只对真正被查询的聚合�
 - StarRocks 官方文档中关于 Materialized View 的章节——自动增量 MV + 查询改写的完整工程论述。
 - Apache Doris 官方文档中关于 Rollup 与 Materialized View 的章节——Rollup 的物理表设计 + 异步 MV 的改写规则。
 - Apache Kylin 官方文档——Cube 路线在 OLAP 历史上的地位与局限。
-- Ralph Kimball 关于"预计算与即时计算"的论述——物化视图背后的"以空间换时间"哲学。
+- Ralph Kimball 关于"预计算与即时计算"取舍的论述（该条目未附具体篇目与年份，引用前请按主题在 Kimball 的著作中查证）——物化视图背后的"以空间换时间"哲学。
 - Snowflake 官方文档中关于 Materialized View 与 Dynamic Table 的章节——云数仓在物化视图上的最新演进（Dynamic Table 是流式增量 MV）。
 - **Netflix Penelope 物化视图平台** —— Netflix 的统一 MV 平台支撑全公司的报表预计算，对应"MV 平台化"的工业代表。
 - **Databricks Delta Live Tables + Materialized View** —— Delta Live Tables 提供声明式 ETL + 自动 MV 维护，是云原生 MV 的代表。
@@ -356,13 +356,13 @@ OLAP 引擎要同时支撑两类查询，必须在**索引设计 + 执行路径 
 **第二层：StarRocks / Doris 的点查优化体系。**
 
 1. **主键索引（Primary Key Index）**：
-   - StarRocks 主键模型建表时建立全局 PK 索引（类似 B+ 树，但落盘到 LSM），点查直接定位到 tablet + Rowset
+   - StarRocks 主键模型建表时建立全局 PK 索引（独立于 LSM 数据文件的索引结构），点查直接定位到 tablet + Rowset
    - Doris Unique Key 模型也建 PK 索引，但通过 Sequence 列 + compaction 保证可见性
 
 2. **短路径优化（Short-Circuit Scan）**：
    - 传统 OLAP 引擎点查要走"打开所有 Segment → 过滤 → 合并"的完整路径
    - StarRocks 2.4+ 引入 **Short-Circuit Scan**，点查只打开 1 个 Segment + 读 1 个 Column，直接返回
-   - 实测点查延迟从 50ms 降到 5ms 以下
+   - 启用短路径后，点查延迟的改善量级是从几十毫秒降到个位数毫秒（【经验】档，随表结构与索引命中率而异）
 
 3. **分桶（Bucketing）设计**：
    - 分桶键 = 点查的 WHERE 条件时，点查只读 1 个 Bucket
@@ -370,9 +370,9 @@ OLAP 引擎要同时支撑两类查询，必须在**索引设计 + 执行路径 
    - 反例：分桶键选错 → 热点 Bucket → 单节点 CPU 100% → 点查延迟抖动
 
 4. **二级索引 / 加速索引**：
-   - Bloom Filter：等值点查的概率性命中，10x 加速
-   - Zone Map / MinMax：范围查询跳过不匹配 Segment，100x 加速
-   - 倒排索引：Doris 2.x 引入，对高基数列做 BKD 树索引
+   - Bloom Filter：等值点查的概率性命中，把无效读放大压下去（【经验】档量级：十倍上下）
+   - Zone Map / MinMax：范围查询跳过不匹配 Segment（【经验】档量级：取决于数据有序度，可达百倍）
+   - 倒排索引：Doris 2.x 引入，对高基数列做 BKD 树索引；等值与文本检索都是精确命中，不是 Bloom Filter 那种概率性结构
 
 **第三层：工程上的资源调度。**
 
@@ -383,9 +383,9 @@ OLAP 引擎要同时支撑两类查询，必须在**索引设计 + 执行路径 
 
 **第四层：典型案例参考。**
 
-- **京东订单详情页 Doris 点查**：订单详情按 `order_id` 主键模型建表 + `order_id` 分桶，QPS 10 万+，点查延迟 P99 < 20ms。
-- **小红书 StarRocks 用户画像**：用户画像按 `user_id` 主键 + 分桶，QPS 5 万+，点查延迟 P99 < 30ms。
-- **美团 Doris 商家门店**：商家列表按 `merchant_id` 主键 + `city_id` 分桶，QPS 8 万+，点查延迟 P99 < 50ms。
+- **京东订单详情页 Doris 点查**：订单详情按 `order_id` 主键模型建表 + `order_id` 分桶，QPS 在十万量级、点查延迟 P99 在数十毫秒内（本节无法核验其具体数字，按【经验】档处理）。
+- **小红书 StarRocks 用户画像**：用户画像按 `user_id` 主键 + 分桶，QPS 在万级到十万级、点查延迟 P99 在数十毫秒内（【经验】档，同上）。
+- **美团 Doris 商家门店**：商家列表按 `merchant_id` 主键 + `city_id` 分桶，QPS 在十万量级、点查延迟 P99 在数十毫秒内（【经验】档，同上）。
 
 **第五层：常见误用与对策。**
 
@@ -400,7 +400,7 @@ OLAP 引擎要同时支撑两类查询，必须在**索引设计 + 执行路径 
 - **认为 OLAP 引擎能完全替代 KV 存储。** 极端高并发（QPS > 100 万）的纯点查业务（如用户 session、配置中心）应使用 Redis / KV，OLAP 引擎不是 KV 的替代品。
 - **忽视短路径优化的存在。** 老版本 OLAP 引擎（ClickHouse、Doris 1.x）点查性能远不如 StarRocks 2.4+，因为没有 Short-Circuit Scan。这是版本选择的关键因素。
 - **混淆"高并发"与"高吞吐"。** 高并发指"同时在线查询数"，高吞吐指"单位时间总数据量"。点查看高并发（QPS），聚合看高吞吐（rows/sec）。
-- **不分离冷热数据。** 历史冷数据上做点查，磁盘 IO 延迟上升 10–100x。点查必须只命中热数据。
+- **不分离冷热数据。** 历史冷数据上做点查，磁盘 IO 延迟显著上升（【经验】档量级，可达一到两个数量级，随存储介质与数据温度而异）。点查必须只命中热数据。
 
 **4. 追问预测**
 
@@ -414,9 +414,9 @@ OLAP 引擎要同时支撑两类查询，必须在**索引设计 + 执行路径 
 - StarRocks 官方文档中关于 Primary Key Index、Short-Circuit Scan、Bucketing 的章节——主键模型 + 点查优化的完整工程论述。
 - Apache Doris 官方文档中关于 Unique Key、Bloom Filter、Zone Map、BKD Tree 索引的章节——Doris 的点查索引体系。
 - ClickHouse 官方文档中关于 Primary Key、Skip Index、Data Skipping Index 的章节——ClickHouse 的索引设计。
-- **阿里 Hologres 高并发点查实践** —— Hologres 是阿里自研的 OLAP 引擎，主打"高并发点查 + 实时分析"，QPS 可达 100 万级，是国内高并发 OLAP 的工业代表。
-- **京东 Doris 订单详情点查** —— 京东订单详情按 order_id 主键 + 分桶，QPS 10 万+ P99 < 20ms，是电商场景高并发点查的代表。
-- **小红书 StarRocks 用户画像点查** —— 小红书用户画像按 user_id 主键 + 分桶，QPS 5 万+ P99 < 30ms，是内容社区高并发点查的代表。
+- **阿里 Hologres 高并发点查实践** —— Hologres 是阿里自研的 OLAP 引擎，主打"高并发点查 + 实时分析"，点查 QPS 可达百万量级（本节无法核验其具体数字，按【经验】档处理），是国内高并发 OLAP 的工业代表。
+- **京东 Doris 订单详情点查** —— 京东订单详情按 order_id 主键 + 分桶，QPS 在十万量级、P99 在数十毫秒内（本节无法核验其具体数字，按【经验】档处理），是电商场景高并发点查的代表。
+- **小红书 StarRocks 用户画像点查** —— 小红书用户画像按 user_id 主键 + 分桶，QPS 在万级到十万级、P99 在数十毫秒内（【经验】档，同上），是内容社区高并发点查的代表。
 
 > 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
 
@@ -462,8 +462,8 @@ OLAP 引擎要同时支撑两类查询，必须在**索引设计 + 执行路径 
 
 1. **Snowflake Cortex**：内置 AI Functions 套件，包括 Cortex Search（全文 + 向量混合检索）、Cortex Analyst（自然语言转 SQL）、Cortex Fine-tuning（在 Snowflake 内微调 LLM）。
 2. **Snowflake Vector Search**：基于 Cortex 的向量检索服务，支持 HNSW 索引。
-4. **数据共享（Data Sharing）+ AI**：Snowflake 的 Data Sharing 让 LLM 推理可以在数据所在位置完成，**数据不出 Snowflake**，解决数据安全 + AI 集成的双重诉求。
-3. **Streamlit + Cortex**：Streamlit 应用可以无缝调用 Cortex API，是 Snowflake 的"应用层 AI"。
+3. **数据共享（Data Sharing）+ AI**：Snowflake 的 Data Sharing 让 LLM 推理可以在数据所在位置完成，**数据不出 Snowflake**，解决数据安全 + AI 集成的双重诉求。
+4. **Streamlit + Cortex**：Streamlit 应用可以无缝调用 Cortex API，是 Snowflake 的"应用层 AI"。
 
 **第四层：Databricks 的 Mosaic AI + Vector Search。** Databricks 走另一条路线——**Lakehouse + AI 深度集成**：
 
@@ -516,8 +516,7 @@ OLAP 引擎要同时支撑两类查询，必须在**索引设计 + 执行路径 
 - Snowflake Cortex 官方文档——AI Functions + Vector Search + Cortex Analyst 的完整能力图谱。
 - Databricks Mosaic AI 官方文档——Lakehouse + AI 的工业实践范本。
 - Apache Hudi / Apache Iceberg 官方文档中关于 AI 集成与 Vector Search 的章节——湖仓一体的 AI 演进方向。
-- 《Vector Database for Large Language Models》——向量数据库与 LLM 集成的工业综述。
-- **Netflix Penelope 实时 RAG 平台** —— Netflix 的 Penelope 把向量检索 + 结构化查询统一到一个数据栈，对应"OLAP + AI 集成"的工业范本。
+- **Netflix Penelope 物化视图改写引擎** —— Netflix 自研的 Penelope 是物化视图与查询改写引擎（本书优化器一节有述），对应"MV 平台化"的工业实践，而非"把向量检索 + 结构化查询统一到一个数据栈"；本节未找到 Netflix 在 OLAP + 向量统一检索方向上的可核验案例，该方向的工业案例以本节下方各条为准（StarRocks、Snowflake Cortex、Databricks Mosaic AI、Hologres、招行 StarRocks 等）。
 - **阿里 Hologres AI 集成** —— 阿里 Hologres 内置向量索引 + AI Functions，是国内云原生 OLAP + AI 的代表。
 - **OpenAI + Pinecone 的 RAG 范式** —— OpenAI Cookbook 中"向量库 + LLM"的标准 RAG 范式，是 AI 应用的事实标准。
 - **招行基于 StarRocks 的实时 RAG** —— 招行信用卡客服 Agent 用 StarRocks 3.x 向量索引做实时 RAG，是金融行业 AI + OLAP 的代表。

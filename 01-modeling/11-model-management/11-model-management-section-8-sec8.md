@@ -54,13 +54,13 @@
 - **模型管理**产生「**模型资产清单 + 变更记录**」→ 这是元数据管理要采集的内容。
 - **元数据管理**把这些清单挂到 **Catalog + 血缘图**，让模型可被检索 → 这是主数据管理合并实体时所需的"真相来源"。
 - **主数据管理**合并出 **Golden Record（黄金记录）** → 模型管理据此更新维度表（`dim_user_golden`）。
-- **数据治理**定政策（如"任何模型变更必须先评审"）、定度量（如「命名规范遵守率 ≥ 95%」）→ 约束三者的执行。
+- **数据治理**定政策（如"任何模型变更必须先评审"）、定度量（如「命名规范遵守率 ≥ 95%」；此处为教学设定的示例阈值，【经验】档、无公开来源）→ 约束三者的执行。
 
 **第三层：阿里 OneData 的实操案例。** 阿里巴巴数据中台在《大数据之路》一书中明确把模型管理作为「**OneData 体系的第一公里**」：模型在进入开发前必须先获得**唯一定位**，包括所属主题域、所属分层（ODS/DWD/DWS/ADS）、命名是否符合规范、Owner 是否登记。这四件事**全部硬约束**到建模工具里，无法跳过。没有通过的前置检查，模型不能进入开发流水线。这正是"模型管理是治理的入口"的具体落地形态——把治理规范变成流水线门禁，而不是写在 PPT 里。
 
 **第四层：LinkedIn DataHub 的元数据视角。** LinkedIn 在 2019 年开源 **DataHub** 时给出的官方定位是「**Metadata Platform**」——一个统一承载技术元数据、业务元数据、操作元数据的中台。但在落地层面，LinkedIn 强调"**Metadata First**"：任何新模型都必须先在 DataHub 注册元数据，再写 DDL。这与阿里 OneData 是同一种思路的两个表达。
 
-**第五层：Uber Databook 的可发现视角。** Uber 在 2017 年公开的 **Databook** 体系（出自 OSDI 2017 论文《Databook: Turning Big Data into Knowledge》），把模型元数据建模为**图谱**（节点=表/字段/概念，边=关系），让推荐、数据科学、运营团队都能通过同一个图谱理解与消费数据。Databook 在 Uber 内部覆盖约 25,000 张表、15 PB 数据——证明"模型管理 + 元数据"一旦建成可发现平台，治理价值会被数倍放大。
+**第五层：Uber Databook 的可发现视角。** Uber 公开的 **Databook** 体系（论文《Databook: Turning Big Data into Knowledge at Uber》，即本篇参考文献中 Xu et al. 一条）把模型元数据建模为**图谱**（节点=表/字段/概念，边=关系），让推荐、数据科学、运营团队都能通过同一个图谱理解与消费数据。Databook 在 Uber 内部覆盖的表数与数据量达数万张表、PB 级量级（量级属【经验】档：本节无法给出可溯源的精确数字，引用时请自行查证）——这仍说明"模型管理 + 元数据"一旦建成可发现平台，治理价值会被数倍放大。
 
 **3. 常见陷阱**
 
@@ -77,10 +77,9 @@
 
 **5. 参考资料**
 
-- 阿里巴巴数据技术团队《大数据之路：阿里巴巴大数据实践》——OneData 体系中模型管理与元数据、主数据、治理的分工定位，是本题最权威的国内实践。
-- 松峰璃靓等《OneData：阿里数据中台实践》——OneData 体系如何把模型管理变成"流水线门禁"的完整论述。
-- LinkedIn Engineering 公开博客《DataHub: A Generalized Metadata Search & Discovery Platform》（2019）——头部社交网络把元数据平台化的官方叙述。
-- Xu et al. OSDI 2017 论文《Databook: Turning Big Data into Knowledge at Uber》——Uber 把模型元数据建模为知识图谱、用统一平台服务 25,000+ 表的工业实证。
+- 阿里巴巴数据技术团队《大数据之路：阿里巴巴大数据实践》——OneData 体系中模型管理与元数据、主数据、治理的分工定位（含"把模型管理变成流水线门禁"的论述），是本题最权威的国内实践。
+- LinkedIn Engineering 公开博客《DataHub: A Generalized Metadata Search & Discovery Tool》（2019）——头部社交网络把元数据平台化的官方叙述。
+- Xu et al. OSDI 2017 论文《Databook: Turning Big Data into Knowledge at Uber》——Uber 把模型元数据建模为知识图谱、用统一平台服务数万张表量级的工业实证（表数量级属【经验】档：本节无法给出可溯源的精确表数）。
 - DAMA International《DAMA-DMBOK2 数据管理知识体系》——数据治理、元数据管理、主数据管理的国际通用定义。
 - **微众银行的 OneID 主数据治理实践** —— 以 OneID 为核心把用户/账户/设备三类主数据纳入统一管理，所有代码体系最多只允许 1 个 OneID 落地，是「模型管理与主数据管理协同」的金融业典型样本。
 - **国家电网的设备主数据与模型管理** —— 把电网设备、线路、台区作为核心主数据资产纳入治理，明确业务 Owner 与数据 Owner 责任边界，是央企级「四位一体」治理落地的典型场景。
@@ -156,7 +155,7 @@
 | `created_at` | `create_time` / `gmt_create` / `ts` | `created_at` |
 | `amount` | `money` / `fee` / `price` | `amount` |
 
-词根表的执行依赖 LLM 辅助检查（参考 §11.1.6），以及每次新模型 PR 的强制 diff 校验。LinkedIn DataHub 公开过类似机制：每个字段必须来自受控词根词典，否则视为"野生命名"在评审中拦截。
+词根表的执行依赖 LLM 辅助检查（参考 §11.1.6），以及每次新模型 PR 的强制 diff 校验。DataHub 的元数据即代码（metadata-as-code）实践中也有类似的词根约束思路（本篇参考资料列有对应章节条目，本节未附其版本与链接）；它是否把「字段必须取自受控词根、否则拦截」做成强制门禁，请按该章节名自行检索核验。
 
 **第五层：两种失败模式与取舍。**
 
@@ -167,7 +166,7 @@
 
 **3. 常见陷阱**
 
-- **只讲前缀不讲语义。** `dim_user` 与 `dim_users` 都会被规范允许，但下游消费方会困惑——前者是单分区表，后者是多分区表。
+- **只讲前缀不讲语义。** `dim_user` 与 `dim_users` 都会被规范允许，但下游消费方无法从名字判断两者在粒度与范围上的差别，容易取错表。
 - **不区分命名层与建模层。** `dim` 是建模层（维度表）、`ads` 是交付层（应用层），但很多人混用前缀。
 - **忽略词根同义问题。** 规范只管形、不管义，看起来合规，实则口径冲突。
 - **不与 CI 绑定。** 写在 Wiki 上的命名规范，半年后无人记得。
@@ -183,7 +182,7 @@
 - 阿里巴巴数据技术团队《大数据之路：阿里巴巴大数据实践》——OneData 命名规范的完整定义与分区后缀（di/1d/1h/full）的标准语义。
 - dbt 官方文档 `naming-conventions` 与 `dbt-project-evaluator` 章节——把命名规范工程化为 CI 检查的范例。
 - LinkedIn DataHub 公开文档的 «metadata-as-code» 章节——词根词典与受控词根在 DataHub 中的实现。
-- Joe Reis & Matthew Housh《Fundamentals of Data Engineering》（2022）——「词根词典是数据建模的语法」的方法论阐述。
+- Joe Reis & Matt Housley《Fundamentals of Data Engineering》（2022）——「词根词典是数据建模的语法」的方法论阐述。
 - **美的集团美擎平台的工业数据命名规范** —— 把设备/产线/工艺参数以「产线 + 工序 + 参数」分段式命名（例 `prd_assy_torque_value`），是制造业把命名规范与 MES/SCADA 数据打通的典型样本。
 - **米哈游游戏数据中台的命名与模型规范实践** —— 把大世界、角色、剧情等资产按统一分段式命名规则落到 DCC 与数据流水线，是游戏行业把命名规范与资产模型打通建模约束的代表样本。
 - **京东零售数据中台的分层命名范式** —— 借鉴 OneData 思路在零售场景做主题域与分层（如汇总层按主题域 + 业务过程 + 周期），是电商行业把阿里命名范式迁移到零售数据中台的代表实践。
@@ -268,10 +267,10 @@
 **5. 参考资料**
 
 - 阿里巴巴数据技术团队《大数据之路：阿里巴巴大数据实践》——BU/DataWorks 体系下 Owner 工号与平台权限绑定的具体做法。
-- 字节跳动技术团队公开演讲《DataLeap：数据治理在字节跳动的实践》（DataFun 等社区分享）——轻量化 Owner 制度与健康度评分机制。
+- 字节跳动技术团队在 DataFun 等技术社区的公开演讲《DataLeap：数据治理在字节跳动的实践》——轻量化 Owner 制度与健康度评分机制（该演讲的年份、场次与链接本节无法核验，引用时请自行查证）。
 - Xu et al. OSDI 2017 论文《Databook: Turning Big Data into Knowledge at Uber》——Owner / Steward / Subscriber 三角色机制的原始论述。
 - DAMA-DMBOK2 中 "Data Governance Roles and Responsibilities" 章节——Owner 制度的国际通用定义。
-- Ian Gorton & John Klein《Data Governance: How to Design, Deploy and Sustain an Effective Data Governance Program》——Owner 制度在企业级落地中的最佳实践。
+- John Ladley《Data Governance: How to Design, Deploy and Sustain an Effective Data Governance Program》（2019）——Owner 制度在企业级落地中的最佳实践。
 - **招商银行的双 Owner 制度与模型责任人机制** —— 在零售客户、对公、风控三条业务线强制要求每个关键模型同时登记业务 Owner 与数据 Owner，并落地到数据中台账户，是银行业 Owner 制度与平台权限绑定的代表性实践。
 - **平安银行的「模型 Owner + 数据 Owner」协同治理** —— 把信贷、反欺诈、营销模型的 Owner 与对应数据集的 Owner 双向绑定，任一方缺位时模型不能进入生产，是金融行业把 Owner 制度与合规要求深度耦合的范本。
 - **顺丰的数据 Owner 体系** —— 把运单、客户、网点、车辆等核心主数据逐项登记 Owner 与 Steward，并把变更审批挂到 Owner 工号，是物流行业在跨业务数据中推行 Owner 制度的典型样本。
@@ -312,7 +311,7 @@
 
 1. **变更申请（RFC / PRD）**：发起人提交修改方案，模板包括**背景 / 口径定义 / 影响范围 / 回滚方案 / 灰度计划**。
 2. **影响分析（Impact Analysis）**：通过血缘图反向遍历，列出所有受影响的下游模型、报表、AI 特征。
-3. **跨团队评审会议**：业务 Owner、数据 Owner、被影响方共同在场；会议时长硬上限 30 分钟。
+3. **跨团队评审会议**：业务 Owner、数据 Owner、被影响方共同在场；会议时长硬上限 30 分钟（教学设定值，【经验】档、无公开来源）。
 4. **批准与排期**：评审通过后进入排期，决定上线窗口。
 5. **灰度上线 + 监控**：先影子链路对比，再切流量；监控 SLA 与数据质量指标。
 
@@ -328,7 +327,7 @@
 
 **第四层：LinkedIn DataHub 的影响分析 API。** LinkedIn 在 DataHub 中提供**Impact Analysis API**——给定一个表/字段，返回"**多少个下游实体 + 哪个 Owner + 哪些业务线 + 哪些 AI 应用**"在引用它。这个 API 是 P0 评审会议的必备输入——评审者不需要人工翻血缘图，工具自动列出影响面。
 
-**第五层：字节"模型健康度自评"机制。** 字节 DataLeap 把评审的一部分决策权**下沉到模型健康度评分系统**：
+**第五层：字节"模型健康度自评"机制。** 字节 DataLeap 把评审的一部分决策权**下沉到模型健康度评分系统**（以下评分项与阈值均为教学设定的示例值，【经验】档、无公开来源）：
 
 - 评分项：血缘完整度、口径清晰度、Owner 健康度、SLA 达成率、最近一次变更成功率。
 - 健康分 ≥ 85 的模型，**变更走快通道**（Owner 一人审即可）。
@@ -354,17 +353,17 @@ LLM 评审只是**辅助**，重大决策仍需人工——这是头部企业共
 
 **4. 追问预测**
 
-- **「评审会议的最长时长应该多少？」** 答：硬上限 30 分钟；超时即拆成两次评审或升级为变更类型。超过 1 小时的评审通常是**问题在改动不在评审**。
+- **「评审会议的最长时长应该多少？」** 答：硬上限 30 分钟（同第二层五步法第 3 步，属教学设定值，【经验】档）；超时即拆成两次评审或升级为变更类型。超过 1 小时的评审通常是**问题在改动不在评审**。
 - **「评审会议谁来主持？」** 答：**变更发起人**主持（不是数据团队 leader），强调发起人对变更负责。leader 只在争议时仲裁。
-- **「评审通过率应该多高？」** 答：单次评审 70%-80% 通过是健康水位——过高意味着评审走过场，过低意味着事前方案没过脑子。
+- **「评审通过率应该多高？」** 答：单次评审 70%-80% 通过是健康水位（【经验】档：这是经验区间，本节无法给出可溯源来源，引用时请自行查证）——过高意味着评审走过场，过低意味着事前方案没过脑子。
 - **「评审与紧急变更怎么办？」** 答：紧急变更（Hotfix）走**战时通道**——事后 24 小时内必须补交变更评审与监控报告，连续 3 次走战时通道的团队需被治理委员会约谈。
 
 **5. 参考资料**
 
 - 阿里巴巴数据技术团队《大数据之路：阿里巴巴大数据实践》——OneData 五步模型评审 SOP 的完整定义。
-- Stripe Engineering 公开博客《Move fast but don't break things》（及前后文）——P1 变更影子链路 + 灰度切流的工程化模板。
+- Stripe Engineering 公开博客《Move fast but don't break things》——P1 变更影子链路 + 灰度切流的工程化模板（该博客的标题、年份与链接本节无法核验，引用时请自行查证）。
 - LinkedIn DataHub 公开文档的 «impact analysis» 章节——影响分析 API 的具体设计。
-- 字节跳动 DataFun 社区公开演讲《DataLeap 模型治理》——健康度评分机制与评审分级的工程实践。
+- 字节跳动在 DataFun 社区的公开演讲《DataLeap 模型治理》——健康度评分机制与评审分级的工程实践（该演讲的年份、场次与链接本节无法核验，引用时请自行查证）。
 - Charity Majors 等《Observability Engineering》（O'Reilly, 2022）——评审与监控在变更风险控制中的相互关系。
 - **京东物流的运单 / 配送数据变更评审机制** —— 把 P0 配送规则变更走「影子轨迹对比 + 灰度区域切流」三步评审，是物流行业把「影子链路 + 灰度」做到城配场景的代表样本。
 - **宁德时代电池质检数据的 P0 模型深度评审** —— 把电池批次/容量/一致性等核心质量模型变更按「跨厂专家 + 数据 Owner + 业务 Owner」三方在场评审，是制造业把「评审上升到工程门禁」的典型。
@@ -419,7 +418,7 @@ Catalog 是"**让别人找到这个数据**"，Data Contract 是"**我承诺以�
             [变更时通过 Data Contract 平台校验]
 ```
 
-**Bitol Data Contract Specification**（2024）是目前最被广泛接受的开放标准，定义了 `dataset` / `schema` / `sla` / `lineage` / `servers` / `columns` / `metadata` 等核心字段。Stripe 早在 2018 年就公开过类似实践 —— 数据生产方必须为每个数据集维护一份 `dataset.yaml`，声明 schema、SLA 与变更规则。
+**Bitol Data Contract Specification** 是当前较受关注的开放标准之一（其发布时间各来源说法不一，本节不写死年份；版本与发布日期以项目官方页面为准），定义了 `dataset` / `schema` / `sla` / `lineage` / `servers` / `columns` / `metadata` 等核心字段。Stripe 也在其工程博客中公开过类似做法——数据生产方必须为每个数据集维护一份 `dataset.yaml`，声明 schema、SLA 与变更规则（该博客的标题与年份本节无法核验，引用时请自行查证）。
 
 **第三层：评估 Catalog 产品的七大维度。**
 
@@ -439,7 +438,7 @@ Catalog 是"**让别人找到这个数据**"，Data Contract 是"**我承诺以�
 | 架构 | 元数据图 + Kafka 事件流 + MySQL/PostgreSQL | 与 Databricks 计算一体 | 标准 REST + 元数据库（PostgreSQL） |
 | 强项 | 技术元数据与血缘、Pull 模式、社区活跃 | 与 Spark/Photon 计算强绑定、性能优化 | 多源接入快、轻量部署 |
 | 局限 | 跨云部署复杂，自托管运维成本高 | 强绑定 Databricks 生态 | 血缘深度与图能力略弱于 DataHub |
-| AI 集成 | DataHub AI / 第三方插件 | 官方 Assistant（Cortex LLM） | OpenMetadata LLM 集成 |
+| AI 集成 | DataHub AI / 第三方插件 | 官方 Assistant / Genie | OpenMetadata LLM 集成 |
 | 适用 | 中大规模企业、开源派、自我治理 | Databricks 用户、湖仓一体优先 | 中小规模企业、多源异构 |
 | 商业模式 | 全开源 + 商业 SaaS | 商业、含在 Databricks 平台 | 全开源 + 商业支持 |
 
@@ -453,7 +452,7 @@ Catalog 是"**让别人找到这个数据**"，Data Contract 是"**我承诺以�
 - **不绑定治理流程**：Catalog 上的标签不强制、不进 CI、不进评审，等于没人维护。
 - **忽略 API 化**：未来 AI Agent 时代，没有 API 化的 Catalog 会被逐步边缘化。
 
-**第六层：Stripe 的实用主义范式。** Stripe 公开过其内部做法：把 Data Contract 视为 Catalog 的一种**强声明**——生产方上传数据集时必须提交 `dataset.yaml`，Catalog 自动从中提取字段、SLA、变更策略，**让 Catalog 拥有 SLA 承诺的能力**。这种"Data Contract 驱动 Catalog"的工程范式，在国内阿里 OneData 与字节 DataLeap 中均有体现。
+**第六层：Stripe 的实用主义范式。** Stripe 在其工程博客中公开过它的内部做法（该材料的标题与年份本节无法核验，引用时请自行查证）：把 Data Contract 视为 Catalog 的一种**强声明**——生产方上传数据集时必须提交 `dataset.yaml`，Catalog 自动从中提取字段、SLA、变更策略，**让 Catalog 拥有 SLA 承诺的能力**。这种"Data Contract 驱动 Catalog"的工程范式，在国内阿里 OneData 与字节 DataLeap 中均有体现。
 
 **3. 常见陷阱**
 
@@ -471,10 +470,10 @@ Catalog 是"**让别人找到这个数据**"，Data Contract 是"**我承诺以�
 
 **5. 参考资料**
 
-- LinkedIn 工程团队公开博客《DataHub: A Generalized Metadata Search & Discovery Platform》（2019）——DataHub 设计哲学与架构的核心出处。
+- LinkedIn 工程团队公开博客《DataHub: A Generalized Metadata Search & Discovery Tool》（2019）——DataHub 设计哲学与架构的核心出处。
 - Databricks 官方文档《Unity Catalog Overview》——Unity Catalog 与 Lakehouse 一体化的设计论述。
 - OpenMetadata 官方文档（2024 版）——轻量多源 Catalog 的部署与集成模式。
-- Bitol 官方规范《Data Contract Specification v1》——Data Contract 的开放标准协议。
+- Bitol 官方规范《Data Contract Specification》——Data Contract 的开放标准协议（版本与发布日期以项目官方页面为准）。
 - Publicis Sapient 工程博客《Data Contracts: The Key to Reliable Data》（2023）——Stripe 数据契约经验的工程化提炼。
 - Andrew Jones《Driving Data Quality with Data Contracts》（O'Reilly, 2024）——Data Contract 与数据质量/治理的协同框架。
 - **招商银行湖仓一体目录与数据契约实践** —— 在湖仓体系上把数据集 `dataset.yaml` 作为契约起点，覆盖零售/对公/风控数据集的 Schema、SLA、变更策略，是国内银行业把 Data Contract 落到湖仓目录的代表样本。
@@ -505,7 +504,7 @@ Catalog 是"**让别人找到这个数据**"，Data Contract 是"**我承诺以�
 
 **2. 参考答案框架**
 
-**第一层：先说清 AI 时代模型治理的三大变化。**
+**第一层：先说清 AI 时代模型治理的五大变化。**
 
 | 维度 | 传统治理 | AI 增强治理 |
 | --- | --- | --- |
@@ -615,8 +614,8 @@ Catalog 是"**让别人找到这个数据**"，Data Contract 是"**我承诺以�
 - Databricks 官方文档《Assistant & Cortex：Natural Language to Data》（2024）——LLM 辅助建模与 Catalog 自动化的官方叙述。
 - Snowflake 官方文档《Cortex Document AI & Analyst》——自然语言到数据查询与 Catalog 增强的功能论述。
 - 阿里云 DataWorks 官方文档《AI Copilot 智能数据建模》（2024）——中文场景下 NL2Model 与自动规范检查的工程实践。
-- LinkedIn DataHub 公开博客《AI-Enhanced DataHub》（2024）——AI 增强 Catalog 的 GitHub 社区讨论与原型。
-- 微软研究院论文《GraphRAG: From Local to Global Query》（2024）——GraphRAG 在数据治理与知识图谱中的推理能力。
+- LinkedIn DataHub 公开博客《AI-Enhanced DataHub》（2024）——AI 增强 Catalog 的早期公开探索（该条目的确切载体在博客与 GitHub 社区讨论之间不易区分，年份与链接本节无法核验，引用时请自行查证）。
+- Microsoft Research《GraphRAG: Unlocking LLM Discovery on Narrative Private Data》（2024）——GraphRAG 在数据治理与知识图谱中的推理能力。
 - Anthropic 官方文档《Building Effective Agents》（2024）——Agent 系统设计模式与风险控制的纲领性参考。
 - Atlan 官方博客《AI Catalog: From Manual Reviews to Agent-Driven Governance》（2024）——Catalog + Agent 的工业实践综述。
 - **微众银行的 AI 辅助数据治理与影响分析** —— 在信贷模型上线前用 AI Agent 自动遍历血缘、生成影响面报告并结合合规校验，是金融行业把 AI 评审与合规边界耦合的典型样本。
