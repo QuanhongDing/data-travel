@@ -83,7 +83,7 @@
 
 **由此必然导出的性质**：因为数仓的表状态只有该引擎能解释，所以引擎可以在自己的格式上做很深的自适应优化（自动聚簇、自动物化视图、执行期改计划），代价是数据要进出这个引擎就必须走它的写入路径——想被第二个引擎读，就得复制一份（多一份存储、多一条同步链路、多一个口径分叉点）；因为 Lakehouse 把表状态外化成开放元数据，所以表状态的权威可以在多个引擎之间共享，代价是没有任何引擎会替你维护整体布局，Compaction、文件大小、分区演进这些「引擎本来会自己做的事」全部转为你的常驻运维责任。
 
-**公开证据**：Iceberg 由 Netflix 开源、其后成为 Apache 顶级项目【公开】（Apache 软件基金会官方项目页 Apache Iceberg，该项目于 2020 年毕业为顶级项目；当前状态以 iceberg.apache.org 当前版本为准）；Delta Lake 由 Databricks 于 2019 年开源【公开】（Databricks 官方博客的 *Delta Lake* 开源公告，2019，见 databricks.com/blog）；Iceberg 的 V3 规范加入了行级删除、增量读取与 Variant 类型【公开】（Apache Iceberg 官方规范 *Iceberg Table Spec* 的 V3 章节，2024；具体条目以 iceberg.apache.org 当前版本为准）。
+**公开证据**：Iceberg 由 Netflix 开源、其后成为 Apache 顶级项目【公开】（Apache 软件基金会官方项目页 Apache Iceberg，该项目于 2020 年毕业为顶级项目；当前状态以 iceberg.apache.org 当前版本为准）；Delta Lake 由 Databricks 于 2019 年开源【公开】（Databricks 官方博客的 *Delta Lake* 开源公告，2019，见 databricks.com/blog）；Iceberg 的 V3 规范在行级删除之上加入删除向量、增量读取与 Variant 类型【公开】（Apache Iceberg 官方规范 *Iceberg Table Spec* 的 V3 章节，2024；行级删除文件机制自 v2 规范起已提供；具体条目以 iceberg.apache.org 当前版本为准）。
 
 **失效条件**：当一份数据只有一个读者、写入路径也只有一条时，开放元数据的「可共享」收益为零，剩下的只有元数据与合并的运维成本。此时把 Lakehouse 用在单引擎场景，是把代价留在手上、把收益留在了未来。
 
