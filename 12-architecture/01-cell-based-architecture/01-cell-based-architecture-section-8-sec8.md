@@ -182,7 +182,7 @@ class CellRouter:
 - Spring Cloud Gateway `GlobalFilter` 官方文档——单元化路由过滤器在 Java 生态的标准实现。
 - Envoy `route_config` 与 `matcher` 文档——L7 单元化路由的现代实现方式。
 - **阿里** —— 自研 GSLB 与 HPA 单元化 Router——按地理位置 + userId 双维度路由，是国内最成熟的工程参考。
-- **字节跳动** —— 自研 Router + 春晚红包端到端染色——20 亿 QPS 下压测流量严格隔离。
+- **字节跳动** —— 自研 Router + 春晚红包端到端染色——20 亿次红包请求下压测流量严格隔离。
 - **eBay** —— Cell-Based Routing——每个 Cell 是一个独立的服务注册中心，跨 Cell 调用走统一 Router。
 - **Netflix** —— Ribbon + Zuul 的 Region Cell 路由——按 Region Cell 选 Service Instance。
 - **Twitter** —— gizzard 框架——把 shard 抽象为虚拟节点层，跨机房 shard 路由的代表性实现。
@@ -349,7 +349,7 @@ rules:
 **5. 参考资料**
 
 - 阿里"两地三中心 → 三地五中心"演进白皮书——2013-2018 年的工程演进细节。
-- 字节跳动春晚红包 2017/2018 技术复盘——20 亿 QPS 单元化 + 多机房切流的端到端参考。
+- 字节跳动春晚红包 2017/2018 技术复盘——20 亿次红包请求单元化 + 多机房切流的端到端参考。
 - 腾讯"蓝鲸" + 多机房单元化内部公开材料——同城双活的标准化方案。
 - 《Site Reliability Engineering》（Google SRE）第 23 章——on-call、故障演练、单元化思维在 SRE 体系中的位置。
 - **阿里** —— 三地五中心——单元化 + 多机房容灾的国内最大实践。

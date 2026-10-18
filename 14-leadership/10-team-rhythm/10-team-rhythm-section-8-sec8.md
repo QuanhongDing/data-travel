@@ -59,7 +59,7 @@
 
 - **Async-First 原则**：默认异步（Notion 文档 + 评论），必要才同步（决策 / 冲突 / 团建）。
 - **无会议日**：每周固定 1 天（如「**周三无会议日**」），Meta、Asana、Shopify 等公司已规模化。
-- **会议时长硬限**：所有会议 ≤ 45 分钟，0-15 分钟的 Standup 例外。
+- **会议时长硬限**：常规会议 ≤ 45 分钟（Weekly Sync / MBR / QBR 等 Review 类会议按第二层各自的时长上限执行），0-15 分钟的 Standup 例外。
 - **强制议程 + Action Items**：会前 24 小时发议程，会后 24 小时内发纪要；每场会议必须输出 ≥ 3 条 Action Items。
 - **会议健康度指标**：`MeetingHours / TotalHours < 30%`（健康），`> 50%`（不健康）。
 
@@ -75,7 +75,7 @@
 
 **4. 追问预测**
 
-- **「如何衡量新的节奏是否有效？」** 答：四个指标——① `MeetingHours / TotalHours < 30%`；② Action Items 完成率 `> 80%`；③ Standup 平均时长 `< 5 分钟/人`；④ 团队 NPS / 满意度季度环比。
+- **「如何衡量新的节奏是否有效？」** 答：四个指标——① `MeetingHours / TotalHours < 30%`；② Action Items 完成率 `> 80%`；③ Standup 时长 `< 15 分钟`（团队，对应第二层的 15 分钟设计）；④ 团队 NPS / 满意度季度环比。
 - **「团队抗拒异步 Standup，习惯面对面怎么办？」** 答：渐进过渡——前 2 周保留视频 Standup 但叠加 Async，2 周后切到纯 Async；给团队 1 个月磨合，再 Review 效果。
 - **「Standup 改异步后，新人 onboarding 怎么办？」** 答：Async Standup 不替代 1:1，新人入职前 1 个月保持每日 15 分钟视频同步，让其建立上下文后再切异步。
 - **「多个团队节奏不一致，跨团队会议怎么开？」** 答：跨团队会议（Architecture Review / Data Governance Review）按「**共同可用时间**」定一次 45 分钟频，每团队轮流主持议程，避免每团队各开各的会。

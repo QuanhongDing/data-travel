@@ -21,7 +21,7 @@
 
 ### 1.1 是什么
 
-**学术定义**：故障复盘（Postmortem）研究从「**失败事件**」中提取组织学习的系统化方法，是组织学习（Organizational Learning, Chris Argyris 1977）和**Just Culture**（Sidney Dekker 2012）的核心实践。理论基础源于 NASA 的「**Mishap Investigation**」（1960s）、**Blameless Postmortem**（John Allspaw 2012 Etsy / 2014 Google SRE Book）。
+**学术定义**：故障复盘（Postmortem）研究从「**失败事件**」中提取组织学习的系统化方法，是组织学习（Organizational Learning, Chris Argyris 1977）和**Just Culture**（Sidney Dekker 2012）的核心实践。理论基础源于 NASA 的「**Mishap Investigation**」（1960s）、**Blameless Postmortem**（John Allspaw 2012 Etsy / 2016 Google SRE Book）。
 
 **工程定义**：在数据架构师语境下，**故障复盘 = Blameless × 5 Whys × Fishbone × Action Items × 跟踪闭环 × 知识沉淀** 的体系。它解决的核心问题是：
 
@@ -110,7 +110,7 @@
 **互联网阶段（2010-2020）**：
 
 - 2012：Etsy John Allspaw 提出「**Blameless Postmortems and a Just Culture**」（Velocity 2012）。
-- 2014：Google SRE Book 出版，Postmortem 成为行业标准。
+- 2016：Google SRE Book 出版，Postmortem 成为行业标准。
 - 2016：Netflix「**Chaos Engineering**」+ Postmortem。
 - 2018：阿里巴巴「**故障复盘文化**」成为标杆，3721 原则（30 分钟定位 / 3 小时恢复 / 24 小时复盘）。
 

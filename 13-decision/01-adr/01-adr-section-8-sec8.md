@@ -158,7 +158,7 @@ GitHub 在 2016 年公开的 `github/architectural-decision-records` 仓库就�
 **5. 参考资料**
 
 - Michael Nygard《Documenting Architecture Decisions》（Cognitect 官方博客，2011 年）——Nygard 4 段模板的原始出处。
-- Olbrich、Kuhn、Hummerich 等《An Industrial Case Study on Lightweight, Markdown-based Architecture Decisions》（CEUR-WS 2017）——MADR 模板正式提出与工业验证论文，给出 MADR 字段设计的实证依据。
+- Olbrich、Kuhn、Hummerich 等《An Industrial Case Study on Lightweight, Markdown-based Architecture Decision Records》（CEUR-WS 2017）——MADR 模板正式提出与工业验证论文，给出 MADR 字段设计的实证依据。
 - GitHub 公开仓库 `github/architectural-decision-records` 中 2018 年后的 ADR（如 GraphQL 选型 ADR）——典型的 MADR 完整版实例，字段齐全到 Confirmation。
 - adr-tools GitHub 项目（npryce/adr-tools）——Nygard 风格的 `adr new`/`adr link` CLI 工具，是 Nygard 模板的工具链代表。
 - ThoughtWorks Technology Radar 2014–2024 系列文档——多次把 ADR 实践从 Trial 推进到 Adopt，是 ADR 普及节奏的客观标尺。
@@ -590,7 +590,7 @@ GitHub Actions 中已有可参考的 ADR 校验自定义规则；阿里云 / 字
 - **「用 wiki 链接代替硬编码编号」。** 用 `[为什么这么设计](#)` 链接到 wiki 页面，一旦 wiki 改名链接失效；用 `ADR-0007` 这种硬编号即使文件改名也可被 grep 到。
 - **「CI 校验过于严格反而失败」。** 比如强制每条 ADR 都有 GitHub Issue 关联——小 ADR 不必要，CI 应分级别硬 / 软提示。
 - **「把 ADR 链接放 PR Description 而不放代码注释」。** PR Description 半年后会被关掉，代码注释永远存在。
-- **「不维护 Affected Code 段」。** MADR 模板有这一字段但很多团队不填，结果 ADR supersede 时不知道影响哪些代码——supsersede 决策质量大幅下降。
+- **「不维护 Affected Code 段」。** MADR 模板有这一字段但很多团队不填，结果 ADR supersede 时不知道影响哪些代码——supersede 决策质量大幅下降。
 - **「Supersede 后忘了通知代码」**。这是最致命的陷阱——ADR-0012 supersede ADR-0007 后，所有引用 ADR-0007 的代码没有被通知到，结果代码继续按 ADR-0007 决策意图运行。CI 必须主动提醒。
 
 **4. 追问预测**
@@ -1062,7 +1062,7 @@ ADR-0005 单模型 GPT-4
    ▼
 ADR-0012 多模型路由（Claude + GPT-4o + 通义）
    ├─ Superseded by ──> ADR-0015 引入 DeepSeek-V3
-   └─ Related ─────────> ADR-0021 数据合规路径
+   └─ Related ─────────> ADR-0016 数据合规路径
 
 ADR-0003 单 Hive 数仓
    │ Superseded by

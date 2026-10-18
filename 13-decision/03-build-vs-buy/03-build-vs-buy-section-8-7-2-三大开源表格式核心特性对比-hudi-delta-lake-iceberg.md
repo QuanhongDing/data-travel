@@ -14,7 +14,7 @@
 
 **2. 参考答案框架**
 
-**第一层：底层抽象。** ① **Delta Lake**：把每次写操作作为一个 `_delta_log` JSON 文件追加，事务用乐观锁 + Spark 上的 conflict 检测（最近的 Delta 3.x 引入 Conflict-Resolved Concurrency）。**Upsert** 通过 `MERGE INTO` 实现，本质是 join 后改写。② **Iceberg**：把表拆成 **manifest list → manifest files → data files** 三层元数据，写时通过 snapshot 机制做版本管理；删除有两种：**Equality Delete**（按字段值匹配删除，物理删除在读时过滤）与 **Position Delete**（记录被删文件的 row position，读时跳过）。③ **Hudi**：通过**记录级索引（record-level index）+ 文件级元数据（commit timeline）**实现 upsert；提供 CoW（读时合并、写时复制）与 MoR（写时增量、读时合并列存 + 增量文件）两种表类型，可由用户选。
+**第一层：底层抽象。** ① **Delta Lake**：把每次写操作作为一个 `_delta_log` JSON 文件追加，事务用乐观锁 + Spark 上的 conflict 检测（最近的 Delta 3.x 引入 Conflict-Resolved Concurrency）。**Upsert** 通过 `MERGE INTO` 实现，本质是 join 后改写。② **Iceberg**：把表拆成 **manifest list → manifest files → data files** 三层元数据，写时通过 snapshot 机制做版本管理；删除有两种：**Equality Delete**（按字段值匹配删除，物理删除在读时过滤）与 **Position Delete**（记录被删文件的 row position，读时跳过）。③ **Hudi**：通过**记录级索引（record-level index）+ 文件级元数据（commit timeline）**实现 upsert；提供 CoW（写时复制）与 MoR（写时增量、读时合并列存 + 增量文件）两种表类型，可由用户选。
 
 **第二层：Delete 的工程差异。** ① **Delta Lake**：早期只支持 copy-on-delete（即删除也重写整个文件）；2.0+ 引入 **Deletion Vector**（用位图标记删除），并通过 `_delta_log` 中的 `remove` 操作物理清理。② **Iceberg**：把 row-level delete 与 compaction 分离；**Position Delete** 文件对查询引擎透明，Puffin + Bitmap 可以高效定位。③ **Hudi**：MoR 表类型在写入时只追加 base file + delta log（avro 格式），读时通过 HoodieLogFileReader 合并——更新延迟低但读放大；CoW 表类型直接重写文件，读快但写放大。
 
@@ -103,7 +103,7 @@
 | 默认并发模型 | Serializable | Snapshot Isolation | Timeline-based lock |
 | 隔离粒度 | 表 | 表 + 分区 | commit / instant |
 | 多 writer 并发 | 强（DRAM 优化） | 中（重试路径） | 强（MoR 表） |
-| 元数据元数据压力 | 中 | 高（manifest list） | 低 |
+| 元数据压力 | 中 | 高（manifest list） | 低 |
 
 **第四层：选型影响。** ① **多团队共享一张表 + 高并发写**——Iceberg 优势。② **强事务语义（金融 / 计费）**——Delta Lake。③ **CDC + 增量消费**——Hudi（timeline 原生支持 incremental pull）。
 

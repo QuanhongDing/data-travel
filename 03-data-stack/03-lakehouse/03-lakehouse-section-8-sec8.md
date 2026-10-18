@@ -39,7 +39,7 @@
 - 是否理解「表格式（Table Format）」是湖仓一层的**语义层**——把 Parquet/ORC 这种文件格式提升为具备 Schema、ACID、Time Travel 的「表」。这是判断候选人是否真正理解湖仓的关键。
 - 能否说清四家各自的设计哲学（Netflix / Uber / Databricks / Alibaba-Flink 生态）背后的**取舍原点**，而不是只背特性对比表。
 - 是否区分**写模型（COW / MOR / LSM）**与**主键索引**这两个最影响工程代价的维度，并把 CDC 场景、AI 场景、跨引擎场景对号入座。
-- 加分项：能结合 Delta UniForm（2023 随 Delta Lake 3.0 公布；论文见 SIGMOD 2024）的「一份数据三协议」演进方向、Paimon 1.0 2024 毕业、Iceberg V3 规范的删除向量等 2024-2025 关键事件，谈**收敛趋势**而非四家并存。
+- 加分项：能结合 Delta UniForm（2023 随 Delta Lake 3.0 公布；出处见 §5.4，该能力不是会议论文）的「一份数据三协议」演进方向、Paimon 1.0 2024 毕业、Iceberg V3 规范的删除向量等 2024-2025 关键事件，谈**收敛趋势**而非四家并存。
 
 **2. 参考答案框架**
 
@@ -63,7 +63,7 @@
 
 **第五层：2024-2025 的关键收敛信号。**
 
-- **Delta UniForm（2024 SIGMOD 论文）**：写一次 Delta，下游可选 Iceberg / Hudi 协议读。
+- **Delta UniForm（2023 随 Delta Lake 3.0 公布）**：写一次 Delta，下游可选 Iceberg / Hudi 协议读。
 - **Iceberg V3 规范（2024）**：删除向量 + Variant 类型（行级删除文件机制自 v2 规范起已提供），缩小与 Delta 的「能力差」。
 - **Paimon 1.0 Apache 毕业（2024）+ Paimon 1.1（2025）**：LSM 调优、Changelog 增强，确认「流批一体底座」路线。
 
@@ -88,7 +88,7 @@
 
 - Apache Iceberg 官方规范文档（v1 / v2 / v3）——表格式层级、清单文件、隐藏分区等概念的权威出处。
 - Apache Hudi RFC-33 与 Timeline Server 设计文档（2024）——Uber 公开的 Hudi 1.0 架构演进。
-- Delta Lake 官方文档及《Delta UniForm: One Storage, Multiple Protocols》SIGMOD 2024 论文。
+- Databricks 官方文档《Delta UniForm: One Storage Format for All Engines》——Delta UniForm 的机制出处（题名与年份以该文档页当前版本为准）；它不是会议论文，勿记作 SIGMOD 2024 论文，见 §5.4。
 - Apache Paimon VLDB 2024 论文《Paimon: A LSM Tree Based Stream-Batch Unified Table Store》。
 - Netflix Technology Blog「Migrating to Iceberg at Netflix Scale」——PB 级 Hive→Iceberg 迁移的工程笔记。
 - Uber Engineering「Hudi: Building Reliable Data Lakes at Uber」——增量 upsert 与 Timeline 的原始设计动机。
@@ -237,7 +237,7 @@
 
 - **「HMS 撑不住时如何做迁移？在线迁移还是切割迁移？」** 答：通常用**双写 + 切换**——新集群起 Nessie/Unity，旧表保留 HMS 只读，下游逐表切换；Icberg 表通过 `register_table` 命令把元数据接到新 Catalog，不用动物理数据。永远不要一次性 DDL 重导。
 - **「Unity Catalog 开源后，跟商业版权限差距大吗？」** 答：核心元数据抽象已开源，但商业版有更强的跨工作区访问控制 + 集中审计；纯开源版可用，但企业级审计与 SSO 集成需要二次开发。
-- **「如果 Iceberg 表存放在 AWS S3，Polar Catalog 部署在自建 K8s，会不会有跨云风险？」** 答：有。Catalog 必须与对象存储同地域，且建议使用 VPC 私链 + 密钥托管；跨云会引入明显的连接延迟与合规风险。
+- **「如果 Iceberg 表存放在 AWS S3，Polaris Catalog 部署在自建 K8s，会不会有跨云风险？」** 答：有。Catalog 必须与对象存储同地域，且建议使用 VPC 私链 + 密钥托管；跨云会引入明显的连接延迟与合规风险。
 - **「Nessie 分支在生产环境到底有没有用？」** 答：在「实验性回填」与「ETL 修复」场景非常有用——把异常数据修复跑在分支上，验证合并后一次性生效，不污染线上表。
 
 **5. 参考资料**

@@ -206,8 +206,8 @@ Uber 在其数据平台用 Ranger 的 Row Filter 做"业务 BP 只能看自己�
 
 **第三层：社区活跃度对比。**
 
-- **Ranger**：GitHub 6k+ stars；月度 commit；2024 仍在持续发布新版本（Ranger 2.4+）；活跃贡献者 100+；商业支持来自 Cloudera。
-- **Sentry**：Apache Attic 状态；月度 commit < 5；新贡献者基本停滞；官方说明是"无活跃开发，仅修严重 bug"。
+- **Ranger**：star 数与活跃贡献者数可在 GitHub 的 apache/ranger 仓库直接查看（该数字随时间变动，此处不锁定具体值）；月度 commit；2024 仍在持续发布新版本（Ranger 2.4+）；商业支持来自 Cloudera。
+- **Sentry**：Apache Attic 状态；月度 commit 极少；新贡献者基本停滞；官方说明是"无活跃开发，仅修严重 bug"。
 
 **第四层：商业支持对比。**
 

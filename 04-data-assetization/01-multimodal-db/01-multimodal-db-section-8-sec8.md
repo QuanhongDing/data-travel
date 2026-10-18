@@ -40,7 +40,7 @@
 
 **第一层：维度一——存储形态。** 传统向量库（FAISS / 早期 Milvus / pgvector）核心是「向量 + 标量过滤」，原文资产留在外部 OSS/S3；跨模态要么靠业务层做对齐，要么多实例并存。多模态数据库的本质是把**多模态原文件、Embedding、元数据、权限、版本**组织在同一个逻辑命名空间下——典型如 Weaviate 的 Modules 机制（向量化在库内完成）、SurrealDB 的多模型 Schema、Milvus 2.x 的 `BINARY` 字段 + S3 联邦。
 
-**第二层：维度二——检索能力。** 单一向量库只回答「最相似的 K 条记录」，跨模态需要业务层手动把不同模态投影到同一空间再查询；多模态数据库原生支持**以文搜图、以图搜文、混合检索（文本 + 图像加权向量）**，因为系统内部已经完成跨模态对齐。
+**第二层：维度二——检索能力。** 单一向量库只回答「最相似的 K 条记录」，跨模态需要业务层手动把不同模态投影到同一空间再查询；多模态数据库原生支持**以文搜图、以图搜文、混合检索（文本 + 图像加权向量）**，因为它把承载对齐空间的编码器（如 Weaviate Modules 内置的 CLIP）与多向量索引放在同一个系统里。
 
 **第三层：维度三——适用场景。** 只有文本 → 单一向量库；只有结构化数据 → 关系数据库；**同时存在两种以上模态且需要跨模态检索 → 多模态数据库**。判断信号：业务出现「以图搜文」「视频抽帧检索」「图文混排问答」等需求时，单一向量库已经无法独立承载。
 
@@ -203,8 +203,8 @@
 
 **第一层：四个对比维度。**
 
-- **分布式能力**：Milvus > Qdrant ≈ Weaviate > pgvector（Postgres 单库扩展）> SurrealDB。Milvus 通过分片 + 消息队列（Kafka/Pulsar）天然支持百亿级，Qdrant 与 Weaviate 通过 Raft 集群支持中等规模。
-- **多模态原生支持**：Weaviate > Milvus > Qdrant > SurrealDB > pgvector。Weaviate 通过 Modules 让 CLIP/SBERT/Transformers 在库内运行；Milvus 通过多 Vector Field + 自定义 Pre-process 函数支持；pgvector 需要业务层自己调用模型再写库。
+- **分布式能力**：Milvus > Qdrant ≈ Weaviate > SurrealDB > pgvector（Postgres 单库扩展）。Milvus 通过分片 + 消息队列（Kafka/Pulsar）天然支持百亿级，Qdrant 与 Weaviate 通过 Raft 集群支持中等规模。
+- **多模态原生支持**：Weaviate > Milvus ≈ SurrealDB > Qdrant > pgvector。Weaviate 通过 Modules 让 CLIP/SBERT/Transformers 在库内运行；Milvus 通过多 Vector Field + 自定义 Pre-process 函数支持；pgvector 需要业务层自己调用模型再写库。
 - **运维成本**：pgvector 最低（复用 Postgres 运维栈）；Qdrant/Weaviate 中（单二进制 + Raft）；Milvus 最高（依赖 etcd + MinIO + Pulsar）。
 - **LLM 集成**：Weaviate 原生支持 `generative-openai`、`generative-cohere` 模块；Qdrant 提供 FastEmbed 库内推理；SurrealDB 通过 SurrealML 内嵌模型推理；Milvus 偏向「计算分离」，LLM 调用需业务侧处理。
 
@@ -441,7 +441,7 @@
 补充三条本章特有的答题锦囊：
 
 1. **Embedding 模型没有"最强"，只有"最匹配业务模态组合"**。中文用 BGE-VL，跨六模态用 ImageBind，纯文档检索用 ColPali。
-2. **多模态架构不是把多套系统拼起来，而是统一向量空间 + 统一治理**。Weaviate Modules、SurrealDB、Milvus 2.x 是一套系统内承载多向量 / 多模型的不同底座；但它们本身都不提供跨模态语义空间，统一空间取决于你接入的对齐编码器（见 §7.2）。
+2. **多模态架构不是把多套系统拼起来，而是统一向量空间 + 统一治理**。Weaviate Modules、SurrealDB、Milvus 2.x 是一套系统内承载多向量 / 多模型的不同底座；但它们本身都不提供跨模态语义空间，统一空间取决于你接入的对齐编码器（见 §7.3.1）。
 3. **生产治理比模型选择更重要**。召回-精排可观测、评估闭环、归因追踪、缓存压缩——这四件事决定绝大部分的工业效果（按【经验】档表述，无精确统计口径）。
 
 ### 8.4 返回

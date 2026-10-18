@@ -31,7 +31,7 @@
 
 ### 1.1 是什么
 
-**学术定义**：Embedding（嵌入）是将离散数据（文本 / 图像 / 音频）映射到**连续高维向量空间**的表示学习方法。其数学本质是一个函数 $f: X \rightarrow \mathbb{R}^d$，使得语义相似的数据在向量空间中**距离相近**。在 NLP 领域，Word2Vec（2013）、GloVe（2014）、BERT（2018）是早期里程碑；2023 年后，基于对比学习（Contrastive Learning）的 Sentence-BGE、OpenAI text-embedding-3、Cohere Embed v3 成为主流。
+**学术定义**：Embedding（嵌入）是将离散数据（文本 / 图像 / 音频）映射到**连续高维向量空间**的表示学习方法。其数学本质是一个函数 $f: X \rightarrow \mathbb{R}^d$，使得语义相似的数据在向量空间中**距离相近**。在 NLP 领域，Word2Vec（2013）、GloVe（2014）、BERT（2018）是早期里程碑；2023 年后，基于对比学习（Contrastive Learning）的 BGE（BAAI）、OpenAI text-embedding-3、Cohere Embed v3 成为主流。
 
 **工程定义**：在 AI 时代数据架构师手里，**Embedding 是把"非结构化数据"翻译为"机器可比较的语义坐标"的过程**，而**向量检索（Vector Retrieval）** 是基于这些坐标做"语义相似度搜索"的能力。两者结合，构成 RAG、推荐系统、智能问答、GraphRAG 的基础设施。
 
@@ -144,7 +144,7 @@
 
 **前沿阶段（2024+，当前）**：
 
-- 2024：OpenAI text-embedding-3-small / 3-large（3072 维）。
+- 2024：OpenAI text-embedding-3-small（1536 维）/ text-embedding-3-large（3072 维）。
 - 2024：BGE-M3（多语言 / 长文本 / 多功能三合一）。
 - 2024：Cohere Embed v3（多语言 + Matryoshka 损失）。
 - 2024：Snowflake Arctic Embed（SOTA 检索模型）。

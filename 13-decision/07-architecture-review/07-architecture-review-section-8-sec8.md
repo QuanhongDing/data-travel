@@ -102,7 +102,7 @@
 
 **5. 参考资料**
 
-- SEI（Carnegie Mellon Software Engineering Institute）关于 ATAM 的官方技术报告 CMU/SEI-2000-TR-004《Evaluating Software Architectures: Methods and Case Studies》——ATAM 的原始定义与 9 步流程，是本题方法论的权威出处。
+- SEI（Carnegie Mellon Software Engineering Institute）关于 ATAM 的官方技术报告 CMU/SEI-2000-TR-004《ATAM: Method for Architecture Evaluation》——ATAM 的原始定义与 9 步流程，是本题方法论的权威出处。
 - AWS 官方文档《AWS Well-Architected Framework》——六根支柱（Operational Excellence / Security / Reliability / Performance Efficiency / Cost Optimization / Sustainability）与每根支柱的 Design Principles，是云架构评审的标杆。
 - Google 的《Software Engineering at Google》第 10 章「Documentation」（含 Design Docs）与第 9 章「Code Review」——多轮 Design Review + CR 流程在 Google 的工业化实践。
 - Amazon 关于 Bar Raiser 的公开招聘与文化材料——跨团队 Reviewer 制度的工业范本。
@@ -181,7 +181,7 @@
 
 - **AWS Well-Architected 6 根支柱**（Operational Excellence / Security / Reliability / Performance Efficiency / Cost Optimization / Sustainability）——可以直接映射到 Checklist 的"质量属性"6 大类。
 - **ATAM 质量属性效用树**——可拆解为"业务目标 → 质量属性 → 可度量场景"，对应 Checklist 的"业务场景类"。
-- **Azure Well-Architected 5 根支柱**（略去 Sustainability，加上 Cost）——基本同 AWS，适合混合云架构。
+- **Azure Well-Architected 5 根支柱**（相较 AWS 略去 Sustainability）——基本同 AWS，适合混合云架构。
 - **Google SRE 的 SLO 体系**（SLI / SLO / Error Budget）——可以补充到 Checklist 的"可用性"维度，让 SLA 从"承诺"变成"可度量"。
 
 **3. 常见陷阱**

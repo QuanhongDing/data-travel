@@ -216,7 +216,7 @@
 - **混淆"Time Travel"与"备份"**。Time Travel 是**原地元数据 + 数据文件**的引用，备份是**完整数据副本**——前者快但保留有限，后者慢但永久。
 - **Hudi MoR 表直接查历史时间点性能差**。`WHERE _hoodie_commit_time = 'xxx'` 不会自动合并 log 文件，必须读 base + log 才能拿到完整历史视图——查询延迟可能比当前时间点高 10 倍（此为机制层面的量级说明，非实测基准，按【经验】档处理）。
 - **Delta VACUUM 把可恢复版本删了**。误操作后发现 VACUUM 已经把对应 version 的数据删了 → 无法回滚。**招行** 生产环境的 SOP 规定：VACUUM 前必须确认没有未关闭的相关工单（该 SOP 本书无法给出可核验出处，此处按【经验】档处理）。
-- **跨引擎读 Iceberg 不一致**。Spark 写的表，Trino 读不到 `_hoodie_metadata`（Hudi 字段）——这是格式隔离，不是 bug。
+- **跨引擎读 Hudi 不一致**。Spark 写的表，Trino 读不到 `_hoodie_commit_time`（Hudi 字段）——这是格式隔离，不是 bug。
 
 **4. 追问预测**
 
@@ -383,7 +383,7 @@
 **第二层：Iceberg Hidden Partition 的工作原理。**
 
 - **核心机制**：`PARTITIONED BY (days(order_time))` 是 partition spec，不创建新列；数据写入时 Iceberg **自动**把 `order_time` 转成 `days()` 的 int 值作为 partition value。
-- **partition transform**：支持 `identity` / `bucket(N, col)` / `truncate(W, col)` / `year/month/day/hour/week/months/days/hours` 等十多种变换；变换函数对用户透明。
+- **partition transform**：支持 `identity` / `bucket(N, col)` / `truncate(W, col)` / `year/month/day/hour/months/days/hours` 等十多种变换；变换函数对用户透明。
 - **partition pruning**：查询 `WHERE order_time BETWEEN '2025-01-01' AND '2025-01-31'` 时，优化器自动把时间字段转成 `day`，再 prune 不相关的 partition——**无需用户感知分区字段**。
 - **partition spec 独立**：partition spec 与 schema 独立存储在 `metadata.json`；改 partition spec（如 `days` → `hours`）只改元数据，旧数据按旧 spec、新数据按新 spec 一起查询——**partition evolution**。
 

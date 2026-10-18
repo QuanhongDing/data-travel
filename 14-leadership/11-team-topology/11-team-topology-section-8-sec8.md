@@ -459,7 +459,7 @@
 
 **5. 参考资料**
 
-- John Sweller《Cognitive Load During Problem Solving: Cognitive Aspects of Professional Expertise》（1988, Sweller & Cooper）——认知负荷理论的原始出处。
+- John Sweller《Cognitive Load During Problem Solving》（1988）——认知负荷理论的原始出处。
 - Matthew Skelton & Manuel Pais《Team Topologies》第 4 章 "Cognitive Load"——把认知负荷理论应用到软件工程领域的系统性论述。
 - John Sweller《Cognitive Load Theory》（2010, Springer）——认知负荷理论的现代综述与三类负荷的细分。
 - Google "20% Time" 的公开介绍与内部实践分享——Germane 投入的最知名工程实践。

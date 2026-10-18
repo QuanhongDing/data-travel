@@ -352,7 +352,7 @@
 **第四层：流处理层。**
 - **组件**：Flink、Spark Streaming、Kafka Streams；
 - **作用**：实时窗口聚合、特征计算、状态管理；
-- **延迟优化**：增量 checkpoint；RockDB state backend；Event Time + Watermark。
+- **延迟优化**：增量 checkpoint；RocksDB state backend；Event Time + Watermark。
 
 **第五层：异常检测层。**
 - **组件**：内置算子（Flink ML / PyFlink）+ 外部 ML 服务（TFX / 自研）；

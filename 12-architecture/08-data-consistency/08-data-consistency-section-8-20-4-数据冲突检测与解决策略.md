@@ -334,7 +334,7 @@ LWW 只适合**业务能接受"覆盖丢失"**的场景：
 **4. 追问预测**
 
 - **「Spanner 怎么避免 LWW 丢数据？」** 答：Spanner 用 TrueTime + Commit Wait——写入提交时等"时钟不确定性区间"过去（最坏 7ms）再 commit。这保证写入的全局顺序在所有节点一致，LWW 时间戳可信。
-- **「为什么 DynamoDB 默认用 LWW？」** 答：DynamoDB 的应用场景是"高 QPS + 冲突概率低"（如购物车、用户偏好），LWW 简单高效。但 DynamoDB 提供 `strongly consistent read` 选项，配上后读一定读到最新写入。
+- **「为什么 DynamoDB 默认用 LWW？」** 答：DynamoDB 的应用场景是"高 QPS + 冲突概率低"（如用户偏好、最后登录时间这类状态值），LWW 简单高效。但 DynamoDB 提供 `strongly consistent read` 选项，配上后读一定读到最新写入。
 - **「购物车不能用 LWW，那用什么方案？」** 答：应用层合并——把多个 Region 的购物车条目按 SKU 合并，相同 SKU 累加数量；让用户最终确认。如果想完全自动化，用 CRDT 的 OR-Set 实现"并发添加可合并"。
 - **「CRDT 有什么局限？」** 答：① 仅适用于特定数据结构（counter / set / register / 文本）；② 业务数据（如订单状态、商品库存）不适用；③ 调试困难，merge 逻辑要严格按 CRDT 语义实现。
 

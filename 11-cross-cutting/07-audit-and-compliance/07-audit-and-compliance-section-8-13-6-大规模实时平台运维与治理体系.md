@@ -76,20 +76,20 @@
 - **资源组（Resource Group）**：用 `resource_groups` 配置每租户的 CPU / 内存 / IO 配额，类似 Cgroups。
 - **多集群分层**：高优租户走独立集群，普通租户共享集群，备份 / 临时查询走单独集群。
 
-**第四层：事中——查询熔断（Circuit Breaker）。**
+**第三层：事中——查询熔断（Circuit Breaker）。**
 
 - **超时熔断**：每个查询设 `max_execution_time`（默认 30 秒可压到 10 秒）；超时就 abort。ClickHouse 原生 `SELECT ... SETTINGS max_execution_time = 10`。
 - **内存熔断**：用 `max_memory_usage` + `max_memory_usage_for_user`；超阈值直接 kill 查询。
 - **熔断器模式**：在 Proxy 层（ProxySQL / 自研 Gateway）实现：当租户错误率 / 慢查询率超过阈值时，临时拒绝该租户的请求（Open State），冷却一段时间（Half-Open State）后试探。
 - **分布式熔断**：用 Sentinel / Resilience4j 做集群级熔断。
 
-**第五层：事后——查询优先级。**
+**第四层：事后——查询优先级。**
 
 - **优先级队列**：ClickHouse 1.1+ 支持 `priority` 配置（0–N），低优查询排队等待，高优查询插队。
 - **资源预留**：为 P0 租户预留 30% 集群容量，P0 突发时不被 P2 抢资源。
 - **查询分级**：报表查询（高优）/ 即席查询（中优）/ 备份查询（低优），不同级别走不同队列。
 
-**第六层：工业实践。** 字节跳动火山引擎 ClickHouse 在多租户场景用「**租户资源池 + 熔断 + 优先级**」三层架构。阿里云 ClickHouse（CK）在云上提供「**租户隔离集群 + 自动限流**」能力。美团数据团队公开过 ClickHouse 慢查询治理方案——用「**熔断 + 慢查询日志 + 自动 Kill**」把慢查询比例从 8% 压到 0.5%。Cloudflare 在其 ClickHouse 集群上用「**Quota + Circuit Breaker**」控制客户数据分析服务的资源消耗。腾讯云 ClickHouse 在多租户场景用「**网络隔离 + 资源预留 + 慢查询限流**」保证 P0 业务稳定。
+**第五层：工业实践。** 字节跳动火山引擎 ClickHouse 在多租户场景用「**租户资源池 + 熔断 + 优先级**」三层架构。阿里云 ClickHouse（CK）在云上提供「**租户隔离集群 + 自动限流**」能力。美团数据团队公开过 ClickHouse 慢查询治理方案——用「**熔断 + 慢查询日志 + 自动 Kill**」把慢查询比例从 8% 压到 0.5%。Cloudflare 在其 ClickHouse 集群上用「**Quota + Circuit Breaker**」控制客户数据分析服务的资源消耗。腾讯云 ClickHouse 在多租户场景用「**网络隔离 + 资源预留 + 慢查询限流**」保证 P0 业务稳定。
 
 **3. 常见陷阱**
 
@@ -100,7 +100,7 @@
 
 **4. 追问预测**
 
-- **「ClickHouse 内存熔断具体怎么配？」** 答：用 （单查询）+ （单用户）+ （全集群）；超阈值查询被 kill，错误码 。
+- **「ClickHouse 内存熔断具体怎么配？」** 答：用 `max_memory_usage`（单查询）+ `max_memory_usage_for_user`（单用户）+ 全集群级内存上限；超阈值查询被 kill 并返回内存超限错误码。
 - **「ProxySQL 在 ClickHouse 上的角色？」** 答：ProxySQL 可做 SQL 路由、读写分离、慢查询拦截；ClickHouse 也有自己的 Proxy（内置）；自研 Gateway 更灵活。
 - **「如何熔断？」** 答：限流算法（令牌桶 / 漏桶）+ 熔断算法（滑动窗口 + 半开恢复）+ 优先级队列；用 Sentinel 做分布式熔断。
 - **「多租户 ClickHouse 怎么计费？」** 答：按扫描字节数 / CPU 时间 / 存储容量三维度计费；按租户生成账单；用 `system.query_log` 统计。
@@ -240,8 +240,8 @@
 
 **4. 追问预测**
 
-- **「Flink 反压怎么快速定位？」** 答：Flink Web UI 看 Subtask 反压状态；Metrics 看 ；从 Sink 反向追第一个不反压的 Subtask。
-- **「Kafka 消息丢失怎么办？」** 答：① 改 ；② 改 Producer 幂等；③ 改 Consumer 手动 commit；④ 必要时从历史重放。
+- **「Flink 反压怎么快速定位？」** 答：Flink Web UI 看 Subtask 反压状态；Metrics 看反压相关指标；从 Sink 反向追第一个不反压的 Subtask。
+- **「Kafka 消息丢失怎么办？」** 答：① 改 `acks=all`；② 改 Producer 幂等；③ 改 Consumer 手动 commit；④ 必要时从历史重放。
 - **「实时数据回补怎么？」** 答：① 找上游 Kafka 主题；② 按业务时间重放；③ 走幂等（Unique Key + Merge）；④ 验证下游数据。
 - **「怎么让实时故障早发现？」** 答：① 端到端延迟监控（上游事件时间 vs 下落库时间差）；② 反压 + Lag 实时告警；③ 质量分数实时计算。
 

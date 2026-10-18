@@ -176,7 +176,7 @@ Fellegi-Sunter（1969）模型是 ID-Mapping 的经典形式化，给定两条�
 - u = 0.0001（两条随机记录的的手机号碰巧相同概率 1/10000）
 - LR = 0.95 / 0.0001 = 9500 → 远高于上阈值 → 合并
 
-#### 2.2.2 连接成分（Connected Components）作为 OneID
+#### 2.2.2 连通分量（Connected Components）作为 OneID
 
 工业 OneID 最常用的图模型：把每条 ID（手机号、设备 ID、邮箱、cookie）作为节点，已知匹配关系作为边，**整个连通分量（Connected Component, CC）共享同一个 OneID**。
 

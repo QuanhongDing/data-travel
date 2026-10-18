@@ -119,7 +119,7 @@
 
 **GBDT 复兴阶段（2014–2020）**：
 
-- 2014：Geurts 等提出 **ExtraTrees**，表格数据新基线。
+- **ExtraTrees**（Geurts 等提出）：表格数据基线。
 - 2016：陈天奇提出 **XGBoost**，Kaggle 上横扫所有结构化数据竞赛。
 - 2017：Ke 等提出 **LightGBM**（微软），速度快、内存省。
 - 2018：Prokhorenkova 等提出 **CatBoost**（Yandex），原生支持类别特征。

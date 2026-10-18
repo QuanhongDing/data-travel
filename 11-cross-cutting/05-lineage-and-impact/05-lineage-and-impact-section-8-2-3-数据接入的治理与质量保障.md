@@ -134,7 +134,7 @@ Databricks 的 **Unity Catalog** 把这一闭环做到了产品级，Collibra �
 - **「实时与批量共用一套质量规则具体怎么实现？」** 答：把规则定义为「**字段级 + 模板无关**」DSL（Flink 与 Spark 都能解析的执行语义）；规则本身存放在元数据系统，按「**输入 dataset + 字段 + 执行计划**」拉起流批通用解释器；Great Expectations 把这套范式做成了开源标准。
 - **「下游业务对告警疲劳怎么办？」** 答：三层手段——**alert dedup**（同规则同窗口内只发一次）、**alert correlation**（按血缘聚合到上游根因）、**alert quality scoring**（每条告警打分，低分自动静默）。Uber Engineering 与 LinkedIn 都有公开的「告警评分」实践。
 - **「怎么判断一条数据是 FATAL 而不是 WARNING？」** 答：与「**消费方 SLA + 业务可恢复性**」绑定。典型阈值——**FATAL**：主键唯一性被破坏、行数与历史同期偏离超 50%、枚举值出现业务禁用的值；**WARNING**：分布偏移、空值率上升；**ERROR** 介于二者之间。
-- **「断路器熔断后，重放如何保证不重复消费？」** 答：实时靠 Kafka 事务 + 幂等写入；批量靠分区级 `MERGE` / `OVERWRITE` + 业务主键去重。这是对 §1.x 中「**幂等与去重**」的复用。
+- **「断路器熔断后，重放如何保证不重复消费？」** 答：实时靠 Kafka 事务 + 幂等写入；批量靠分区级 `MERGE` / `OVERWRITE` + 业务主键去重。这是对「**幂等与去重**」的复用。
 - **「怎么把数据质量结果反哺到血缘？」** 答：把质量分作为血缘节点的属性（`quality_score`），影响分析时一同展示；血缘由「**导航**」升级为「**导航 + 健康度 + 风险**」三维图。
 
 **5. 参考资料**
@@ -284,7 +284,7 @@ Databricks 的 **Unity Catalog** 把这一闭环做到了产品级，Collibra �
 - 规则触发后，告警自动附带血缘跳转——oncall 一键跳到上游节点对账。
 - 同一上游节点的所有下流告警按血缘聚合——这是「**根因告警**」的工程实现。
 
-LinkedIn DataHub 的 `Assertions` aspect、Uber 的 Soda-based 监控、Databricks 的 `Expectations`（DLT 即 Databricks Live Tables 中的期望）、阿里 DataWorks 的 DQC 模块都不同程度实现了以上闭环。
+LinkedIn DataHub 的 `Assertions` aspect、Uber 的 Soda-based 监控、Databricks 的 `Expectations`（DLT 即 Delta Live Tables 中的期望）、阿里 DataWorks 的 DQC 模块都不同程度实现了以上闭环。
 
 **3. 常见陷阱**
 

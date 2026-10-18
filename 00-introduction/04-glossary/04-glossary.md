@@ -109,7 +109,7 @@
 | **等保 2.0 / 3.0** | 网络安全等级保护 | 中国合规标准 |
 | **GDPR** | General Data Protection Regulation | 欧盟数据保护条例 |
 | **PIPL** | Personal Information Protection Law | 中国个人信息保护法 |
-| **HIPAA** | Health Insurance Portability Act | 美国医疗数据保护法 |
+| **HIPAA** | Health Insurance Portability and Accountability Act | 美国医疗数据保护法 |
 | **DLP** | Data Loss Prevention | 数据防泄漏 |
 | **ABAC / RBAC** | Attribute / Role Based Access Control | 权限模型 |
 | **去标识化 / 匿名化** | De-identification / Anonymization | 隐私保护技术 |

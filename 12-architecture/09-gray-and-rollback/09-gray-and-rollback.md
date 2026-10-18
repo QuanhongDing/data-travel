@@ -122,7 +122,7 @@
 - **灰度策略（Gray Strategy）**：灰度的具体规则，包括"谁参与灰度（用户分群）、灰度多少流量、灰度多久、如何判断成功/失败"。
 - **观察窗口（Observation Window）**：灰度期间观察指标的时间窗口（如 5 分钟、30 分钟、24 小时）。
 - **自动回滚（Auto Rollback）**：根据指标异常自动触发回滚，无需人工干预。
-- **影子表（Shadow Table）**：数据库层面用于灰度的新旧表共存方案，详见 [Ch12 §04 容量规划 §数据迁移灰度](../04-capacity-planning/04-capacity-planning.md)。
+- **影子表（Shadow Table）**：数据库层面用于灰度的新旧表共存方案，详见 [§4.1 Step 5 数据灰度 / 模型灰度](09-gray-and-rollback-section-4-sec4.md)。
 - **双写（Dual-Write）**：新旧版本同时写，灰度期间用于数据一致性保障。
 - **数据灰度（Data Gray）**：数据库迁移、Schema 变更时的渐进式切换。
 - **模型灰度（Model Gray）**：AI 模型上线时的渐进式验证。

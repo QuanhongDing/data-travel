@@ -428,7 +428,7 @@ LLM 时代走"Embedding + 降维 + HDBSCAN"路线，**核心优势**：
 **第二层：标准三阶段组合。**
 
 1. **Embedding 抽取**：
-   - 英文：`bge-large-en-v1.5` / `OpenAI text-embedding-3-small`（3072 维）/ `e5-large-v2`。
+   - 英文：`bge-large-en-v1.5` / `OpenAI text-embedding-3-small` / `e5-large-v2`。
    - 中文：`bge-large-zh-v1.5` / `m3e-large` / `text2vec-large-chinese`。
    - 多语言：`bge-m3`（支持 100+ 语言）/ `e5-mistral-7b-instruct`（2024 SOTA）/ `Cohere embed-multilingual-v3`。
    - 工业推荐：`bge-large-zh-v1.5`（中文 SOTA 开源）+ OpenAI Embedding（高质量 API）。

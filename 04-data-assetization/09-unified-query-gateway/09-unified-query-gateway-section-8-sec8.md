@@ -228,7 +228,7 @@
 **4. 追问预测**
 
 - **「怎么看一个查询的下推情况？」** 答：用 `EXPLAIN (FORMAT JSON)` 或 UI 上的 Stage 详情，看 Scan 算子上是否还有 Filter / Project。如果 Filter 在 Scan 上层，说明没下推。
-- **「MySQL 大表上 Predicate 没下推，怎么办？」** 答：① 让 DBA 加索引；③ 让 MySQL Connector 开启 `case-insensitive-name-matching` 等配置；② 退一步用 ETL 同步到湖表，让湖表 Connector 接管。
+- **「MySQL 大表上 Predicate 没下推，怎么办？」** 答：① 让 DBA 加索引；② 让 MySQL Connector 开启 `case-insensitive-name-matching` 等配置；③ 退一步用 ETL 同步到湖表，让湖表 Connector 接管。
 - **「跨源 JOIN 想做下推，能做吗？」** 答：不能真下推，但可以做「**半下推**」——把每边的过滤/投影下推到各源，再在 Trino 端做 Join。这是当前跨源查询的最佳实践。
 - **「Aggregate 下推失效，怎么回退？」** 答：Trino 的 `optimizer.use-mark-distinct` 等参数可以调整聚合策略；更直接的是改写 SQL（用 CTE 拆开聚合）。
 

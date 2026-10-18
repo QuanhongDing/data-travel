@@ -94,7 +94,7 @@
 
 **第五层：架构层治理。**
 
-- **批流分离**：离线大作业独占队列，实时 FLink 作业走 K8s 命名空间，避免互相抢占。
+- **批流分离**：离线大作业独占队列，实时 Flink 作业走 K8s 命名空间，避免互相抢占。
 - **存算分离**：将计算节点无状态化，存储放在共享 OSS/S3；扩容只需加节点，不重平衡数据。
 - **Spot 实例**：用云上 Spot 跑可中断的批处理作业，AWS EMR + Karpenter 已是工业标准。
 
@@ -199,13 +199,13 @@
 
 ---
 
-#### §4.5.4 随着集群规模扩大，Hive Metastore 的性能和可用性成为瓶颈。请描述你会采取哪些措施来优化和增强 Hive Metastore，并说明迁移到 Lakehouse 表格式层是什么（如 Iceberg / Hudi）后的取舍。
+#### §4.5.4 随着集群规模扩大，Hive Metastore 的性能和可用性成为瓶颈。请描述你会采取哪些措施来优化和增强 Hive Metastore，并说明迁移到 Lakehouse 表格式层（如 Iceberg / Hudi）后的取舍。
 
 **1. 考察点**
 
 - 是否理解 Hive Metastore 瓶颈来自**元数据体量**（百万级表 + 千万级分区）与**锁竞争**。
 - 能否分层：单实例优化 → 集群化 → 替代方案（Iceberg/Hudi）。
-- 是否知道 Lakehouse 表格式层是什么**不是**银弹，它把元数据下推到表自身。
+- 是否知道 Lakehouse 表格式层**不是**银弹，它把元数据下推到表自身。
 - 加分项：能给出具体的优化参数与版本经验（如 Hive 3.x 的 async compaction）。
 
 **2. 参考答案框架**
@@ -249,7 +249,7 @@
 
 - Meta（Facebook）关于超大规模 Hive/HMS 的公开工程论文与分享——HMS 性能瓶颈与改造的原始工程经验。
 - Netflix Technology Blog 关于 Iceberg 在生产环境落地的系列文章——从 HMS 迁到 Iceberg 的实际收益。
-- Apache Iceberg / Apache Hudi 官方文档——表格式层是什么与 HMS 的关系。
+- Apache Iceberg / Apache Hudi 官方文档——表格式层与 HMS 的关系。
 - Apache Hive 官方文档关于 HMS 3.x HA 与缓存的章节。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。

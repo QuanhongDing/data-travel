@@ -96,6 +96,7 @@
 **大数据目录阶段（2015-2020）**：
 
 - 2015：Apache Atlas（Apache 开源）——Hadoop 生态元数据。
+- 2016：阿里 DataWorks 数据目录（国内大数据目录，见 §6 案例 6.1）。
 - 2019：Amundsen（Lyft 开源）——基于 Neo4j + Elasticsearch。
 - 2019：DataHub（LinkedIn 开源）——基于 Kafka + Elasticsearch + MySQL。
 
@@ -104,7 +105,6 @@
 - 2021：DataHub 2.0，事件驱动的元数据架构。
 - 2021：OpenMetadata（OpenMetadata 开源）——统一元数据平台。
 - Unity Catalog（Databricks）——湖仓一体目录，2021 年发布【公开：Data+AI Summit 2021 的 Unity Catalog 发布公告】。
-- 2023：阿里 DataWorks、HoloMeta（国内大数据目录）。
 - 2024：AI 增强数据目录（自然语言搜索 / 自动文档生成）。
 
 **AI 原生阶段（2024+）**：

@@ -170,7 +170,7 @@
 **5. 参考资料**
 
 - Atlassian 官方博客关于 DACI 决策框架的公开文章——Driver / Approver / Contributor / Informed 的原始定义与模板。
-- Bain & Company（贝恩咨询）关于 RAPID 决策框架的公开方法论——Recommend / Agree / Provide input / Decide 五角色及其在大型企业中的应用，Agree 节点的否决权机制是核心。
+- Bain & Company（贝恩咨询）关于 RAPID 决策框架的公开方法论——Recommend / Agree / Provide input / Decide / Input（Informed）五角色及其在大型企业中的应用，Agree 节点的否决权机制是核心。
 - PMI《PMBOK Guide》——RACI 的标准化定义与适用边界。
 - 亚马逊关于 Working Backwards（PR/FAQ）与决策机制的公开材料——大型企业在跨 BU 决策中对「客户体验反推 + 升级机制」的实践，可作为框架的补充视角。
 

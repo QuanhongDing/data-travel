@@ -101,7 +101,7 @@ OverlapHours(team) = Σ overlap(member_i, member_j) for all pairs
   - 不健康：< 1 小时 / 日（时区地狱）
 ```
 
-例如团队成员分别在北京（UTC+8）、伦敦（UTC+0）、纽约（UTC-5）：北京 vs 伦敦 1 小时重叠，北京 vs 纽约 0 小时重叠，伦敦 vs 纽约 5 小时重叠——团队整体 OverlapHours < 2，处于「极限」状态。
+例如团队成员分别在北京（UTC+8）、伦敦（UTC+0）、纽约（UTC-5）：北京 vs 伦敦 1 小时重叠，北京 vs 纽约 0 小时重叠，伦敦 vs 纽约 4 小时重叠——团队整体 OverlapHours < 2，处于「极限」状态。
 
 **第二层：Overlap Time 设计三步法。**
 

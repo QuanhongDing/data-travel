@@ -112,7 +112,7 @@
 - 2017：Uber 提出 **Michelangelo Palette**——公开披露最早的生产级特征存储。
 - 2017：Google 发布 **TFX**——TensorFlow Extended，含 Feature Store 模块。
 - Airbnb 开源 **Zipline**——时序特征平台（首次公开年份无可核来源，本节不代为断言，以 Airbnb 官方组织的仓库记录为准）。
-- 2018：LinkedIn 发布 **Feast**（早期版本）——开源 Feature Store。
+- LinkedIn 发布 **Feathr**——开源 Feature Store（首次公开年份本节不代为断言，以 LinkedIn 官方组织的仓库记录为准）。
 - 2019：Gojek 开源 **Feast**（重写版）——成为开源 Feature Store 事实标准。
 
 **特征平台普及（2020–2022）**：
@@ -179,7 +179,7 @@ $$\min \mathcal{L}(y, g(X')) \quad \text{其中 } g \text{ 是模型}$$
 
 对于时间 $t$ 的样本 $(x_t, y_t)$，特征值必须用 $\leq t$ 时刻的信息计算：
 
-$$x'_t = f(X_{<t})$$
+$$x'_t = f(X_{\leq t})$$
 
 **典型反例**：训练 5 月 1 日的样本时，用了 5 月 2 日的"用户近 7 天点击量"——泄露未来信息。
 

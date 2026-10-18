@@ -396,7 +396,7 @@ spec:
 **Spark on K8s**：
 - **Executor Pod 驱逐**：Spark Driver 检测 Executor 失联（心跳超时）；
 - **Task 重试**：`spark.task.maxFailures`（默认 4）控制 Task 重试；
-- **Stage 重试**：`spark.scheduler.maxFailedStagesPerStage`；
+- **Stage 重试**：`spark.stage.maxConsecutiveAttempts`；
 - **恢复机制**：若 Driver Pod 也驱逐，从 checkpoint 恢复（DStream API） 或 WAL + offset（Structured Streaming）；
 - **Shuffle 数据丢失**：若 shuffle 数据在本地 PV（HostPath），重建后丢失；若在网络 PV（如 AWS EBS）有保留。
 

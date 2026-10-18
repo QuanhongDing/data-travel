@@ -86,7 +86,7 @@
 - Michael Armbrust 等（Databricks）发表于 CIDR 2021 的论文《Delta Lake: High-Performance ACID Table Storage over Cloud Object Stores》——Lakehouse 概念与 Delta Lake 设计的原始出处。
 - Benoit Dageville 等（Snowflake 工程团队）发表于 CIDR / VLDB 的论文《The Snowflake Elastic Data Warehouse》——存算分离 + 数据共享的完整架构论述。
 - Netflix Technology Blog 关于 Iceberg 迁移的多篇公开文章（2023–2024）——头部流媒体公司如何用 Iceberg 替代多套存储。
-- Meta 工程团队公开的 Iceberg 实践（SIGMOD / VLDB 2022–2024）——超大规模（EB 级）湖仓的真实工业案例。
+- Meta 工程团队公开的 Iceberg 实践（SIGMOD / VLDB 2022–2024）——超大规模（300 PB 级）湖仓的真实工业案例。
 - 阿里云 EMR / MaxCompute 关于湖仓一体的公开技术博客——国内最完整的对标实践，参考其与海外方案的差异。
 
 > 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
@@ -180,7 +180,7 @@
 
 **第一层：先理解 LinkedIn 的业务特点。** LinkedIn 是职业社交平台，9 亿+ 用户，核心业务是「Profile」「Feed」「Recruiter」「Sales Navigator」「Learning」——这是一个**读写比悬殊（写少读多）、强实时性、社交图谱驱动**的业务。它的数据架构难题集中在三点：
 
-1. **消息规模化**：每天数百亿条事件（登录、Profile 更新、连接、消息、阅读）；
+1. **消息规模化**：每天海量事件（登录、Profile 更新、连接、消息、阅读）；
 2. **流计算规模化**：需要对消息做秒级聚合、特征提取、推荐召回；
 3. **实时查询规模化**：Feed 推荐、广告归因、风控需要毫秒级 OLAP（在线分析处理）查询。
 

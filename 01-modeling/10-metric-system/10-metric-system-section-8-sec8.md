@@ -486,7 +486,7 @@ LLM 是"用户与 Semantic Layer 之间的翻译器"，而不是"用户与数仓
 
 | 产品 | 发布时间 | 关键设计 |
 | --- | --- | --- |
-| **Snowflake Cortex Analyst** | 2024 GA | 基于 Semantic Model（YAML），LLM 只生成 MetricQL + 维度，不直接生成 SQL |
+| **Snowflake Cortex Analyst** | 2024 GA | 基于 Semantic Model（YAML），LLM 只生成「指标 + 维度」的结构化查询，不直接生成 SQL |
 | **Databricks Genie** | 2024 GA | 基于 Unity Catalog Metric View，LLM + 验证步骤（先编译再执行） |
 | **Microsoft Fabric Copilot** | 2024 | 基于 Power BI Semantic Model，复用 Power BI 已有的指标定义 |
 | **ThoughtSpot Sage** | 2023 | 搜索式 BI + LLM 增强，底层走 Search Index |

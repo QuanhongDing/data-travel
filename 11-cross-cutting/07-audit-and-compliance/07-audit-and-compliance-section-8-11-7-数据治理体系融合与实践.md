@@ -28,7 +28,7 @@
 - **质量 → 元数据**：质量监控的规则定义本身是元数据（哪张表、哪个指标、什么阈值）；质量异常记录是元数据的一种。
 - **闭环**：质量异常 → 血缘定位 → 元数据补全（责任人、修复方式） → 修复 → 质量恢复 → 元数据更新。
 
-**第四层：工业实践。** LinkedIn 开源的 **DataHub** 是统一元数据平台的代表——把技术元数据、业务元数据、血缘集成在一份「**实体-关系图（Entity-Relationship Graph）**」中。Uber 的 **Databook** 把元数据、血缘、质量整合为统一数据目录，并提供「**数据评分（Data Score）**」作为治理的核心抓手。阿里云 DataWorks 的数据地图 + 血缘 + 监控是国内对标。Apache Griffin 是质量监控的代表，OpenMetadata 是新一代元数据目录（含血缘 + 质量），Databricks Unity Catalog 与 Snowflake Horizon Catalog 是湖仓时代的统一平台。
+**第三层：工业实践。** LinkedIn 开源的 **DataHub** 是统一元数据平台的代表——把技术元数据、业务元数据、血缘集成在一份「**实体-关系图（Entity-Relationship Graph）**」中。Uber 的 **Databook** 把元数据、血缘、质量整合为统一数据目录，并提供「**数据评分（Data Score）**」作为治理的核心抓手。阿里云 DataWorks 的数据地图 + 血缘 + 监控是国内对标。Apache Griffin 是质量监控的代表，OpenMetadata 是新一代元数据目录（含血缘 + 质量），Databricks Unity Catalog 与 Snowflake Horizon Catalog 是湖仓时代的统一平台。
 
 **3. 常见陷阱**
 

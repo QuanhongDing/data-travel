@@ -461,7 +461,7 @@ Milvus 2.x、Qdrant、Weaviate 均支持上述三种压缩。**生产推荐**：
 
 - **GAN 阶段（2014-2020）**：StyleGAN、BigGAN 等，生成速度快但多样性差、训练不稳定。
 - **UNet + Diffusion 阶段（2020-2023）**：DDPM、Stable Diffusion、Imagen。生成质量大幅提升，但 UNet 在高分辨率 + 长序列下效率低。
-- **DiT 阶段（2023+，Diffusion Transformer）**：OpenAI《Scalable Diffusion Models with Transformers》（2023）首次证明 Transformer + Diffusion 可扩展性极强，训练稳定性好。**Sora / Veo / 可灵 / Vidu / HunyuanVideo / Wan 2.1 / CogVideoX 均采用 DiT 架构**——这是当前视频生成的事实标准。
+- **DiT 阶段（2023+，Diffusion Transformer）**：《Scalable Diffusion Models with Transformers》（2023）首次证明 Transformer + Diffusion 可扩展性极强，训练稳定性好。**Sora / Veo / 可灵 / Vidu / HunyuanVideo / Wan 2.1 / CogVideoX 均采用 DiT 架构**——这是当前视频生成的事实标准。
 
 DiT 的核心创新是用 Transformer 替换 UNet 做噪声预测 + 时空注意力（Space-Time Attention）处理视频帧间关系。优势：可扩展到 10B+ 参数、可处理任意分辨率、可原生支持条件生成（文本 / 图像 / 视频）。
 
@@ -525,7 +525,7 @@ DiT 的核心创新是用 Transformer 替换 UNet 做噪声预测 + 时空注意
 
 **5. 参考资料**
 
-- OpenAI《Scalable Diffusion Models with Transformers》（2023）——DiT 原始论文，是当前视频生成架构的事实标准出处。
+- 《Scalable Diffusion Models with Transformers》（2023）——DiT 原始论文，是当前视频生成架构的事实标准出处。
 - OpenAI《Sora Technical Report》（2024）——视频生成 + 世界模型的官方技术说明。
 - Google DeepMind《Genie 2: A Large-Scale Foundation World Model》（2024）——交互式世界模型的官方技术报告。
 - Wayve《GAIA-1: A Generative World Model for Autonomous Driving》（2023）——自动驾驶世界模型的工业落地。

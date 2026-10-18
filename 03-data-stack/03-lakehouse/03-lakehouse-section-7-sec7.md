@@ -44,7 +44,7 @@
 | --- | --- | --- | --- | --- |
 | Apache Iceberg | 多层清单：元数据文件 → manifest list → manifest → 数据文件 | 追加 + 批式更新 | 跨引擎生态最广、分区演进与隐藏分区 | V3 规范加入删除向量（deletion vectors）、增量读取与 Variant 类型；行级删除文件机制自 v2 规范起已提供，V3 在其之上降低删除开销（Apache Iceberg 社区规范说明，2024） |
 | Apache Hudi | 一条操作时间线（commit / delta_commit / clean / rollback） | CDC 更新密集（COW 与 MOR 双模） | 主键索引与幂等重放、增量拉取 | 1.0 系列已发布（Hudi 官方发布说明，2024–2025；具体版本与日期以官网为准） |
-| Delta Lake | 按序追加的事务日志（`_delta_log`） | 追加 + 批式更新 | 单一生态内的治理与工具链最深 | UniForm 让一份 Delta 数据可被其它格式的读者读取（随 Delta Lake 3.0 公布，2023；论文见 SIGMOD 2024，具体时间线以官方发布说明为准） |
+| Delta Lake | 按序追加的事务日志（`_delta_log`） | 追加 + 批式更新 | 单一生态内的治理与工具链最深 | UniForm 让一份 Delta 数据可被其它格式的读者读取（随 Delta Lake 3.0 公布，2023；出处见 [§5.4](03-lakehouse-section-5-ai.md)，该能力不是会议论文，具体时间线以官方发布说明为准） |
 | Apache Paimon | 表自身的 LSM 层与主键桶 | 分钟级持续 upsert | 流批一体、changelog 直接供下游流读 | 1.0 于 2024 年发布（Apache 项目发布说明，2024） |
 
 这些候选同样只有四族。**A 族：把表状态写在引擎内部**（数据仓库）——优化最深、被第二个引擎读最难；**B 族：把表状态写在开放元数据里**（数据湖为「没有」、Lakehouse 为「有」）——共享最容易、布局运维全归自己；**C 族：派生服务层**（实时 OLAP、向量索引、图谱）——数据可从 A 或 B 重建，它的正确性不依赖自身持久性；**D 族：多模态接入层**（AI 原生 Lakehouse）——通常不是新存储，而是在 B 族之上加索引与接口。

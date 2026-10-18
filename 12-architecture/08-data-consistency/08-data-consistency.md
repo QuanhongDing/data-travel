@@ -15,7 +15,7 @@
 | 分布式事务（2PC / TCC / Saga）怎么选？ | §3.1、§3.2 |
 | Outbox / CDC / Event Sourcing 怎么用？ | §4.2 |
 | AI 时代数据一致性有什么新挑战？ | §5 |
-| 真实案例：阿里 / 字节 / Google Spanner | §6.1 |
+| 真实案例：阿里 / 字节 / Google Spanner | §6 |
 
 ---
 

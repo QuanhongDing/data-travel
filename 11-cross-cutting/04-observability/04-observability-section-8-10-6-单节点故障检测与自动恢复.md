@@ -85,7 +85,7 @@ Container = 物理进程，由 YARN NodeManager（NM）管控；Executor 是 Spa
 - **NM 健康度增强**：
   - `yarn.nodemanager.health-checker.script.path` 自定义健康检查（磁盘、内存、CPU、网络）；
   - `yarn.nodemanager.disk-health-checker.disk-failures-tolerated` 容忍坏盘；
-  - `yarn.nodemanager.resource-monitor.interval-ms` 调短到 1s（默认）。
+  - `yarn.nodemanager.resource-monitor.interval-ms`（默认 1s）。
 - **Decommission 自动化**：
   - `yarn.resourcemanager.nm-liveness-monitor.expire-interval-ms`（默认 10min）调短到 5min；
   - 自动化 Decommission：CMDB 标记的退役节点自动剔除。
@@ -247,7 +247,7 @@ Container = 物理进程，由 YARN NodeManager（NM）管控；Executor 是 Spa
 - **Decommission / Recommission**：节点退役（搬数据）+ 重新入役。
 - **磁盘 Balancer**：HDFS 3.x Disk Balancer + `dfs.datanode.fsdataset.parallel.volume.balancing.enabled`。
 - **Erasure Coding**：冷数据 EC 替代 3 副本，减少副本管理负担。
-- **心跳与超时**：NM 端 `dfs.heartbeat.interval`（默认 3s）+ RM 端超时检测。
+- **心跳与超时**：DN 端 `dfs.heartbeat.interval`（默认 3s）+ NN 端超时检测。
 - **Checksum 校验**：`dfs.bytes-per-checksum`（默认 512B）+ `hadoop fs -checksum` 验证。
 
 **第五层：NN + DN 共同的辅助机制。**

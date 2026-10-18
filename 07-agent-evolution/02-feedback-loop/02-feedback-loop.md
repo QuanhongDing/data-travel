@@ -146,7 +146,7 @@
 | **DPO** | 直接优化偏好 | 替代 RLHF，更稳定 |
 | **GRPO** | 组内相对优化 | DeepSeek-R1 |
 | **KTO** | Kahneman-Tversky Optimization | 不需要成对偏好 |
-| **IPO** | Identified Preference Optimization | 防过拟合 |
+| **IPO** | Identity Preference Optimization | 防过拟合 |
 | **Online Learning** | 流式更新 | 推荐、风控 |
 | **Contextual Bandit** | 上下文老虎机 | 个性化推荐 |
 | **Self-Play** | 自我博弈 | 游戏 / 推理 |
@@ -226,7 +226,7 @@ L_KTO = w_desired · (1 - σ(β · r_θ(x, y_desired))) +
 
 #### 2.2.5 IPO 详解
 
-IPO（Identified Preference Optimization）解决 DPO 的过拟合问题。
+IPO（Identity Preference Optimization）解决 DPO 的过拟合问题。
 
 ```
 L_IPO = (log(π_θ(chosen)/π_ref(chosen)) - log(π_θ(rejected)/π_ref(rejected)) - 1/(2β))²

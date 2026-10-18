@@ -111,7 +111,7 @@
 
 **互联网阶段（2010-2020）**：
 
-- 2010：Google 推出 **L7-L8**（Senior Staff / Principal Engineer）路径。
+- 2010：Google 推出 **L7-L8**（Principal / Distinguished Engineer）路径。
 - 2012：Facebook「**E3-E10**」技术阶梯。
 - 2014：阿里巴巴「**P 序列 + M 序列**」双通道定型（P4-P14 + M1-M5）。
 - 2016：字节跳动「**2-1 到 5-1 / 5-2**」技术 / 管理双通道。
@@ -141,7 +141,7 @@
   - **P7（技术专家）**：跨模块、跨团队影响。
   - **P8（高级技术专家 / 架构师）**：跨 BU、跨域影响。
   - **资深架构师（P9+）**：组织级影响、推动战略落地。
-- **Google L3-L8**：
+- **Google L3-L11**：
   - **L3（Software Engineer）**：高级工程师入门。
   - **L4（Senior Software Engineer）**：独立负责模块。
   - **L5（Staff Software Engineer）**：跨团队影响。

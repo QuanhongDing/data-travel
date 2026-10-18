@@ -95,7 +95,7 @@
 
 - **RACI Matrix**：决策权分配矩阵——Responsible / Accountable / Consulted / Informed。
 - **DACI**：Driver / Approver / Contributor / Informed（Atlassian 推广）。
-- **RAPID**：Recommend / Agree / Provide input / Decide（Bain & Company）。
+- **RAPID**：Recommend / Agree / Provide input / Decide / Input（Informed）（Bain & Company）。
 - **Stakeholder Management**：利益相关方管理——识别 + 分析 + 沟通。
 - **Consensus Building**：共识构建——寻找「所有人都能接受」的方案。
 - **RFC（Request For Comments）**：跨团队决策的「提议文档」。
