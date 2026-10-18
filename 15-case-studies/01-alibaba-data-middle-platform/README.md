@@ -10,7 +10,6 @@
 
 | 小节 | 文件 |
 | --- | --- |
-| 2. 挑战 | [01-alibaba-data-middle-platform-section-2-sec2.md](01-alibaba-data-middle-platform-section-2-sec2.md) |
 | 3. 架构演进 | [01-alibaba-data-middle-platform-section-3-sec3.md](01-alibaba-data-middle-platform-section-3-sec3.md) |
 | 4. 关键决策 | [01-alibaba-data-middle-platform-section-4-sec4.md](01-alibaba-data-middle-platform-section-4-sec4.md) |
 | 5. 落地实践 | [01-alibaba-data-middle-platform-section-5-sec5.md](01-alibaba-data-middle-platform-section-5-sec5.md) |

@@ -268,4 +268,4 @@
 
 > 💡 **思考锚点**：数你现在的存量：同一个指标名有几处实现，改一次核心口径要动几个文件（流侧与批侧同源时应为 1）？这两个数若都大于 1，你缺的是实体识别（谁和谁是同一个东西），还是权威归属（谁拍板）——先补哪一个才能让返工面收窄？
 
-> 配合 [主文件 · 背景](01-alibaba-data-middle-platform.md)、[§2 挑战](01-alibaba-data-middle-platform-section-2-sec2.md)、[§3 架构演进](01-alibaba-data-middle-platform-section-3-sec3.md)、[§6 复用经验](01-alibaba-data-middle-platform-section-6-sec6.md) 与 [§7 参考资料](01-alibaba-data-middle-platform-section-7-sec7.md) 阅读。
+> 配合 [主文件 · 背景](01-alibaba-data-middle-platform.md)、[§2 挑战](01-alibaba-data-middle-platform.md)、[§3 架构演进](01-alibaba-data-middle-platform-section-3-sec3.md)、[§6 复用经验](01-alibaba-data-middle-platform-section-6-sec6.md) 与 [§7 参考资料](01-alibaba-data-middle-platform-section-7-sec7.md) 阅读。

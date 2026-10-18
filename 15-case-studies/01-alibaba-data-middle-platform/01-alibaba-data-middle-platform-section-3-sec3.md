@@ -2,7 +2,7 @@
 
 ## 3. 架构演进
 
-[§2](01-alibaba-data-middle-platform-section-2-sec2.md) 回答的是「哪条挑战逼出了哪个应对结构、它的代价与失效点在哪」。本节回答下一个问题：**这些结构是分几步装上去的，为什么不能换序，装的过程中原来那些烟囱系统怎么办。**
+[§2](01-alibaba-data-middle-platform.md) 回答的是「哪条挑战逼出了哪个应对结构、它的代价与失效点在哪」。本节回答下一个问题：**这些结构是分几步装上去的，为什么不能换序，装的过程中原来那些烟囱系统怎么办。**
 
 > **证据档位**：本节【公开】条目标出产品与出处方向（产品线迭代快，不锁定版本年份）；**沿用本案例材料的年份与数字一律按【经验】使用——只取量级、不取精确值**；【推算】写出推导链。需要处给出可自行核验的方向（例：以阿里云各产品官方文档、阿里技术官方渠道发布的历年双 11 复盘为准）。
 
@@ -342,4 +342,4 @@ lineage_checked: true      # 变更前已列出全部引用方
 >
 > 💡 **思考锚点**：数一下你平台「同一个指标名有几处实现」——按 §3.9 它应该收敛到 1，现在是几？再把准备纳入统一实体的范围按案例的贯通顺序（用户 → 商品 → 订单，两年量级）排一下：既然实体合并不可逆、且错误只让数字轻微偏移，你把哪个实体放在第一年，凭什么说它的标识质量撑得住？
 
-> 配合 [§2 挑战](01-alibaba-data-middle-platform-section-2-sec2.md)、[§4 关键决策](01-alibaba-data-middle-platform-section-4-sec4.md) 与 [§5 落地实践](01-alibaba-data-middle-platform-section-5-sec5.md) 阅读。
+> 配合 [§2 挑战](01-alibaba-data-middle-platform.md)、[§4 关键决策](01-alibaba-data-middle-platform-section-4-sec4.md) 与 [§5 落地实践](01-alibaba-data-middle-platform-section-5-sec5.md) 阅读。
