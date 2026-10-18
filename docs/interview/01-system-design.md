@@ -26,7 +26,7 @@
 | --- | --- | --- |
 | **实时数据管道** | Kafka / Flink / Iceberg 选型 + 状态后端 + 端到端 EOS | [Ch03 实时计算](../../03-data-stack/09-realtime-compute/09-realtime-compute.md) / [Ch03 流批一体](../../03-data-stack/10-stream-batch-unified/10-stream-batch-unified.md) |
 | **湖仓一体平台** | 三大表格式选型 + 元数据服务 + 存算分离 | [Ch03 湖仓一体](../../03-data-stack/03-lakehouse/03-lakehouse.md) / [Ch03 架构决策](../../03-data-stack/07-architecture-decisions/07-architecture-decisions.md) |
-| **指标平台** | 指标定义 / 口径治理 / 实时计算 / 服务层 | [Ch11 数据资产化](../../11-cross-cutting/06-data-assetization/06-data-assetization.md) / [Ch09 决策智能](../../09-data-intelligence-product/02-decision-intelligence/02-decision-intelligence.md) |
+| **指标平台** | 指标定义 / 口径治理 / 实时计算 / 服务层 | [Ch04 指标平台](../../04-data-assetization/10-metric-platform/10-metric-platform.md) / [Ch09 决策智能](../../09-data-intelligence-product/02-decision-intelligence/02-decision-intelligence.md) |
 | **DataAgent 平台** | MCP / Function Calling / 记忆 / 工具编排 / 沙箱 | [Ch05 智能体平台](../../05-agent-platform/01-data-agent/01-data-agent.md) / [Ch07 自进化](../../07-agent-evolution/) |
 | **Feature Store** | 线上线下一致性 / Point-in-Time / 模型版本 / 实时特征 | [Ch02 特征平台](../../02-data-science/01-feature-store/01-feature-store.md) |
 

@@ -351,7 +351,7 @@ def self_play_loop(agent, library, rounds):
 
 **硬件**这一项可以基本忽略：按 task 建主键的轨迹表是输入侧最大的一份存储，但它便宜。这个主题贵的地方不在算力，而在**记录纪律**：触发条件、最后验证时间这些字段，缺一列，半年后「库里有多少条其实是死的」就答不出来，补它的代价是重跑整条链——这正是 §4.4 ② 选择「打标挂账」而不是一次性返工的原因。
 
-这道账的特殊性在于：输入可以很便宜地堆，输出却按**人工判断的次数**计价，而判断次数由聚类分不分得开决定——Step 2 省下的钱，会在 Step 4 的整簇返工上还回来。通用的成本归因与容量规划方法见 [11-cross-cutting/03-data-cost-finops](../../11-cross-cutting/03-data-cost-finops/03-data-cost-finops.md)，本节只给本主题特有的结构。
+这道账的特殊性在于：输入可以很便宜地堆，输出却按**人工判断的次数**计价，而判断次数由聚类分不分得开决定——Step 2 省下的钱，会在 Step 4 的整簇返工上还回来。通用的成本归因方法见 [11-cross-cutting/03-data-cost-finops](../../11-cross-cutting/03-data-cost-finops/03-data-cost-finops.md)、容量规划方法见 [12-architecture/04-capacity-planning](../../12-architecture/04-capacity-planning/04-capacity-planning.md)，本节只给本主题特有的结构。
 
 ### 4.7 容灾与故障演练
 

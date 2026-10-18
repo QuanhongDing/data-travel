@@ -97,5 +97,5 @@
 - 《The Manager's Path》—— Camille Fournier 工程师成长
 - 《Staff Engineer: Leadership Beyond Management》—— Will Larson
 - [Ch00/01 能力地图](../../00-introduction/01-capability-model/01-capability-model.md) —— 4 域 × 5 级
-- [Ch14 人才梯队](../../14-leadership/02-talent-ladder/02-talent-ladder.md) —— 阿里 / 字节 / 美团 P 序列 / L 序列
+- [Ch14 人才梯队](../../14-leadership/02-talent-ladder/02-talent-ladder.md) —— 阿里 / Google / 字节的职级体系
 - [Ch14 绩效管理](../../14-leadership/03-performance-management/03-performance-management.md) —— 评估方法
