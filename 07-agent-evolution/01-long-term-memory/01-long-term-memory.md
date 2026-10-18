@@ -13,8 +13,8 @@
 | Agent 为什么需要长期记忆 | §1.1、§1.2 |
 | 短期 / 工作 / 长期 / 情景 / 程序性 五种记忆如何划分 | §2.1 |
 | MemGPT、Mem0、Letta 等架构怎么选 | §3.1、§4.3 |
-| 长期记忆的隐私与安全怎么保 | §5.2、§6.4 |
-| 我的业务该选哪种记忆方案 | §7.2 |
+| 长期记忆的隐私与安全怎么保 | §5.2、§6 案例 1.1 与 1.4 |
+| 我的业务该选哪种记忆方案 | §7.5 |
 
 ---
 
@@ -305,6 +305,7 @@ LIMIT 10;
 - [§4. 工程实现](01-long-term-memory-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](01-long-term-memory-section-5-ai.md)
 - [§6. 落地实践](01-long-term-memory-section-6-sec6.md)
+- [§7. 与其他方法对比](01-long-term-memory-section-7-sec7.md)
 - [§8. 面试真题集](01-long-term-memory-section-8-sec8.md)
 
 ---
@@ -317,6 +318,7 @@ LIMIT 10;
 - [§4. 工程实现](01-long-term-memory-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](01-long-term-memory-section-5-ai.md)
 - [§6. 落地实践](01-long-term-memory-section-6-sec6.md)
+- [§7. 与其他方法对比](01-long-term-memory-section-7-sec7.md)
 - [§8. 面试真题集](01-long-term-memory-section-8-sec8.md)
 
 ---

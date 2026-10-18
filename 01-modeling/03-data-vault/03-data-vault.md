@@ -12,10 +12,10 @@
 | --- | --- |
 | Data Vault 是什么、解决什么问题 | §1.1、§1.2 |
 | 三件套（Hub / Link / Satellite）到底怎么设计 | §2.1、§3.1 |
-| 如何把传统 Kimball 仓库迁移到 Data Vault | §4.1、§6.3 |
+| 如何把传统 Kimball 仓库迁移到 Data Vault | §4.1、§3.3 |
 | 多源并发入仓、缓慢变化维、CDC 怎么落地 | §3.3、§4.2 |
 | Data Vault 在湖仓、LLM、Agent 时代的新角色 | §5.1—§5.4 |
-| 决策树：我的业务该选 Kimball、Data Vault 还是 Anchor | §7.2 |
+| 决策树：我的业务该选 Kimball、Data Vault 还是 Anchor | §7.5 |
 
 ---
 
@@ -23,7 +23,7 @@
 
 ### 1.1 是什么
 
-**学术定义**：Data Vault 是一种面向企业级数据仓库的**建模范式**，由 Dan Linstedt 于 1990 年代提出，并在 2010 年前后迭代为 Data Vault 2.0。它把业务实体抽象为 **Hub**（业务键）、**Link**（关系）、**Satellite**（属性与时态上下文）三类构件，通过哈希键 + 全量追加 + 软删除实现"全程审计 + 100% 可追溯 + 高度可演化"的数据底座。
+**学术定义**：Data Vault 是一种面向企业级数据仓库的**建模范式**，由 Dan Linstedt 于 1990 年代提出，并在 2013 年迭代为 Data Vault 2.0。它把业务实体抽象为 **Hub**（业务键）、**Link**（关系）、**Satellite**（属性与时态上下文）三类构件，通过哈希键 + 全量追加 + 软删除实现"全程审计 + 100% 可追溯 + 高度可演化"的数据底座。
 
 **工程定义**：Data Vault 是介于 3NF（高度规范化）与星型模型（高度反规范化）之间的"中间形态"建模方法，专门解决以下工程痛点：
 
@@ -124,7 +124,7 @@ Data Vault 在整个数据架构栈中的位置如下：
 
 ### 2.1 关键概念定义
 
-Data Vault 的核心构件只有五类，但组合方式非常灵活：
+Data Vault 的核心构件只有八类，但组合方式非常灵活：
 
 | 概念 | 英文 | 一句话定义 | 工程对应 |
 | --- | --- | --- | --- |
@@ -140,8 +140,8 @@ Data Vault 的核心构件只有五类，但组合方式非常灵活：
 **最关键的三个原语**：
 
 1. **Hub = 业务键 + 元数据**：每个 Hub 都有一个业务键（Business Key）+ 加载时间 + 来源系统，**绝不包含任何描述性字段**。
-3. **Link = 关系键 + 元数据**：每个 Link 包含两个或多个 Hub 的 Hash Key + 加载时间 + 来源系统，**绝不包含任何业务属性**。
-2. **Satellite = 属性 + 时态 + 来源**：每个 Satellite 挂在一个 Hub 或 Link 上，包含所有描述性字段 + 生效时间 + 加载时间 + 来源系统，**全量追加、永远不修改**。
+2. **Link = 关系键 + 元数据**：每个 Link 包含两个或多个 Hub 的 Hash Key + 加载时间 + 来源系统，**绝不包含任何业务属性**。
+3. **Satellite = 属性 + 时态 + 来源**：每个 Satellite 挂在一个 Hub 或 Link 上，包含所有描述性字段 + 生效时间 + 加载时间 + 来源系统，**全量追加、永远不修改**。
 
 ### 2.2 数学/形式化基础
 
@@ -320,6 +320,7 @@ hub_customer (ERP 系统)    ┘
 - [§4. 工程实现](03-data-vault-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](03-data-vault-section-5-ai.md)
 - [§6. 落地实践](03-data-vault-section-6-sec6.md)
+- [§7. 与其他方法对比](03-data-vault-section-7-sec7.md)
 - [§8. 面试真题集](03-data-vault-section-8-sec8.md)
 
 ---
@@ -332,6 +333,7 @@ hub_customer (ERP 系统)    ┘
 - [§4. 工程实现](03-data-vault-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](03-data-vault-section-5-ai.md)
 - [§6. 落地实践](03-data-vault-section-6-sec6.md)
+- [§7. 与其他方法对比](03-data-vault-section-7-sec7.md)
 - [§8. 面试真题集](03-data-vault-section-8-sec8.md)
 
 ---

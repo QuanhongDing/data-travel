@@ -11,11 +11,11 @@
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
 | Anchor Modeling 是什么、解决什么问题 | §1.1、§1.2 |
-| Anchors / Attrtributes / Ties / Knots 怎么设计 | §2.1、§3.1 |
-| 如何把 3NF / Kimball 迁移到 Anchor Modeling | §4.1、§6.3 |
-| bitemporal 时态建模如何落地 | §2.2、§3.1.4 |
+| Anchors / Attrtributes / Ties / Knots 怎么设计 | §2.1、§3.2 |
+| 如何把 3NF / Kimball 迁移到 Anchor Modeling | §4.1、§6 的「真实落地路径」 |
+| bitemporal 时态建模如何落地 | §2.2、§3.2.4「Knot 共享模式」 |
 | Anchor Modeling 在 AI 时代的新角色 | §5.1—§5.4 |
-| 决策树：我的业务该用 Anchor、Data Vault 还是 Kimball | §7.2 |
+| 决策树：我的业务该用 Anchor、Data Vault 还是 Kimball | §7.5 |
 
 ---
 
@@ -422,6 +422,7 @@ WHERE valid_to = CURRENT_TIMESTAMP;
 - [§4. 工程实现](04-anchor-modeling-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](04-anchor-modeling-section-5-ai.md)
 - [§6. 落地实践](04-anchor-modeling-section-6-sec6.md)
+- [§7. 与其他方法对比](04-anchor-modeling-section-7-sec7.md)
 - [§8. 面试真题集](04-anchor-modeling-section-8-sec8.md)
 
 ---
@@ -434,6 +435,7 @@ WHERE valid_to = CURRENT_TIMESTAMP;
 - [§4. 工程实现](04-anchor-modeling-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](04-anchor-modeling-section-5-ai.md)
 - [§6. 落地实践](04-anchor-modeling-section-6-sec6.md)
+- [§7. 与其他方法对比](04-anchor-modeling-section-7-sec7.md)
 - [§8. 面试真题集](04-anchor-modeling-section-8-sec8.md)
 
 ---
