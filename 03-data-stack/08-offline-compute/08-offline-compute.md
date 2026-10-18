@@ -302,6 +302,8 @@ WHERE o.dt = '2025-01-01';
 - DuckDB：单机 / 嵌入 / AI 场景。
 - Spark：分布式 / 大数据场景。
 
+> 💡 **思考锚点**：按 §2.4 的「DuckDB vs Spark」边界先量一道题——你要分析的那份 Parquet 单机内存装得下吗？装得下就按 §2.3 用 DuckDB 内嵌直读，省掉一整条分布式作业；装不下再看 Spark 作业是不是卡在倾斜上——你开了 `spark.sql.adaptive.skewJoin.enabled` 吗，还是还在手搓 Salting 随机前缀？
+
 ---
 
 - [§3. 设计模式与范式](08-offline-compute-section-3-sec3.md)

@@ -239,6 +239,8 @@ ROI = (Benefits - Costs) / Costs
 | AI 能力场景数 | +10 | +12 | +2 |
 ```
 
+> 💡 **思考锚点**：把 2.2 的两个式子填上你自己的数。**Explicit（老板明确说出口的期望）** 占他全部期望的几成？式子里给的线是 80%，低于它，你超额交付的可能是他根本没打算要的东西；再看 `ROI ≥ 3x` 那一档——你上次汇报里报的那件成果，Benefits 与 Costs 各自的数字是当场能报出的，还是只有定性描述？报不出的那一项，就是你下次 1:1 之前要先补齐的。
+
 - [§3. 设计模式与范式](08-upward-management-section-3-sec3.md)
 - [§4. 工程实现](08-upward-management-section-4-sec4.md)
 - [§4. 预期 ROI](08-upward-management-section-4-roi.md)

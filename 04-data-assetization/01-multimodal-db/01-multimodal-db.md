@@ -233,6 +233,8 @@ sim(query, doc) = cos(v_query, v_doc)
 - **多模态数据库 vs RAG**：RAG 是「检索 + 生成」流水线，多模态数据库是 RAG 的「检索基础设施」。
 - **多模态 Embedding vs 多模态 LLM**：Embedding 把多模态映射成向量，LLM 直接处理多模态（理解 + 生成）。两者互补。
 
+> 💡 **思考锚点**：按 §2.4 的「多模态数据库 vs 数据湖 / 向量库」先判你那条检索链的边界——原始资产（视频 / 音频 / PDF）留在数据湖，还是已被 embed 成向量进库？再按 §2.3 的模型表选编码器：中文图文选 CLIP（英文）还是 BGE-VL（中文 SOTA），PDF 页面检索选通用图文模型还是 ColPali（128 维）——这一列选错，跨模态 Top-K 会不会整体偏？
+
 ---
 
 - [§3. 设计模式与范式](01-multimodal-db-section-3-sec3.md)

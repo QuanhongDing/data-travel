@@ -252,6 +252,8 @@ GET /api/v1/metric/gmv?dim=date&filter=is_new_user:true,city:beijing&time_range=
 - **OneService vs Data API**：Data API 是 OneService 的输出形态之一。OneService 是方法论 + 平台，Data API 是接口。
 - **OneService vs Data Product**：Data Product 是「面向业务的数据包」，OneService 是「数据服务化的工程实现」。Data Product 可能通过 OneService 暴露。
 
+> 💡 **思考锚点**：看你们对外暴露的数据接口：§2.3 的权限模型三档——行级、列级、指标级——你们做到哪一档？若只到行级，一个不该看某敏感指标的业务方，是被哪一档挡住的？再按 §2.4 把它们分一次类：哪些是预定义 API（OneService 形态）、哪些本该留给联邦查询（Unified Query Gateway）——若探索性需求也被做成了预定义 API，你的接口数就是随业务问题数线性涨的，你现在维护着几个？
+
 ---
 
 - [§3. 设计模式与范式](06-one-service-section-3-sec3.md)

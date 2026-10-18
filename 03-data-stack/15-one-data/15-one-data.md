@@ -356,6 +356,8 @@ generated_metric = {
 - Data Mesh：去中心化、领域自治。
 - Data Fabric：自动化数据集成。
 
+> 💡 **思考锚点**：把你组织现在的表对照 OneModel 的四层（ODS → DWD → DWS → ADS）数一遍，真正有明确分层的占全部多少？再拿 §2.2 的 `Metric = (Name, Definition, Formula, Source, Owner, Version)` 六元组套你平台上最常用的 3 个指标：Owner 与 Version 两栏填得出吗？填不出的指标，你敢让 Agent 直接查吗？
+
 ---
 
 - [§3. 设计模式与范式](15-one-data-section-3-sec3.md)

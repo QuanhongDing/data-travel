@@ -284,6 +284,8 @@ ProjectSuccess = SponsorSupport × ClearRACI × StakeholderAlignment × Delivery
 | **绩效管理（§03）** | 关注「**激励**」 | 跨团队贡献必须被绩效认可 |
 | **导师制（§07）** | 关注「**1:1 辅导**」 | 跨团队协作需要教练辅导 |
 
+> 💡 **思考锚点**：把你手上那个跨团队项目的 RACI 拿出来数两列：有几项的 R 超过 5 人、有几项的 C 超过 10 人（§2.2 的健康度判据）？再按成功公式给自己打四个 1–5 的分（SponsorSupport / ClearRACI / StakeholderAlignment / DeliveryDiscipline）——四项里最低的那一项，和你数出来的两列计数对得上吗？
+
 ---
 
 - [§3. 设计模式与范式](04-cross-team-collaboration-section-3-sec3.md)

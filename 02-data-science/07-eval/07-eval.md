@@ -355,6 +355,8 @@ $$\text{ATE}_{DID} = (Y_{T,\text{post}} - Y_{T,\text{pre}}) - (Y_{C,\text{post}}
 - **LLM 评估 vs 传统 ML 评估**：传统 ML 评估用准确率，LLM 评估用语义相似度 / 偏好。
 - **Agent 评估 vs LLM 评估**：LLM 评估看输出，Agent 评估看多步决策结果。
 
+> 💡 **思考锚点**：把你们最依赖的那条评估结论按 §2.4 的「离线 vs 在线 A/B」分类——若在线，你是用 §2.3 的 CUPED（2013，Microsoft）做方差缩减，还是裸跑 t 检验（没缩方差，拿同样显著性就得把样本量抬高）？若离线，你的裁判是 BLEU / ROUGE 这类传统文本相似度，还是像 Chatbot Arena（2023，LMSYS）那样带人类偏好排名的？
+
 ---
 
 - [§3. 设计模式与范式](07-eval-section-3-sec3.md)

@@ -266,4 +266,6 @@
 
 第二个可带走的判断是：本节 5 个决策的正确做法都是"**先写清楚放弃了什么，再写清楚代价落在谁头上**"。凡是写不出被放弃选项的选择，都不是决策，只是当时的默认动作；凡是写不出成本承担的决策，都会在换负责人之后被悄悄推翻（§3.5 的反模式与 §7.2.3 的失效条件，说的是同一件事）。
 
+> 💡 **思考锚点**：数你现在的存量：同一个指标名有几处实现，改一次核心口径要动几个文件（流侧与批侧同源时应为 1）？这两个数若都大于 1，你缺的是实体识别（谁和谁是同一个东西），还是权威归属（谁拍板）——先补哪一个才能让返工面收窄？
+
 > 配合 [主文件 · 背景](01-alibaba-data-middle-platform.md)、[§3 挑战](01-alibaba-data-middle-platform-section-3-sec3.md)、[§4 架构演进](01-alibaba-data-middle-platform-section-4-sec4.md)、[§7 复用经验](01-alibaba-data-middle-platform-section-7-sec7.md) 与 [§9 参考资料](01-alibaba-data-middle-platform-section-9-sec9.md) 阅读。

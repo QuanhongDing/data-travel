@@ -287,6 +287,8 @@ desiredReplicas = ceil[currentReplicas × (currentMetricValue / targetMetricValu
 | 监控告警（Ch11） | 数据源 | 监控告警提供历史数据 |
 | 成本优化（Ch11） | 共同目标 | 容量规划关注可用，成本优化关注成本 |
 
+> 💡 **思考锚点**：拿你自己的峰值 QPS 套一次 2.2 的两个公式——先算「并发连接数 = QPS × 平均响应时间」，再算「所需 Pod 数 = 峰值 QPS / 单 Pod 承载力 ×（1 + 安全冗余%）」，算出的 Pod 数和你现在实际开的差几倍？若这是 GPU 推理，再按「推理 QPS × Token 数 / 请求 ÷（GPU 吞吐 × 利用率）」算一遍，利用率取 70%，缺口你打算靠加卡补，还是把 Spot（折扣 60-80%、可能被回收）补进来？
+
 ---
 
 - [§3. 设计模式与范式](04-capacity-planning-section-3-sec3.md)

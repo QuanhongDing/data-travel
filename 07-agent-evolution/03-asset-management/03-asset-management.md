@@ -264,6 +264,8 @@ Knowledge Base v1.2 ─→ Prompt Template v3.1 ─→ Workflow v2.0 ─→ Agen
 | Replicate | 模型市场 | MaaS | 模型消费 |
 | Copilot Studio | 企业级 | 微软生态 | 企业 Copilot |
 
+> 💡 **思考锚点**：拿 2.5 那条血缘链（Knowledge Base → Prompt Template → Workflow → Agent Template）套到你自己的资产库——升级其中一个 Knowledge Base 版本时，你能否像图里那样一次列出全部受影响的 Prompt / Workflow / Agent 并触发回归？列不全，缺的是血缘登记，还是版本标签（SemVer）？
+
 ---
 
 - [§3. 设计模式与范式](03-asset-management-section-3-sec3.md)

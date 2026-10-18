@@ -272,6 +272,8 @@ ZoomFatigue = MeetingHours × CameraOn × ContinuousBackToBack
 | **向上管理（§08）** | 关注「**管老板**」 | 远程向上管理更难 |
 | **导师制（§07）** | 关注「**辅导**」 | 远程辅导需要工具化 |
 
+> 💡 **思考锚点**：先量你团队的 Overlap——落在「理想 ≥ 4 小时」还是已经掉到「不健康 < 1 小时」，这决定你必须把多少协作搬进异步；再按 RemoteEfficiency = Async × Documentation × Trust × Tools 拆四项各打一次分：Async 够不够 ≥ 70%、文档化够不够 ≥ 90%、Trust 与 Tools 到没到 4/5——四项里你最该先补哪一项，为什么不是先砍会议时长（< 4 小时 / 天）？
+
 ---
 
 - [§3. 设计模式与范式](09-remote-team-section-3-sec3.md)

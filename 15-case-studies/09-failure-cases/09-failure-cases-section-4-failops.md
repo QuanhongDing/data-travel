@@ -60,4 +60,6 @@ FailOps 是从 SRE（Site Reliability Engineering）演化而来的"失败运营
 - **复盘文档**：Confluence / Notion。
 - **变更管理**：Spinnaker / Argo CD / Jenkins。
 
+> 💡 **思考锚点**：列一下你团队近期几次复盘——它们是否都在 1–2 周内完成，且每条改进项都有具体的 owner 与 deadline？数一数有多少条改进项从提出到现在既没关闭、也没人再提——按 §4.2.3「改进项必须有 owner 和 deadline」这条约束，缺 owner 的那几条当初是怎么被放行的？
+
 ---

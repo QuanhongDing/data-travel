@@ -273,6 +273,8 @@ tEnv.executeSql("""
 - 数据仓库：结构化、强治理、高成本。
 - Lakehouse：开放、灵活、低成本。
 
+> 💡 **思考锚点**：把你当前架构按 §2.2 的 CAP 三行对一遍——你为了保实时（A）牺牲的是哪一层的一致性（C）？如果你选的是 Lambda，服务层那个 `merge(..., window=batch_window)` 里的窗口具体是多久，它直接决定了你的"近似值"要漂多久才被批层收敛掉。
+
 ---
 
 - [§3. 设计模式与范式](07-architecture-decisions-section-3-sec3.md)

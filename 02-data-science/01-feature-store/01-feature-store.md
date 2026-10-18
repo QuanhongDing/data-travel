@@ -253,6 +253,8 @@ $$\text{TrainFeature}(x_t) = \text{ServingFeature}(x_t)$$
 - **特征平台 vs LLM 上下文管理**：LLM 上下文是"运行时特征"，特征平台是"训练 / 推理特征"。
 - **特征平台 vs Data Catalog**：Data Catalog 管理所有数据资产元数据，Feature Catalog 是 Data Catalog 的子集。
 
+> 💡 **思考锚点**：数一下你现在的特征里有几条既进离线训练、又要在线上毫秒级服务（§2.3 的服务层）——它们从物化层（第 21 条）同步到在线的窗口是多久，训练用的 T 时刻快照与线上取到的还是不是同一个值？再把第 16 条的 PSI / KS 拿来，你给几条特征设了漂移阈值、定在哪，还是等线上线下对不上才发现？
+
 ---
 
 - [§3. 设计模式与范式](01-feature-store-section-3-sec3.md)

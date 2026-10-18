@@ -218,6 +218,8 @@ cost(plan) = Σ_{operator} rows_processed × cpu_cost_per_row + io_cost + networ
 - **统一查询网关 vs 数据 API 网关**：网关执行 SQL，网关执行 API 流量治理。
 - **统一查询网关 vs 向量湖**：向量湖是大规模向量存储，网关可以联邦查询向量湖。
 
+> 💡 **思考锚点**：拿你的一条跨源 JOIN 查询，按 2.2 画出哪些子查询能整体下推、哪些只能投影下推而 filter 要上拉到网关；再按 2.2 的 cost 公式估一下，后者会让 rows_processed 与 network_cost 放大多少倍——这条查询值不值得改成 2.3 的物化视图？
+
 ---
 
 - [§3. 设计模式与范式](09-unified-query-gateway-section-3-sec3.md)

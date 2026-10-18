@@ -275,6 +275,8 @@ SELECT * FROM orders WHERE _hoodie_commit_time = '20250115100000';
 - Schema Registry：管理消息/表的 schema。
 - 数据目录：管理数据资产（表、字段、血缘）。
 
+> 💡 **思考锚点**：看你现有的事实表：哪些列做过「删列 / 重命名 / 类型收缩（long → int）」这类演进？对它们，你是靠 Time Travel 快照（受保留窗口与 Expire Snapshots + Vacuum 限制）还是完整备份兜底——两者恢复时间差几个量级，你的保留窗口设到多久，才够覆盖一次「上游改错列名、一周后才发现」？
+
 ---
 
 - [§3. 设计模式与范式](06-schema-and-time-travel-section-3-sec3.md)

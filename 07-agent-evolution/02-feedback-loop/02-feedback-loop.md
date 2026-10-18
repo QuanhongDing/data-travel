@@ -284,6 +284,8 @@ E_t = eval(A_t)               # 在线 / 离线评估
 A_best = argmax_{A_t} E_t     # 选最优版上线
 ```
 
+> 💡 **思考锚点**：把你手上的 Agent 拆成 ⟨A, F, P, T, E, R⟩ 六件、逐件指认负责人，然后回答：你的偏好数据 P 拿得到成对样本 (prompt, chosen, rejected) 吗？拿得到，DPO 一阶段就能替代 RLHF；拿不到，是不是该换 KTO，而不是硬凑一对样本去喂那套 Reward Model + PPO？
+
 ---
 
 - [§3. 设计模式](02-feedback-loop-section-3-sec3.md)

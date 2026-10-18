@@ -357,4 +357,6 @@ SELECT snapshot_id, committed_at FROM lake.db.orders.snapshots ORDER BY committe
 >
 > 判断这套工程实现是否成立，也只需看一件事：**当有人问「这张表在哪里、谁在写它、它的数据截止到什么时候」，能不能在一个地方一次答完。**
 >
+> 💡 **思考锚点**：把你自己存量湖的表数 T 带进 4.4 的推算式 T × (4–16) ÷ 8 人日——如果按「统一到一个表格式」全部返工，你的人日落在 250–1000 这一档的哪一端？再回头数：这些表里有多少张其实只需按 4.4 的分类「注册进统一 Catalog」或「优先 Compaction」，根本不该进返工队列？
+
 > 配合 [§ 2 核心原理](03-lakehouse.md)、[§ 3 设计模式与范式](03-lakehouse-section-3-sec3.md) 与 [§ 6 落地实践](03-lakehouse-section-6-sec6.md) 阅读。存量改造的落地顺序以 4.4 为准，[§ 7 与其他方法对比](03-lakehouse-section-7-sec7.md) 给出规模跃迁时该换哪种模式的判据。

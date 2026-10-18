@@ -282,6 +282,8 @@ $$s_i = g_\theta(q, d_i)$$
 - **Embedding vs Reranking**：Embedding 做粗排（召回 1000 个），Reranking 做精排（重排 1000 → 10 个）。
 - **Embedding vs Fine-Tuning**：通用 Embedding 适合 80% 场景，垂直领域（医疗、法律）需 Fine-Tuning。
 
+> 💡 **思考锚点**：把你的语料套进本节的两条线——它落在「通用 Embedding 就够的 80%」还是需要 Fine-Tuning 的垂直领域，向量规模又落在 HNSW（内存装得下）还是 IVF 那档、要不要靠 PQ 把索引压 10–100 倍——两条线上你各站哪一格，它决定了「召回 1000 → 重排 10」这条链路里哪一段先撑不住？
+
 ---
 
 - [§3. 设计模式与范式](01-embedding-and-retrieval-section-3-sec3.md)

@@ -278,6 +278,8 @@ team:
 | **团队节奏（§10）** | 关注「**会议节奏**」 | 拓扑决定会议结构 |
 | **导师制（§07）** | 关注「**辅导**」 | Enabling Team 是组织级辅导 |
 
+> 💡 **思考锚点**：按本节的式子把你的团队拆一次——CognitiveLoad = Intrinsic + Extraneous + Germane，三份各占几成？健康配置是 Extraneous ≤ 30%（靠平台化压）、Germane 20-40%（靠学习投）、Intrinsic 30-50%（领域本质，接受）；若你的 Extraneous 已经顶格，你缺的是一个 Platform Team，还是已经建了平台却没真正把环境复杂度接走——按 TeamComposition，你的 Platform 是否落在 10-15% 这个比例附近？
+
 ---
 
 - [§3. 设计模式与范式](11-team-topology-section-3-sec3.md)

@@ -346,6 +346,8 @@ main_task >> trigger_downstream
 | 云原生 | 中（K8s Executor） | 中 | 强（云原生） |
 | AI 集成 | 中 | 中 | 强 |
 
+> 💡 **思考锚点**：数一下你主 DAG 的关键路径有几跳，再把 default_args 里的 retries × retry_delay（示例是 3 × 5 分钟）加到这条链的尾部——它离你给这条 DAG 设的 SLA 还剩多少余量？如果你的 catchup 不是 False，补数当天这个余量还成立吗？
+
 ---
 
 - [§3. 设计模式与范式](12-scheduler-section-3-sec3.md)

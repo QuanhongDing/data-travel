@@ -313,6 +313,8 @@ userOrderCount.toStream().to("user_order_count");
 - **Flink CDC**：Flink 原生支持，简化链路。
 - **Debezium**：独立服务，通过 Kafka Connect。
 
+> 💡 **思考锚点**：把你们手里的实时任务对到 §2.4 的引擎三选一——Flink（Event Time + 状态 + 窗口）、Spark Streaming（微批）、Kafka Streams（嵌入应用）？再落到 §2.3 的两项机制：状态恢复靠 RocksDB + S3 checkpoint、过载时靠 Credit-based 自动反压。若你的选型是微批路线，这两件事分别由谁承接——乱序事件归谁纠、积压了靠什么退让？
+
 ---
 
 - [§3. 设计模式与范式](09-realtime-compute-section-3-sec3.md)

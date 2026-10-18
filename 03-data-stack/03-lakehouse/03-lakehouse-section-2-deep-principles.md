@@ -277,4 +277,6 @@ T_query ≈ α × (Files_scanned × Avg_file_size / Disk_throughput)
 6. **Catalog 是抽象层**：单 region 用 HMS，跨 region 用 Nessie/Polaris
 7. **Lakehouse 主要优化 Plan + Scan 阶段**：pruning 让 α 项大幅下降
 
+> 💡 **思考锚点**：把你最常见那条慢查询拆进 Q ≈ α·(Files_scanned × Avg_file_size / Disk_throughput) + β·Manifest + γ·Compute——按本节实测里「100 万文件 / 20x」那一档，你把分区键或 Z-Order 键换成查询真正过滤的字段后，pruning 能把 Files_scanned 压到几分之一？压不下去时，主导你耗时的是 α 项（IO）还是 γ 项（计算）？
+>
 > 配合 [§ 6 落地实践](03-lakehouse-section-6-sec6.md) 阅读：§ 6 给真实公司案例，§ 2（本文件）给算法与数据结构。

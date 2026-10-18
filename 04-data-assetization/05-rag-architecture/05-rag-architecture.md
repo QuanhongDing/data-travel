@@ -270,6 +270,8 @@ Answer = LocalSearch(q, KG) ∨ GlobalSearch(q, Summaries)
 - **RAG vs Search Engine**：搜索引擎返回「链接列表」，RAG 返回「自然语言答案 + 引用」。RAG 是 Search + LLM。
 - **RAG vs KG QA**：KG QA 是「基于结构化知识图谱的问答」，RAG 是「基于任意知识源的问答」。GraphRAG 是两者的融合。
 
+> 💡 **思考锚点**：把你线上 RAG 的 chunk 大小与 overlap 报出来（例如固定窗口 500 / 1000、overlap 10–20%）——当你想靠调大 Top-K 提召回时，涨的是向量召回的 Recall@K，还是要靠 Cross-Encoder 重排来补救？后者准但慢，你准备让哪一项指标先恶化来换这次召回？
+
 ---
 
 - [§3. 设计模式与范式](05-rag-architecture-section-3-sec3.md)

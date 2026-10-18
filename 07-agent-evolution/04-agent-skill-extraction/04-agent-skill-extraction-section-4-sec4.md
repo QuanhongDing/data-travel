@@ -362,4 +362,6 @@ def self_play_loop(agent, library, rounds):
 >
 > 还有一条推论值得单独记住：**这套管道的产出不是一个「方法」，而是一组运维动作**——去重、退役、收敛到组织级库。提取算法可以换，这三个动作换不掉；§3 的八条反模式里有三条同源于此。
 >
+> 💡 **思考锚点**：翻你现在的 Skill / Prompt 库：有多少条答得上「最后验证时间」和「触发条件」这两个字段（答不出的就是幻觉与误触发的候选池）？你打算按本节的双轨给它留 1–2 个月、用验证集现算一次 hit_rate，还是直接全量切到新管道？
+>
 > 配合 [§ 2 核心原理](04-agent-skill-extraction.md)、[§ 3 设计模式与范式](04-agent-skill-extraction-section-3-sec3.md) 与 [§ 6 落地实践](04-agent-skill-extraction-section-6-sec6.md) 阅读。存量库的迁移顺序以 4.4 为准；[§ 7 与其他方法对比](04-agent-skill-extraction-section-7-sec7.md) 给出它与 Prompt Engineering、RAG 等方法的对比判据。

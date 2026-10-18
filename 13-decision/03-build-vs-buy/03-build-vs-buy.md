@@ -180,6 +180,8 @@ Risk-adjusted NPV = NPV × (1 - P_failure × Loss_factor)
 - **自研 vs 采购 vs SaaS**：SaaS 是采购的现代形态——无需运维、按用量付费。
 - **自研 vs 采购 vs 托管**：托管（如 Confluent Cloud）是采购 + 运维外包。
 
+> 💡 **思考锚点**：按 §2.2 的 Make-or-Buy 打分，给你的核心能力项（如推荐 / 风控）算一次：Score_Make 比 Score_Buy 高多少？如果两边差距不到 1.0，本节判据把它归到「混合」档——而你的组织实际按哪一档在投钱、排期？
+
 ---
 
 - [§3. 设计模式与范式](03-build-vs-buy-section-3-sec3.md)

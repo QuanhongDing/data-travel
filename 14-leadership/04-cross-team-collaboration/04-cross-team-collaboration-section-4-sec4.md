@@ -337,4 +337,6 @@ CROSS_TEAM_TRANSLATION_PROMPT = """
 
 > 本节小结：五步里唯一不可替代的是 **Step 1 把裁决权显式落到人**——它不产出任何可展示的东西，却决定了候选集合：没有裁决权，RACI 与 Stakeholder 只能改变信息分布，Shared Service / Platform / CoE / Enabling 这类要求改编制与考核的模式根本立不起来。它比其余环节更值得投入，是因为**工具只分配责任、不转移权力**：把矩阵填满、把平台建好、把标准写完，如果没有人能在两个团队争同一批人时当场裁决，这些产出都会在第一个真正有争议的决定上同时停住。
 >
+> 💡 **思考锚点**：翻你最近三次跨团队争议的决议记录，看它们是清单上那个具名 A 拍板的，还是某位上级临时出现的——如果三次里有两次是后者，那你的 RACI 即便每项恰好 1 个 A、R ≤ 5、C ≤ 10 全都合规，这张表是责任表还是背锅表？
+>
 > 配合 [§ 2 核心原理](04-cross-team-collaboration.md)、[§ 3 设计模式与范式](04-cross-team-collaboration-section-3-sec3.md) 与 [§ 6 落地实践](04-cross-team-collaboration-section-6-sec6.md) 阅读。存量改造的落地顺序以 4.4 为准；AI 相关能力的成熟度判断与使用边界见 [§ 5 前沿演进](04-cross-team-collaboration-section-5-ai.md)。

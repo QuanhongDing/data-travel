@@ -233,6 +233,8 @@
 - **数据 API 网关 vs Sidecar / Service Mesh**：Sidecar（Envoy）做服务间调用治理，网关做南北向流量治理。
 - **数据 API 网关 vs CDN / WAF**：CDN 缓存静态资源，WAF 防护 Web 攻击，网关统一治理。
 
+> 💡 **思考锚点**：把你网关的限流参数摊开看：令牌桶的 rate 与 capacity，或固定窗口的 window_size 与 limit（§2.2 点明固定窗口有边界问题）——这个阈值是按单个调用方设的，还是全局一刀切？窗口边界上涌进来的突发，是先被限住，还是穿过去了？
+
 ---
 
 - [§3. 设计模式与范式](07-data-api-gateway-section-3-sec3.md)

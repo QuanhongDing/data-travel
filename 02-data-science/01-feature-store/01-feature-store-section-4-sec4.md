@@ -357,4 +357,6 @@ final_features = combine_features(semantic_features, traditional_features)
 
 > 本节小结：整个落地过程里唯一决定成败的环节是 **Point-in-Time 取数口径**（§4.1 Step 6 与 §4.2 的「Point-in-Time 取数」「迟到数据」）。它是唯一一个**做错了不会报错、只会让所有指标虚高**的环节：一致性校验能告诉你两条路径不等，监控能告诉你分布变了，而只有 PIT 决定训练样本里有没有未来信息；它一旦错，后面所有评估、选型与调参都建立在虚高的基线上，且返工要重算全部历史样本。
 >
+> 💡 **思考锚点**：把你最近一版训练样本抽一份，逐条验每条记录的 event_time 是否都 ≤ 它的 label_time——抽到一条反例，PIT 取数口径就没落地；即便没有反例，也再回答一次：重算全部历史样本要多久、占多少资源？如果把它放到最后做，这笔返工代价你量过有多大吗？
+
 > 配合 [§ 2 核心原理](01-feature-store.md)、[§ 3 设计模式与范式](01-feature-store-section-3-sec3.md) 与 [§ 6 落地实践](01-feature-store-section-6-sec6.md) 阅读。

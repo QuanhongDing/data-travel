@@ -256,6 +256,7 @@ TT.now() 返回 [earliest, latest] 区间，保证真实时间在区间内
 | 数据一致性（Ch12 §08） | 数学基础 | CAP 理论是异地多活的数学基础 |
 | 混沌工程（Ch12 §06） | 验证手段 | 混沌工程验证异地多活的容错能力 |
 
+> 💡 **思考锚点**：拿你系统的真实 RPO 与 RTO 在 2.3 的 Level 1–6 上对档——实际落在哪一级，对外宣称的又是哪一级？若目标是 Level 5（异地多活，RPO=0），按 2.2 的 PACELC 你必须先答：分区时选 Availability 还是 Consistency；选了 A 又要 RPO=0，写冲突靠向量时钟检出、LWW 合并（认不认时钟漂移）还是 CRDT 消解？
 ---
 
 - [§3. 设计模式与范式](02-multi-region-section-3-sec3.md)

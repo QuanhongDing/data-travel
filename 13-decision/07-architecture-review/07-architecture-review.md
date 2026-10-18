@@ -173,6 +173,8 @@ Checklist Coverage = (# Items with concrete feedback) / (# Total Items)
 - **架构评审 vs Code Review**：Code Review 关注代码，架构评审关注架构 / 设计。
 - **架构评审 vs 架构治理**：治理是「长期机制」，评审是「单次活动」。
 
+> 💡 **思考锚点**：拿你们最近一次架构评审，把各质量属性的权重 w_i 与 1-5 的 Score_i 按 §2.2 的 Utility = Σ w_i × Score_i 补回表里——你说得出每个 w_i 是谁点头定的吗？若权重来自「大家没意见」而非 Stakeholder 共识，把权重换一组重算，你的结论会不会直接反转？
+
 ---
 
 - [§3. 设计模式与范式](07-architecture-review-section-3-sec3.md)

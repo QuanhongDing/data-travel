@@ -296,6 +296,8 @@ answer = LLM(question, retrieved_text, retrieved_image, retrieved_video)
 - **多模态 AI vs 多模态 RAG**：多模态 RAG 是「检索 + 多模态」，多模态 AI 是「更广泛的能力」。
 - **多模态 AI vs 世界模型**：世界模型是「理解 / 预测 / 生成世界」的 AI，多模态 AI 是「多模态能力」的统称。世界模型是多模态 AI 的前沿方向。
 
+> 💡 **思考锚点**：把你的多模态任务套进 §2.3 第 3 组的三条架构——它是 Vision Encoder + Projection + LLM（LLaVA / Qwen-VL 这一路），还是 Native 单一 Transformer（GPT-4o / Gemini 这一路）？再数一下要对齐的模态数：落在第 1 组的图像-文本两模态（CLIP），还是 ImageBind / LanguageBind 的 5–6 模态——模态数每加一档，第 1、2 组的对齐与融合工程量在你排期里要加多少？
+
 ---
 
 - [§3. 设计模式与范式](01-multimodal-ai-section-3-sec3.md)

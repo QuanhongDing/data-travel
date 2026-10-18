@@ -356,6 +356,8 @@ $$P(\text{next\_id} \mid \text{history\_ids}) = \text{Transformer}(\text{history
 - **推荐 vs 用户画像**：用户画像是推荐的基础。
 - **推荐 vs RAG**：RAG 是检索增强生成，推荐是检索增强排序。
 
+> 💡 **思考锚点**：你的召回双塔，线上是从向量库（Faiss / Milvus）取 top-k、离线用 softmax over negative samples 训练（§2.2）：k 取大还是取小，直接决定精排要背多少候选、负样本集要建多大——你现在的 k 是召回率倒推出来的，还是照别人配置抄的？
+
 ---
 
 - [§3. 设计模式与范式](05-recommendation-section-3-sec3.md)

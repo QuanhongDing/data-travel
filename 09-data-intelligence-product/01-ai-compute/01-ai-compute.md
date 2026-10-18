@@ -274,6 +274,8 @@ AI 计算平台的「核心数学」在不同子系统各异：
 - **AI 计算平台 vs Serverless**：Serverless 是「按需函数计算」，AI 计算平台中 Serverless Inference 只是其中一种模式。
 - **AI 计算平台 vs 算力网络**：算力网络（Compute Network）是「跨地域 / 跨厂商的算力调度」，AI 计算平台是企业内的算力调度。
 
+> 💡 **思考锚点**：算一下你自己的推理账单——单条调用成本 × 峰值 QPS，是否逼近 §1.2 那个「$0.01 × 1 万 QPS = 月百万 USD」的量级？若逼近，再翻 §2.2 的 KV Cache 账：7B 模型 FP16 单 token 约 0.5 MB、32k 上下文约 16 GB，你靠 PagedAttention 或量化把这笔显存摊薄了没有——还是仍在按节点堆 GPU？
+
 ---
 
 - [§3. 设计模式与范式](01-ai-compute-section-3-sec3.md)

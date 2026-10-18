@@ -235,6 +235,8 @@ Query → Embedding → Vector Search (元数据向量库) → Top-K Candidates
 - **数据目录 vs 数据安全**：目录登记分类分级，安全执行权限控制。
 - **数据目录 vs AI 数据平台**：AI 数据平台包含目录 + RAG + Agent Tool，目录是其基础。
 
+> 💡 **思考锚点**：按 2.3 的资产评分四因子（使用频次、下游依赖数、质量、PII 敏感度）给你目录里最重要的那批表各打一次分——你现在的采集真拿到了 access_count_30d 与下游依赖数，还是四个因子里有两个只能靠人工填？
+
 ---
 
 - [§3. 设计模式与范式](08-data-catalog-section-3-sec3.md)

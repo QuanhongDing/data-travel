@@ -301,6 +301,8 @@ $$\text{TopK}(q, T) = \arg\min_{v_i \in T} \text{Distance}(q, v_i)$$
 - **LLM in SQL vs 向量数据库（专用）**：LLM in SQL 内嵌向量检索；专用向量数据库（Pinecone / Milvus）专注向量。前者一体化，后者极致性能。
 - **LLM in SQL vs ETL + 外部 AI**：前者数据不出仓、链路短；后者灵活、可任意模型组合。
 
+> 💡 **思考锚点**：用 2.2 的代价模型 Cost(f, n) = n × TokenCost(f) + NetworkCost(f) + CacheHit(f) 套一遍你自己那个批处理 AI 算子：把行数 n、单次 token 成本和 batch=32 的合并填进去，你的调用次数与 token 支出落在哪一档？如果谓词下推先过滤不能把 n 砍下来、缓存命中又接近零，这个算子还值不值得放进 SQL 查询里。
+
 ---
 
 - [§3. 设计模式与范式](02-llm-in-sql-section-3-sec3.md)

@@ -275,6 +275,8 @@ score(q, d) = Σ_{q_token ∈ q} max_{d_token ∈ d} <q_emb(q_token), d_emb(d_to
 - **混合检索 vs Late Interaction**：Late Interaction 是精排的一种，混合检索包含 Late Interaction。
 - **混合检索 vs Agentic RAG**：Agentic RAG 是「智能体决定检索策略」，混合检索是「预设多路召回」。
 
+> 💡 **思考锚点**：把上一版检索的上线评测翻出来：如果只看 Recall@K，你能判断 RRF（k=60）融合到底是把正确答案往前挪了，还是只把它多捞进了 Top-K 吗？按 RRF 只吃 rank、不吃分数这条，你现在两路召回里哪一路的高分文档被另一路的分位挤过——你打算用 MRR 还是 nDCG 把这件事测出来？
+
 ---
 
 - [§3. 设计模式与范式](04-hybrid-search-section-3-sec3.md)

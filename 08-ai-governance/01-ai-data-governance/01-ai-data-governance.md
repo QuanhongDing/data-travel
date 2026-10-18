@@ -248,6 +248,8 @@ Source → Cleaning → TrainingData → Checkpoint → Adapter → Deployment
 | 争议解决 | 数据争议委员会 | 模型争议委员会（含伦理学家、法务） |
 | 监管接口 | 数据保护官（DPO） | DPO + AI 合规官（AICO） |
 
+> 💡 **思考锚点**：对你手上一个已上线的模型输出，试着补齐 §2.2 血缘要求的最小集：`model_version`、`prompt_template_id`、`retrieved_doc_ids`、`tool_call_trace` 四项你能给出几项？缺的那几项，在 §2.5 表里正好落在「责任主体」还是「监管接口」那一栏——真出争议时，你打算拿什么复现这一次输出？
+
 ---
 
 ## 章节内容导航

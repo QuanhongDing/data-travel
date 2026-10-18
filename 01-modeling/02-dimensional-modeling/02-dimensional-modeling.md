@@ -122,6 +122,8 @@ measure(p, g, t) = AGG(measure_facts WHERE dim_attrs ∈ p AND time ∈ g)
 - **维度建模 vs OBT（One Big Table）**：DM 结构化但需 JOIN，OBT 反范式到极致但难治理。**判断口诀：治理优先用 DM，性能极致用 OBT。**
 - **什么时候用星型、雪花、星座**：90% 用星型；存储紧张用雪花；跨过程分析用星座。
 
+> 💡 **思考锚点**：拿你手上那张核心事实表，把度量按可加 / 半可加 / 不可加三档过一遍——余额、比率、单价这类被直接 SUM 的有几个？它们是和可加度量挤在同一张事实表里，还是你已经按本节的三分法把它们拆到不同粒度上了？
+
 ---
 
 - [§3. 设计模式与范式](02-dimensional-modeling-section-3-sec3.md)

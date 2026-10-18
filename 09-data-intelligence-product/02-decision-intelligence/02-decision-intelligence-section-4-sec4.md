@@ -357,4 +357,6 @@ for name, contrib in sorted(zip(FEATURES, sv.values[0]), key=lambda t: -abs(t[1]
 >
 > 存量改造者的加读一条：**§4.4 的影子模式与三类处理比 §4.1 的顺序更决定成败**——存量决策点不会消失，只有「改动即补账 + 影子比对落库」这两条能让它自然收敛。
 >
+> 💡 **思考锚点**：打开你最近一次影子比对的落库结果，差异里「无法判定」占多少，比上一个观察周期是升还是降？本节把「改动即补账 + 影子比对落库」列为存量收敛的两条——若「无法判定」在涨，你分得清是补账没跟上，还是判据（§4.1 的 5 分钟 / 10 分钟那类）写得太粗吗？
+>
 > 配合 [§ 2 核心原理](02-decision-intelligence.md)、[§ 3 设计模式与范式](02-decision-intelligence-section-3-sec3.md) 与 [§ 6 落地实践](02-decision-intelligence-section-6-sec6.md) 阅读。

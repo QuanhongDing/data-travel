@@ -416,6 +416,8 @@ WHERE valid_to = CURRENT_TIMESTAMP;
 - **应该用**：字段变化 ≥ 每周 10 个 + 时态要求极致 + 需要保留完整历史 + 字段类型会演化
 - **不应该用**：字段稳定 + 时态要求弱 + 查询性能要求极高（Anchor 的多 Attribute JOIN 性能较差）
 
+> 💡 **思考锚点**：数一下你团队最近一个季度平均每周新增或变更的业务字段数，它落在「每周 10 个」这条线的哪一侧？若是为「加字段不改结构」而选 Anchor Modeling，再用你最高频的那条查询估一下：它要 JOIN 几个 Attribute，这个数是否已高到让你宁可接受 Data Vault 的「加 Satellite」？
+
 ---
 
 - [§3. 设计模式与范式](04-anchor-modeling-section-3-sec3.md)

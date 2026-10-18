@@ -236,6 +236,8 @@ for t in T_new:
 - Skill Extraction vs Fine-tuning：Skill 是"外挂知识"，Fine-tuning 是"内化能力"。
 - Skill Extraction vs Active Learning：都挑样本，但 Skill 提取是从执行轨迹归纳。
 
+> 💡 **思考锚点**：从你 Agent 最近的一批执行轨迹里挑一簇相似任务，按 2.3.3 给它算一次命中率 = count(success) / len(T_new)——你的新任务集分得够干净吗？若 2.3.1 的密度阈值把长尾任务都划成噪声点，你抽象出的 Skill 模板还适用于新任务，还是只把训练轨迹背了一遍？
+
 ---
 
 - [§3. 设计模式与范式](04-agent-skill-extraction-section-3-sec3.md)

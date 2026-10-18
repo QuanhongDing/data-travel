@@ -310,6 +310,8 @@ print(diagnosis)
 - CBO：编译期优化。
 - AQE：运行时优化。
 
+> 💡 **思考锚点**：数一下你最慢那条 SQL 参与 Join 的表有几个——CBO 排 Join 顺序是 O(2^N) 的 DP（§2.2），N 到多少你们会退回 O(N²) 的贪心？更要紧的是统计信息（NDV / 直方图）上次 ANALYZE 是什么时候：它过期后 CBO 估的 filtered_rows 已经偏了，你还指望它替你选对 Broadcast Hash Join 吗？
+
 ---
 
 - [§3. 设计模式与范式](14-optimizer-section-3-sec3.md)

@@ -157,6 +157,8 @@ DataWorks 是阿里云数据中台的"事实标准"，在数据架构中处于"�
 | **海外云** | dbt + Snowflake / BigQuery + Databricks + Airflow |
 | **自建开源** | dbt + Airflow + DataHub + Apache Griffin + Iceberg |
 
+> 💡 **思考锚点**：把你现在这套栈对到 §2.3 那张七行生态表的哪一行，再数 2.2 架构图里横向贯穿的五件事（元数据、血缘、质量、安全、AI Copilot）中有几件已绑死在这一行的专有产品上（如 MaxCompute / Hologres / DataWorks）。若要换到表里另一行，这五件事里有几件能原样带走、几件必须重买或自建？
+
 ---
 
 - [§3. 设计模式与范式](12-hands-on-section-3-sec3.md)

@@ -259,6 +259,8 @@ GET /api/v1/metric/new_user_gmv?filter=city:Beijing&time_range=last_quarter
 - **指标平台 vs RAG**：RAG 是「文档问答」，指标平台是「指标问答」。
 - **指标平台 vs Agent**：Agent 调用指标 API 完成数据查询。
 
+> 💡 **思考锚点**：挑一条你被问得最多的指标，把它拆成 §2.2 的乘式——原子指标 × 修饰词 × 时间周期 × 维度：四个乘数各有唯一 Owner 吗，还是某项散在某张看板 SQL 里？拆不出唯一答案的那一项，就是 §2.4 里 Agent 通过指标 API 取数时会取到两种口径的地方。
+
 ---
 
 - [§3. 设计模式与范式](10-metric-platform-section-3-sec3.md)
