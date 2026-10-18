@@ -270,23 +270,23 @@ TalentDensity = |HighPerformers| / |Team|
 
 **团队价值观基线（5 条）**——§2.1 人才画像里的**文化匹配**维度即以此为准；每条的行为锚点、反例与面试验证方式见 [§8 面试真题集](01-team-formation-section-8-sec8.md) 的 Q6。
 
-## 1. **数据驱动决策**（Data-Driven Decision）
+1. **数据驱动决策**（Data-Driven Decision）
 - 行为锚点：所有 KPI 变更 / 架构决策都附数据来源；周报必含数据指标。
 - 反例：拍脑袋拍决策；周报全是定性描述。
 
-## 2. **Ownership 到最后一公里**（End-to-End Ownership）
+2. **Ownership 到最后一公里**（End-to-End Ownership）
 - 行为锚点：故障 Oncall 主动兜底；跨团队协作主动补位；项目交付承诺必达。
 - 反例：上游问题推下游；交付拖延无预警。
 
-## 3. **坦诚直接 + 尊重专业**（Direct & Respectful）
+3. **坦诚直接 + 尊重专业**（Direct & Respectful）
 - 行为锚点：Code Review 直接指出问题；1:1 坦诚说出顾虑；不背后议论。
 - 反例：邮件里阴阳怪气；1:1 报喜不报忧。
 
-## 4. **持续学习 + 知识共享**（Learn & Share）
+4. **持续学习 + 知识共享**（Learn & Share）
 - 行为锚点：每月 1 次技术分享 / Tech Blog；新人 Onboarding 主动带教。
 - 反例：技术独占不分享；新人扔给自学。
 
-## 5. **客户价值优先**（Customer Value First）
+5. **客户价值优先**（Customer Value First）
 - 行为锚点：需求评审问"对客户价值是什么？"；数据产品上线后看用户使用率。
 - 反例：炫技无业务价值；交付即结束不看用户。
 
