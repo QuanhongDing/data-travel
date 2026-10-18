@@ -35,7 +35,31 @@ replay_pid*
 .superpowers/
 .claude/
 
-# Ephemeral build/cache data
-.tmp-dispatch/plan.json
-.tmp-dispatch/questions.json
-.tmp-dispatch/__pycache__/
+# ── 写作过程文件（不入库）────────────────────────────────────────
+# 本仓库只保存**成书内容**（章节正文 + README + LICENSE + docs/）。
+# 编辑过程中产生的规范、复核清单、workflow 脚本、检查器与工作日志
+# 一律不入库 —— 它们留在本地工作区即可，不构成读者需要的东西。
+# 下面按「文件名形态」归类，新增同类文件会自动被忽略。
+
+# 写作规范（spec）
+.*-spec.md
+
+# 逐轮复核清单与批次记录
+.*-findings*.md
+.*-residuals.md
+.*-conflicts*.md
+.*-dup-sections.md
+
+# workflow 编排脚本
+.*-workflow.js
+
+# 检查器 / 一次性修复脚本
+.check-*.py
+.cross-file-*-scan.py
+.fix-env-leaks.py
+
+# 工作日志
+.backlog.md
+
+# 临时派工目录（原有规则只忽略了其中 3 个文件，这里整体忽略）
+.tmp-dispatch/
