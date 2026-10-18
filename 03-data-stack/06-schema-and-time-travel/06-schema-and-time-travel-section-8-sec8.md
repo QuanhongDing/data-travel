@@ -368,7 +368,7 @@
 **1. 考察点**
 
 - 是否理解 Hidden Partition 的核心是「**partition spec 独立于表 schema**」，且「**partition 字段不暴露为列**」。
-- 是否能从「**查询无需带分区字段** + 「**Schema 演进时 partition 自动重写**」两个角度讲清优势。
+- 是否能从「**查询无需带分区字段** + **Schema 演进时 partition 自动重写**」两个角度讲清优势。
 - 是否能用电商订单场景说明——按 `days(order_time)` 分区后，下游查询 `WHERE order_time BETWEEN ... AND ...` 时 Iceberg 自动做 partition pruning。
 - 加分项：能讲清 Hidden Partition 在**类型变更**（int → bigint）时的工程表现，以及 Iceberg V3 的「**Partition Evolution**」与 Hidden Partition 的协同。
 

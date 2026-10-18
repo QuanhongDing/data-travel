@@ -45,7 +45,7 @@
 | AI 增强目录 | 在已有元数据之上加一层派生索引 | 向量 + 倒排做召回，LLM 只在已登记资产的封闭集合里做选择与解释 | 消费方以业务方为主 | Atlan AI、Secoda AI、Alation AI（2024 年前后推出目录侧 AI 增强检索），商业 |
 | 数据契约 / 资产登记台账 | 以协议而非页面为核心的治理载体 | 契约（schema、口径、频率）是生产方与消费方的双边承诺，目录只是展示面 | 多团队 Data Mesh | 多为自建或随治理平台提供 |
 
-> 表中年份除标注来源外，均可在主文件 §1.4 演进历程与 [§4 工程实现](08-data-catalog-section-4-sec4.md) 的 §4.3 工具链年份条目中直接核到；Amundsen 的「Neo4j + Elasticsearch」形态见 §4.3 工具链条目【公开】（来源：主文件 §1.4 与 §4.3 的年份记录；年份锚点——Atlas 2015 年条目、Amundsen 2019 年开源、DataHub 2019 年开源与 2021 年 2.0、OpenMetadata 2021 年、Snowflake Horizon 与 AWS Glue Data Catalog 升级 2024 年、Gravitino 记于 §4.3 的 2024 年条目、Atlan AI / Secoda AI / Alation AI 2024–2025 区间【推算】（条目与推导链见 §4.3 工具链）。
+> 表中年份除标注来源外，均可在主文件 §1.4 演进历程与 [§4 工程实现](08-data-catalog-section-4-sec4.md) 的 §4.3 工具链年份条目中直接核到；Amundsen 的「Neo4j + Elasticsearch」形态见 §4.3 工具链条目【公开】（来源：主文件 §1.4 与 §4.3 的年份记录；年份锚点——Atlas 2015 年条目、Amundsen 2019 年开源、DataHub 2019 年开源与 2021 年 2.0、OpenMetadata 2021 年、Snowflake Horizon 与 AWS Glue Data Catalog 升级 2024 年、Gravitino 记于 §4.3 的 2024 年条目、Atlan AI / Secoda AI / Alation AI 2024–2025 区间）【推算】（条目与推导链见 §4.3 工具链）。
 
 这 9 个候选分成**四族**。分族的依据不是品牌、也不是开源或闭源，而是**它和「真相」之间隔了几层副本**：
 

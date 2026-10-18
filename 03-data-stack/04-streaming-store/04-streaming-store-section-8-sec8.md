@@ -675,7 +675,7 @@ Kafka 的顺序保证是**Partition 内严格 FIFO + 跨 Partition 无序**：
 **4. 追问预测**
 
 - **「开了幂等 Producer 就能保证顺序吗？」** 答：能保证"单 Producer + 单 Partition"内的严格顺序（FIFO + 不重不丢）。但跨 Producer 或跨 Partition 仍无序。
-- **「`max.in.flight.requests.per.connection > 1` 时怎么保证顺序？"** 答：必须开启幂等 Producer（`enable.idempotence=true`），Producer 会按顺序发送并保证不乱。否则消息可能乱序到达 Broker。
+- **「`max.in.flight.requests.per.connection > 1` 时怎么保证顺序？」** 答：必须开启幂等 Producer（`enable.idempotence=true`），Producer 会按顺序发送并保证不乱。否则消息可能乱序到达 Broker。
 - **「下游需要严格顺序，又不能用单 Partition，怎么办？」** 答：用 partition key 让同一实体的消息进同一 Partition，下游按实体聚合。代价是牺牲跨实体的并行性，但绝大多数业务可以接受。
 - **「partition key 加盐后，下游怎么聚合？」** 答：消息 value 里仍带原始 user_id / order_id，Consumer 按原始 ID 聚合。或者用一致性 hash 把同一 user_id 路由到固定 Partition（避免随机 salt 导致的乱序）。
 - **「Consumer 端能不能保证全局顺序？」** 答：单 Consumer 串行消费单 Partition 就能保证该 Partition 顺序，但跨 Partition 仍无序。全局顺序只能通过单 Consumer 串行消费单 Partition 实现（牺牲并行）。
