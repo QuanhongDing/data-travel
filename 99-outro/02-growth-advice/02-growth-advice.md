@@ -18,7 +18,7 @@
 | 人脉经营有哪些反常识的真相？ | §6 |
 | AI 时代的"反脆弱"具体指什么？ | §7 |
 | 推荐成长书单 / 行动清单 | §8 |
-| 面试真题集 | §9 |
+| 面试真题集 | §8 |
 
 ---
 
@@ -154,8 +154,6 @@
 - [§5. 影响力的复利](02-growth-advice-section-5-sec5.md)
 - [§6. 人脉经营](02-growth-advice-section-6-sec6.md)
 - [§7. AI 时代的"反脆弱"](02-growth-advice-section-7-ai.md)
-- [§8. 推荐成长书单 / 行动清单](02-growth-advice-section-8-sec8.md)
-- [§9. 面试真题集](02-growth-advice-section-9-sec9.md)
 - [§8. 面试真题集](02-growth-advice-section-8-sec8.md)
 
 ---
@@ -169,8 +167,6 @@
 - [§5. 影响力的复利](02-growth-advice-section-5-sec5.md)
 - [§6. 人脉经营](02-growth-advice-section-6-sec6.md)
 - [§7. AI 时代的"反脆弱"](02-growth-advice-section-7-ai.md)
-- [§8. 推荐成长书单 / 行动清单](02-growth-advice-section-8-sec8.md)
-- [§9. 面试真题集](02-growth-advice-section-9-sec9.md)
 - [§8. 面试真题集](02-growth-advice-section-8-sec8.md)
 
 ---

@@ -8,14 +8,14 @@
 
 ## 目录速览
 
-1. [概念与定位](#1-概念与定位)
-2. [核心原理](#2-核心原理)
-3. [设计模式与范式](#3-设计模式与范式)
-4. [工程实现](#4-工程实现)
-5. [前沿演进（AI 时代）](#5-前沿演进ai-时代)
-6. [落地实践](#6-落地实践)
-7. [与其他方法对比](#7-与其他方法对比)
-8. [面试真题集](#8-面试真题集)
+1. [概念与定位](08-one-data.md)
+2. [核心原理](08-one-data.md)
+3. [设计模式与范式](08-one-data-section-3-sec3.md)
+4. [工程实现](08-one-data-section-4-sec4.md)
+5. [前沿演进（AI 时代）](08-one-data-section-5-ai.md)
+6. [落地实践](08-one-data-section-6-sec6.md)
+7. [与其他方法对比](08-one-data-section-7-sec7.md)
+8. [面试真题集](08-one-data-section-8-sec8.md)
 
 ---
 
@@ -206,7 +206,7 @@ M = f(\text{AtomicMeasure}, \text{TimeWindow}, \text{Modifiers})
 
 - 强匹配：手机号 / 邮箱 / 身份证号
 - 弱匹配：设备 ID + 行为序列 embedding
-- 图匹配：异构图链接预测（详见 06-graph-reasoning）
+- 图匹配：异构图链接预测（详见 07-graph-reasoning §3.2.2 链接预测、§3.2.5 异构图 + 元路径）
 - 工具：阿里 ID-Mapping 平台、阿里 EntityLink、神策 ID-Mapping 5.0
 
 **方法 ⑥ 命名规范自动校验（Naming Convention Check）**
