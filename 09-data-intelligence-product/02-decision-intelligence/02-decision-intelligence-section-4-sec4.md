@@ -1,392 +1,360 @@
-> 本文件是 **02-decision-intelligence.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](02-decision-intelligence.md)。
+> 本文件是 **02-decision-intelligence.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](02-decision-intelligence-section-3-sec3.md) 里的八个模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](02-decision-intelligence.md)。
 
 ## 4. 工程实现
 
+[§ 3](02-decision-intelligence-section-3-sec3.md) 已经回答了「在你这组约束下该选哪个决策模式、该预留多厚的护栏」，本节不复述那八个模式，只回答三个工程问题：**按什么顺序装、每一步手上该多出什么可被检查的东西、已经散落在生产代码里的规则与模型怎么改造。**
+
+分两类读者。**从零搭建**（要为一个新业务建决策系统，或第一次把人工决策自动化）读 §4.1 的七步顺序与判据、§4.2 九项技术点的机制与失效条件、§4.3 的选型判据、§4.5 的可套用模板即可，§4.4 可以后读。**在存量上改造**（规则散在代码与 Excel 里、模型上过线、决策日志当时没建）的读者顺序相反：先读 §4.4，再回到 §4.1——因为你的第一步不是「识别决策场景」（业务方不会为一次清点腾出时间），而是**先做一件只读、可回退、不改任何决策逻辑的事：把决策留痕旁路接上去**。没有留痕，后面所有讨论都会退化成对记忆的争论。
+
+本节有一条贯穿始终的规矩：**每一步都必须留下「谁负责」与「当时是什么版本」两条痕迹**。决策系统与普通数据系统最大的区别在于，它产出的不是一张表而是一个动作——动作做错了要能被解释、被追责、被回滚，而这三件事全都依赖这两条痕迹。
+
 ### 4.1 落地步骤
 
-**Step 1：业务边界与决策场景识别**
+**Step 1：业务边界与决策场景识别（2–4 周【经验：随涉及的业务单元数量变】）**
 
-- 圈定决策智能要支撑的业务场景（营销 / 风控 / 运营 / 增长 / 产品）。
-- 识别核心决策点（如「是否发放优惠券」「是否放贷」「库存补货量」）。
-- 评估决策频率、延迟要求、决策精度。
-- 输出：**决策智能规划书（DIP = Decision Intelligence Plan）**。
+1. 圈定要支撑的场景（营销 / 风控 / 运营 / 增长 / 产品），**先圈 1–2 个**【经验：随组织内决策点密度变，候选越多越要先合并】。
+2. 识别核心决策点（是否发放优惠券 / 是否放贷 / 库存补货量），每个决策点写三行：**做错了谁承担、能不能撤回、多久能知道结果**（这三行正是 [§3.1](02-decision-intelligence-section-3-sec3.md) 里那两条约束在具体场景上的取值）。
+3. 把决策频率、延迟要求、可接受的保守动作率写成数字，并让业务方确认——这三个数决定 Step 3 的选型，晚一天定下来，选型就只能按技术偏好走。
+4. 输出**决策智能规划书（DIP = Decision Intelligence Plan）**。
 
-**Step 2：决策架构设计**
+- **产物**：**DIP**（场景清单 + 决策点清单 + 每个决策点的三条约束 + 频率与延迟预算 + 谁签的字）。
+- **判据**：从 DIP 里任取一个决策点，问「它上一次做错是什么时候、谁发现的、怎么补救的」——答不出，说明这个决策点只是被列进了表，还没有被清点。
+- **为什么必须这一步 / 为什么在这个位置**：Step 2 的分层（哪一层拦绝对约束、哪一层给建议）完全由这三行约束决定。约束没写清就画架构，画出来的是模块图而不是责任图；此后每一次口径争议都会回到这张图上找不到答案。
 
-- 设计 4 层决策栈（Sense / Analyze / Decide / Act & Learn）。
-- 设计决策引擎架构（规则 + 模型 + Agent）。
-- 设计实时 / 离线决策链路。
-- 输出：**决策智能架构图**。
+**Step 2：决策架构设计（2–4 周【经验：随决策点数量与是否复用既有平台变】）**
 
-**Step 3：决策引擎选型与搭建**
+1. 把 4 层决策栈（Sense / Analyze / Decide / Act & Learn）按本场景落成组件，**Act & Learn 层在第一期就要有日志与反馈的落点**，不能画成虚框。
+2. 定「零容忍条件放在哪一层」：硬规则层拦绝对约束，模型给概率与排序，策略层做动作映射（三层关系见 [§3.4](02-decision-intelligence-section-3-sec3.md)）。
+3. 定在线 / 离线边界：哪些决策必须在用户还在等待的窗口内返回，哪些可以批量出清单。
+4. 输出**决策智能架构图**。
 
-- 选型规则引擎（Drools / Easy Rules / DMN）。
-- 选型模型部署平台（Triton / vLLM / 自研）。
-- 选型 Agent 框架（LangGraph / AutoGen / 自研）。
-- 选型实时计算（Flink / Kafka Streams）。
-- 输出：**决策引擎集群**。
+- **产物**：**架构图 + 一张责任表**（每层的输入、输出、解释来源、Owner、失败时的兜底动作）。
+- **判据**：把图交给一个不在项目里的工程师，让他在图上指出「零容忍条件在哪一层被拦住、拦不住时谁被通知」——指不出，说明这张图只画了模块，没画责任。
+- **为什么必须这一步 / 为什么在这个位置**：它是 Step 3 的输入——选型要按分层与在线/离线边界来选，而不是先选好引擎再把架构套上去；顺序反了，引擎的能力会反过来决定你的决策长什么样。
 
-**Step 4：特征 / 模型 / 规则接入**
+**Step 3：决策引擎选型与搭建（4–8 周【经验：随既有平台组件的复用程度变】）**
 
-- 接入特征平台（Feast / Tecton / 自研）。
-- 接入模型市场 / Model Registry（MLflow / 自研）。
-- 接入业务规则（业务方管理 + 工程师实现）。
-- 接入知识图谱（GraphRAG / 行业 KG）。
-- 输出：**决策能力池**。
+1. 规则引擎：按「要不要业务方自己改口径」与「规则条数」选（Drools / Easy Rules / DMN 一类）。
+2. 模型部署：按框架形态与延迟选——多框架共存选 Triton，PyTorch 原生服务选 TorchServe，LLM 推理选 vLLM，延迟压不动时再叠 TensorRT-LLM（NVIDIA 优化）；都不合用才自研。
+3. Agent 编排框架：只在任务确实要跨系统多步执行时引入（LangGraph / AutoGen / 自研一类）。
+4. 实时计算：逐事件处理选 Flink（窗口聚合用 Flink SQL，复杂事件匹配用 Flink CEP），消息层用 Kafka / Pulsar，在线特征与状态落 Redis / HBase；分钟级可接受时用 Kafka Streams 一类微批。
+5. 演练一次「引擎不可用」：写死系统是拒绝还是放行（fail-closed / fail-open），并把这条约定放进上线检查表。
+6. 输出**决策引擎集群**。
 
-**Step 5：决策链路编排**
+- **产物**：**决策引擎集群 + 选型判据记录**（每个组件为什么是它、什么条件下会换）+ 不可用时的行为约定。
+- **判据**：用一条真实的零容忍条件跑一遍链路，看它是被规则层拦下的还是落到了模型 / LLM；再做一次引擎宕机演练，看**实际行为**是否与写下的约定一致。
+- **为什么必须这一步 / 为什么在这个位置**：它必须晚于 Step 1（约束定了才知道该选重的还是轻的）与 Step 2（分层定了才知道要几个组件），早于 Step 4——能力池要按引擎的接入方式来组织。
 
-- 编排决策流（规则 → 模型 → LLM → Agent）。
-- 配置决策条件 / 阈值 / 路由策略。
-- 配置决策可解释性（XAI / 因果链 / LLM 解释）。
-- 输出：**决策流定义（YAML / DSL / 代码）**。
+**Step 4：特征 / 模型 / 规则 / 知识接入（4–8 周【经验：随能力数量与有无统一特征平台变】）**
 
-**Step 6：决策执行与反馈**
+1. 特征平台（Feast / Tecton / 自研一类）：定「同一份定义、同一条加工链路」，在线与离线不允许各实现一份。
+2. 模型仓库（Model Registry，MLflow 一类或自研）：每次上线登记版本、训练数据范围与离线评估结果。
+3. 业务规则：由业务方维护清单、工程师实现，规则进版本控制并带 Owner。
+4. 知识图谱（GraphRAG / 行业 KG 一类）：只在依据确实存在于关系与文本里时接，接之前先回答「缺它的时候决策会怎么错」。
+5. 输出**决策能力池**。
 
-- 暴露决策 API（gRPC / REST / SDK）。
-- 集成业务系统（触达 / 风控 / 营销 / 运营）。
-- 建立 A/B 实验框架。
-- 建立效果归因 + 决策 ROI。
-- 输出：**决策应用 + 反馈闭环**。
+- **产物**：**决策能力池**（特征、模型、规则、知识各自的清单 + Owner + 版本 + 接入方式 + 上一次变更原因）。
+- **判据**：抽 3 个已上线的特征 / 规则 / 模型，能不能在 10 分钟内【经验：随登记方式的集中度变，登记散在三处就要放宽】说出它的 Owner、当前版本、上一次变更时间与变更原因。
+- **为什么必须这一步 / 为什么在这个位置**：可解释与可归因都建立在「每个能力都能被单独指向」上。先接能力、后补登记，等于把留痕留给未来，而未来的流量已经跑过去了——这一段流量永远无法解释。
 
-**Step 7：决策可观测与治理**
+**Step 5：决策链路编排（3–6 周【经验：随分支数量与解释要求变】）**
 
-- 部署决策监控（决策 QPS / 转化率 / 异常率）。
-- 部署决策血缘（Input → Decision → Output）。
-- 部署决策审计（全链路日志）。
-- 建立决策 SLA（决策延迟 < X ms、准确率 > Y%、ROI > Z%）。
-- 输出：**决策治理体系**。
+1. 编排决策流（规则 → 模型 → LLM 候选 → 确定性裁决 → Agent 执行），把每一步的超时与降级分支写进配置。
+2. 配置决策条件 / 阈值 / 路由策略，**阈值与模型版本解耦**：改阈值不必重训、不必发版。
+3. 配置可解释性：命中规则 ID、特征贡献（SHAP 一类，可套用 §4.5 模板 7）、因果链、LLM 生成的理由（理由必须引用可定位的原文）。
+4. 输出**决策流定义（YAML / DSL / 代码）**。
+
+- **产物**：**决策流定义**（进版本控制，含分段超时、降级分支、兜底动作、解释器的挂载点）。
+- **判据**：拿一次真实的业务口径变更，看它在决策流定义里要改几处——同一件事要在三处同时改，说明编排没有收敛到一个入口。
+- **为什么必须这一步 / 为什么在这个位置**：它是 [§3.4](02-decision-intelligence-section-3-sec3.md) 那条「生成与执行分离」在工程上的落点；晚于 Step 4，是因为流程要引用能力池里的具体版本。
+
+**Step 6：决策执行与反馈（4–8 周【经验：随要对接的业务系统数量变】）**
+
+1. 暴露决策 API（gRPC / REST / SDK 一类），按调用方分配额并留审计。
+2. 集成业务系统（触达 / 风控 / 营销 / 运营），**执行结果必须回写到决策日志**，否则反馈链是断的。
+3. 建 A/B 实验框架：分流键、对照组、判据在**上线之前**写下来，而不是上线之后补。
+4. 建效果归因与决策 ROI 的口径：把「这次决策值多少」写成一个可算的式子，而不是一句评语。
+5. 输出**决策应用 + 反馈闭环**。
+
+- **产物**：**决策应用（已接入业务系统）+ 反馈闭环**（执行结果回流 + 实验记录 + ROI 口径）。
+- **判据**：任取一次上线变更，5 分钟内【经验：随实验记录是否在上线前预登记变，靠回忆补的要放宽】说清它的对照组是哪一批、判据是什么、结果是赢了还是输了；执行结果没回流的决策点，一律视为未闭环。
+- **为什么必须这一步 / 为什么在这个位置**：缺了这一步，前五步交付的是一个「输出清单的系统」，效果只能靠感觉（[§3.5](02-decision-intelligence-section-3-sec3.md) 的不可量化）；它必须晚于 Step 5，因为分流要按决策版本切。
+
+**Step 7：决策可观测与治理（持续【经验：以周为监控周期、以季为复盘周期】）**
+
+1. 决策监控：决策 QPS、通过率 / 转化率、异常率、降级分支命中率、人工接管率。
+2. 决策血缘：Input → Decision → Output 可追（特征、规则、模型、提示词、执行结果各指向哪一版）。
+3. 决策审计：全链路日志留痕，能还原「命中依据 + 推断当时的特征 + 版本」。
+4. 决策 SLA：把延迟上限、保守动作率、准确率、ROI 写成可监测的判据，并规定破线时的第一动作与谁被叫醒。
+5. 输出**决策治理体系**。
+
+- **产物**：**决策治理体系**（决策级监控面板 + 血缘 + 审计 + SLA 与破线动作）。
+- **判据**：随机抽一条一个月前的历史决策，实际走一遍还原流程，量出耗时；再问一次「这条 SLA 破线时谁被叫醒」。
+- **为什么必须这一步 / 为什么在这个位置**：它度量的是前六步的承诺是否兑现。缺了它，模型衰减只会以业务投诉的形式出现，而投诉永远比指标晚到。
+
+**七步里最常被跳过的是 Step 6 的第 3 条：上线之前就写下对照组与判据。** 它被跳过是因为它当天不产生任何可展示的成果——业务方要看的是「系统上线了」，而对照组是给未来的人看的。跳过后第一个出问题的时点是上线后的第一次业务复盘：业务方拿一次大盘波动来问「这是不是这个决策带来的」，团队只能给上线前后的整段均值对比，拿不出对照组，于是这次讨论不会有结论；第二个时点更贵，在年度预算评审——这套系统说不清带来了多少收益，下一年的投入只能靠「同业都在做」来论证。
 
 ### 4.2 关键技术点
 
-1. **规则引擎**：Drools（Java 生态首选）、Easy Rules（轻量）、Aviator（Java 表达式）、QLExpress（阿里）、Groovy（脚本化）、Apache Urule（开源国产）。
-2. **DMN 标准**：OMG DMN 1.4（2024）、Camunda DMN、Drools DMN、IBM ODM DMN。
-3. **ML 模型部署**：Triton（多框架）、TorchServe（PyTorch）、vLLM（LLM）、TensorRT-LLM（NVIDIA 优化）。
-4. **实时计算**：Flink + Kafka + Redis / HBase + Flink SQL + Flink CEP。
-5. **在线学习**：FTRL（CTR 预估）、FTRL-Proximal、Online Gradient Descent、Contextual Bandit（LinUCB / NeuralUCB）。
-6. **强化学习**：RLlib（Ray）、Stable-Baselines3、DeepMind Acme。
-7. **因果推断**：EconML（微软）、CausalML（Uber）、DoWhy（微软）、CausalImpact（Google）、Causalinference（Python）。
-8. **A/B 实验**：火山引擎 A/B、字节 A/B、阿里 A/B、Optimizely、Eppo、Statsig、AB Tasty。
-9. **LLM for Decision**：LangChain、LangGraph、LlamaIndex、OpenAI Function Calling、Anthropic Tool Use。
-10. **Agent for Decision**：AutoGen（微软）、CrewAI、LangGraph、MetaGPT、ChatDev、OpenAI Swarm。
-11. **可解释 AI**：SHAP、LIME、Integrated Gradients、Anchors、Counterfactual Explanation、Alibi（开源）。
-12. **决策可观测**：Arize Phoenix、WhyLabs、Langfuse、Helicone、Evidently AI。
-13. **决策治理**：决策版本管理、决策审批、决策审计、决策回滚、决策 SLA。
+**1. 规则库的版本与生效期**
+- **做法**：每条规则带规则 ID、Owner、`version`、`effective_from` / `effective_to`、`hit_policy`（命中策略必须显式声明），规则库进版本控制与评审（登记表见 §4.5 模板 2）。
+- **机制**：因为规则是被显式存储的一等公民，所以一次误改会在下一次决策日志里以「命中规则 ID 变了」的形式立刻可见，而不是等到业务投诉——**规则库的变更有一份天然的观测信号，问题只在于它有没有被记下来**。
+- **失效条件**：**当规则库只存当前版本、不留生效区间时**，回滚只能整库回退，历史决策无法解释；症状是三个月后的一次内部抽检要求解释某条旧决策，而规则库已经改到看不出当时命中的是哪条。
+- **档位**：【经验】。
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+**2. 决策留痕的写入路径**
+- **做法**：决策日志与决策执行解耦——留痕优先走异步或旁路写入，落库失败要告警并计失败率，而不是让决策跟着失败（字段与表结构见 [§3.2.2](02-decision-intelligence-section-3-sec3.md)）。
+- **机制**：因为留痕表一旦与执行同事务，它就从「旁证」变成了「在线链路的一个依赖」，所以它的可用性要求会瞬间抬到与决策服务同级——用旁路换来的是「决策照常、留痕可补」，代价是日志可能缺行，必须用失败率把它盯住。
+- **失效条件**：**当留痕写入是同步阻塞、且留痕库本身比决策服务弱时**，留痕会拖垮决策：症状是决策 P99 与超时率随日志库的抖动一起抖，而业务侧完全不知道发生了什么。
+- **档位**：【经验】。
 
-**规则引擎**：
+**3. 线上离线特征同源与分数复算**
+- **做法**：把线上真实流量的一段特征快照拉回离线复算分数，比对差异占比并留档（判定方法见 [§3.2.2](02-decision-intelligence-section-3-sec3.md)）。
+- **机制**：因为一致性校验用的输入是线上的真实快照而不是离线样本，所以它能在**上线之前**暴露两套特征实现的差异——离线评估与线上效果的断崖，绝大多数时候是这一步没做，而不是模型选错了。
+- **失效条件**：**当特征由两个团队各实现一份时**，复算只能发现差异、不能消灭差异；症状是同一用户在客服侧与模型侧拿到的解释互相矛盾，而两边都坚称自己的口径是对的。
+- **档位**：【经验】。
 
-- **Drools**（Red Hat）——Java 生态事实标准，BRMS。
-- **Easy Rules**——轻量 Java 规则引擎。
-- **Aviator**——Java 表达式求值。
-- **QLExpress**（阿里）——国产规则引擎。
-- **Groovy**——脚本化规则引擎。
-- **Apache Urule**（开源国产）——国产规则引擎 + 决策表。
-- **Camunda**（商业 + 开源）——BPM + DMN。
-- **IBM Operational Decision Manager (ODM)**——商业 BRMS。
+**4. 分段超时与降级分支**
+- **做法**：给链路的每一段（特征 / 规则 / 模型 / 写日志）各写一行「预算上限 + 超时后走哪个保守动作 + 破线时通知谁」，这张表进值班手册；降级分支按固定周期演练，降级率挂上监控面板。
+- **机制**：因为每一段都有独立的预算与降级动作，破线时从监控上就能看出是哪一段、归谁负责——值班收到的是「模型段降级率跳升」这条具体告警，而不是一句「决策变慢了」，排障不必先做一次全链路定位。
+- **失效条件**：**当降级分支从未被演练过时**，它第一次被执行就是在真实抖动之中；症状是降级路径自己抛异常，把一个保守决策变成本次请求彻底失败。
+- **档位**：分段预算与超时上限【经验：随链路实测延迟分布变，各段合计不超总预算】。
 
-**决策智能平台（2024-2025）**：
+**5. 声明式编排与配置校验**
+- **做法**：决策流用 YAML / DSL 声明（而不是写死在服务代码里），配置进版本控制、带 schema 校验与评审；策略层与模型版本解耦。
+- **机制**：因为编排从代码移到了配置，一次阈值调整不必重新发布决策服务，所以「改口径」的周期从发版周期缩短到配置生效周期；代价是配置本身成了新的发布面，它需要自己的校验与审批。
+- **失效条件**：**当配置没有 schema 校验时**，一次字段改名只会在运行期暴露；症状是某条分支静默地走了「否则」兜底，量级变化只能在大盘上看出来，而单条决策看起来仍然"有结果"。
+- **档位**：【经验】。
 
-- **Diwo**——公司级决策智能平台。
-- **Aera Technology**——企业认知决策平台。
-- **Tellius**——决策智能 BI 平台。
-- **Pecan AI**——预测决策平台。
-- **Quantiphi**——决策智能咨询 + 平台。
-- **Databricks AI/BI**——决策智能 + BI 一体化平台。
-- **DataRobot**——AutoML + 决策平台。
-- **Domino Data Lab**——企业 MLOps + 决策平台。
-- **SAS Decision Manager**——SAS 决策管理。
-- **阿里云决策引擎**——阿里 PAI 决策引擎。
-- **字节智能决策**——字节 AI 决策平台。
-- **蚂蚁决策大脑**——蚂蚁集团金融决策平台。
-- **平安智慧决策**——平安集团决策平台。
+**6. LLM 与 Agent 的护栏落点**
+- **做法**：护栏写在外部代码里（工具白名单、步数上限、金额与范围上限、不可逆动作前的人工确认点、每步留痕），LLM 只产出候选与理由，最终动作由确定性代码执行（结构与 [§3.2.6](02-decision-intelligence-section-3-sec3.md) / [§3.2.7](02-decision-intelligence-section-3-sec3.md) 的契约一致）。
+- **机制**：因为护栏是外部代码里的常量与门禁，它随服务一起进版本控制与上线审批，所以「系统允许做什么」的每一次放宽都留下一条审批记录与一个版本号——越权能力只能从上线口进来，事故复盘时能直接查到是哪次发布把范围放开的。
+- **失效条件**：**当护栏只在入口校验、不覆盖 Agent 的每一步工具调用时**，会出现「每一步都合法、组合起来越界」的调用链；症状是链路审计里出现一条没有任何单步违规、但整体改了不该改的状态的记录。
+- **档位**：【经验】。
 
-**实时计算 / 流处理**：
+**7. A/B 分流与效果回填**
+- **做法**：分流键与决策 ID 一起落库（按决策点分流，而不是按用户粗分），保证效果能按决策版本回算；不可实验的场景用准实验设计补（见 [§3.5](02-decision-intelligence-section-3-sec3.md) 的修法）。
+- **机制**：因为效果是按「决策 ID + 版本」回算的，所以同一批用户身上的多次决策不会被混成一锅——按用户分流会把同一用户的决策互相污染，实验组与对照组的差异随即无法归因。
+- **失效条件**：**当分流发生在决策链路下游（例如只有触达环节分流、决策引擎不分流）时**，实验度量的是触达效果而不是决策效果；症状是实验"赢了"但整体指标没动，因为决策本身对所有人是一样的。
+- **档位**：分流比例与实验周期【经验：随决策效果量级与流量变，效果越小、需要的周期越长】。
 
-- **Apache Flink**——实时计算事实标准。
-- **Apache Kafka** / **Pulsar**——消息队列。
-- **Apache Spark Streaming** / **Structured Streaming**——微批处理。
-- **Materialize**——流式 SQL 数据库。
-- **RisingWave**——国产流式数据库。
+**8. 决策级可观测**
+- **做法**：把监控对象从「服务」抬到「决策」：决策 QPS、通过率 / 转化率、异常率、降级率、保守动作率、人工接管率、越界中止次数（观测工具见 §4.3）。
+- **机制**：因为模型衰减通常不改变服务的延迟与错误率，只改变决策的分布，所以服务级监控全绿与决策质量下滑可以同时成立——必须有一组以决策为单位的指标，衰减才有地方现形。
+- **失效条件**：**当只有服务级指标时**，输入分布漂移会长期不可见；症状是延迟与错误率一直正常，业务方却开始抱怨「最近推荐的东西不对劲」。
+- **档位**：【经验】。
 
-**在线学习 / 强化学习**：
+**9. 决策 SLA 与破线动作**
+- **做法**：SLA 至少写三项——延迟上限、保守动作率上限、效果下限（准确率 / ROI 一类），每项配一个破线动作与通知对象；SLA 挂在决策上，不挂在接口上。
+- **机制**：因为 SLA 同时覆盖了「快」与「准」，它才能在破线时区分是链路慢了还是决策质量差了——只写延迟的 SLA 会在降级率上升时保持达标，业务侧拿到的是「该拦的没拦住」。
+- **失效条件**：**当效果下限没有基线可对比时**，SLA 只剩延迟一项；症状是系统长期达标、而每季度的效果复盘都说不清它是好是坏。
+- **档位**：延迟上限【经验：随用户等待窗口变，实时风控一类常在百毫秒量级】；保守动作率与效果下限【经验：随场景风险偏好变】。
 
-- **Vowpal Wabbit (VW)**——在线学习框架，Yahoo/Microsoft 贡献。
-- **RLlib (Ray)**——分布式强化学习。
-- **Stable-Baselines3**——RL 算法库。
-- **Dieter / Contextual Bandit Library**——Contextual Bandit 实现。
+### 4.3 工具链与平台
 
-**因果推断**：
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 规则引擎与决策表 | Drools、Easy Rules、Aviator、QLExpress、Groovy、Apache Urule、Camunda、IBM ODM；决策表标准侧的 OMG DMN 与其实现 Camunda DMN / Drools DMN / IBM ODM DMN | 判据是「规则由谁改、要不要逐条举证」：业务方自己要改口径就选带决策表的 BRMS；规则不到百条【经验：随条件维度的交织程度与变更频率变，维度交织的表格要比条数更早换引擎】、改动由工程师做，轻量引擎足够 | 用重型 BRMS 跑几十条规则，运维成本高于收益；反过来用轻量库扛强合规举证，规则的版本与审批没地方挂 |
+| 决策智能平台（整包） | Diwo、Aera Technology、Tellius、Pecan AI、Quantiphi、Databricks AI/BI、DataRobot、Domino Data Lab、SAS Decision Manager、阿里云决策引擎、字节智能决策、蚂蚁决策大脑、平安智慧决策 | 判据是「决策点、频率、可解释性要求是否已写成判据」：写清了再谈平台，平台带来的是集成度而不是决策能力；自研只在特征 / 模型服务 / 调度这些组件已可复用时才划算 | 约束没写清就整包采购，等于把「决策长什么样」交给产品的默认形态决定，上线后改不动 |
+| 模型服务与推理 | Triton（多框架）、TorchServe（PyTorch）、vLLM（LLM）、TensorRT-LLM（NVIDIA 推理优化）、自研 | 判据是框架形态与延迟预算：多框架共存选 Triton，纯 PyTorch 且想少一层依赖选 TorchServe，LLM 长文本走 vLLM，只有延迟实在压不下去才上 TensorRT-LLM（编译与调优成本高） | 直接用框架自带的服务上线，等到要按版本灰度、要统一多模型入口时，才发现没有可独立回滚的模型单元 |
+| 实时计算 / 消息 / 在线状态 | Apache Flink（含 Flink SQL 与 Flink CEP）、Apache Kafka、Apache Pulsar、Spark Streaming / Structured Streaming、Materialize、RisingWave、Redis / HBase（在线特征与状态存储） | 判据是延迟预算与事件量：预算在百毫秒内、要逐事件处理就选流式；分钟级可接受时，微批的运维成本更低 | 用微批扛毫秒预算，峰值时会在队列里排队，表现为超时率与降级率同时上升 |
+| 在线学习与强化学习 | Vowpal Wabbit、FTRL（CTR 预估）/ FTRL-Proximal、Online Gradient Descent、Contextual Bandit 实现（LinUCB / NeuralUCB、Dieter 一类）、RLlib（Ray）、Stable-Baselines3、DeepMind Acme | 判据是反馈延迟与单位时间反馈量（[§3.2.5](02-decision-intelligence-section-3-sec3.md)）：反馈以秒计、量大才值得上；反馈以周计就退回离线模型 + 周期评估 | 反馈撑不住却上了在线学习，策略会被噪声更新，表现为指标持续小幅下滑而找不到原因 |
+| 因果推断 | DoWhy、EconML、CausalML、CausalImpact、Causalinference、Ananke | 判据是「有没有可用的干预来源」：有实验、断点或工具变量才谈识别；没有外生变动时，换库换的只是估计方式 | 没有干预来源硬上因果库，会得到一个更复杂、更难被质疑、但本质上仍是相关的估计 |
+| A/B 与实验平台 | 火山引擎 A/B、字节 A/B、阿里 A/B、Optimizely、Eppo、Statsig、GrowthBook、AB Tasty | 判据是「分流键能不能按决策点切」与「结果能不能回填到决策日志」：回填不了的实验平台只能做页面实验，做不了决策实验 | 用页面实验平台做决策实验，分流键与决策 ID 对不上，效果无法按决策回算 |
+| LLM 与 Agent 编排 | LangChain、LangGraph、LlamaIndex、AutoGen、CrewAI、MetaGPT、ChatDev、OpenAI Swarm、OpenAI Function Calling、Anthropic Tool Use | 判据是「编排之外的留痕、门禁、回滚由谁提供」：这些框架只解决编排，治理要另做；只有低频高价值场景才让 LLM 进在线链路 | 把编排框架当成决策引擎，上线后才发现没有可回滚的单元、没有策略版本、没有门禁 |
+| 可解释（XAI）与决策可观测 | 归因型 SHAP、LIME、Alibi、InterpretML、Captum、What-If Tool；反事实 / 引用型 Integrated Gradients、Anchors、Counterfactual Explanation；决策可观测 Arize Phoenix、WhyLabs、Langfuse、Helicone、Evidently AI | 判据是「解释给谁看」：给监管看要能定位到某条依据（引用型），给算法看要能看特征贡献（归因型），两者不要用同一个界面糊过去 | 用特征重要性的平均图去应付逐条举证，第一次抽检就会被打回 |
 
-- **DoWhy**（微软）——因果推断端到端。
-- **EconML**（微软）——机器学习因果效应估计。
-- **CausalML**（Uber）——因果 ML 库。
-- **CausalImpact**（Google）——贝叶斯因果效应。
-- **Ananke**（因果推断）——因果图 + 反事实。
+表里最容易被误选的是**第 8 类：把 LLM / Agent 编排框架当成决策引擎**——它上手最快、演示效果最好，于是很容易被当成整个决策层。误选的典型后果是：编排有了，而决策留痕、策略版本、门禁与回滚一个都没有，等到要回滚一次阈值调整时才发现**没有一条可回滚的单元**。判据很简单：问「这套东西里，哪一层能在不重新发布的前提下改动作」，答不出来就说明编排还没长成引擎。候选列里各项目与产品的当前能力、命名与是否仍在维护，以各自官方文档为准；其中实验性项目（例如 OpenAI Swarm、Dieter 一类）的状态变化较快，请按项目名核验后再纳入选型。
 
-**A/B 实验**：
+### 4.4 存量迁移
 
-- **火山引擎 A/B**（字节）——国内 A/B 实验事实标准。
-- **Optimizely**——商业 A/B 实验平台。
-- **Eppo**——开源 + 商业 A/B 实验。
-- **Statsig**——商业 A/B 实验平台。
-- **GrowthBook**——开源 A/B 实验平台。
-- **AB Tasty**——商业 A/B 实验平台。
+存量改造与从零搭建的分岔在这一节。多数组织的现实是：**规则散在生产代码、Excel 与邮件里，模型几年前上过线，决策日志当时没建**——所以这里的重点不是设计，而是**如何在一个正在对外服务、不能停机的系统上让历史自然收敛**。
 
-**LLM for Decision（2024-2025）**：
+**① 先做能立刻见效、且随时可回退的事。** 第一件是**旁路留痕**：新链路只记录（写决策日志与版本），不改任何决策逻辑——整件事只读，随时可关，关掉不影响决策。第二件是**决策点清点**：把「已经在自动执行的决策」与「其实是人按经验在执行的决策」分开列出来。后者最常被漏掉，而它恰恰是收益最大的一批——它现在没有任何记录，也没有任何版本。
 
-- **LangChain** + **LangGraph**——LLM 决策编排。
-- **LlamaIndex**——LLM + RAG 决策。
-- **AutoGen**（微软）——Multi-Agent 决策。
-- **CrewAI**——Multi-Agent 协作。
-- **MetaGPT**——Multi-Agent 软件工程。
-- **OpenAI Swarm**——轻量 Multi-Agent 框架。
-- **Anthropic Claude Tool Use**——Agent 工具调用。
+**② 历史资产分三类处理，不做一次性返工。**
 
-**可解释 AI（XAI）**：
+| 类别 | 判定方法（可执行） | 处理方式 | 为什么这样处理 |
+| --- | --- | --- | --- |
+| 仍在被调用的决策点 | 有调用量或有人在按它执行 | 补留痕与版本登记；**加一条门禁：任何被改动过的规则 / 模型 / 提示词，必须同时补上 Owner 与版本** | 让存量靠「改动即补账」自然收敛，而不是靠一次专项治理；门禁挂在变更路径上，成本最低 |
+| 散落在代码、Excel、邮件里的规则 | 人工清点 + 代码搜索 | 打「挂账」标签 + 写明到期日，**改动时才搬进规则库** | 散落规则的"真身"往往只在生产代码里，一次性搬迁无法验证等价性，搬错比不搬更危险 |
+| 已停用、但没人敢删的规则与模型 | 调用日志连续若干周期为空 | 先用调用记录判定「零调用」，再标记、通知 Owner、留可撤回的缓冲期后下线 | 删除不可逆，判定依据必须是调用记录，不是「看起来没人用」 |
 
-- **SHAP**——事实标准解释库。
-- **LIME**——局部可解释模型。
-- **Alibi**（开源）——XAI 库。
-- **InterpretML**（微软）——可解释 ML 库。
-- **Captum**（Meta）——PyTorch 模型解释。
-- **What-If Tool**（Google）——交互式模型分析。
+明确不做的事是**要求历史规则一次性全部搬进规则库**：等价性无法验证，而决策系统的迁移错误不会报错，只会让一部分决策悄悄变了行为。
 
-### 4.4 代码 / 示例
+**③ 双轨怎么维持。** 用**影子模式（shadow）**：新链路只出决策、不执行，与原链路逐条比对，比对结果落库并分成三类（口径差异 / 真错误 / 无法判定）。三条规则：一是双轨期**只有一个链路有权改业务状态**；二是比对结果要落库，不做比对的影子等于没做；三是差异必须分类，"无法判定"的比例本身就是进度指标。维持时长【经验：以覆盖主要场景并走完一个完整业务周期为准，通常在两个季度量级】。
 
-**示例 1：基于 Drools + DMN 的规则决策（Java）**
+**④ 什么信号说明可以退出双轨。** 四个信号同时出现再退：影子比对里「无法判定」的比例降到日常水平；剩下的差异都能归到已命名原因；回滚演练做过一次且成功；原链路的调用量降到零并稳定一个观察周期。退出后要**保留「新旧决策可并排复算」的能力**——它是以后每次复盘的唯一依据，删掉它就等于把这段历史一次性作废。
 
-```java
-// LoanEligibility.dmn
-// DMN 决策表：信贷审批
-[
-  {
-    "input": "applicant.creditScore",
-    "input": "applicant.income",
-    "input": "applicant.loanAmount",
-    "output": "eligibility",
-    "rule": [
-      {"when": "creditScore >= 750 && income >= 100000 && loanAmount <= 500000", "then": "APPROVED"},
-      {"when": "creditScore >= 700 && income >= 150000", "then": "APPROVED"},
-      {"when": "creditScore >= 650 && income >= 200000", "then": "MANUAL_REVIEW"},
-      {"when": "creditScore < 600", "then": "REJECTED"},
-      {"otherwise": "MANUAL_REVIEW"}
-    ]
-  }
-]
+### 4.5 模板 / 示例
 
-// Java 调用
-KieContainer kieContainer = KieServices.Factory.get().newKieClasspathContainer();
-KieSession kieSession = kieContainer.newKieSession();
+**模板 1：DMN 决策表 + 命中策略（Drools / Easy Rules 两种形态）**
 
-Applicant applicant = new Applicant("Alice", 720, 120000, 300000);
-kieSession.insert(applicant);
-kieSession.fireAllRules();
-
-assertEquals("APPROVED", applicant.getEligibility());
+```text
+DMN 决策表（信贷初审，结构示例；阈值按业务与监管要求设定）
+ ┌── 条件 ─────────────────────────┬── 动作 ──┐
+ │ 分值区间  │ 收入门槛 │ 申请金额   │ 结果          │
+ ├───────────┼──────────┼────────────┼───────────────┤
+ │ ≥750      │ ≥10 万   │ ≤50 万     │ APPROVED      │
+ │ 700–749   │ ≥15 万   │ 任意       │ APPROVED      │
+ │ 650–699   │ ≥20 万   │ 任意       │ MANUAL_REVIEW │
+ │ <600      │ 任意     │ 任意       │ REJECTED      │
+ │ 其他      │ —        │ —          │ MANUAL_REVIEW │
+ └───────────┴──────────┴────────────┴───────────────┘
+命中策略必须在规则登记表的 hit_policy 列里显式声明（FIRST / PRIORITY / UNIQUE），
+改它等于改冲突规则——要挂变更单并留签字，不能只改代码
 ```
 
-**示例 2：基于 Easy Rules 的轻量规则（Java）**
-
 ```java
-// 定义规则
+// 轻量形态（Easy Rules）：规则 name 会进决策日志的"命中依据"一栏
 @Rule(name = "high-value-customer-discount")
 public class HighValueCustomerDiscountRule {
-    @Condition
-    public boolean when(@Fact("customer") Customer customer) {
-        return customer.getTotalSpent() > 10000;
-    }
-
-    @Action
-    public void then(@Fact("order") Order order) {
-        order.applyDiscount(0.15); // 15% 折扣
-    }
+    @Condition public boolean when(@Fact("customer") Customer c) { return c.getTotalSpent() > 10000; }
+    @Action    public void then(@Fact("order") Order o)          { o.applyDiscount(0.15); }
 }
 
-// 引擎组装
-RulesEngine rulesEngine = new DefaultRulesEngine();
-rulesEngine.registerRule(new HighValueCustomerDiscountRule());
-
-Facts facts = new Facts();
-facts.put("customer", new Customer("Alice", 15000));
-facts.put("order", new Order(1000));
-
-rulesEngine.fire(facts);
+// 重量形态（Drools）：同一张 DMN 表编译后由 KieSession 执行，命中结果同样落决策日志
+KieSession kieSession = KieServices.Factory.get().newKieClasspathContainer().newKieSession();
+kieSession.insert(new Applicant("Alice", 720, 120000, 300000)); recordHit(kieSession.fireAllRules());
+assertEquals("APPROVED", applicant.getEligibility());   // 上线前拿真实样例回归，防止改 DMN 时漏改
 ```
 
-**示例 3：基于 SHAP 的 ML 决策解释（Python）**
+**怎么用**：表里的阈值是结构示例，别照抄；所有阈值都要能追到监管或业务文件的出处。**选哪种形态看谁来改规则**：改动由工程师做、规则不到百条【经验：随条件维度的交织程度与变更频率变】就用 Easy Rules；要业务方自己在决策表上改口径、且要逐条举证，才值得上 Drools 那套运行时（两种形态都在 Java 生态里，接不进你的技术栈就别硬上）。决策表按 OMG 的 DMN 标准写，Camunda DMN / Drools DMN / IBM ODM DMN 都是它的实现，语法细节以各自官方文档当前版本为准。`name` / 规则 ID 必须写进决策日志——没有它，「命中依据」这一栏就是空的。
+
+**模板 2：规则登记表（让规则可回滚、可举证）**
+
+```sql
+CREATE TABLE rule_registry (
+  rule_id        VARCHAR(64) PRIMARY KEY,
+  rule_name      VARCHAR(200) NOT NULL,
+  owner          VARCHAR(64)  NOT NULL,       -- 具体到人
+  version        VARCHAR(32)  NOT NULL,
+  effective_from TIMESTAMPTZ  NOT NULL,       -- 历史决策按当时版本解释
+  effective_to   TIMESTAMPTZ,                 -- NULL = 仍生效
+  review_due     DATE         NOT NULL,       -- 到期未评审即告警
+  hit_policy     VARCHAR(16)  NOT NULL,       -- FIRST / PRIORITY / UNIQUE
+  source_doc     VARCHAR(200)                 -- 口径出处，举证时要能翻到
+);
+```
+
+**怎么用**：这张表的全部价值在 `effective_from` / `effective_to` 两列——没有它们，三个月后的抽检无法回答「当时命中的是哪条规则」。`review_due` 要接告警，否则它只是记录；`source_doc` 按你家的文件编号体系填。
+
+**模板 3：LLM 候选输出的 schema 校验 + 兜底**
 
 ```python
-import shap
-import xgboost
-from sklearn.datasets import make_classification
+from pydantic import BaseModel, condecimal
 
-# 训练模型
-X, y = make_classification(n_samples=10000, n_features=20, random_state=42)
-model = xgboost.XGBClassifier().fit(X, y)
+class Candidate(BaseModel):
+    action: str                     # 枚举：APPROVE / REJECT / MANUAL_REVIEW
+    reason: str
+    citations: list[str]            # 必须能定位到原文；空列表即不合格
+    confidence: condecimal(ge=0, le=1)
 
-# SHAP 解释
-explainer = shap.TreeExplainer(model)
-shap_values = explainer.shap_values(X)
-
-# 单个决策解释
-sample_idx = 0
-print(f"Prediction: {model.predict_proba(X[sample_idx:sample_idx+1])[0][1]:.3f}")
-print(f"Base value: {explainer.expected_value:.3f}")
-print(f"Feature contributions:")
-feature_names = [f"feature_{i}" for i in range(X.shape[1])]
-for name, value, shap_val in zip(feature_names, X[sample_idx], shap_values[sample_idx]):
-    print(f"  {name}: {value:.3f} → SHAP={shap_val:+.3f}")
-
-# 可视化
-shap.plots.waterfall(shap_values[sample_idx])
-shap.plots.force(shap_values[sample_idx])
+def decide_with_llm(ctx: dict) -> str:
+    raw = llm_call(ctx)             # 只读：模型不写任何状态
+    try:
+        c = Candidate.model_validate_json(raw)
+        if c.action not in {"APPROVE", "REJECT", "MANUAL_REVIEW"} or not c.citations:
+            raise ValueError("schema 通过但语义不合格")
+    except Exception:
+        return "MANUAL_REVIEW"      # 校验不通过一律走兜底
+    return apply_strategy(c, ctx)   # 最终动作由确定性代码给出
 ```
 
-**示例 4：基于 Contextual Bandit 的在线学习决策（Python + Vowpal Wabbit）**
+**怎么用**：必查两项——`action` 是否在枚举内、`citations` 是否非空；`except` 分支返回的兜底动作必须是保守的那一个，不能是「放行」。模型调用形态与参数以所用服务的官方文档当前版本为准，别照抄示例里的函数名。
+
+**模板 4：分段超时与降级 + 编排骨架（LangGraph 形态）**
+
+```python
+from langgraph.graph import StateGraph, END
+BUDGET_MS = {"features": 25, "rules": 15, "model": 50, "log": 10}  # 【经验】按你自己链路的实测 P99 上浮后取整
+
+def guarded(node, fallback_action):
+    def run(state):
+        try:
+            return node(state, timeout_ms=BUDGET_MS[node.__name__])
+        except TimeoutError:
+            state.update(degraded=True, action=fallback_action)   # 超时走预置降级动作：监控上看到的是这一段降级率，不是请求失败率
+            return state
+    return run
+g = StateGraph(dict)
+for name, fn in [("features", load_features), ("rules", match_rules), ("model", predict)]:
+    g.add_node(name, guarded(fn, "MANUAL_REVIEW"))
+g.add_node("decide", decide_by_policy)   # 策略层：唯一能决定动作的地方
+g.set_entry_point("features")
+g.add_edge("features", "rules"); g.add_edge("rules", "model"); g.add_edge("model", "decide"); g.add_edge("decide", END)
+```
+
+**怎么用**：四段预算合计不超过总预算，取值要按你自己链路的实测分布填，**别照抄任何文档里的示例比例**；`fallback_action` 一律填保守动作，并让 `degraded` 进监控（降级率长期偏高说明预算给得不合理）。LangGraph 的 API 名与图 API 随版本变化，以项目官方文档当前版本为准。
+
+**模板 5：Contextual Bandit 的探索配额与冷启动保护（Vowpal Wabbit）**
 
 ```python
 from vowpalwabbit import pyvw
 
-# 初始化 Contextual Bandit
-vw = pyvw.vw("--cb_explore_adf --epsilon 0.1 --power_t 0.5")
+vw = pyvw.vw("--cb_explore_adf --epsilon 0.1 --power_t 0.5")   # ε 决定探索份额，先设小【经验：随可承受的探索损失变】
 
-# 用户特征 → 多臂（不同优惠券）
-def get_context_features(user, arms):
-    features = []
-    for arm in arms:
-        # 每个 arm 的特征：用户画像 + 优惠券类型
-        feat = "|u user_age user_spend user_segment |a coupon_type coupon_value coupon_min_order"
-        features.append(feat)
-    return features
+def choose(arms, ctx_features):
+    ex = [f"|u {ctx_features} |a {a}" for a in arms]
+    return arms[vw.predict(ex)]                 # 探索 + 利用一次完成
 
-def get_cost_reward(arm, user):
-    # 实际场景：根据用户反馈计算成本 / 奖励
-    # 转化 = 奖励 +1，未转化 = 成本 0
-    if user.clicked and user.converted(arm):
-        return 1.0
-    else:
-        return 0.0
-
-# 实时决策循环
-arms = ["10_off", "20_off", "30_off", "free_shipping", "no_coupon"]
-for user in user_stream:
-    context = get_context_features(user, arms)
-    
-    # VW 决策（探索 + 利用）
-    chosen_arm_idx = vw.predict(context)
-    chosen_arm = arms[chosen_arm_idx]
-    
-    # 执行决策并获得反馈
-    reward = get_cost_reward(chosen_arm, user)
-    
-    # VW 学习
-    example = f"{1.0 - reward} {chosen_arm_idx + 1} | " + " ".join(context)
-    vw.learn(example)
+def learn(arms, chosen_idx, cost, ctx_features):
+    ex = [f"|u {ctx_features} |a {a}" for a in arms]
+    ex[chosen_idx] = f"{cost} {chosen_idx + 1} | " + ex[chosen_idx]   # 按奖励到达时间对齐
+    vw.learn(ex)
 ```
 
-**示例 5：基于 LangGraph 的 LLM 决策流（Python）**
+**怎么用**：`--epsilon` 就是探索配额，先设小、再按「探索份额对应的实际业务损失」调（判据见 [§3.2.5](02-decision-intelligence-section-3-sec3.md)）；新动作先给小流量预热，不要直接进主流量。参数名与命令行选项以 Vowpal Wabbit 官方文档当前版本为准。
 
-```python
-from langgraph.graph import StateGraph, END
-from langchain.chat_models import ChatOpenAI
-from typing import TypedDict, Literal
-
-# 决策状态
-class DecisionState(TypedDict):
-    user_query: str
-    intent: str
-    risk_score: float
-    rule_result: str
-    llm_reasoning: str
-    final_decision: str
-
-# 节点 1：意图识别
-def identify_intent(state: DecisionState) -> DecisionState:
-    llm = ChatOpenAI(model="gpt-4", temperature=0)
-    response = llm.invoke(f"识别以下用户查询的意图：{state['user_query']}")
-    state['intent'] = response.content
-    return state
-
-# 节点 2：规则匹配
-def match_rules(state: DecisionState) -> DecisionState:
-    # 调用规则引擎（Drools / Easy Rules）
-    state['rule_result'] = "RULE_MATCH: 高风险用户"
-    return state
-
-# 节点 3：ML 模型预测
-def predict_risk(state: DecisionState) -> DecisionState:
-    # 调用 ML 模型（XGBoost 风控模型）
-    state['risk_score'] = 0.85
-    return state
-
-# 节点 4：LLM 决策推理
-def llm_decision(state: DecisionState) -> DecisionState:
-    llm = ChatOpenAI(model="gpt-4", temperature=0)
-    prompt = f"""
-    用户查询：{state['user_query']}
-    意图：{state['intent']}
-    规则结果：{state['rule_result']}
-    风险评分：{state['risk_score']}
-    
-    请基于以上信息给出最终决策：
-    1. 决策结果（APPROVE / REJECT / MANUAL_REVIEW）
-    2. 决策理由（50 字以内）
-    3. 建议跟进措施
-    """
-    response = llm.invoke(prompt)
-    state['llm_reasoning'] = response.content
-    return state
-
-# 决策图编排
-workflow = StateGraph(DecisionState)
-workflow.add_node("identify_intent", identify_intent)
-workflow.add_node("match_rules", match_rules)
-workflow.add_node("predict_risk", predict_risk)
-workflow.add_node("llm_decision", llm_decision)
-
-workflow.set_entry_point("identify_intent")
-workflow.add_edge("identify_intent", "match_rules")
-workflow.add_edge("match_rules", "predict_risk")
-workflow.add_edge("predict_risk", "llm_decision")
-workflow.add_edge("llm_decision", END)
-
-app = workflow.compile()
-result = app.invoke({"user_query": "用户申请信用卡"})
-print(result['llm_reasoning'])
-```
-
-**示例 6：基于 EconML 的因果决策（Python）**
+**模板 6：因果效应估计与上线前对照（EconML）**
 
 ```python
 from econml.dml import LinearDML
 from sklearn.ensemble import GradientBoostingRegressor, GradientBoostingClassifier
-import numpy as np
 
-# 模拟数据：营销活动对用户转化的因果效应
-np.random.seed(42)
-n = 10000
-X = np.random.randn(n, 10)  # 用户特征
-T = np.random.binomial(1, 0.5, n)  # 处理（是否发优惠券）
-Y = 0.3 * T + 0.5 * X[:, 0] - 0.2 * X[:, 1] + np.random.randn(n) * 0.5  # 转化
-
-# 训练 DML 模型
-dml = LinearDML(
-    model_y=GradientBoostingRegressor(),
-    model_t=GradientBoostingClassifier(),
-    random_state=42,
-)
-dml.fit(Y, T, X=X)
-
-# 因果效应估计
-treatment_effect = dml.effect(X)
-print(f"Average Treatment Effect: {dml.ate_inference().mean_point:.3f}")
-print(f"95% CI: {dml.ate_inference().conf_int_mean}")
-
-# 异质因果效应（不同用户群体不同效应）
-for i in range(min(5, len(X))):
-    print(f"User {i}: ATE = {treatment_effect[i]:.3f}")
+est = LinearDML(model_y=GradientBoostingRegressor(),
+                model_t=GradientBoostingClassifier(), random_state=42)
+est.fit(Y, T, X=X)                     # Y 结果 / T 处理 / X 特征
+print(est.ate_inference().mean_point)  # 平均处理效应
+print(est.effect(X))                   # 异质效应：这条决策能改变谁
 ```
 
----
+**怎么用**：上线前把同一份数据用因果估计与普通回归各算一次，**两者的差就是混杂的量级**（判定方法见 [§3.2.4](02-decision-intelligence-section-3-sec3.md)）；「无未观测混杂」这一条不能靠数据检验，只能靠设计写清。小样本上别照抄结论，先看置信区间有多宽。库的 API 以官方文档当前版本为准。
+
+**模板 7：基于 SHAP 的 ML 决策解释（Python）**
+
+```python
+import shap
+
+explainer = shap.TreeExplainer(model)          # 解释器必须与出决策时的模型版本一致
+sv = explainer(X_row)                          # 解释"这一条"决策，不是全局平均
+for name, contrib in sorted(zip(FEATURES, sv.values[0]), key=lambda t: -abs(t[1]))[:5]:
+    write_explain_log(decision_id, name, float(contrib), float(sv.base_values[0]))
+```
+
+**怎么用**：解释器要在服务端用**与出决策时相同的模型版本**重建，离线另算一份必然与当时的决策对不上；`base_values`（基线）必须与特征贡献一起写进决策日志，否则三个月后复现不出这条解释。要逐条举证给监管看时，这份输出要与引用到的原文一起存；SHAP 的 API 与绘图接口以官方文档当前版本为准。
+
+### 4.6 自检清单
+
+- [ ] 随机挑一条一个月前的历史决策，实际走一遍还原流程（命中依据 + 当时的特征 + 模型 / 提示词版本），量出耗时——超过几分钟，缺的是哪一环？
+- [ ] 把线上真实流量的一段特征快照拉回离线复算分数，跟线上差多少？差异占比是多少？
+- [ ] 上一次依赖不可用（真实发生的，或演练的）时，系统实际是拒绝还是放行？与写下来的约定一致吗？
+- [ ] 断掉一个在线特征依赖做一次演练：降级分支真的执行了吗？保守动作率上升了多少？
+- [ ] 把决策延迟按分段拆开（特征 / 规则 / 模型 / 日志），P99 落在哪一段？这一段最近改过什么？
+- [ ] 打开最近一次影子比对的结果：差异里「无法判定」占多少？比上个观察周期是升还是降？
+- [ ] 抽 3 个已上线的规则 / 模型 / 提示词，按 `effective_from` 反查：三个月前的同一条决策，现在还能解释吗？
+- [ ] 上一次模型上线时的离线评估与线上实际效果，迁移差是多少？差异来自特征不一致还是阈值策略？
+- [ ] 抽 10 条 LLM 参与过的决策，`citations` 里引用的原文能不能真的定位到？空引用的有几条？
+- [ ] 取一个高频决策点，把它的 LLM 调用占比与它在推理账单里的占比并排看——两个数差多少？
+- [ ] Agent 类决策最近一个月的步数分布：长尾是多少步？越界中止与人工接管各发生了几次？
+- [ ] 做一次回滚演练（回滚一个策略版本）：从决定到生效花了多久？回滚窗口里有没有决策被漏掉？
+
+> 本节里的抽样规模、判据时限与表单参数（§4.1 的 5 分钟 / 10 分钟、§4.1 Step 1 的「每个决策点写三行」、§4.6 的 3 个 / 10 条一类）都是可调参数【经验：随决策点数量、登记方式与审计要求变，判据是抽到的样本能不能覆盖影响面最大的那一类决策】。
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一那个决定成败的环节，是 **Step 6 的第 3 条——在上线之前先写下对照组与判据**。前六步决定这个系统能不能跑，只有它决定这个系统能不能被判断、被回滚、被继续投入；它也是最容易被推迟的一步，因为它当天不产生任何可展示的成果，而它的代价要到第一次效果复盘与年度预算评审时才显形。
+>
+> 存量改造者的加读一条：**§4.4 的影子模式与三类处理比 §4.1 的顺序更决定成败**——存量决策点不会消失，只有「改动即补账 + 影子比对落库」这两条能让它自然收敛。
+>
+> 配合 [§ 2 核心原理](02-decision-intelligence.md)、[§ 3 设计模式与范式](02-decision-intelligence-section-3-sec3.md) 与 [§ 6 落地实践](02-decision-intelligence-section-6-sec6.md) 阅读。

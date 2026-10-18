@@ -1,294 +1,396 @@
-> 本文件是 **03-data-vault.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](03-data-vault.md)。
+> 本文件是 **03-data-vault.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](03-data-vault-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](03-data-vault.md)。
 
 ## 4. 工程实现
 
+§ 3 讲每个模式被什么约束逼出来、代价与失效点在哪；本节不重复这些论述，只回答四件事：**按什么顺序做、每一步怎么知道自己做对了、手上多出什么东西、存量资产怎么接进来**。
+
+本文件面向两类读者，第 0 步先把他们分开：**存量改造读者**（已有跑了几年的 Kimball / 3NF 数仓）从 §4.1.1 定起点，§4.4 是专门给你们的一节；**从零建设读者**从 §4.1.2 直接开始，§4.4 里「历史资产怎么分类处理」一段可跳过。§4.2 / §4.3 / §4.5 / §4.6 两类共用。
+
 ### 4.1 落地步骤
 
-一个标准的 Data Vault 落地流程：
+主序列 7 步，顺序不是偏好——第 N 步的输入是第 N−1 步的产物，换序会让后面整段返工。每步给三件事：**产物**（手上多出来的、可被检查的东西）、**判据**（怎么知道自己做对了）、**为什么必须这一步**。
 
-1. **业务盘点 → 实体清单**：梳理所有源系统，列出所有业务实体（客户、订单、商品、合同…），产出 Entity Inventory。
-2. **业务盘点 → 关系清单**：梳理所有实体之间的关系（1:1、1:N、N:N），产出 Relationship Matrix。
-3. **业务盘点 → 属性清单**：梳理所有实体的所有属性，按"变更频率 + 业务主题"分组，产出 Attribute Matrix。
-4. **设计 Hub**：从实体清单中识别"业务键唯一稳定"的实体，建立 Hub 表。
-5. **设计 Link**：从关系清单中识别 Hub 之间的关系，建立 Link 表。
-6. **设计 Satellite**：从属性清单中按"变更频率 + 业务主题"分组，建立 Satellite 表。
-7. **设计 PIT / Bridge**：针对热点查询，预聚合 PIT 表和 Bridge 表。
-8. **加载流水线**：Stage → Raw Vault → Business Vault → Data Mart 的 ETL 流水线建设，并行加载、增量 CDC。
+#### 4.1.1 第 0 步：定起点——存量迁移还是从零建（1–2 周【经验】）
 
-每步的产出物：
+先答三个问题：现有集成层是什么形态（Kimball 宽表 / 3NF / 没有明确集成层）？源系统是否 ≥ 3 个且未来一年还会增加？下游消费是否已稳定停在 ADS / Data Mart 层？结论通常是这一条：**Vault 做集成层（DWD），星型 / 宽表做消费层（ADS）**；源少、稳定、以报表消费为主时先不要引入（判据见 §3.3 决策表首行）。
 
-| 步骤 | 产出物 | 评审点 |
-|---|---|---|
-| 1-3 | Entity / Relationship / Attribute Matrix | 业务方确认 |
-| 4 | Hub DDL | 主键稳定性 |
-| 5 | Link DDL | 关系正确性 |
-| 6 | Satellite DDL | 拆分粒度合理性 |
-| 7 | PIT / Bridge 视图 | 查询性能压测 |
-| 8 | ETL 流水线 | 并行度、CDC 延迟、监控 |
+- **产物**：一页《起点判定书》——哪几层被替代、哪几层保留、以什么方式切换、退出方式是什么。
+- **判据**：把「给一张表加一个字段，现在要动几张表、多久上线」在现有链路上**当场实测并记录**。答案 ≥ 2 张表说明集成层确有替换价值；答案是 1 张就先不要动它。
+- **为什么必须这一步**：起点判断错，后面 6 步都建在错误前提上。存量读者在这一步要拿到一条纪律——**双轨切换完成前不许停掉任何老链路**（退出条件见 §4.4 ④）；从零读者要拿到反向纪律——**不要先把 ODS / ADS 建完再回头建 Vault**，Vault 的输入只需要 Stage 层。另需定一个其长度随下游增长而变的量：【经验】单域试点 1–2 个月，扩域时长主要由**要切断的下游 ADS 报表 / 应用数量**决定，而不是由表数量决定。
+
+#### 4.1.2 第 1 步：业务盘点——实体 / 关系 / 属性三张清单（2–4 周【经验：随源系统个数与业务方能否按时到场变，源越多、约齐业务方越慢】）
+
+三张清单分别喂给后面三步，缺一张，对应那一步就只能靠感觉做。
+
+1. **实体清单（Entity Inventory）**：按源系统列出业务实体（客户、订单、商品、合同、门店…），标注每个实体在几个源里出现、每个源里的业务键是什么。
+2. **关系清单（Relationship Matrix）**：列出实体间关系与基数（1:1 / 1:N / N:N），并标注这条关系**有没有起止时间**（有时效的关系才有资格挂生效卫星）。
+3. **属性清单（Attribute Matrix）**：逐属性标注两列——**变更频率**（静态 / 低频 / 每天 / 每笔）与**业务主题**（人口 / 联系方式 / 地址 / 状态 / 行为画像）。这两列是第 4 步拆卫星的唯一依据。
+
+- **产物**：三张清单，且里面的实体名 / 关系名 / 属性名与全库命名规范一致。
+- **判据**：随机抽 3 个实体，让业务方**不看源系统**说出它的业务键与权威源。说不出来，说明盘点还停在源表结构层面，第 2 步会直接把源表结构搬成 Hub。
+- **为什么必须这一步**：它是唯一需要业务方参与、也唯一不能由工程侧补做的一步。跳过「变更频率」列，第 4 步只能靠感觉拆卫星；跳过「起止时间」，第 3 步会把有时效的关系建成永久 Link，事后补时效要重算历史。这一步返工，就意味着后面每一步都返工。
+
+#### 4.1.3 第 2 步：设计 Hub（1–2 周【经验：随实体个数、以及哈希规则需要统一的范围变】）
+
+1. 从实体清单挑「业务键唯一且稳定」的实体，**一个实体一个 Hub**；多源实体只建一个 Hub、登记多个 record_source，不是一源一个 Hub。
+2. Hub 只放哈希键、业务键、load_datetime、record_source（定义见 §3.2.1，不复述）；描述性字段一个都不进。
+3. 每个 Hub 登记**权威源**、**哈希输入的字段顺序与分隔符**、多源实体的**各源优先级**（供 §4.2.2 用）。
+
+- **产物**：Hub DDL + Hub 清单（实体 → 业务键 → 哈希输入字段顺序 → 分隔符 → 权威源 → 各源优先级）。
+- **判据**：**业务键反向抽检**——从源系统取 100 条记录，按清单登记的字段顺序与分隔符独立重算一次哈希，与库里值逐条比对。必须全等；有一条不等，说明顺序、分隔符或大小写规整（trim / upper）中有一项没统一。
+- **为什么必须这一步**：Hub 是 Link 的输入，Link 里的各哈希键必须已在对应 Hub 存在，否则产生**悬挂 Link**（关系引用了不存在的实体）。悬挂行不报错，只在 JOIN 时静默丢失，最后表现为「订单数对不上」，而排查要从 Link 一路回溯到 Hub 的哈希规则。
+
+#### 4.1.4 第 3 步：设计 Link（1–2 周【经验：随关系条目数与是否含 N:N、同义链接变】）
+
+1. 从关系清单生成 Link；Link 只放参与方哈希键、Link 自身哈希键与元数据列，**不放任何业务属性**。
+2. 把「有属性的关系」（下单时间、关系状态、份额比例）挑出来，属性另挂卫星，不进 Link。
+3. 每个 Link 登记它连接哪几个 Hub、基数、是否带属性卫星、是否为同义链接。
+
+- **产物**：Link DDL + Link 清单。
+- **判据**：每个 Link 随机抽 5 行，回源系统找对应业务凭证（订单号、合同号、对账单号）。**一行核不上，粒度就拿错了**——常见两种错法是把「事件」当「关系」（把订单行建成客户-商品关系）、把「属性」当「关系」（把状态变更建成 Link）。
+- **为什么必须这一步**：Link 是 Bridge、同义链接与所有多跳查询的共同输入。粒度错了，下游链式查询全部多算或漏算，而修复不是改一个条件，是重建整条链并重跑历史。
+
+#### 4.1.5 第 4 步：设计 Satellite（2–4 周【经验：随属性域个数与「变更频率」列的可判定程度变】）
+
+1. 严格按属性清单的两列（变更频率 + 业务主题）拆：**静态（姓名 / 性别 / 生日）、联系方式、地址、状态、行为画像**各一张，不合并。
+2. 每张卫星加 `hash_diff`（属性集合哈希），加载时先比较，相同则不插新行——它决定「没变的数据」会不会产生垃圾行。
+3. 每张卫星登记**预期变更周期**（静态 / 每月 / 每天 / 每笔），供监控与告警使用。
+
+- **产物**：Satellite DDL 组 + 分组说明表（哪些属性进哪张卫星、变更周期、Owner）。
+- **判据**：抽 3 张卫星，取最近一个月新增行数，与源端该属性的**实际变更次数**比对（不是与业务量比对）。同量级才算通过；差一个数量级以上，要么 `hash_diff` 没生效，要么高低频字段还混在一张表里。
+- **为什么必须这一步**：卫星是唯一承载属性、也唯一会因「变更频率估错」持续付费的地方。切错不是一次性返工，而是**此后每天每次加载**都在按整行宽度复制未变的字段【推算：写放大 ≈ 单行最大宽度 × 日变更次数 × 实体数】；而有数据之后再拆分，要迁历史并切换下游视图。
+
+#### 4.1.6 第 5 步：设计 PIT / Bridge（1–3 周【经验】，随热点查询个数增长）
+
+1. **不要全建**：先列出消费方靠前的查询，只给它们真正用到的实体建 PIT；Bridge 只在存在 3 跳以上链式 JOIN 时建。
+2. 给 PIT 的每个卫星指针列补一列**「最后回填时间」**，让下游能看出 PIT 是否比卫星旧——PIT 静默落后是它最典型的失效方式（§4.2.4）。
+3. 消费侧 SQL 同步改写为「按指针等值 JOIN」，记录改写前后的扫描行数。
+
+- **产物**：PIT / Bridge 物化表 + 回填作业 + 改写后的消费 SQL + 前后对比记录。
+- **判据**：同一业务查询改写前后的**扫描行数**与 P95 延迟——扫描行数没降，说明 PIT 没被真正用上（消费方仍直连卫星），多出来的只是一份没人读的物化资产。
+- **为什么必须这一步、为什么不放更前**：PIT 的形态由「哪个时点被高频问」决定，而这个信息只有前四步跑起来、消费方开始查之后才拿得到。提前建等于按猜出来的时点物化，真实查询出现后再重建，而 PIT 一旦被下游引用，重建要连带改下游。
+
+#### 4.1.7 第 6 步：加载流水线（4–8 周【经验：随源系统数与本次要接的 CDC 源个数变】）
+
+1. 搭 **Stage → Raw Vault → Business Vault → Data Mart** 四段；Raw Vault 内 Hub / Link / Satellite **并行加载、互不等待**——并行性是追加写的直接推论（§3.1），这一步只是把它用起来。
+2. 接入增量 CDC（Debezium / Canal 一类），**先只对 1–2 个源开**；把「晚到数据」的识别逻辑（业务时态与加载时态的比较）显式写进流水线，不留给查询侧临时处理。
+3. 每个卫星作业登记三项监控：本次处理行数、被 `hash_diff` 挡掉的行数、上次成功加载时间。
+
+- **产物**：编排 DAG + 三项监控看板 + 单批次重跑入口（回滚方案）。
+- **判据**：做一次**故障注入**——停掉某张卫星的作业一个周期，看两件事：其余卫星是否照常完成；下游是否明确指出缺的是哪张表。其余卫星被拖停说明并行性没做出来；下游给出空值而不报错说明缺数不可观测。
+- **为什么必须这一步、为什么放最后**：前五步产出的都是「模型应该长什么样」，只有这一步把它变成每天跑的东西。提前做流水线，会在模型还在改时反复重写编排，而编排的返工要重跑历史、要协调下游窗口，成本高于模型本身的返工。
+
+**最常被跳过的一步**不是任何设计或搭建步骤，而是 **§4.1.2 属性清单里的「变更频率」列**——实体和关系看着清单就能勾出来，变更频率必须回源系统查变更日志，是这一步里最花时间的部分。它的第一个症状不出现在建模期，而出现在**上线后第一次有人加字段**：既有卫星把静态属性与每天变的属性混在一张表里，新字段只能塞进那张表，此后每天加载都在为一行没变过的生日付整行复制的代价。第二个高发跳过点是 §4.1.6（PIT），它在消费方第一次做交互式查询时被发现，症状是「查询能出结果，但没人愿意等」。
 
 ### 4.2 关键技术点
 
+八条，每条给 **做法 / 机制 / 失效条件 / 档位**。失效条件写的是「什么规模、什么变更频率、什么依赖版本之下这条会坏」，以及**怎么发现它已经坏了**——这一节的技术点多数不以报错的形式失败。技术点与工具名沿用 §4.1 与 §3 的用词。
+
 #### 4.2.1 哈希键规范
 
+**做法**：哈希输入为 `record_source || 分隔符 || 业务键`，多个键先按**字段名**排序、再用业务键里不会出现的字符拼接；不截断（真需要截断时，长度必须按**目标实体规模**反解、不能写死一个下限：把本条失效条件里的生日界反过来用，8 个十六进制字符（32 位）要把碰撞概率压到 1% 以下只够约 9 千个实体【推算：n < √(0.01 × 2 × 2³²) ≈ 9.3×10³】，所以截断的默认取值是 16 个十六进制字符（64 位，实体数千万量级下碰撞概率约 3×10⁻⁶【推算：n²/2N，n = 10⁷、N = 2⁶⁴】），并把长度写进哈希规范、而不是留给每次实现各自决定）。
 ```sql
--- 标准 MD5 哈希键生成（PostgreSQL 语法）
-CREATE OR REPLACE FUNCTION fn_md5_hash(VARIADIC p_keys TEXT)
-RETURNS CHAR(32) AS $$
-  SELECT MD5(STRING_AGG(k, '|'))
-  FROM UNNEST(p_keys) k;
-$$ LANGUAGE SQL IMMUTABLE;
-
--- Hub 哈希键
-SELECT fn_md5_hash('CRM', customer_business_key) AS hub_customer_hash
-FROM stage_customer;
-
--- Link 哈希键
-SELECT fn_md5_hash(l_co.hub_customer_hash, l_op.hub_order_hash, 'CUSTOMER_ORDER') AS link_co_hash
-FROM link_customer_order_raw l_co;
+CREATE OR REPLACE FUNCTION fn_md5_hash(VARIADIC p_keys TEXT) RETURNS CHAR(32) AS $$
+  SELECT MD5(STRING_AGG(k, '|')) FROM UNNEST(p_keys) k; $$ LANGUAGE SQL IMMUTABLE;
+-- Hub 键：fn_md5_hash('CRM', customer_business_key)
+-- Link 键：fn_md5_hash(hub_customer_hash, hub_order_hash, 'CUSTOMER_ORDER')
 ```
+**机制**：因为输入是确定性拼接，所以同一业务键在任何环境、任何执行顺序下得到同一个值——Hub 主键不依赖序列号，也不需要中心取号服务，写入可以并行；反过来，排序规则、分隔符或大小写规整变一次，**全库哈希都会变**，那是一次全量重建而不是一次配置修改。
 
-**关键点**：哈希输入必须**确定性排序**（按字段名排序而不是按值），否则同一业务键在不同环境下会生成不同 Hash。
+**失效条件**：**当哈希键被截断到 8 个十六进制字符（32 位）时**，碰撞概率按生日界上升——该空间里插入约 6.5 万行，至少碰撞一次的概率已接近 40%【推算，推导链：1 − e^(−n²/2N)，n = 65536、N = 2³²，得 n²/2N ≈ 0.5】。**症状不是报错**，而是两个不同实体偶尔被合并成一条 Hub，表现为下游实体计数比源系统少；差值很小，容易被当成数据质量问题而不是键设计问题。核验方法是拿自己的实体规模算一遍这个公式——做法里的截断长度就是按它反解出来的，两者是同一条规则的上下限。哈希键的定义、以及「Hub 不含描述性字段」这条规则的出处是 Data Vault 2.0 规范【公开：Data Vault 2.0 官方规范，Dan Linstedt，2013；版本与细节请以官方文档当前版本为准】。
 
 #### 4.2.2 多源冲突解决
 
+**做法**：多源不一致**不合并、不覆盖**，全部保留为多行，在查询侧按「源优先级 + 加载时态」排序取第一行。**as-of 轴统一用加载时态**（`load_datetime`）而不是各源自报的业务时态：`load_datetime` 由同一条流水线打上，跨源、跨批次可比；业务时态由各源自己给，CRM 的「更新于」与 ERP 的「更新于」未必是同一件事。唯一的例外是 §4.2.3 的乱序场景，那里要显式换轴，不能默认。
 ```sql
--- 伪代码：按"优先级 + 时间戳"解决冲突
-SELECT
-  hub_customer_hash,
-  name,
-  ROW_NUMBER() OVER (
+SELECT hub_customer_hash, name, ROW_NUMBER() OVER (
     PARTITION BY hub_customer_hash
-    ORDER BY
-      CASE source_system WHEN 'CRM' THEN 1 WHEN 'ERP' THEN 2 ELSE 3 END,
-      load_datetime DESC
-  ) AS rn
-FROM sat_customer_demo
-WHERE load_datetime <= :as_of_datetime
-QUALIFY rn = 1; -- 取优先级最高 + 最新的版本
+    ORDER BY CASE record_source WHEN 'CRM' THEN 1 WHEN 'ERP' THEN 2 ELSE 3 END,
+             load_datetime DESC, hash_diff  -- 前两个键并列时，用分区内确实会取到不同值的列兜底
+  ) AS rn FROM sat_customer_demo WHERE load_datetime <= :as_of QUALIFY rn = 1;
 ```
+**机制**：因为冲突被表达成「同一实体的多行并存 + 一条排序规则」，所以「用哪个源的值」是**读取时的一次排序**，不是**写入时的一次覆盖**——规则改了可以重算全部历史，而不是只能从改规则那天起生效。这是「全量追加」在冲突场景下的直接后果。
+
+**失效条件**：**当两条记录的源优先级与时间戳都相同时**，窗口函数在并列处没有确定次序，同一份历史在不同时间、不同并行度下返回不同结果。**症状**是「同一个客户两次查询拿到不同姓名」且无法复现，单机测试几乎不会出现，只在并发或数据重排后暴露。修法是给 `ORDER BY` 补一个**在该分区内确实会取到不同值**的列——上面 SQL 用的是 `hash_diff`（属性集合哈希，同一实体的不同版本必然不同）。两个反例是现成的：分区键 `hub_customer_hash` 在同一分区内恒为常量，写在末尾不起任何作用；`record_source` 只能区分落在**同一优先级档里的不同源**（`CASE` 只有三档，`ELSE` 档内 MDM 与 LEGACY_A 尚可分开），而真正会出现的并列是**同一源、同一加载时刻、属性不同**的两行——只有 `hash_diff` 拆得开。若业务上「同日多版本该取哪一个」有明确口径（例如取事务时间最晚的一笔），要把它写成一个排序键，而不是靠兜底列的偶然结果（【经验】）。
 
 #### 4.2.3 增量 CDC 模式
 
+**做法**：变更流（Debezium / Canal 一类）→ Stage → Satellite；只处理 create / update，业务键为空的行丢弃；同时落**业务时态**（源事务时间）与**加载时态**（ETL 时间）。
 ```sql
--- 伪代码：基于 Debezium / Canal 的 CDC 流
-INSERT INTO sat_customer_demo
-SELECT
-  hub_customer_hash,
-  after_name,
-  after_gender,
-  after_birthday,
-  -- 业务时态：源系统的事务时间
-  COALESCE(after_updated_at, source_ts) AS effective_datetime,
-  -- 加载时态：当前 ETL 时间
-  CURRENT_TIMESTAMP AS load_datetime,
-  source_system
-FROM cdc_customer_stream
-WHERE op IN ('c', 'u')  -- create or update
-  AND after_customer_bk IS NOT NULL;
+INSERT INTO sat_customer_demo   -- 列清单照 §4.5 示例 1 的 DDL 写全，列序不必一致
+    (hub_customer_hash, load_datetime, hash_diff, record_source,
+     effective_datetime, name, gender, birthday)
+SELECT hub_customer_hash,
+       CURRENT_TIMESTAMP AS load_datetime,                              -- 加载时态（ETL 时间）
+       fn_md5_hash(after_name, after_gender, after_birthday) AS hash_diff,  -- 变更判定单元
+       source_system AS record_source,                                  -- 取值约定见 §4.5
+       COALESCE(after_updated_at, source_ts) AS effective_datetime,     -- 业务时态（源事务时间）
+       after_name, after_gender, after_birthday
+FROM cdc_customer_stream WHERE op IN ('c','u') AND after_customer_bk IS NOT NULL;
+-- 写入前要先拿 hash_diff 与库里该实体当前版本比对，相同则不插（§4.1.5）；上面只演示落列
 ```
+**机制**：因为 Satellite 只追加，CDC 的 update **不需要在目标表定位旧行、也不需要加锁**——变更流可以直接批量插入，吞吐由写入方决定而非锁竞争决定。这既是「不需要拉链表与触发器」的原因，也是 Vault 能被流式入仓的原因。
+
+**失效条件**：**当变更流出现乱序或重放时**（源端提交顺序与消费顺序不一致），卫星里会出现「加载时态更早的行反而描述更晚的业务状态」。**症状**是「按加载时间取最新版本」结果错误，而表本身没有任何异常。**识别信号**：按实体统计**逆序对**——同一条实体按 `load_datetime` 升序排好后，`effective_datetime` 出现递减的相邻版本对数；这个数大于零，就说明有晚到的业务状态被后写入的行盖住了。注意不能用 `MAX(业务时态) − MAX(加载时态)` 当判据：正常管道下加载必然晚于业务时态，这个差值**恒为负**，没有区分力（只有某个实体的负值幅度显著超出本管道的中位加载延迟时才值得看，【经验：阈值按各管道自己的中位延迟定，不给固定值】）。修法是把**这一处查询**的 as-of 轴从加载时态换成业务时态（§4.2.2 默认用加载时态是为了跨源可比，这里乱序已经破坏了那条轴，必须换），并保留两套口径的差异清单（【经验】）。
 
 #### 4.2.4 PIT 表增量维护
 
+**做法**：PIT 不存属性，只存「每个卫星在时点 T 的有效版本指针」，且**增量维护**——每次加载只回填受影响的实体在受影响时点的行。
 ```sql
--- 伪代码：PIT 表的增量维护
 INSERT INTO pit_customer
-SELECT
-  h.hub_customer_hash,
-  -- 对每个 Satellite，记录"当前有效版本的 load_datetime"
-  (SELECT MAX(load_datetime) FROM sat_customer_demo s WHERE s.hub_customer_hash = h.hub_customer_hash AND s.load_datetime <= :as_of) AS demo_load,
-  (SELECT MAX(load_datetime) FROM sat_customer_contact s WHERE s.hub_customer_hash = h.hub_customer_hash AND s.load_datetime <= :as_of) AS contact_load,
-  -- ...
+SELECT h.hub_customer_hash,
+       (SELECT MAX(load_datetime) FROM sat_customer_demo s
+         WHERE s.hub_customer_hash = h.hub_customer_hash AND s.load_datetime <= :as_of) AS demo_load,
+       -- 每个卫星各一列；末尾再加一列，让下游看出这张 PIT 是否落后
+       CURRENT_TIMESTAMP AS last_backfill_at
 FROM hub_customer h;
 ```
+**机制**：因为 PIT 把「取某时点最新版本」从**查询时的一次窗口聚合**提前成**加载后的一次指针落盘**，消费查询从「扫全部历史 + 排序」退化成「按指针等值 JOIN」——扫描量只与实体数有关，与历史版本数脱钩。代价是 PIT 自己成为一份需要调度的物化资产（展开见 §3.2.2，本节只讲怎么维护与怎么发现它坏了）。
 
-#### 4.2.5 Effectivity Satellite 软删除
+**失效条件**：**当上游卫星补数（回填历史）时**，已生成的 PIT 指针会指向旧版本，而 PIT 作业通常只按新增分区触发。**症状**是「同一时点的客户画像，直连卫星查与查 PIT 结果不同」，差异只出现在被回填的那批实体上；它不报错，只让两个下游对不上。识别信号就是上面的 `last_backfill_at`：与卫星最大 `load_datetime` 不等即说明 PIT 落后。修法是把上游补数事件纳入 PIT 的触发条件，而不是只按时间调度（【经验】）。
 
+#### 4.2.5 生效卫星（Effectivity Satellite）软删除
+
+**做法**：删除与失效**不物理删行**，写一条带 `effective_from` / `effective_to` / `deletion_reason` 的追加记录；**「是否当前有效」不落成存储列**，按 §3.2.5 由读侧用 `effective_to IS NULL` 派生（做成加载作业维护的布尔列，关闭一条关系就得回写历史行，追加写的前提随之失效）。合规类「删除请求」也走这条路径，不走 `DELETE`。
 ```sql
--- 伪代码：软删除
 INSERT INTO sat_customer_lifecycle
-SELECT
-  hub_customer_hash,
-  -- 业务时态 = 源系统的删除时间
-  source_deletion_time AS effective_from,
-  -- 失效时间 = 加载时间
-  CURRENT_TIMESTAMP AS effective_to,
-  FALSE AS is_current,
-  'GDPR_RIGHT_TO_BE_FORGOTTEN' AS deletion_reason,
-  CURRENT_TIMESTAMP AS load_datetime,
-  source_system
+SELECT hub_customer_hash,
+       source_deletion_time AS effective_from,   -- 业务时态：源系统的删除时间
+       CURRENT_TIMESTAMP    AS effective_to,     -- 失效时间 = 加载时间
+       'GDPR_RIGHT_TO_BE_FORGOTTEN' AS deletion_reason,
+       CURRENT_TIMESTAMP AS load_datetime, record_source
 FROM cdc_customer_deletion_stream;
 ```
+**机制**：因为关闭动作是一次 `INSERT`（追加一条收口记录），而不是对历史行的回写，所以加载侧不需要在目标表里定位旧行、也不需要为此加锁——同一实体的失效记录可以与其它的加载并行写入，误关了也不用还原被覆盖的行，再追加一条撤销即可。代价整个落在读侧：「当前有效」在库里不存在，每个消费者都要自带一条区间谓词或一次 `MAX(load_datetime)` 派生（模式层面的因果见 §3.2.5，此处不重复）。
+
+**失效条件**：**当下游消费者多到「谁没写过滤」已经无法靠评审守住时**（通常从第 5 个下游起，【经验：随下游团队数与上线节奏变，改一次口径要通知的面越宽越守不住】），「当前有效」就从数据里的性质退化成每个消费者 SQL 里的纪律。**症状**是同一指标在两张报表上数值不等、差额恰好等于已失效关系的量，而**没有任何作业报错**——这类记录通常很少，偏差小到不触发阈值告警。**识别信号**：对该卫星的下游引用做一次扫描，统计「引用了它、却不含区间谓词（`effective_to` / `is_current`）的查询」条数，这个数就是口径已经漂了多少处。修法是把 current 过滤固化在 Business Vault 视图或 PIT 这一层、由该视图的 Owner 维护：消费者只从视图取数，漏写谓词的结果是当场查不到数，而不是悄悄多算（【经验】）。
 
 #### 4.2.6 跨域 Same-As Link
 
+**做法**：多源 ID-Mapping 的产出**不落成物理合并后的客户表**，而落成 `link_customer_same_as`（两侧 Hub 哈希 + 判定来源 + 置信度 + 生效区间 + **判定批次序号** `batch_seq`——序号管定序、`record_source` 里的批次号管人可读的追溯，两者指向同一批次，缺一个都不行）；旧边的失效同样**只追加、不 `UPDATE`**——追加一条带 `effective_to` 的收口记录，原边行留在原位；「此刻这条边是否成立」由读侧派生：同一对 Hub 键下取 **`batch_seq` 最大**的那一行，`effective_to` 为空即成立（同一 `batch_seq` 内若同时出现收口行与重开行，以 `effective_to` 为空的那一行为准；派生形态与 §3.2.5 的视图一致，只是定序键从加载时间换成了判定批次序号，理由见本条机制）。
 ```sql
--- 伪代码：基于多源 ID-Mapping 构建 Same-As Link
-INSERT INTO link_customer_same_as
-SELECT DISTINCT
-  fn_md5_hash('CRM', crm_customer_bk) AS hub_crm_hash,
-  fn_md5_hash('ERP', erp_customer_bk) AS hub_erp_hash,
-  CURRENT_TIMESTAMP AS load_datetime,
-  'IDMAPPING_BATCH_20251015' AS record_source
-FROM id_mapping_batch
-WHERE match_confidence >= 0.95;
+-- batch_seq BIGINT NOT NULL：判定批次序号，单调递增，由判定作业在每批开始时发放
+-- match_confidence 用定点列（如 DECIMAL(4,3)）：下面按等值判定「同一置信度」，浮点列上做等值不可靠
+INSERT INTO link_customer_same_as  -- ① 关闭旧边：追加一条收口记录，原边行不 UPDATE、仍在位
+SELECT o.hub_crm_customer_hash, o.hub_erp_customer_hash, o.record_source, o.match_confidence,
+       o.effective_from, CURRENT_TIMESTAMP AS effective_to,   -- 生效起点沿用原边；区间在本次判定时点收口
+       CURRENT_TIMESTAMP AS load_datetime, :batch_seq AS batch_seq   -- 示例按一侧写，两侧同理
+FROM link_customer_same_as o
+WHERE o.effective_to IS NULL                 -- 只关当前有效的那一条
+  AND o.hub_crm_customer_hash IN (SELECT fn_md5_hash('CRM', crm_customer_bk) FROM id_mapping_batch)
+  AND NOT EXISTS (SELECT 1 FROM id_mapping_batch b  -- 本批仍以同一置信度确认的边不收口
+    WHERE fn_md5_hash('CRM', b.crm_customer_bk) = o.hub_crm_customer_hash
+      AND fn_md5_hash('ERP', b.erp_customer_bk) = o.hub_erp_customer_hash
+      AND b.match_confidence = o.match_confidence);  -- o. 不可省：内层 b 有同名列，省掉会绑成恒真
+INSERT INTO link_customer_same_as  -- ② 再追加本批新边：库里已有同置信度有效行的不重插
+SELECT DISTINCT fn_md5_hash('CRM', b.crm_customer_bk), fn_md5_hash('ERP', b.erp_customer_bk),
+                :batch_id AS record_source, b.match_confidence,            -- 判定来源 + 置信度
+                CURRENT_TIMESTAMP AS effective_from, NULL AS effective_to,  -- 生效区间
+                CURRENT_TIMESTAMP AS load_datetime, :batch_seq AS batch_seq
+FROM id_mapping_batch b
+WHERE b.match_confidence >= :confidence_threshold   -- 阈值须自行标定
+  AND NOT EXISTS (SELECT 1 FROM link_customer_same_as l
+    WHERE l.effective_to IS NULL
+      AND l.hub_crm_customer_hash = fn_md5_hash('CRM', b.crm_customer_bk)
+      AND l.hub_erp_customer_hash = fn_md5_hash('ERP', b.erp_customer_bk)
+      AND l.match_confidence      = b.match_confidence);
 ```
+**机制**：因为「关闭旧边 + 追加新边」是两段 `INSERT`（做法里的 ① 与 ②），所以一次误判的修复动作就是**再跑一个判定批次**，不需要回到已经合并的客户表上做行级还原——下游的客户数会随下一批判定自动回正。两段语句的条件互为补集：本批仍以同一置信度确认的边，① 不收口、② 也不重插，原行原封不动（**边没变就不该产生版本抖动**）；本批不再确认的边由 ① 收口；本批新成立的边由 ② 新开。唯一的例外是本批把一条边改判成了新置信度——这时 ① 收口旧行、② 追加新行，两条记录同批出现，而**同一批次在一个事务里跑，`CURRENT_TIMESTAMP` 取的是事务开始时间，两行必然并列**。所以读侧的定序键必须是 `batch_seq` 而不是 `load_datetime`：时间戳既在批次内并列、又可能让同一秒提交的两个批次无法定序，而 §4.2.2 那种「拿分区内真能取到不同值的列拆并列」的做法在这里也不适用——同一批次写出的两行本来就该是两个不同的值，哈希差异恰好说明的是「定序键选错了」，不是「可以用来定序」。两段语句还须读同一份 `id_mapping_batch` 快照、在同一事务内执行，且判定批次之间串行——并发批次会让同一对边的两批判定交错提交，`batch_seq` 最大的那一行未必是最后一次判定。也正因为如此，判定批次号必须落进 `record_source`：它是事后唯一能回答「这条边是哪次判定加进去的」的东西（等价关系为什么必须是数据而不是一次物理合并，见 §3.2.3）。
+
+**失效条件**：**当判定批次开始把弱证据（共享设备 ID、共享邮箱）也当连接器用、且旧边不再收口时**，一次假阳合并会被批次固化下来——弱证据的假阳率为什么会沿边集按乘积方式累积、从而把大量无关实体连成巨分量，见 §3.2.3 的失效点，此处不重复。**症状**是客户数逐月下降、ARPU 逐月上升，且**没有任何作业报错**，只在结算、审计或对外披露时暴露。**识别信号**：每批判定后统计一次连通分量的大小分布，最大分量占全部实体的比例若远超业务常识，即弱证据已跨组当了连接器；再随机取 100 个合并后的统一实体人工核验归属，得到的就是当前 `match_confidence` 阈值的假阳率。修法分两步：把弱证据的匹配范围收进判定批次的输入（`id_mapping_batch` 里带一列「已由强证据归组」的标记，弱证据规则的 `WHERE` 只落在该标记内），并让只有当前有效的等价关系进入连通分量计算（做法里的读侧派生）（【经验】；`match_confidence` 是示例参数，阈值必须用上面的反向抽检标定）。同一条边的**定序失效**是另一种坏法：**当读侧仍按 `load_datetime` 给同一对 Hub 键定序、而同一批次既收口又重开这条边时**（两行同批、时间戳相同），这条仍然成立的边被读成成立还是不成立，取决于引擎在并列处的任意取序，同一份数据在不同时间、不同并行度下给出不同结果。**症状**是客户数**成批地少掉**、重跑同一条查询结果还可能变，与上面那种逐月漂移的坏法不同。**识别信号**：按同一对 Hub 键统计 `load_datetime` 相同的行数，大于 1 就说明定序不稳，此时该查的是读侧有没有用 `batch_seq`，而不是去查判定规则。
 
 #### 4.2.7 多活动卫星（MAS）
 
+**做法**：同一 Hub 在同一时点的多个并发值（多个手机号、证件、账户）**作为一组**存储——组内按规范排序后拼接成一个 key 列，并算一个组哈希作 `hash_diff`；一组一行，组内任一值变化就整组换一行。
 ```sql
--- 伪代码：MAS 加载
 INSERT INTO sat_customer_multi_key
-SELECT
-  hub_customer_hash,
-  phone_number,
-  phone_type,  -- MOBILE / LANDLINE / WORK
-  effective_from,
-  effective_to,
-  CURRENT_TIMESTAMP AS load_datetime,
-  source_system
-FROM stage_customer_phones
-WHERE phone_number IS NOT NULL;
+SELECT hub_customer_hash, phone_group_key,   -- 组内排序后拼接的整组值（变更判定单元）
+       phone_type, fn_md5_hash(phone_group_key) AS hash_diff,  -- MOBILE / LANDLINE / WORK（分组语义维度）；组哈希=变更判定单元
+       effective_from, effective_to, CURRENT_TIMESTAMP AS load_datetime, record_source
+FROM stage_customer_phones WHERE phone_group_key IS NOT NULL;
 ```
+**机制**：因为变更判定被压成**一次组哈希比较**（做法里的 `hash_diff` 列），加载作业不必逐值比对、也不会在同一时点写出多行——它只要把 Stage 里按规范排好序的整组值拼出来算一次哈希。「整组作为一个变更单元」为什么能让时点语义唯一，见 §3.2.4，本节只讲加载侧怎么落地。
+
+**失效条件**：**当组内元素涨到数十个以上、且逐日都有变动时**，这批数据的写入量会按**组大小**增长，而不是按真实变更量增长（写放大为什么等于组大小，见 §3.2.4 的代价）。**症状**是这张卫星的存储增速明显快于其它卫星，而监控里 `hash_diff` 的变更率显示每天只有不到百分之一的实体真的变了——两个数对不上就是这里。**识别信号**：按月统计「该卫星新增行数 ÷ 实体数 ÷ 平均组大小」，比值接近 1 即说明每次加载都在整组重写。**修法**是把高变动率的多值属性从 MAS 拆出去独立成表，触发条件是上面两个数对不上，而不是等到业务方反映查询变慢（【经验：组大小与变动频率共同决定拆分的紧迫度】）。
 
 #### 4.2.8 数据血缘自动化
 
-Data Vault 的标准化结构让自动化血缘成为可能：
+**做法**：利用 Vault 的标准化命名与结构，把血缘从「逐条 SQL 解析」升级为「结构推导」——**Hub 表 = 实体节点、Link 表 = 关系边、Satellite 表 = 属性叶子**；用目录类工具（OpenMetadata / DataHub / Apache Atlas，见 §4.3.3）采集表级与字段级血缘，同时给三类表补一条**业务含义**元数据（这一项工具采不到，必须人工登记）。
 
-- Hub 表 = 实体血缘节点
-- Link 表 = 关系血缘边
-- Satellite 表 = 属性血缘叶子
+**机制**：因为表名列名在全库是同一套规范，血缘工具不需要理解每条 SQL 的语义，就能推出「同一业务键在多处的出现属于同一条实体链」——新增源时血缘覆盖率随建表一起增长，而不是随「有人记得补登记」增长。对比宽表模型：宽表新增一个源要改视图，视图一改，靠 SQL 解析得到的血缘就断在那里。
 
-工具推荐：
-- **OpenMetadata**：自动从 Hub/Link/Satellite 解析血缘
-- **DataHub**（LinkedIn）：自动 catalog + lineage
-- **Apache Atlas**：自动血缘 + 标签治理
+**失效条件**：**当团队在规范之外私自建表时**（临时表、手工补数表、跨层直连宽表），血缘会出现断点，而断点**不报警**。**症状**是「影响面分析给出的下游列表比实际短」——一次字段变更按清单通知完毕，仍有下游被打破，而这类下游通常最不被记录（临时报表、个人脚本）。识别信号：统计血缘图里**入度为 0 且无任何元数据登记**的表数量，这个数就是当前盲区规模。修法是把「未登记表」纳入发布门禁：没有业务含义与 Owner 元数据的表，不允许被下游持久引用（【经验】）。
 
 ### 4.3 工具链与平台
 
-#### 4.3.1 开源工具
+#### 4.3.1 建模与生成
 
-| 工具 | 角色 | 适用场景 |
-|---|---|---|
-| **dbtvault**（Python） | dbt 包，自动化生成 Hub/Link/Satellite DDL 与加载 | dbt + Snowflake/Databricks/Postgres 全家桶 |
-| **VaultSpeed** | 商业 ETL 工具，Data Vault 一键生成 | 企业级 ETL 自动化 |
-| **Data Vault Builder** | 元数据驱动的 DV 模型生成 | 自研平台集成 |
-| **SQLBDM** | 自动化 Data Vault 建模工具 | 传统行业落地 |
-| **Apache Hop** | 数据编排工具，支持 Data Vault 模式 | 轻量化 ETL |
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| dbt 生态内的生成器 | **dbtvault** | 团队已用 dbt 管 SQL，且目标库被 dbt 适配器覆盖——生成物是可 review 的 SQL | 每条 Hub / Link / Satellite 的加载 SQL 手写，规范只能靠评审守 |
+| 元数据驱动的商业生成器 | **VaultSpeed** | 源系统元数据与数据模型已集中管理，且接受商业许可与接入改造 | 模型与加载两条线分开维护，模型改了加载不跟着改 |
+| 自研平台里挂载的生成器 | **Data Vault Builder** | 内部已有建模平台，需要把模型元数据直接生成成 DV 结构 | 建模与建表之间靠人工转换，中间没有可复核的映射 |
+| 建模 + 生成一体 | **SQLBDM** | 部署形态要求本地安装、偏好「建模工具与生成器打包在一起」 | 需要自己拼一套从建模到生成的流程 |
+| 轻量编排 | **Apache Hop** | 团队规模小、不引入整套云平台，且希望编排层原生理解 DV 分层 | 用通用编排工具时，分层与并行加载靠约定保证，而非工具能力 |
 
-#### 4.3.2 商业平台
+这一类**最容易被误选**的是生成器本身：团队看到它能一键生成三件套，就在三张清单（§4.1.2）还没做完时先上工具，于是工具忠实地把源系统表结构生成成模型——每个源一张 Hub、源表外键全变成 Link。症状是 Link 数远多于关系清单里的业务关系数、同一实体在多个 Hub 里各有一份。判据只有一条：**生成器的输入必须是业务语义（实体 / 关系 / 属性清单），不是源系统的 DDL。** 另需注意：上表及各表的产品名与功能归属会随时间变化，选型前请以各产品官方文档与仓库的当前版本为准。
 
-| 平台 | 厂商 | Data Vault 支持 | 特点 |
-|---|---|---|---|
-| **Databricks** | Databricks | Lakehouse + DV 模板 | Unity Catalog + Delta + DV 2.0 |
-| **Snowflake** | Snowflake | 通过 dbtvault | 弹性计算 + 强一致性 |
-| **Microsoft Fabric** | Microsoft | OneLake + DV | 集成 Power BI / Synapse |
-| **阿里云 DataWorks** | 阿里云 | DataWorks 智能建模 | 国产化首选 |
-| **华为 FusionInsight** | 华为 | 集成 Data Vault 模板 | 政企市场 |
-| **Informatica** | Informatica | 完整 Data Vault 套件 | 传统 ETL 老牌 |
-| **Talend** | Talend | DV 模板 | 开源 ETL 老牌 |
+#### 4.3.2 承载与执行平台
 
-#### 4.3.3 云原生工具（2024-2025）
+| 平台 | 厂商 | 选型判据 | 不选它的代价 |
+| --- | --- | --- | --- |
+| **Databricks** | Databricks | 已有湖仓，或要同时跑批与 ML，且希望目录（Unity Catalog）与权限在同一平面 | DV 表与 ML 特征各一套元数据与权限，跨团队复用要先做映射 |
+| **Snowflake** | Snowflake | 需要弹性计算与托管运维、能接受按用量计费，并愿意用 dbtvault 一类工具生成加载 | 自建集群时弹性、隔离与并发管理要自己做 |
+| **Microsoft Fabric** | Microsoft | 组织已绑定微软 BI / Power BI 栈、或已有 Synapse 存量作业，希望目录（OneLake）与报表同源 | 需另接一套编排与目录，报表侧仍要一次元数据对齐 |
+| **阿里云 DataWorks** | 阿里云 | 有国产化或数据驻留要求，且已在阿里云数据体系内 | 建模 + 调度 + 目录三件套自建，运维面变宽 |
+| **华为 FusionInsight** | 华为 | 政企 / 国产化要求，且已有华为栈基础 | 同上 |
+| **Informatica** | Informatica | 已有存量 ETL 投资与强合规要求，需要与既有作业体系共存而非替换 | 新旧作业体系两套并存，双轨期治理成本翻倍 |
+| **Talend** | Talend | 需要开源 / 商业混合的 ETL 能力，团队已有该工具经验 | 引入新工具时存量作业要整体迁移或永久并存 |
 
-| 工具 | 厂商 | 特点 |
-|---|---|---|
-| **dbt + Snowflake/Databricks** | dbt Labs | 现代化 DV 流水线 |
-| **Polars + Delta Lake** | 开源 | 高性能 DV 加载（Python） |
-| **DuckDB + dbt** | 开源 | 本地化 DV 实验 |
-| **Apache Hudi + Flink** | 开源 | 流式 DV 入仓 |
-| **Materialize** | 商业 | 实时物化视图 + DV |
-| **RisingWave** | 开源 | 流式 DV 入仓 + 增量计算 |
+#### 4.3.3 云原生加载、流式与目录
 
-#### 4.3.4 推荐组合（按场景）
+| 类别 | 候选 | 选型判据 | 不选它的代价 |
+| --- | --- | --- | --- |
+| 现代 DV 流水线 | **dbt + Snowflake / Databricks** | 团队以 SQL 为主要交付物，需要版本化、可测试的转换层 | 加载逻辑散在调度脚本里，模型与作业无法一起 review |
+| 高性能加载 | **Polars + Delta Lake** | 单机或小集群要跑出足够吞吐、团队以 Python 为主 | 用通用分布式作业加载小批量时，调度开销占主导 |
+| 本地建模验证 | **DuckDB + dbt** | 建模阶段要在本地验证 DDL 与查询，不需要集群 | 每次改模型都上集群试，反馈周期以小时计 |
+| 流式入仓 | **Apache Hudi + Flink** | 要求流批一体、需要 upsert 与增量读 | 只做批量 CDC 时时效性向调度周期让步 |
+| 流式物化 | **Materialize** | 需要把「持续更新的视图」直接对外提供，接受商业许可 | 用批处理模拟实时视图，延迟由调度周期决定 |
+| 流式物化 | **RisingWave** | 同上，且偏好开源许可 | 同上 |
+| 目录与血缘 | **OpenMetadata** | 需要从 DV 结构自动解析血缘，且血缘、质量、治理在同一平台 | 血缘与质量各接一套，元数据要同步两份 |
+| 目录与血缘 | **DataHub**（LinkedIn） | 需要统一事件模型接多种源，且血缘被目录 / 质量 / 权限 / CI 多系统共用 | 每个工具各自解析一次 SQL，血缘口径开始分叉 |
+| 目录与血缘 | **Apache Atlas** | 已有 Hadoop 系生态，需要以标签与分类驱动的治理 | 复用既有生态时改造量反而更大 |
 
-| 场景 | 推荐组合 |
-|---|---|
-| 互联网企业 / 敏捷 | dbt + Snowflake/Databricks + dbtvault + OpenMetadata |
-| 传统金融 / 强合规 | Informatica/Talend + Oracle/DB2 + Apache Atlas |
-| 云原生创业 | DuckDB + dbt + Iceberg + OpenMetadata |
-| 国产化 / 政企 | 阿里云 DataWorks / 华为 FusionInsight + 自研 DV 模板 |
-| 实时数仓 | Flink + Hudi + Kafka + RisingWave |
-| 湖仓 | Databricks + Delta Lake + Unity Catalog + DV 2.0 |
+这一类**最容易被误选**的是目录工具：团队按「哪个功能多」选，而没先确认**血缘的采集方式**（自动解析还是要求人工登记）。血缘一旦依赖人工登记，覆盖会在几个月内持续下降（与 §4.2.8 的失效条件同源）。判据是：新增一个源之后，血缘是自动出现，还是要有人手动补？
 
-### 4.4 代码 / SQL 示例
+#### 4.3.4 按场景的候选组合
+
+| 场景 | 候选组合 | 这套组合成立的前提 |
+| --- | --- | --- |
+| 互联网企业 / 敏捷 | dbt + Snowflake/Databricks + dbtvault + OpenMetadata | 团队以 SQL 交付，且有专人守模型评审 |
+| 传统金融 / 强合规 | Informatica/Talend + Oracle/DB2 + Apache Atlas | 已有存量 ETL 与本地部署约束，且愿承担双轨期治理成本 |
+| 云原生创业 | DuckDB + dbt + Iceberg + OpenMetadata | 数据量与团队规模都还小，先在本地把模型跑对 |
+| 国产化 / 政企 | 阿里云 DataWorks / 华为 FusionInsight + 自研 DV 模板 | 有数据驻留要求；模板要自研，通用生成器往往不覆盖你的命名规范 |
+| 实时数仓 | Flink + Hudi + Kafka + RisingWave | 业务确实需要分钟级，且团队能承担流式 SQL 的运维 |
+| 湖仓 | Databricks + Delta Lake + Unity Catalog + DV 2.0 | 已有湖仓投资，且接受 DV 与 ML 共用一套目录 |
+
+### 4.4 存量迁移
+
+这一节写给**已有 3–5 年 Kimball / 3NF 数仓、要在不推翻重来的前提下引入 Data Vault** 的读者，回答三件事：先把哪一部分做成可回退的试点、存量资产分几类处理、双轨维持到什么时候。
+
+#### ① 立刻见效且可回退的一步
+
+**不要动存量，先做一个域。** 挑「源系统多、加字段最频繁、下游消费者最少」的业务域，只对它建 Raw Vault，产出只供给一个新报表或一个新下游。
+
+- **为什么可回退**：DV 是**新增的一层**，老链路一行没改；退出方式就是停掉那一个新下游，不需要回滚数据、不需要还原表。
+- **判据**：试点域跑满两个完整加载周期后，回答「这个域现在加一个字段，要改几张表、谁批？」答案从「≥2 张表 + 跨团队评审」变成「新增一张 Satellite、本域 Owner 批」才算有效。这个数在试点前后各测一次，而不是凭感觉对比。
+- **不要在这一步做的事**：不要顺手重做 ODS 层、不要顺手统一所有源的编码——它们会被后面的返工带偏，且与「验证 Vault 能不能装下这个域」无关。
+
+#### ② 历史资产怎么分类处理
+
+| 类别 | 适用范围 | 处理方式 | 风险 |
+| --- | --- | --- | --- |
+| **全部返工** | 体量小、源端历史完整、当前无下游依赖的表 | 按 Vault 重建，历史一次性回填 | 成本按表数线性增长；回填期该表不可供数 |
+| **只改动的部分**（主流） | 绝大多数存量 DWD 表 | 存量**冻结**（只修 bug，不再加字段），新需求一律走 Vault；两边用同一套哈希键规范，保证将来能 JOIN | 冻结期存量表持续变旧，需要明确的除役清单与时间表 |
+| **打标挂账** | ADS / 报表层，以及无法重建历史的表 | 不迁移，登记「来源链路 + 最后一次变更时间 + Owner + **缺少什么**」 | 挂账项会长期存在，必须有人定期复核，否则等于被遗忘 |
+
+历史回填的真实边界：源系统保留期之外的历史**无法重建**，这类实体在 Vault 里只能以「首次加载时点」作为最早业务时态，并**在元数据里显式标注**——审计要的是可追溯性声明，不是假装没有缺口。核验方法是随机抽 3 个实体，看它们的业务时态最早值是否等于源系统的历史起点；若恰好等于本次加载的起点，说明回填边界被静默当成了业务起点，必须补标注。
+
+#### ③ 双轨怎么维持、维持多久
+
+- **双轨的形态**：必须有一条**对账作业**——每个周期用同一个业务问题分别跑老链路与新链路比数值。它是双轨的成本主体，也是唯一的退出依据；结果要留原始数字而不只留结论，「已对齐」三个字在下一次出现差异时提供不了任何线索。
+- **【经验】时长**：单域试点通常 1–2 个月；整体切换的时长主要由**要切断的下游报表 / 应用数量**决定，而不是由表数量决定——一个 ADS 报表的切断需要业务方配合验证。所以答案不是固定的，它随下游数量增长。
+- **双轨期禁止的两件事**：在老链路上开发新功能（双轨会因此变成永久）；让同一指标由两条链路同时供数却**不标注来源**（对不上账时无法定位是哪条链路变了）。
+
+#### ④ 什么信号说明可以退出双轨
+
+四个条件同时满足才退出：**① 对账连续跑满约定周期**（例如两个完整的月结周期），差异为零或已逐条归因；**② 下游改接清单全部完成**，且改接后的下游各自跑满一个完整业务周期（含一次月末 / 季末）；**③ 老链路连续 N 个周期零查询**——依据是查询日志，不是问人（问人得到的答案永远偏保守）；**④ 回滚方案在最近一次演练中被真的执行过**，而不只是写在文档里。任何一条不满足就继续双轨：继续的成本可算（多一份调度与对账的人力），提前退出的成本不可算（下游口径悄悄漂移，发现时已跨过若干结算周期）。
+
+### 4.5 模板 / 示例
 
 #### 示例 1：Hub + Satellite 完整 DDL
 
 ```sql
--- Hub：客户业务键
+-- Hub：只有哈希键、业务键与元数据，没有任何描述性字段
 CREATE TABLE hub_customer (
-    hub_customer_hash   CHAR(32) NOT NULL,    -- MD5 哈希键
-    customer_bk        VARCHAR(50) NOT NULL, -- 业务键
-    load_datetime      TIMESTAMP NOT NULL,
-    record_source      VARCHAR(50) NOT NULL,
-    PRIMARY KEY (hub_customer_hash)
+    hub_customer_hash CHAR(32) NOT NULL, customer_bk VARCHAR(50) NOT NULL,  -- MD5 哈希键 + 业务键
+    load_datetime TIMESTAMP NOT NULL, record_source VARCHAR(50) NOT NULL, PRIMARY KEY (hub_customer_hash)
 );
-
--- Satellite：客户人口属性（低频变更）
+-- Satellite：人口属性（低频变更）
 CREATE TABLE sat_customer_demo (
-    hub_customer_hash   CHAR(32) NOT NULL,
-    load_datetime      TIMESTAMP NOT NULL,
-    load_end_datetime  TIMESTAMP,             -- NULL = 当前有效
-    record_source      VARCHAR(50) NOT NULL,
-    name               VARCHAR(100),
-    gender             CHAR(1),
-    birthday           DATE,
+    hub_customer_hash CHAR(32) NOT NULL, load_datetime TIMESTAMP NOT NULL,
+    load_end_datetime TIMESTAMP,                 -- 可选列：示例保留，默认不维护，理由见下方「怎么用」
+    hash_diff CHAR(32) NOT NULL,                 -- 属性集合哈希，加载时先比后插
+    record_source VARCHAR(50) NOT NULL,
+    effective_datetime TIMESTAMP,                -- 业务时态：源事务时间（§4.2.3）
+    name VARCHAR(100), gender CHAR(1), birthday DATE,
     PRIMARY KEY (hub_customer_hash, load_datetime)
 );
-
--- Satellite：客户联系方式（高频变更）
+-- Satellite：联系方式（高频变更）——与上一张分开，绝不合并
 CREATE TABLE sat_customer_contact (
-    hub_customer_hash   CHAR(32) NOT NULL,
-    load_datetime      TIMESTAMP NOT NULL,
-    load_end_datetime  TIMESTAMP,
-    record_source      VARCHAR(50) NOT NULL,
-    phone              VARCHAR(20),
-    email              VARCHAR(100),
-    PRIMARY KEY (hub_customer_hash, load_datetime)
+    hub_customer_hash CHAR(32) NOT NULL, load_datetime TIMESTAMP NOT NULL,
+    load_end_datetime TIMESTAMP,                 -- 可选列，同上
+    hash_diff CHAR(32) NOT NULL,
+    record_source VARCHAR(50) NOT NULL, phone VARCHAR(20), email VARCHAR(100), PRIMARY KEY (hub_customer_hash, load_datetime)
 );
-
--- Link：客户-订单关系
+-- Link：只有参与方哈希键与元数据，没有业务属性
 CREATE TABLE link_customer_order (
-    link_co_hash       CHAR(32) NOT NULL,
-    hub_customer_hash  CHAR(32) NOT NULL,
-    hub_order_hash     CHAR(32) NOT NULL,
-    load_datetime      TIMESTAMP NOT NULL,
-    record_source      VARCHAR(50) NOT NULL,
-    PRIMARY KEY (link_co_hash)
+    link_co_hash CHAR(32) NOT NULL, hub_customer_hash CHAR(32) NOT NULL, hub_order_hash CHAR(32) NOT NULL,
+    load_datetime TIMESTAMP NOT NULL, record_source VARCHAR(50) NOT NULL, PRIMARY KEY (link_co_hash)
 );
 ```
+**怎么用**：改三处——`CHAR(32)` 的长度要与所选哈希算法一致（MD5 是 32 个十六进制字符）；`record_source` 的取值约定要在全库统一（用源系统代号，不要用表名，§4.2.2 的 `CASE` 就是按它分档的）；`effective_datetime` 只在源端能提供可靠事务时间时才落，拿不到就留空，不要用加载时间冒充业务时态，否则 §4.2.3 的逆序对信号会失真。
+`load_end_datetime` 是**可选列：示例里保留着，但默认不维护**——本节的卫星按 §3.2.1 只追加、永不 `UPDATE`，取「某时点的最新版本」用 `MAX(load_datetime)` 或在 PIT 里落指针即可（§4.2.4）。只有当你确实要用区间谓词（`load_datetime <= T < load_end_datetime`）在读侧省掉窗口函数时，才维护它——那是对「永不 UPDATE」的**有意偏离**：每次追加新版本都要回写上一行的 `load_end_datetime`，加载作业从纯 `INSERT` 变成 `INSERT + UPDATE`，同一实体的并发加载开始争锁，而且回写中断时会留下「两行都没有结束时间」的破损状态，需要一条独立巡检来兜。选它之前先确认读侧的收益大于这笔维护成本。
+**不要照抄**：字段类型长度是按示例业务给的，按你的业务键与姓名实际长度调整；`hash_diff` 是本节的约定列，若你已用其它方式做变更判定，换成你的方式。
 
 #### 示例 2：业务查询（消费层视角）
 
 ```sql
--- 业务查询：查询某客户在某时间点的完整画像 + 最近订单
-WITH current_customer AS (
-  SELECT DISTINCT ON (hub_customer_hash)
-    hub_customer_hash,
-    name, gender, birthday, phone, email
-  FROM (
-    SELECT
-      s.hub_customer_hash,
-      s_demo.name, s_demo.gender, s_demo.birthday,
-      s_contact.phone, s_contact.email,
-      COALESCE(s_demo.load_datetime, s_contact.load_datetime) AS load_datetime
-    FROM hub_customer h
-    LEFT JOIN sat_customer_demo s_demo
-      ON s_demo.hub_customer_hash = h.hub_customer_hash
-     AND s_demo.load_datetime <= '2025-10-01'
-    LEFT JOIN sat_customer_contact s_contact
-      ON s_contact.hub_customer_hash = h.hub_customer_hash
-     AND s_contact.load_datetime <= '2025-10-01'
-  ) t
-  ORDER BY hub_customer_hash, load_datetime DESC
+-- 某客户在某时点的完整画像 + 该客户截至该时点的订单
+WITH demo AS (   -- 人口属性：取 ≤ 该时点的最新版本
+  SELECT hub_customer_hash, name, gender, birthday FROM (
+    SELECT s.*, ROW_NUMBER() OVER (PARTITION BY hub_customer_hash ORDER BY load_datetime DESC) AS rn
+    FROM sat_customer_demo s WHERE s.load_datetime <= :as_of_date) x WHERE rn = 1
+),
+contact AS (     -- 联系方式：同一形态，各自取一次
+  SELECT hub_customer_hash, phone, email FROM (
+    SELECT s.*, ROW_NUMBER() OVER (PARTITION BY hub_customer_hash ORDER BY load_datetime DESC) AS rn
+    FROM sat_customer_contact s WHERE s.load_datetime <= :as_of_date) x WHERE rn = 1
+),
+order_header AS (  -- 订单头：第三张卫星，形态与前两张完全相同——不因为它在 Link 的另一侧而例外
+  SELECT hub_order_hash, order_amount, order_status FROM (
+    SELECT s.*, ROW_NUMBER() OVER (PARTITION BY hub_order_hash ORDER BY load_datetime DESC) AS rn
+    FROM sat_order_header s WHERE s.load_datetime <= :as_of_date) x WHERE rn = 1
 )
-SELECT
-  c.hub_customer_hash, c.name, c.gender,
-  o.hub_order_hash, sat_o.order_amount, sat_o.order_status
-FROM current_customer c
-LEFT JOIN link_customer_order l ON l.hub_customer_hash = c.hub_customer_hash
-LEFT JOIN hub_order o ON o.hub_order_hash = l.hub_order_hash
-LEFT JOIN sat_order_header sat_o ON sat_o.hub_order_hash = o.hub_order_hash
-ORDER BY c.hub_customer_hash, sat_o.load_datetime DESC;
+SELECT h.hub_customer_hash, d.name, d.gender, d.birthday, c.phone, c.email,
+       o.hub_order_hash, oh.order_amount, oh.order_status
+FROM hub_customer h
+LEFT JOIN demo d                 ON d.hub_customer_hash = h.hub_customer_hash
+LEFT JOIN contact c              ON c.hub_customer_hash = h.hub_customer_hash
+LEFT JOIN link_customer_order l  ON l.hub_customer_hash = h.hub_customer_hash
+LEFT JOIN hub_order o            ON o.hub_order_hash = l.hub_order_hash
+LEFT JOIN order_header oh        ON oh.hub_order_hash = o.hub_order_hash
+ORDER BY h.hub_customer_hash, o.hub_order_hash;
 ```
+**怎么用**：把 `:as_of_date` 换成你要问的时点。关键是**每张卫星各自取一次「≤ 该时点的最新版本」，再按 Hub 哈希等值 JOIN 回 Hub**——三张卫星（人口、联系方式、订单头）一律如此，没有例外；这是「时点切片」的本形，消费层每个查询都会用到。同一时点被高频查询时应落成 PIT（§4.1.6 / §4.2.4），而不是每次现算。
+**不要照抄**：`ROW_NUMBER()` 的写法各引擎略有差异，先按所用引擎改语法。更要紧的是不要照抄**执行形态**：把两张卫星直接 JOIN 起来、再在外层挑一行，会让一张卫星的每个历史版本与另一张的每个历史版本两两组合（行数随两侧版本数乘积增长），最后挑出的那一行里，「最新的人口属性」与「任一时点的联系方式」被拼在了一起——它不是该时点的画像，而且排序键若取 `COALESCE(两边的加载时间)`，取到哪个联系方式完全由人口属性那一侧决定。
 
----
+### 4.6 自检清单
+
+- [ ] 随机抽 100 条 Hub 记录，按登记的字段顺序与分隔符**独立重算一次哈希**，是否全部相等？
+- [ ] 抽样 3 张卫星表，最近一个月的新增行数是否与源端该属性的**实际变更次数**同量级（而不是与业务量同量级）？
+- [ ] 「给实体加一个属性」需要 `ALTER` 的表有几张？答案 > 0，说明 Hub 或 Link 里混进了属性。
+- [ ] 每个 Link 抽 5 行，能否在源系统里找到对应的业务凭证？找不到的那条，Link 的粒度是不是拿错了？
+- [ ] 线上每个 PIT 物化表的「最后回填时间」，与上游卫星的最大 `load_datetime` 差了几个周期？（该不该建 PIT、要建几张属建模期判断，见 §3.7）
+- [ ] 随便挑一条已失效的关系（`effective_to` 非空），它是否出现在任意一张对外报表里？
+- [ ] 卫星的加载监控里，「被 `hash_diff` 挡掉的行数」是否在被观测？没有这个数，就看不出变更判定是不是失效了。
+- [ ] 变更流里是否有乱序或重放？按实体统计逆序对——同一条实体按 `load_datetime` 升序排好后，`effective_datetime` 递减的相邻版本对，是否为 0（不为 0 即有晚到版本被后写入的行盖住）？只看 `MAX(业务时态) − MAX(加载时态)` 看不出来，它恒为负。
+- [ ] 统计一次 Same-As Link 的连通分量大小分布，最大分量占全部实体的比例是否符合业务常识？再随机抽 100 个合并后的统一实体人工核验归属，假阳率与当前阈值对得上吗？（弱证据该不该进分组、边界在哪，属建模期判断，见 §3.7）
+- [ ] 血缘图里**入度为 0 且没有任何元数据登记**的表有多少张？这个数就是当前影响面的盲区规模。
+- [ ] 存量迁移期：对账作业在跑吗？连续归零了几个周期？老链路最近一次被查询是什么时候——是查日志得到的，还是问人得到的？
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里，唯一决定成败的环节是 **§4.1.2 三张清单里属性清单的「变更频率」一列**。它没有技术门槛，却是唯一需要回源系统查变更日志、最容易被跳过的一列；跳过它，会得到一个「每张表都建对了、但每次变更都要整表重跑」的 Vault —— 团队为可演化性付了全额，却在第一次加字段时发现它不在了。判断一个 Data Vault 项目能不能走通，看的不是它建了多少张 Satellite，而是**第一次有人加字段时，需要动几张表、由谁批**。
+
+> 配合 [§ 2 核心原理](03-data-vault.md)、[§ 3 设计模式与范式](03-data-vault-section-3-sec3.md)、[§ 5 前沿演进](03-data-vault-section-5-ai.md) 与 [§ 6 落地实践](03-data-vault-section-6-sec6.md) 阅读：§ 2 给 Hub / Link / Satellite 与三时态语义，§ 3 给构件拆分、模式代价与反模式，§ 6 给真实公司的落地案例。

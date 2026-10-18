@@ -1,431 +1,327 @@
-> 本文件是 **02-llm-in-sql.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](02-llm-in-sql.md)。
+> 本文件是 **02-llm-in-sql.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](02-llm-in-sql-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](02-llm-in-sql.md)。
 
 ## 4. 工程实现
 
+§ 3 讲的是模式：每个模式被哪条约束逼出来、结构是什么、机制与失效点在哪。本节讲的是**已经选定模式之后的事**——先做哪一步、每一步手上应该多出什么东西、怎么知道自己做偏了、工具按什么判据选、以及**已经有一批导出到 Python 调 LLM 的历史作业时怎么改造**。
+
+两类读者的入口不同。**存量改造**是本主题的多数情况（已有数仓、已有若干条把数据导出后调外部 API 的作业、已有几列向量没有索引），建议先读 §4.4 再回来补 §4.1 的缺步；**从零搭建**（新集群、新场景）按 §4.1 顺序走即可。§4.2 与 §4.3 两类读者共用。数据边界、调用行数、成本杠杆位这些约束与模式的对应关系见 § 3，本节不重复。
+
 ### 4.1 落地步骤
 
-**Step 1：场景识别与 ROI 评估**
+**Step 1：场景识别与 ROI 评估（1–3 周【经验：随候选场景数与合规评审流程变】）**
 
-- 识别适合 LLM in SQL 的场景（文本分类、摘要、实体抽取、向量检索、NL2SQL）。
-- 评估 ROI（vs Python + 外部 API）：成本、性能、合规优势。
-- 输出：**LLM in SQL 应用矩阵**。
+识别适合 LLM in SQL 的场景（文本分类、摘要、实体抽取、向量检索、NL2SQL），并与「Python + 外部 API」对照评估成本、性能与合规。
 
-**Step 2：数据库 / 平台选型**
+- **产物**：**LLM in SQL 应用矩阵**——每个场景一行，列含：任务类型、数据是否可出仓、**扫描行数**、**进入调用的行数**、结果的用途（进不进正式链路）。
+- **判据**：矩阵里每一行都必须填得出「扫描行数」与「进入调用行数」这两个数（量级即可）；填不出的场景先不进矩阵。**进入调用的行数 ÷ 扫描行数**就是 [§ 3.1](02-llm-in-sql-section-3-sec3.md) 的成本杠杆位。
+- **为什么必须这一步 / 为什么在这个位置**：§ 3 的决策表用「进入调用的行数」区分函数化与批处理。这两个数只能在选场景时取得——先按功能选完场景、上线后再去数行数，常见结果是两个数量级的差，作业结构要重写（补谓词下推、增量键、失败行落表），而不是改几个函数参数。
 
-- 评估数据库厂商支持（Snowflake Cortex / Databricks AI Functions / 阿里 PolarDB AI / PostgreSQL pgai / ClickHouse / DuckDB）。
-- 评估模型支持（内置模型 / BYO-LLM / 自托管）。
-- 评估成本（Token 计费、存储、计算）。
-- 输出：**选型决策 ADR**。
+**Step 2：数据库 / 平台选型（1–2 周【经验：随候选平台数与内部审批层级变】）**
 
-**Step 3：模型路由与配额设计**
+评估平台对 AI 函数的支持（Snowflake Cortex / Databricks AI Functions / 阿里 PolarDB AI / PostgreSQL pgai / ClickHouse / DuckDB 一类）、模型来源（内置模型 / BYO-LLM / 自托管）与计费方式（Token 计费、存储、计算）。
 
-- 设计模型路由（任务 / 成本 / 合规 / 延迟）。
-- 配置 Token 配额（每用户 / 部门 / 项目）。
-- 配置成本告警（超过阈值告警）。
-- 输出：**模型路由配置 + 配额策略**。
+- **产物**：**选型决策 ADR**——含每个候选平台的**能力核验记录**：函数名、签名、文档版本或章节、核验日期，以及「未核验」标注（拿不准的能力必须显式标注，不能默认支持）。
+- **判据**：去该平台的官方 SQL 函数参考里，逐个找到你要用的函数条目；只看产品首页或发布博客不算核验。同名的能力在不同平台写法不同（§3.2.1 与 §3.2.4 的首选方案在不同平台上函数名不通用），**不要互相套用**。
+- **为什么必须这一步 / 为什么在这个位置**：AI 函数没有跨厂商标准，函数名与签名各家不同；选型决定后面所有 SQL 的写法。放到 Step 5 之后才发现某个函数不存在，返工范围是整个作业而不是一行配置。
 
-**Step 4：数据接入与权限配置**
+**Step 3：模型路由与配额设计（1–2 周【经验：随部门数量与预算粒度变】）**
 
-- 准备数据表（含原始文本 / 文档）。
-- 配置 AI 算子访问权限。
-- 配置敏感数据脱敏规则。
-- 输出：**可调用的数据 + 权限**。
+设计模型路由（按任务 / 成本 / 合规 / 延迟四类），配置 Token 配额（每用户 / 部门 / 项目），配置成本告警阈值。
 
-**Step 5：AI Function 测试与 Prompt 调优**
+- **产物**：**模型路由配置表 + 配额策略 + 告警阈值**，以及一组「路由判定样例」——历史上真实出现过的请求各归到哪一档。
+- **判据**：取 20 条历史请求【经验：抽样条数随日均调用量与任务种类变，种类多则要更多】，按路由表人工判一遍，数出**落在经济档的比例**；占比很低说明分档没省到钱（[§ 3.2.7](02-llm-in-sql-section-3-sec3.md) 的失效点），要重新划档而不是继续叠档位。
+- **为什么必须这一步 / 为什么在这个位置**：路由表在 Step 5 调 Prompt 时会反复改（换模型要先看档位），所以它必须在 Step 5 之前成形；否则 Prompt 调优的结果会绑死在某一个档位上，之后按成本重新分档等于重调一遍。
 
-- 在小数据集（1000-10000 行）测试 AI Function。
-- 调优 Prompt（准确性、成本、延迟）。
-- 评估缓存效果。
-- 输出：**Prompt 模板 + 评估报告**。
+**Step 4：数据接入与权限配置（1–3 周【经验：随数据源数量与密级核对工作量变】）**
 
-**Step 6：批处理 Pipeline 部署**
+准备含原始文本 / 文档的表，配置 AI 算子的访问权限，配置敏感数据脱敏规则。
 
-- 构建离线批处理 ETL（基于 Airflow / DolphinScheduler）。
-- 配置批处理调度（每天 / 每周）。
-- 配置结果持久化（存到事实表）。
-- 输出：**批处理 Pipeline**。
+- **产物**：可调用的数据 + **权限矩阵**（谁能读哪些行 / 哪些列）+ 脱敏规则清单 + **产出列的密级标签**。
+- **判据**：用一个只有受限权限的账号跑一遍典型查询，确认受限行与受限列确实取不到；再抽 1 张含 PII 的表【经验：抽到覆盖你现有的主要密级为止】跑一次 AI 算子，检查**产出表里的新列是否继承了源列的密级**——只做读取侧控制时，这一项通常不过。
+- **为什么必须这一步 / 为什么在这个位置**：AI 算子读的是行、写的是列，权限要同时定义在「读的边界」和「产出的边界」上。产出侧的定义只能在作业写之前确定，作业上线后再补，已经落表的敏感值就收不回来了。
 
-**Step 7：实时查询上线**
+**Step 5：AI Function 测试与 Prompt 调优（1–2 周【经验：随场景数与单次调用成本变】）**
 
-- 上线 AI Function 实时查询。
-- 配置超时降级。
-- 配置审计日志。
-- 输出：**实时 AI Function 服务**。
+在小数据集上测试 AI Function（千行量级，例如 1000–10000 行；具体取多少由单行 token 长度与预算决定【经验】），调优 Prompt 的准确性、成本与延迟，评估缓存效果。
 
-**Step 8：可观测与成本监控**
+- **产物**：**Prompt 模板**（含版本号与适用档位）+ **评估报告**（含重跑一致率、失败行清单、成本估算）。
+- **判据**：同一批输入重跑若干次【经验：次数随任务随机性变，枚举型输出要求高于开放式生成】，数**输出发生变化的行占比**——枚举型任务的这项读数应接近于零，否则产出不能进正式链路。
+- **为什么必须这一步 / 为什么在这个位置**：这一层是唯一能低成本试错的地方（千行量级）。放到 Step 6 的全量批处理上做，每次试错的代价是整表的调用费用，团队会因此放弃调优。
 
-- 集成 Langfuse / Phoenix（LLM 可观测）。
-- 集成 CloudWatch / Prometheus（数据库可观测）。
-- 配置 Token 用量、成本、延迟仪表盘。
-- 配置告警（Token 超限、成本超预算）。
-- 输出：**可观测的 LLM in SQL 平台**。
+**Step 6：批处理 Pipeline 部署（2–4 周【经验：随调度平台成熟度与失败重跑要求变】）**
+
+构建离线批处理（编排用 Airflow / DolphinScheduler 一类），配置调度周期（每天 / 每周），把结果持久化到事实表。
+
+- **产物**：批处理 Pipeline + **增量键** + **失败行落表** + 可单独重跑的入口。
+- **判据**：取一批已经处理过的输入重跑一次作业，**调用次数应为零**（增量键生效）；再人为让一批中的部分行失败，确认能只重跑失败行而不是整批重来。
+- **为什么必须这一步 / 为什么在这个位置**：批处理省钱的根本原因（只调需要调的行）见 [§ 3.2.2](02-llm-in-sql-section-3-sec3.md)，这里只说顺序：增量键与失败行落表必须在首次全量跑之前设计好——首次全量跑完之后再补，第一笔重复付费已经发生，而且手上没有一份「首跑的每行成本」基线可以拿来做后续对照，连「这次重跑多花了多少」都答不出。
+
+**Step 7：实时查询上线（1–2 周【经验：随 SLA 等级与降级策略复杂度变】）**
+
+上线 AI Function 实时查询，配置超时降级，配置审计日志。
+
+- **产物**：实时服务 + **超时降级路径**（返回缓存结果 / 返回空并标注 / 拒绝并提示重试，三选一并写明）+ 审计日志（含 input、output、token、latency、提示词版本）。
+- **判据**：人为把模型端点响应时间拉到超过 SLA，确认降级路径真的被触发且**下游拿到的是一个可识别的降级标记**，而不是一个空值被当成正常结果。
+- **为什么必须这一步 / 为什么在这个位置**：实时链路的尾延迟由模型端点决定，不由引擎决定；降级策略必须在业务方开始依赖这条链路之前就位——上线后再加，下游已经按「总有值」写了逻辑。
+
+**Step 8：可观测与成本监控（与 Step 6/7 同期上线，无独立工期【经验：随团队数与计费周期数变】）**
+
+集成 LLM 侧可观测与数据库侧可观测，配置 Token 用量、成本、延迟三类仪表盘，配置告警（Token 超限、成本超预算）。
+
+- **产物**：**双看板**（LLM 侧看 Trace / Token / 提示词版本，数据库侧看查询延迟与资源）+ 成本仪表盘（按用户 / 部门 / 项目 / 模型，以及**按作业**）+ 告警规则。
+- **判据**：从最近一次作业的运行记录出发，能否在**数据库侧与模型侧**都查到同一次调用；两处的记录条数一致、成本可相加，才算完成归因。
+- **为什么必须这一步 / 为什么在这个位置**：成本是两个账单的合成（数据库账单 + 模型账单），按作业归因的标签只能在作业运行时打上；事后按比例分摊得到的数字无法回答「是哪个作业把它花掉的」。
+
+**最常被跳过的是 Step 3 的配额与告警，以及 Step 6 的增量键。** 它们被跳过的原因相同：不产出任何可见功能。它们的症状出现在**组织的时间点**上——配额与告警的缺失在第一个完整计费周期结束时以账单形式出现，此时所有已上线的作业都运行正常、没有任何一处会报错；增量键的缺失在第一次例行重跑时出现（作业耗时与首跑相同，而这次的数据增量只有很小一部分）。两个时点都在「已经花过钱」之后，所以它们只能靠流程锁死，不能靠事后发现。
 
 ### 4.2 关键技术点
 
-**1. AI Function 性能优化**
+**1. 调用规模的三个杠杆：Batching / Predicate Push-Down / Partition Pruning**
 
-- **Batching**：每次 batch 32/64 行，降低 token 成本 30-50%。
-- **Caching**：基于 input hash 的精确缓存 + 基于 embedding 的语义缓存，命中率 20-50%。
-- **Predicate Push-Down**：先过滤再 AI，减少 80% 调用次数。
-- **Partition Pruning**：按分区裁剪数据，减少 90% 扫描量。
+- **做法**：谓词与分区条件写进**同一条**含 AI 算子的 SQL（让它进执行计划），而不是在应用侧先取数再筛；批合并时每行仍带自己的业务主键，保证输出可归属；批大小从一个较小值起调（32 / 64 这一量级）。
+- **机制**：因为账单的形状由「进入调用的行数」决定，所以下推与批量合并必须是 SQL 里的事——把批合并做在应用层，输出就失去行级归属，随之失去增量重跑的能力，省下来的 token 会被重跑成本吃回去。
+- **失效条件**：**当端点对单次请求的 token 上限低于「批大小 × 单行长度」时**，这条会坏成「批被端点截断、后半批的结果丢失」，而 SQL 不报错。症状：产出表空值率上升且集中在批边界附近。观测信号 = 每批输入 token 数的分布 + 端点返回码统计。
+- **档位**：批大小 32 / 64【经验：随单行 token 长度与端点限额变，不是通用最优值】；批合并省下的 token 比例 ≈ (L·(b−1)/b) ÷ (L + D)【推算：共享的前缀与指令 L 在逐行调用时被重复发送 b 次、合并后只发 1 次，省下 L·(b−1)/b；分母是单行的总 token 数 L + D，D 为单行内容长度——**L 越长、D 越短，合并越划算**，所以这个比例因场景而异，不是一个常数】；谓词下推带来的调用行数降幅 = 1 − s【推算：调用行数从 N 降为 N·s，s 是谓词选择性；s 由你的过滤条件决定】；分区裁剪把扫描量按被扫分区占比压缩，同样不是常数。
 
-**2. 模型路由**
+**2. 缓存：精确缓存（输入 hash）+ 语义缓存（embedding）+ TTL**
 
-- **任务路由**：小任务用小模型（GPT-4o-mini）、复杂任务用大模型（GPT-4）。
-- **成本路由**：低预算用本地 Qwen 7B、高预算用 GPT-4。
-- **合规路由**：敏感数据用自托管、非敏感用 GPT-4。
-- **延迟路由**：实时用小模型、异步用大模型。
+- **做法**：缓存键 = 函数 + 归一化后的输入 + 模型档位 + 提示词版本；语义缓存单独一张表存（文本, 向量, 输出），相似度阈值随任务定；TTL 与业务的新鲜度要求绑定，而不是设一个统一值。
+- **机制**：因为缓存键里少任何一个维度，命中都会跨过一条语义边界——少带提示词版本，换模板后旧结果继续被命中，同一张表里就混进两套口径的标签。缓存因此不是性能优化项，而是口径一致性的一部分。
+- **失效条件**：**当同一批文本在业务上「输入相同但期望不同」时**（同一句评论既要判情感、又要抽原因），语义缓存会坏成跨任务串味。症状：某个任务的产出里出现另一个任务的取值集合（例如情感任务输出了原因短语）。观测信号 = 各任务的输出取值分布。
+- **档位**：命中率不给统一值【经验：上限由你列里重复文本的占比决定】；估算方法是抽一批行【经验：抽样量随列去重率变】算 distinct / 总行数之比，再按它反推。
 
-**3. 向量 + SQL 融合**
+**3. 模型路由：任务 / 成本 / 合规 / 延迟四类**
 
-- **HNSW 索引**：ANN 检索，10x-100x 加速。
-- **混合检索**：向量召回 + 关键词过滤 + 元数据过滤。
-- **向量 JOIN**：两个向量表相似度 JOIN。
-- **向量聚合**：按相似度聚类，统计每个聚类。
+- **做法**：四类路由写进**同一张配置表**，每行是「任务类型 → 档位 → 端点 → 配额 → 回退档位」：枚举型输出（分类、抽取、固定选项的摘要）走经济档（GPT-4o-mini 一类小模型，或内网 Qwen 7B 一类的自托管小模型）；开放式生成与多步推理走强档（GPT-4 一类）；合规等级高的数据域强制指向自托管端点，其余走托管端点；交互链路走低延迟档，离线批处理允许走强档。**SQL 里只出现档位名，不出现模型名与端点地址**，档位到模型的映射留在配置表里。
+- **机制**：因为档位名与端点解耦，换模型、换供应商、调价都只改配置表的一行，已上线的作业一行都不动；这使路由层成为整套方案里唯一「可逆且不需要重新评审 SQL」的一层——回滚就是把那一行改回去，不需要发版。
+- **失效条件**：**当路由表由一个人维护、档位变更不走进审批流时**，这条会坏成「产出表里出现无人认领的档位」：某个团队给自己的任务私下换了档位，之后效果对不上时没有变更记录可追。症状：同一个任务在同一周内产出的档位标签出现两种取值，而变更台账上是空的。观测信号 = 路由配置表的变更记录条数 vs 产出表里实际出现过的档位取值个数，两个数长期对不上即已失控。
+- **档位**：四类路由的档位划分与示例档位（GPT-4o-mini / GPT-4 / 本地 Qwen 7B 一类 / 敏感数据自托管端点）【经验：随你的任务分布、合规等级与预算粒度变，不是通用配置】；各档位对应的实际模型清单与价目以供应商当前价目与官方文档为准。
 
-**4. NL2SQL 落地**
+**4. 向量 + SQL 融合：HNSW 索引 / 混合检索 / 向量 JOIN / 向量聚合**
 
-- **Schema RAG**：基于向量检索相关表 / 列。
-- **指标语义层**：dbt Semantic Layer / Cube.js / MetricFlow。
-- **Self-Correction**：执行失败 / 结果异常自动重试。
-- **多轮精修**：与业务用户多轮对话确认需求。
+- **做法**：向量列与结构化列同表；建 ANN 索引（HNSW / IVF / PQ 一类，见主文件 §2.2）；混合检索 = 向量召回 + 关键词过滤 + 元数据过滤写进同一句查询；向量 JOIN 用距离条件关联两表；向量聚合按相似度分组后统计。查询侧必须带列裁剪与分区条件。
+- **机制**：同表存放买下的两件事（过滤与召回联立、省去一次 ID 集合搬运）见 [§ 3.2.3](02-llm-in-sql-section-3-sec3.md)，本节只说它在实施期的形状。因为列裁剪与分区隔离**不改变任何一条查询的结果**，所以漏掉它既不会在测试里暴露、也不会由业务方反馈回来——它只能靠**建表规范与查询上线评审**前置。落得晚一步，补救动作是回头给一批已在跑的查询逐条补列清单与分区条件、走一遍变更评审，而调参数的那类优化随时可以补。
+- **失效条件**：**当索引的建立被排在「功能先跑通」之后、而「这条查询到底走不走索引」没有被写进上线检查表时**，这条会坏成「由下游的抱怨工单先暴露，而不是由作业负责人先发现」。症状：同一条检索在试点数据量下一切正常，表涨到某个量级后耗时跨过交互可接受的范围，而作业侧一条告警都没响；第一个信号通常是业务方的「最近查询变慢了」。观测信号 = 把执行计划里 distance 算子**实际作用到的行数**记成时间序列，它应当长期停在你设的召回上限量级，一旦抬到接近表行数，就说明索引已经不在计划里了（这一步退化的机制见 [§ 3.5](02-llm-in-sql-section-3-sec3.md) 的反模式表）。
+- **档位**：【推算】ANN 相对精确扫描的加速比 ≈ N / (log N × ef)，N 为向量条数——N 从十万涨到一亿时加速比随之上升，具体倍数取决于 ef 与数据分布，不给固定值；索引参数（M、efConstruction 等）以你所用的实现文档当前版本为准。
 
-**5. 安全与合规**
+**5. NL2SQL 落地：Schema RAG / 指标语义层（dbt Semantic Layer、Cube.js、MetricFlow 一类）/ Self-Correction / 多轮精修**
 
-- **行级权限**：用户只能查自己有权限的数据（Postgres RLS / Snowflake Row Access Policy）。
-- **列级权限**：敏感列脱敏（身份证、手机号 mask）。
-- **Token 配额**：每用户 / 部门每日 token 用量上限。
-- **审计日志**：所有 AI 调用记录，含 input / output / token / latency。
-- **Prompt 注入检测**：检测并阻断恶意 Prompt。
+- **做法**：Schema 召回先于生成（基于向量检索相关表与列）；口径落在语义层而不是裸表；执行失败或结果异常触发自我修正并设次数上限；答不出时拒答；需求模糊时用多轮精修与业务用户确认。
+- **机制**：因为翻译层的每一条 Prompt 与示例集都锚在一份指标定义上，所以它的返工面随指标数累积——语义层先上线时，翻译层只接一次口径；顺序反过来时，每补一个指标都要回头改已上线的 Prompt、示例集与拒答回归这三处。这条顺序理由在实施期表现为一条工期曲线，而不是只多一道工序。这组误选的判据见 [§ 3.3](02-llm-in-sql-section-3-sec3.md)。
+- **失效条件**：**当语义层覆盖不全、而用户问的正好是覆盖外的指标时**，这条会坏成「生成一段跑得通、但口径相近的 SQL」——不报错，只是数不对。症状：用户自行改写 AI 生成 SQL 的比例上升。观测信号 = 拒答率与改写率两个读数必须同时看。
+- **档位**：两个读数都不设固定阈值【经验：拒答率被人为压低时改写率会上升，只看一个会被刷】。
 
-**6. 成本控制**
+**6. 安全与合规：行级权限（Postgres RLS、Snowflake Row Access Policy 一类）/ 列级权限 / Token 配额 / 审计日志 / Prompt 注入检测**
 
-- **分层路由**：小模型（GPT-4o-mini）+ 大模型（GPT-4）。
-- **缓存**：精确缓存 + 语义缓存。
-- **批处理**：batching 降低 token 成本。
-- **Prompt 压缩**：精简 Prompt，节省 token。
+- **做法**：行级与列级权限用引擎自身机制实现，不在应用层过滤；敏感列在进入 AI 算子之前脱敏；配额按用户 / 部门；审计日志记录 input、output、token、latency 与提示词版本；注入检测针对「被处理的文本里含指令」这一类输入。
+- **机制**：因为算子读行、写列，权限必须同时落在读侧与产出侧。只在读侧做行级控制时，产出表把原本受限的值写进了一张权限更宽的表——限制被绕过一次，且这一次不会被任何查询报错发现（[§ 3.5](02-llm-in-sql-section-3-sec3.md) 的修法是让算子不具备执行能力，本节补的是它落在表上的那一半）。
+- **失效条件**：**当产出表由批处理作业写入、作业使用服务账号时**，这条会坏成「产出表的权限对齐了服务账号，而不是对齐最终读者」。症状：审计时发现有用户能直接从产出表读到未脱敏的值。观测信号 = 产出表与源表的密级标签一致性（抽 1 张含 PII 的表核对【经验：抽到覆盖主要密级为止】）。
+- **档位**：配额值与脱敏规则不给统一值【经验：随部门预算、合规等级与数据分类分级标准变】。
 
-**7. 可观测**
+**7. 成本控制：分层路由 / 缓存 / 批处理 / Prompt 压缩**
 
-- **Langfuse / Phoenix**：LLM 可观测（Trace、Token、Prompt 版本）。
-- **CloudWatch / Prometheus**：数据库可观测（Query 延迟、CPU、内存）。
-- **Token 用量仪表盘**：按用户 / 部门 / 项目 / 模型展示。
-- **成本仪表盘**：按日 / 周 / 月统计成本。
+- **做法**：四个杠杆按「先压行数、再压单价」的顺序用——谓词下推与增量键压调用行数 → 缓存压重复调用 → 分档压单价 → 精简提示词降单次 token。
+- **机制**：因为「进入调用的行数」与「单价」不在同一量级上（§ 3.1 的成本杠杆位），顺序决定收益——先换便宜档位只动单价这一项，先压行数动的是数量那一项。
+- **失效条件**：**当告警阈值是按「业务量估算」切出来的年度预算、而不是用第一个完整计费周期的实测值回填时**，这条会坏成「预算超支由财务在出账日先发现」：阈值定在估算的调用量上，实际用量在上线后的头几周就跨了过去，而告警在整个周期里一次没响。症状：出账日的实际支出比预算高出一档，且告警规则的触发历史里没有任何一条记录。观测信号 = 告警规则触发历史 + 计费周期内的实际调用行数曲线。至于分档这一层在开放式生成任务上为什么省不到钱，见 [§ 3.2.7](02-llm-in-sql-section-3-sec3.md) 的失效点。
+- **档位**：单价相差数倍、调用行数相差两个数量级，是 § 3.1 给出的定性对照【经验】；具体价目以各供应商当前价目与官方文档为准。
 
-**8. 模型版本管理**
+**8. 可观测：Langfuse / Phoenix / Helicone / CloudWatch / Prometheus / Token 用量仪表盘 / 成本仪表盘 / Snowflake ACCOUNT_USAGE / Databricks System Tables**
 
-- **统一模型注册**：所有 AI Function 使用统一模型版本。
-- **A/B 测试**：不同模型 / Prompt 对比效果。
-- **效果评估**：基于 BIRD / Spider 内部评估集。
-- **回滚机制**：新模型上线失败可快速回滚。
+- **做法**：LLM 侧（Langfuse / Phoenix / Helicone 一类）看 Trace、Token、提示词版本；数据库侧（CloudWatch / Prometheus 一类）看查询延迟与资源；账单侧用平台自带的用量视图（Snowflake ACCOUNT_USAGE、Databricks System Tables 一类）对账。成本仪表盘按用户 / 部门 / 项目 / 模型与**按作业**统计。
+- **机制**：因为 AI 调用的费用同时出现在数据库账单与模型账单两处，只有「每次作业运行打一个成本标签」才能把它摊到业务上；事后的按比例分摊在数学上可行，但无法回答「是哪个作业花的」。
+- **失效条件**：**当调用跨多个端点或账号时**（BYO-LLM 走外部端点、多个部门各自开账号），这条会坏成「库内账单完整、模型账单缺失」。症状：仪表盘上的成本总和低于实际发票金额。观测信号 = 两处成本的月度差异。
+- **档位**：看板维度与刷新频率【经验：随团队数与计费周期变】。
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+**9. 模型版本管理：统一模型注册 / A/B 测试 / 效果评估（BIRD、Spider 一类公开基准 + 内部评估集）/ 回滚机制**
 
-**Snowflake Cortex**：
+- **做法**：提示词与端点随 SQL 一起版本化（进版本管理与血缘）；换档位或换模型时先在影子表对**同一批数据**跑一遍，对比新旧输出差异，达标再切主表；模型与 Prompt 的 A/B 先在评测集上跑，再进影子表；回滚要能在不改 SQL 的前提下切回旧档位。
+- **机制**：因为产出表里每个标签都由「提示词 × 模型档位」共同决定，这两者必须能被血缘读出；否则「为什么这批标签和上批不一样」答不出，产出也就无法被数据团队负责（[§ 3.5](02-llm-in-sql-section-3-sec3.md) 把这条列为反模式）。
+- **失效条件**：**当影子表与主表的输入批次不一致时**（主表读当天分区、影子表读昨天分区），这条会坏成「差异里混进了数据差异」。症状：影子对比出的差异在次日重复出现且方向不变——真实的口径差异通常不会如此稳定。观测信号 = 两侧输入分区的一致性校验。
+- **档位**：影子观察期【经验：至少覆盖一个业务周期，随数据的周期性长度变】。
 
-- **AI Functions**：ai_classify / ai_summarize / ai_extract / ai_translate / ai_sentiment / ai_embed / ai_generate_text。
-- **Cortex Analyst**：NL2SQL 引擎（基于 dbt Semantic Layer）。
-- **Cortex Search**：混合检索（向量 + 关键词）。
-- **模型支持**：Claude 3.5/4、GPT-4o、Mistral Large、Llama 3.3、Snowflake Arctic。
-- **BYO-LLM**：支持自定义 LLM endpoint。
-- **Cortex Fine-Tuning**：模型微调服务。
-- **Cortex Agents**（2025）：Multi-Agent + AI Function。
+### 4.3 工具链与平台
 
-**Databricks AI Functions**：
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 库内 AI 函数（云托管） | **Snowflake Cortex**（AI Functions：`ai_classify` / `ai_summarize` / `ai_extract` / `ai_translate` / `ai_sentiment` / `ai_embed` / `ai_generate_text`；Cortex Analyst；Cortex Search；BYO-LLM；Cortex Fine-Tuning；Cortex Agents）；**Databricks AI Functions**（`ai_classify` / `ai_summarize` / `ai_extract` / `ai_translate` / `ai_fixgrammar` / `ai_mask` / `ai_query`；Genie；Vector Search；Mosaic AI；BYO-LLM：支持自定义模型 endpoint）；**阿里云 PolarDB AI**（`ai_generate` / `ai_classify` / `ai_extract` / `ai_embed` / `ai_sentiment`；PolarDB for AI；BYO-LLM）；**腾讯云 TDSQL-AI**（`ai_generate` / `ai_embed` / `ai_search`；TDSQL 智能体平台对接混元） | 判据是**数据能不能出仓**：不能出仓时只能在库内算子与自托管之间选；其次看**产出要不要进正式链路**（要进就必须能用 SQL 或显式配置指定提示词版本）。各平台内置模型清单（常见为 Claude 系列 / GPT-4o / Mistral / Llama / Qwen 系列 / 混元等，Snowflake 另有自研的 Snowflake Arctic）与函数签名，以各厂商官方文档当前版本为准 | 数据导出后再调外部端点，会多出一份长期存活的副本，权限、生命周期与预算要在第二处重建 |
+| 库内 AI 函数（开源 / 自托管） | **PostgreSQL pgai**（Timescale / pgvector 团队；可接 OpenAI / Anthropic / Cohere / Ollama；Apache 2.0）；**ClickHouse AI Functions**（`ai_classify` / `ai_summarize` / `ai_embed`；ClickHouse Cloud；LangChain 集成）；**DuckDB `ai_functions`**（`ai_classify` / `ai_embed` / `ai_generate_text`；接 Ollama；MIT） | 判据是**要不要自己掌控端点与权重**——强合规、预算固定、能承担运维时选自托管；纯本地分析场景（DuckDB 一类）适合先在单机验证口径 | 自己运维端点会把容量规划、限流与版本升级变成常驻工作，算力固定成本不随业务量下降 |
+| 向量检索（专用） | Milvus / Pinecone / Weaviate / Qdrant / pgvector | 判据是**最频繁的检索请求带几个高选择性结构化过滤条件**：过滤条件数接近零且并发很高时选专用向量库；只要检索总和结构化过滤与 JOIN 出现在同一句里，就应留在仓内（[§ 3.3](02-llm-in-sql-section-3-sec3.md) 的决策表） | 专用库要为点查最优化，代价是第二份副本与两条新鲜度链路；反过来，仓内向量为点查常驻一整套分析引擎资源 |
+| 推理框架（自托管） | vLLM / Ollama / LM Studio / TGI / SGLang / TensorRT-LLM | 判据是**吞吐目标与硬件**：服务多并发请求选服务型框架，单机验证与小规模选轻量运行时，GPU 资源紧张时看量化与推理优化的支持面 | 选错层次的框架，会在并发上来后才发现吞吐不够，此时模型与部署方式都要换 |
+| NL2SQL | Snowflake Cortex Analyst / Databricks Genie / 阿里 PolarDB 自然语言查询 / 百度 Sugar NL2SQL | 判据是**它能否消费你的指标定义**——只能对着裸表翻译的引擎，会把口径问题一起翻译过去；能接语义层的优先 | 翻译落在裸表上，同一个问题在不同时间给出不同口径的答案，且比没有翻译层更难被察觉 |
+| 指标语义层 | dbt Semantic Layer / Cube.js / MetricFlow | 判据是**它是不是全组织唯一的指标定义处**——第二处定义一旦存在，翻译层就有两个来源可选 | 语义层与报表口径并存，NL2SQL 的答案与报表对不上，信任一次损失 |
+| 批处理编排 | Airflow / DolphinScheduler | 判据是**失败行能不能只重跑失败行**——编排器要能按分区 / 按状态重试，而不是只能重跑整个 DAG | 只能整批重跑时，一次失败的重试成本等于一次全量，AI 调用尤其贵 |
+| 可观测与成本 | Langfuse / Phoenix / Helicone / Snowflake ACCOUNT_USAGE / Databricks System Tables | 判据是**它能不能按作业聚合**——只按用户或按模型聚合看不出一笔成本属于哪个作业 | 有总量无归因，成本超支时只能靠推测定位，配额也无从设置 |
 
-- **AI Functions**：ai_classify / ai_summarize / ai_extract / ai_translate / ai_fixgrammar / ai_mask / ai_query（NL2SQL）。
-- **Databricks Genie**（2024）：自然语言查询 Lakehouse。
-- **模型支持**：Meta Llama 3.3、OpenAI GPT-4o、Anthropic Claude 3.5。
-- **BYO-LLM**：支持自定义模型 endpoint。
-- **Vector Search**：内置向量检索 + SQL 集成。
-- **Mosaic AI**：模型微调 / 部署平台。
+这张表里**最容易被误选的是按函数名清单选平台**：把 A 平台文档里的 `ai_query` 或 `ai_classify` 当成通用名，去 B 平台找同名函数、找不到就认为「B 平台不支持 AI」。判据只有一条——**能力名不等于产品名**，同一个能力在不同平台的函数名、签名与参数名各不相同，也没有跨厂商标准；判定方法是去该平台的官方 SQL 函数参考里找「调用模型 / 生成向量 / 自然语言转 SQL」的正式条目，找得到再谈支持。误选的典型后果是选型结论建立在一次错误的检索上，之后要么漏掉一个能满足约束的平台，要么按错误的签名设计作业。
 
-**阿里云 PolarDB AI**：
+第二容易被误选的是**用专用向量数据库承接带强过滤的检索**（表中第 3 行的反向）：召回集合越小、过滤越严格，把 ID 搬回原库再过滤的相对开销越大，而这一点在试点期（数据量小）完全看不出来。
 
-- **AI Function**：ai_generate / ai_classify / ai_extract / ai_embed / ai_sentiment。
-- **PolarDB for AI**：向量 + 全文 + 关系数据融合。
-- **模型支持**：通义千问 Qwen2.5、Qwen-VL、Qwen-Coder。
-- **BYO-LLM**：支持自定义模型。
+### 4.4 存量迁移
 
-**腾讯云 TDSQL-AI**：
+存量改造要面对三样东西：**已有作业**（多半是导出到 Python 调外部端点）、**已有产出表**（标签在表里，但查不到是哪版提示词与哪个档位生成的）、**已有向量列**（存量数据已嵌入，但没有索引、没有量化方案）。这一节的顺序是「先做可回退的纯收益项、再处理不可回退的历史欠账」。
 
-- **AI Function**：ai_generate / ai_embed / ai_search。
-- **TDSQL 智能体平台**：对接混元大模型。
+**① 立刻见效且可回退的一件事：给现有 AI 作业补上分区裁剪与增量键。** 不改函数、不改模型、不改提示词，只在 WHERE 里加上分区条件与「已处理则跳过」的条件。回退方式是把条件去掉重跑——因为它不改变任何口径，回退无副作用。这一步之后你会拿到一条 **「调用行数 ÷ 扫描行数」的基线曲线**，它决定后面所有成本优化的方向（见 §4.2 第 1 条）。
 
-**PostgreSQL pgai**（2025）：
+**② 历史资产分三类处理，不搞全部返工。**
 
-- **扩展名**：`pgai`（Timescale / pgvector 团队）。
-- **能力**：任意 LLM 嵌入 SQL、向量 + AI Function 融合。
-- **模型支持**：OpenAI / Anthropic / Cohere / Ollama（自托管）。
-- **开源**：Apache 2.0 协议。
+- **(a) 产出表缺口径记录**（有标签、但查不到提示词版本与模型档位）：**打标挂账，不重算**。在表注释中标明「口径未记录：某时点之前的批次无法归因到提示词与模型版本」，并禁止把这些批次与记录齐全的批次混在一起做效果对比。判据：随机抽 1 行历史产出，能否在几分钟内【经验：随登记表的检索方式变】查到它的提示词版本——查不到就是这一类。
+- **(b) 导出到外部端点的历史作业**：**只读封存，不做重写**。新需求一律走库内算子或自托管端点；同时对已产生的副本做一次清点，逐份回答「谁能读、留多久、算谁的预算」。判据：清点表里的副本份数与对象存储桶 / 临时目录里的实际份数对得上。
+- **(c) 已有向量列缺索引**：**先定召回率底线，再量化，最后建索引**。顺序反了（先建索引再定底线）会导致无法判断压缩损失是否可接受。判据：用一批已知正确答案的查询对照精确扫描结果，量出召回率后再决定量化强度。
 
-**ClickHouse AI Functions**（2024+）：
+**③ 迁移期的双轨怎么维持、维持多久。** 双轨是「老路径：导出到 Python 调外部 API」与「新路径：库内算子 + 提示词版本化」。维持期的关键不是时长，而是**两条轨的边界要写清**：新路径覆盖所有**产出进正式链路**的场景（指标、特征、对外报表），老路径只允许覆盖一次性探索与不入表的临时分析。这个划分不写清，双轨会退化成「谁急谁走老路」，而老路不产生口径记录，等于持续制造第 ②(a) 类欠账。周期按时长与审计要求定【经验：通常两个季度上下，随存量作业数与合规检查频率变】。
 
-- **AI Function**：ai_classify / ai_summarize / ai_embed（基于 LLM API）。
-- **ClickHouse Cloud**：内置模型托管。
-- **ClickHouse + LangChain 集成**。
+**④ 什么信号说明可以退出双轨。** 三个读数同时成立：产出表里每一批都能答出提示词版本与模型档位；连续一个计费周期内不再出现跨边界的调用记录（出网策略里的端点放行规则可用来核对）；同一个问题在两条轨上给出的答案一致。三者缺一，说明退出的是流程名字，而不是流程。
 
-**DuckDB ai_functions**（2024+）：
+**存量改造特有的一个陷阱**：把「把历史标签重算一遍」当成迁移的第一步。重算的成本随历史数据量线性增长，而它产出的东西（更整齐的历史标签）对当下的决策没有增量价值——历史标签的用途是对比与追溯，而追溯恰恰是缺记录的那部分无法修复的。先把**新产出的可归因性**建起来，历史欠账用挂账解决，是更省的做法。
 
-- **本地 AI Function**：ai_classify / ai_embed / ai_generate_text。
-- **本地 LLM**：Ollama 集成，本地推理。
-- **开源**：MIT 协议。
+### 4.5 模板 / 示例
 
-**向量数据库（专用，对比）**：
+**模板 1：平台能力核验清单（Step 2 的产物格式）**
 
-- **Milvus**（国产开源）。
-- **Pinecone**（云）。
-- **Weaviate**（开源，含 AI Function）。
-- **Qdrant**（开源）。
-- **pgvector**（PostgreSQL 插件）。
+| 能力 | 我要用的函数名（本平台） | 文档位置 | 签名 / 参数 | 核验状态 | 核验日期 |
+| --- | --- | --- | --- | --- | --- |
+| 文本分类 | {如 ai_classify} | {官方函数参考的章节} | {text, labels[]} | 已核验 / 未核验 | {日期} |
+| 文本摘要 | {…} | {…} | {…} | 未核验 | {日期} |
+| 向量嵌入 | {…} | {…} | {…} | 未核验 | {日期} |
+| 自然语言转 SQL | {…} | {…} | {…} | 未核验 | {日期} |
+| 库内微调 | {…} | {…} | {…} | 未核验 | {日期} |
 
-**LLM 推理框架（自托管）**：
+**怎么用**：逐行去官方文档里找条目再填，**「未核验」是合法值**——不要为了把表填满而猜签名。核验日期要填，因为函数签名会随版本变化，这份表要能回答「我上次核验的是哪个版本」。
 
-- **vLLM**（UC Berkeley）：高吞吐量 LLM 推理。
-- **Ollama**：本地 LLM 运行。
-- **LM Studio**：本地 LLM 桌面应用。
-- **TGI（HuggingFace TGI）**：Transformer 推理服务。
-- **SGLang**（2024）：UC Berkeley 新一代 LLM 推理。
-- **TensorRT-LLM**（NVIDIA）：GPU 加速 LLM 推理。
-
-**可观测与成本**：
-
-- **Langfuse**（开源）。
-- **Phoenix**（Arize）。
-- **Helicone**（成本优化）。
-- **Snowflake ACCOUNT_USAGE**（内置）。
-- **Databricks System Tables**（内置）。
-
-**NL2SQL / Cortex Analyst**：
-
-- **Snowflake Cortex Analyst**（2024-05 GA）。
-- **Databricks Genie**（2024）。
-- **阿里 PolarDB 自然语言查询**。
-- **百度 Sugar NL2SQL**。
-
-### 4.4 代码 / 示例
-
-**示例 1：Snowflake Cortex AI Functions**
+**示例 1：Snowflake Cortex 的典型写法（分类 / 摘要 / 抽取、向量嵌入、混合检索、NL2SQL）**
 
 ```sql
--- 1. 文本分类
-SELECT
-    review_id,
-    review_text,
-    SNOWFLAKE.CORTEX.AI_CLASSIFY(
-        review_text,
-        ['positive', 'negative', 'neutral']
-    ) AS sentiment
-FROM reviews
-WHERE product_id = 'P001'
-LIMIT 100;
+-- 分类 / 摘要 / 抽取
+SELECT review_id,
+       SNOWFLAKE.CORTEX.AI_CLASSIFY(review_text, ['positive','negative','neutral']) AS sentiment,
+       SNOWFLAKE.CORTEX.AI_SUMMARIZE(article_text, 100)                            AS summary,
+       SNOWFLAKE.CORTEX.AI_EXTRACT(contract_text,
+              ['party_name','effective_date','amount','jurisdiction'])             AS extracted
+FROM   reviews r JOIN articles a USING (doc_id) JOIN contracts c USING (doc_id)
+WHERE  r.dt = CURRENT_DATE;                    -- 分区裁剪先进 WHERE
 
--- 2. 文本摘要
-SELECT
-    article_id,
-    SNOWFLAKE.CORTEX.AI_SUMMARIZE(article_text, 100) AS summary
-FROM articles
-WHERE publish_date > '2025-10-01';
-
--- 3. 实体抽取
-SELECT
-    contract_id,
-    SNOWFLAKE.CORTEX.AI_EXTRACT(
-        contract_text,
-        ['party_name', 'effective_date', 'amount', 'jurisdiction']
-    ) AS extracted
-FROM contracts;
-
--- 4. 向量嵌入
+-- 向量嵌入（结果落表，供后续检索复用）
 CREATE TABLE docs_with_embedding AS
-SELECT
-    doc_id,
-    doc_text,
-    SNOWFLAKE.CORTEX.AI_EMBED(
-        'e5-base-v2',
-        doc_text
-    ) AS embedding
-FROM documents;
+SELECT doc_id, doc_text, SNOWFLAKE.CORTEX.AI_EMBED('e5-base-v2', doc_text) AS embedding
+FROM   documents;
 
--- 5. 混合检索（Cortex Search）
+-- 混合检索（Cortex Search）：检索服务与结构化过滤并存
 CREATE CORTEX SEARCH SERVICE doc_search
-ON documents
-ATTRIBUTES title, category, author
-WAREHOUSE = compute_wh
-TARGET_LAG = '1 hour'
-AS (
-    SELECT
-        doc_id,
-        title,
-        content,
-        category,
-        author
-    FROM documents
-);
+  ON documents ATTRIBUTES title, category, author
+  WAREHOUSE = compute_wh TARGET_LAG = '1 hour'
+  AS (SELECT doc_id, title, content, category, author FROM documents);
 
--- 6. NL2SQL（Cortex Analyst）
--- 用户在 Snowflake Intelligence 输入：
---   "上周华东地区的 GMV 是多少？"
--- Cortex Analyst 自动生成：
--- SELECT SUM(order_amount)
--- FROM orders
--- WHERE region = 'East China'
---   AND order_date BETWEEN '2025-09-29' AND '2025-10-05';
+-- NL2SQL（Cortex Analyst）：用户在 Snowflake Intelligence 里提问
+--   提问：「上周华东地区的 GMV 是多少？」
+--   自动生成：SELECT SUM(order_amount) FROM orders
+--             WHERE region = 'East China'
+--               AND order_date BETWEEN '2025-09-29' AND '2025-10-05';
 ```
 
-**示例 2：Databricks AI Functions**
+**怎么用**：函数名与参数以 Snowflake 官方文档当前版本为准（`AI_SUMMARIZE` 的第二参数语义、`TARGET_LAG` 的取值都要按文档核）。`WHERE` 里的分区条件决定有多少行进入算子，这一格是本作业成本的主要杠杆，不要照抄示例里的日期写法。
+
+**示例 2：Databricks AI Functions 与向量索引**
 
 ```sql
--- 1. 文本分类（情感分析）
-SELECT
-    review_id,
-    ai_classify(review_text, ARRAY('positive', 'negative', 'neutral')) AS sentiment
-FROM reviews;
+SELECT review_id,
+       ai_classify(review_text, ARRAY('positive','negative','neutral')) AS sentiment,
+       ai_extract(contract_text, ARRAY('party_name','effective_date','amount')) AS fields,
+       ai_generate_text(CONCAT('用一句话总结以下评论：', review_text)) AS summary
+FROM   reviews;
 
--- 2. 文本生成（自定义 Prompt）
-SELECT
-    review_id,
-    ai_generate_text(
-        CONCAT('用一句话总结以下评论：', review_text)
-    ) AS summary
-FROM reviews;
-
--- 3. 实体抽取
-SELECT
-    contract_id,
-    ai_extract(
-        contract_text,
-        ARRAY('party_name', 'effective_date', 'amount')
-    ) AS extracted_fields
-FROM contracts;
-
--- 4. 向量嵌入 + 检索
--- 创建向量索引
 CREATE TABLE docs_with_vectors AS
-SELECT
-    doc_id,
-    doc_text,
-    ai_embed('databricks-bge-large-en', doc_text) AS embedding
-FROM documents;
-
--- 创建向量索引
-CREATE VECTOR INDEX doc_idx
-ON docs_with_vectors(embedding)
-USING HNSW;
-
--- 向量检索
+SELECT doc_id, doc_text, ai_embed('databricks-bge-large-en', doc_text) AS embedding FROM documents;
+CREATE VECTOR INDEX doc_idx ON docs_with_vectors(embedding) USING HNSW;
+-- 向量检索（同一张表上的距离排序）
 SELECT doc_id, doc_text,
-       vector_distance(
-           ai_embed('databricks-bge-large-en', :query),
-           embedding
-       ) AS distance
-FROM docs_with_vectors
-ORDER BY distance ASC
-LIMIT 10;
-
--- 5. NL2SQL（ai_query）
-SELECT ai_query(
-    'databricks-dbrx-instruct',
-    CONCAT('基于以下 schema 生成 SQL：',
-           (SELECT GROUP_CONCAT(column_name) FROM information_schema.columns WHERE table_name='orders'),
-           '问题：上周华东地区 GMV 是多少？')
-) AS generated_sql;
+       vector_distance(ai_embed('databricks-bge-large-en', :query), embedding) AS distance
+FROM   docs_with_vectors ORDER BY distance ASC LIMIT 10;
+-- 自然语言转 SQL
+SELECT ai_query('databricks-dbrx-instruct',
+  CONCAT('基于以下 schema 生成 SQL：', :schema_text, '问题：上周华东地区 GMV 是多少？')) AS generated_sql;
 ```
 
-**示例 3：PostgreSQL pgai（开源版）**
+**怎么用**：`ai_embed` 的模型名是平台侧标识，必须先按官方文档核验可用值再写进 DDL；建索引前先按 §4.2 第 4 条估向量列的行宽增量，再按 §4.4 ②(c) 的次序定召回率底线（先定底线、再定量化强度、最后建索引）。`ai_query` 生成的 SQL 在写入正式链路前必须经过执行校验与拒答策略。
+
+**示例 3：PostgreSQL pgai**
 
 ```sql
--- 安装扩展
 CREATE EXTENSION IF NOT EXISTS pgai;
+SELECT pgai.set_model('openai', 'gpt-4o-mini');   -- 端点与默认模型
+SELECT review_id,
+       pgai.classify(review_text, ARRAY['positive','negative','neutral']) AS sentiment
+FROM   reviews;
 
--- 配置 LLM
-SELECT pgai.set_model('openai', 'gpt-4o-mini');
-
--- 1. 文本分类
-SELECT
-    review_id,
-    pgai.classify(review_text, ARRAY['positive','negative','neutral']) AS sentiment
-FROM reviews;
-
--- 2. 向量嵌入
 ALTER TABLE documents ADD COLUMN embedding vector(1536);
-UPDATE documents
-SET embedding = pgai.embed('openai-text-embedding-3-small', doc_text);
+UPDATE documents SET embedding = pgai.embed('openai-text-embedding-3-small', doc_text)
+WHERE  dt >= CURRENT_DATE - 30;            -- 增量更新，不是全表重算
 
--- 3. 混合查询（向量 + SQL）
-WITH query_vec AS (
-    SELECT pgai.embed('openai-text-embedding-3-small', :query) AS qvec
-)
-SELECT
-    d.doc_id,
-    d.title,
-    d.content,
-    d.embedding <=> q.qvec AS distance
-FROM documents d, query_vec q
-WHERE d.category = 'technical'
-ORDER BY distance ASC
-LIMIT 10;
+-- 混合查询：向量召回 + 结构化过滤写进同一句
+WITH query_vec AS (SELECT pgai.embed('openai-text-embedding-3-small', :query) AS qvec)
+SELECT d.doc_id, d.title, d.content, d.embedding <=> q.qvec AS distance
+FROM   documents d, query_vec q
+WHERE  d.category = 'technical'
+ORDER  BY distance ASC LIMIT 10;
 ```
 
-**示例 4：阿里云 PolarDB AI**
+**怎么用**：`UPDATE` 必须带增量条件——向量是逐条计费的，全表重算会把成本按历史数据量放大。维度（示例中的 1536）要与你实际选的嵌入模型一致，改模型等于改维度，历史向量要重算并标版本。
+
+**示例 4：阿里云 PolarDB AI 的生成与检索**
 
 ```sql
--- 1. 文本生成
-SELECT
-    product_id,
-    ai_generate(
-        CONCAT('为商品', :product_name, '生成一段 50 字的营销文案')
-    ) AS marketing_copy
-FROM products;
+SELECT product_id,
+       ai_generate(CONCAT('为商品', :product_name, '生成一段 50 字的营销文案')) AS marketing_copy
+FROM   products WHERE dt = CURRENT_DATE;
 
--- 2. 向量嵌入
+-- 向量嵌入：列宽与模型维度绑定，入库即定，之后换模型等于换列
 ALTER TABLE knowledge_docs ADD COLUMN embedding vector(1024);
-UPDATE knowledge_docs
-SET embedding = ai_embed(:doc_text, 'qwen2.5-7b-embedding');
+UPDATE knowledge_docs SET embedding = ai_embed(:doc_text, 'qwen2.5-7b-embedding')
+WHERE  dt >= :window_start;                -- 增量写入，不做全表重算
 
--- 3. 混合检索
-SELECT
-    doc_id,
-    title,
-    content,
-    ai_match(:query, 'bge-m3') AS relevance_score
-FROM knowledge_docs
-WHERE created_at > '2025-09-01'
-ORDER BY relevance_score DESC
-LIMIT 10;
+SELECT doc_id, ai_match(:query, 'bge-m3') AS relevance_score
+FROM   knowledge_docs WHERE created_at > :window_start
+ORDER  BY relevance_score DESC LIMIT 10;
 ```
 
-**示例 5：Python + 自托管 LLM（Ollama）+ DuckDB（本地）**
+**怎么用**：函数名与模型标识以阿里云官方文档当前版本为准；`ORDER BY ... LIMIT` 与 `WHERE` 的先后由优化器决定，验证方式是看执行计划里过滤与打分各自作用到多少行。
+
+**示例 5：DuckDB + 本地 Ollama（零外网调用）**
 
 ```python
 import duckdb
-import ollama
-
-# 连接 DuckDB（本地）
 con = duckdb.connect("analytics.db")
-
-# 安装 ai_functions 扩展
-con.install_extension("ai_functions")
-con.load_extension("ai_functions")
-
-# 配置本地 LLM
-con.execute("""
-    SET ai_functions_ollama_host = 'http://localhost:11434';
-    SET ai_functions_model = 'qwen2.5:7b';
-""")
-
-# AI Functions
-result = con.execute("""
-    SELECT
-        review_id,
-        ai_classify(review_text, ['positive','negative','neutral']) AS sentiment,
-        ai_summarize(review_text) AS summary
-    FROM reviews
-    LIMIT 100;
-""").fetchall()
-
-for row in result:
+con.execute("INSTALL ai_functions; LOAD ai_functions;")
+con.execute("SET ai_functions_ollama_host = 'http://localhost:11434';")
+con.execute("SET ai_functions_model = 'qwen2.5:7b';")
+rows = con.execute("""SELECT review_id,
+       ai_classify(review_text, ['positive','negative','neutral']) AS sentiment,
+       ai_summarize(review_text)                                    AS summary
+FROM   reviews LIMIT 100;""").fetchall()
+for row in rows:
     print(row)
 ```
 
----
+**怎么用**：适合在单机先把 Prompt 与口径验证通（对应 Step 5），不要直接当生产链路——本地推理的吞吐与可用性没有 SLA。扩展名与设置项名称以该扩展的官方文档当前版本为准。
+
+### 4.6 自检清单
+
+下面每一条都要动系统才能回答；「不跑系统坐下来想想就能答」的那类检查（模式选得对不对、边界划得对不对）在 [§ 3.7](02-llm-in-sql-section-3-sec3.md)。清单里的抽查量（抽几行、抽几张表）都是【经验】档参数，随你的表规模与密级分类数量调整——它们的量级不影响检查的效力。
+
+- [ ] 拉出最近一个计费周期里每一次 AI 作业的「调用行数 ÷ 扫描行数」读数，画成随时间变化的曲线：它是平的，还是随表增长一起上抬？（这条曲线只有在成本标签打到作业这一层之后才画得出来）
+- [ ] 取一批已处理过的输入重跑一次作业，调用次数是不是零（增量键是否生效）？
+- [ ] 在血缘系统里从一条实际的产出记录反向查：能不能列出生成它的那次调用（提示词版本、模型档位、端点、执行时间）？再用旧批次重查一遍，能不能只靠血缘把「属于旧版本的批次」拉成一张清单，且清单行数与作业台账对得上？
+- [ ] 端点日志里最近一次失败的批次，实际重跑时触发了多少次调用——等于失败行数，还是等于整个分区的行数？
+- [ ] 抓现网数据量下最近一周的慢查询清单，向量检索类占几条？逐条看它们的执行计划：distance 算子作用到的行数是停在召回上限的量级，还是已接近表行数？
+- [ ] 同一句文本分别喂给两个不同任务，语义缓存有没有串味（抽一批行比对两次输出的取值集合）？
+- [ ] 出网策略里有几条指向模型端点域名的放行规则？（有放行规则，说明请求确实出了边界）
+- [ ] 抽 1 张含 PII 的表跑一次算子，产出列是否继承了源列的密级标签？
+- [ ] 从账单里按作业归因的成本，与你按调用量估算的成本差多少？差异集中在哪一类任务上？
+- [ ] 最近一次换模型档位时，影子表跑了几批？两侧输入的分区一致吗？
+- [ ] NL2SQL 上线以来，拒答率与「用户自行改写 AI 生成 SQL 的比例」两个读数分别是多少？
+- [ ] 抽一次 AI 调用，能否在数据库侧与模型侧都查到同一条记录（对账是否闭环）？
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一决定成败的环节，是**让每一次调用可归因**——提示词版本与模型档位随 SQL 一起版本化并进血缘，产出表里每一批都答得出「它是谁生成的」。它比成本与性能更值得投入，理由是可逆性的差别：调用行数没压下来、索引没建对、批大小没调好，这些都是**能事后修**的；而一批没有口径记录的标签一旦落表就**修不回来**，之后所有事都做不了——不能对比、不能回滚到某个已知状态、不能在审计时举证。产出不可归因的表不是资产，只是一堆来源不明的中间结果。
+>
+> 配合 [§ 2 核心原理](02-llm-in-sql.md)、[§ 3 设计模式与范式](02-llm-in-sql-section-3-sec3.md) 与 [§ 6 落地实践](02-llm-in-sql-section-6-sec6.md) 阅读。

@@ -1,289 +1,357 @@
-> 本文件是 **11-olap-engine.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](11-olap-engine.md)。
+> 本文件是 **11-olap-engine.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3 设计模式与范式](11-olap-engine-section-3-sec3.md) 里已经选定的那个模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](11-olap-engine.md)。
 
 ## 4. 工程实现
 
+§3 的结论是「在你的约束下该用哪个模式」，本节的结论是一串有先后关系的动作。二者的分界是：**§3 给的是选型判据，§4 要给的是每一步结束时手上多出来的、可被检查的东西**。这一点在 OLAP 上尤其要紧——这个主题里最早被锁死的决定（分区键、排序键、分桶键）恰好也是**最贵、最难反悔**的那几个，它们一旦落到 DDL 里，改它等价于重建表。
+
+本文件面向两类读者：**4.1、4.3 与 4.5 面向从零搭建的团队**（准备新建一套分析引擎，或还停在压测阶段）；**4.4 专门写给存量改造的团队**（分析查询还压在生产库上，或已有一套 Hive/Spark 数仓与若干 Cube 在跑）。**4.2 与 4.6 不归入任何一侧，两类读者共用**——前者是选定引擎之后绕不开的机制与失效条件，后者是两条路径都要过的自检。
+
 ### 4.1 落地步骤
 
-**Step 1：选型引擎（2-4 周）**
+**Step 1：选型引擎（【经验】2–4 周；随候选数量与集群能否申请到而变化）**
 
-- 实时报表：StarRocks / Doris。
-- 大宽表：ClickHouse。
-- 云原生：SelectDB / Snowflake。
-- AI：StarRocks 3.x + 向量。
+常见落点是：实时报表 → StarRocks / Doris；大宽表单表极致扫描 → ClickHouse；云原生托管 → SelectDB Cloud / Snowflake；AI 场景 → StarRocks 3.x + 向量检索。选型动作的第一步不是读功能清单，而是量出自己的约束取值（点查占比 / 扫描聚合占比 / 峰谷比 / 写入更新频率），再按 §3.3 决策表从「关键判据」一列倒着读。
 
-**Step 2：集群规划（1-2 周）**
+- **产物**：一张「约束 → 引擎」对照表 + **你们最慢的 10 条真实查询**在各候选上的 P99 实测数字。
+- **判据**：基准必须用自己生产里跑得最慢的那批查询，而不是厂家提供的基准集；对照表里每个候选的格子都要有数字，缺格不算完成。
+- **为什么必须这一步**：分桶键与排序键一旦定下，改它等于重建表（§3.2.1），所以引擎的能力边界必须在建表之前摸清。选错引擎之后，所有调优都只是往一个不合适的方向加补丁。
 
-- FE / BE 节点（StarRocks / Doris）。
-- ClickHouse 节点。
-- 副本数 3。
+**Step 2：集群规划（【经验】1–2 周；随节点规模与是否存算分离变化）**
 
-**Step 3：建表与建模（2-4 周）**
+FE / BE 节点规格与数量（StarRocks / Doris）、ClickHouse 节点、副本数 3，是这一步的明面内容；真正的关键是**为后台合并与导入任务显式预留容量**，并把这份预留写进容量规划表而不是留在脑子里。
 
-- 维度建模（事实表 + 维度表）。
-- 分桶策略。
-- 数据模型（主键 / 聚合 / Unique）。
+- **产物**：容量规划表（节点规格 / 副本数 / 后台任务预留比例 / 若用存算分离则单列对象存储请求量估算）+ 一次「合并与查询同时压峰值」的压测记录。
+- **判据**：压测时把导入与查询同时打满，看查询 P99 是否仍在承诺内；预留资源在监控上应当表现为「长期偏低但不为 0」——如果合并滞后仍在增长，说明预留不足。
+- **为什么必须这一步**：合并任务与查询争抢资源是实时 OLAP 的固有结构（§3.2.1 的代价项），这份预留必须在规划阶段就写下来；漏掉它，问题会以「大促之后 P99 台阶式上抬且降不下来」的形式出现。
 
-**Step 4：数据接入（4-8 周）**
+**Step 3：建表与建模（【经验】2–4 周；随表数量与是否重写存量表变化）**
 
-- Kafka / Flink 实时接入。
-- Iceberg / Hive 外表查询。
-- MySQL CDC 实时同步。
+按维度建模搭事实表 + 维度表；按查询选分区键（通常是时间）、排序键（最常见的范围过滤列）、分桶键（点查与 JOIN 用的高基数列）；按更新语义选数据模型（主键 / 聚合 / Unique）。
+
+- **产物**：DDL + 一张「键 → 它服务的查询」登记表（每个键后面写一个真实的慢查询作为依据）。
+- **判据**：抽 3 张事实表，看分区键能否对上查询里的时间过滤、排序键能否对上最常见的范围条件、分桶键基数是否远大于桶数；三者有一个对不上，就是还没设计完。
+- **为什么必须这一步**：数据的物理布局在写入时就基本锁死了查询能有多快，OLAP 没有「事后补一个索引加速任意查询」的路径（§3.1）。把这一步放在接入之前，是因为接入进来之后再改键要先重写全部数据。
+
+**Step 4：数据接入（【经验】4–8 周；随数据源数量与源表大小变化）**
+
+Kafka / Flink 实时接入、Iceberg / Hive 外表查询、MySQL CDC 实时同步是三条并行的入口。接入方式按引擎选（StarRocks 用 Stream Load、Doris 用 Routine Load、ClickHouse 用 Kafka 引擎 + 物化视图），但真正的调参点是**攒批窗口**。
+
+- **产物**：导入作业 + 攒批窗口配置 + 端到端可见延迟的实测值 + 外表只承接冷数据与联邦场景的边界说明。
+- **判据**：把攒批窗口减半，观察合并滞后是否持续增长；增长就说明当前窗口已经接近或小于合并能力能承受的版本产生速率，应当调回去而不是继续压。
+- **为什么必须这一步**：可见性延迟的下界就是攒批窗口，把它配成「越小越实时」会在写入量上来之后以版本堆积的形式反噬（§3.2.1 的失效点）。
 
 **Step 5：物化视图 + 查询优化（持续）**
 
-- MV 加速高频查询。
-- CBO 统计信息收集。
+MV 只对「查询日志证明重复出现」的形态建，并配一条淘汰流程；统计信息在每次大导入之后重跑，而不是靠人记得。
+
+- **产物**：MV 清单（每个 MV 的命中次数与维护成本）+ 自动化的统计信息收集任务 + MV 数量上限与上线审批入口。
+- **判据**：统计每个 MV 最近 30 天的命中次数，命中率接近零的下线；查最近一次统计信息收集是否发生在上一次大导入之后。
+- **为什么必须这一步**：建 MV 有明确诉求、删 MV 没有诉求，于是默认只增不减（§3.5「MV 只建不淘汰」）；统计信息过期会让优化器选错计划，而选错是静默的——不会报错，只会慢。
 
 **Step 6：监控 + 调优（持续）**
 
-- FE / BE 监控。
-- 慢查询治理。
+FE / BE 监控与慢查询治理是明面内容；要盯的四个量是合并滞后、未合并版本数、分片倾斜度、慢查询 TopN，并且慢查询要有台账（每条写明根因分类：倾斜 / 计划 / 布局 / 资源）。
+
+- **产物**：一张合并与倾斜看板 + 慢查询台账 + 明确的处理时限与责任人。
+- **判据**：任取上周 TopN 慢查询中的 3 条，看台账里是否写明根因与修法；写不出根因的，说明监控只停在了指标层，没有进入计划层。
+- **为什么必须这一步**：这些问题的诊断顺序是有讲究的——先看执行计划、再看分片分布、最后才谈加资源（§3.5）；顺序反了，通常会得到一个更大但仍然倾斜的集群。
+
+这六步里最常被跳过的是 **Step 2 的后台任务预留**与 **Step 3 的键登记表**，两者都属于「不做也不会立刻报错」的类型。跳过的第一个症状出现在写入量或更新频率上台阶之后：先是查询 P99 缓慢上升而数据量没变，接着某次大促后 P99 台阶式上抬且降不下来——这时团队的第一反应通常是加缓存或加节点，而真实原因是合并跟不上版本产生速率，加资源只是把问题推迟。
+
+两个起始点的第一步不同：**从零搭建的团队**从 Step 1 顺序往下做，并把「键 → 它服务的查询」登记表在 Step 3 一次做完；**存量改造的团队**应先跳到 4.4 的第 ① 步（只摘查询、不动业务库），拿到回退开关之后再回到 Step 3 逐张表重建键。两种情况都不建议把引擎选型与键设计合并成一次动作——两者的判据不同，混在一起会让「究竟是引擎不行还是布局不行」变得无法判断。
 
 ### 4.2 关键技术点
 
-**1. StarRocks 实时数仓**
+**StarRocks 实时数仓**
+
+- **做法**：用主键模型表接住高频更新，`DISTRIBUTED BY HASH(点查列)` 分桶、`ORDER BY` 排序键按最常见范围过滤列定、`replication_num = 3`；写入走 Stream Load 或 Flink connector。
+- **机制**：写入是顺序追加版本、查询只读已提交快照，所以查询性能与写入频率解耦；要维持这个解耦，工程上只有一件事要做——把版本产生速率压在合并能力之内（机制推导与代价见 [§ 3.2.1](11-olap-engine-section-3-sec3.md)）。
+- **失效条件**：**当攒批窗口被调小、写入批次变碎时**，版本产生速率超过合并能力，**症状**是「未合并版本数」与「合并任务滞后时间」两条告警先响，而查询 P99 的抬升滞后于它们。工程上的判据是一件登记物：导入作业的批次大小与提交频率是否登记在册、历次改动是否走过变更单——没有这份登记，出问题时无法排除「是我们自己改的」。
+- **档位**：攒批窗口的常见量级为秒级到数十秒【经验】，取值按合并能力反推而不是按直觉取小。
+
+**Doris 实时数仓**
+
+- **做法**：用 Unique Key 模型承载 upsert，`UNIQUE KEY(order_id)` + `DISTRIBUTED BY HASH` 分桶；写入走 Routine Load，并显式设置 `desired_concurrent_number` 与 `max_error_number`。
+- **机制**：更新与查询的机制同 [§ 3.2.1](11-olap-engine-section-3-sec3.md)（版本合并 + 已提交快照）；Routine Load 的增量价值落在工程侧——它把「从 Kafka 消费 + 攒批 + 提交」做成一条引擎自管的常驻作业，少掉一个自建消费端与它的一套巡检。
+- **失效条件**：**当 `max_error_number` 被设得很大以「先让作业跑起来」时**，脏数据会被静默跳过，**症状**是对账时明细总量少了但作业状态是绿的。工程上的判据是作业日检台账里有没有「错误行落表 + 告警」这一项——只设阈值不建旁路，等于把这条失效路径藏进日志里。
+- **档位**：导入并发与错误阈值都随数据质量与上游变更频率变化【经验】，没有通用取值。
+
+**ClickHouse 实时数仓**
+
+- **做法**：列存 + 排序键，`ReplacingMergeTree` 承载 upsert，`PARTITION BY toYYYYMM(...)`、`ORDER BY (主键, 时间)`；实时摄入用 Kafka 表引擎加物化视图写入目标表。
+- **机制**：列裁剪 + Zone Map 让聚合耗时取决于「要读多少块」而不是「表里有多少行」，而要读多少块由 `ORDER BY` 与数据分布决定（推导见 [§ 3.1](11-olap-engine-section-3-sec3.md)）；这条机制也只对单表扫描成立。
+- **失效条件**：**当关联查询成为主要形态时**，优点「单表扫描极快」不再能掩盖 Join 能力的短板，**症状**是查询侧的调优人力持续被关联逻辑吃掉。工程上的判据是慢查询台账里「形态 = 关联、根因 = 计划或布局」的条目数是否在逐季上升；在上升就该把关联前移到写入侧（宽表化），而不是继续在查询侧改写 SQL。
+- **档位**：跳过比例取决于排序键与数据分布，只能实测，不能按「通常能跳过多少」估算【经验】。
+
+**物化视图（自动增量）**
+
+- **做法**：只对重复出现的查询形态建 MV，设 `REFRESH ASYNC` 与明确的刷新间隔；避开会让增量刷新退化成全量重算的写法（`COUNT(DISTINCT)`、不可增量化的自定义函数）；并给 MV 数量设上限。
+- **机制**：预聚合把扫描量从明细行数降到分组数、增量刷新把维护成本绑到变更量而不是总量（推导与代价见 [§ 3.2.3](11-olap-engine-section-3-sec3.md)）；要留意的是这份代价随 MV 数量累加，而收益只落在被命中的那一部分 MV 上。
+- **失效条件**：**当 MV 数量只增不减而上游写入频率不变时**，每条上游写入要维护的 MV 数持续变多，**症状**是集群整体写入变慢而没有任何一条 MV 单独报错——这条路径很隐蔽，因为每条 MV 建的时候都有正当理由。工程上的判据是两件登记物：MV 清单里「最近 30 天命中次数 ÷ 维护成本」这一列是否有值，以及「MV 数量上限 + 上线审批入口」是否有系统级闸门（只写在文档里不算）。
+- **档位**：MV 数量没有通用上限，可用的经验区间是个位数到几十个【经验】，具体取值由「每条上游写入要维护的 MV 数 × 刷新频率」反推。
+
+**向量索引（2024 新特性）**
+
+- **做法**：表里同时放标量列与向量列（数组类型），向量列建索引，查询写成「标量过滤 + 按距离排序取 top-k」一次完成。
+- **机制**：向量列与标量列在同一份数据上，过滤与近邻因此在一次执行计划里协同，标量列也继续享受分区裁剪（机制与代价模型见 [§ 3.2.5](11-olap-engine-section-3-sec3.md)）；落到工程上，这条机制要先过一道**内存预算**才能用。
+- **失效条件**：**当向量索引常驻内存的容量超过节点内存预算时**，索引会退化到磁盘或直接被放弃。用一组数感受量级：1 亿行 × 768 维 × 4 字节 ≈ 307 GB【推算】（10⁸ × 768 × 4 B = 3.072 × 10¹¹ B ≈ 307 GB；按 float32 单精度估算，不含图结构本身的额外开销）。**症状**是内存告警先于查询变慢出现。
+- **档位**：维数与行数是唯一两个可以提前算的输入，先算内存再决定是否上这套【推算】。
+
+**物理布局：分区键 / 排序键 / 分桶键**
+
+- **做法**：三个键分别按「时间范围过滤」「最常见范围条件」「点查与 JOIN 列」来定，并把每个键对应的那个真实查询写进登记表；分桶键选高基数列，长尾键做打散。
+- **机制**：因为分区裁剪与块级跳过都建立在「数据在物理上按这些键聚集」这个前提上，键选对时查询少读的是**整块**数据；也正因为如此，键选错时没有任何查询层的手段可以补——这是 OLAP 与 OLTP 最本质的差别（§3.1）。
+- **失效条件**：**当分桶键取在用低基数列上时**（状态、类型、地区），少数分片显著大于其他分片，**症状**是查询 P99 远高于 P50、某几个节点磁盘先满，且扩容不成比例地改善延迟——因为最慢分片的绝对工作量没有变小。
+- **档位**：分桶键基数应当远大于桶数（常见做法是按「单桶目标数据量」反推桶数），具体倍数随数据分布变化【经验】。
+
+**聚合下推与两阶段聚合**
+
+- **做法**：把能在写入侧完成的关联与聚合尽量前移（宽表化），查询侧依赖引擎的两阶段聚合（各节点先本地聚合、再跨节点汇总中间结果）；用执行计划确认聚合算子确实分成了两阶段，而不是把明细行直接 Shuffle 出去。
+- **机制**：因为跨节点传输的是聚合后的中间结果而不是明细行，网络与内存这两项代价与「分组数」相关而不是与「明细行数」相关。用一组数感受差值：10 亿行明细若直接跨节点汇总，按每行中间结果 40 字节估算约 40 GB；若各节点先聚合到 100 万个分组，同样按 40 字节估算约 40 MB【推算】（10⁹ × 40 B = 4 × 10¹⁰ B = 40 GB；10⁶ × 40 B = 4 × 10⁷ B = 40 MB；每行中间结果的字节数随列数与类型变化）。两者相差约三个数量级。
+- **失效条件**：**当分组键基数极高时**（例如按用户 ID 或订单 ID 分组），本地聚合几乎压不掉多少行，**症状**是 Shuffle 数据量与明细行数同阶，内存告警集中在聚合算子。此时该问的不是「怎么调并行度」，而是「这个查询的粒度是不是本来就不该由这套引擎承担」。
+- **档位**：每行中间结果的字节数与压缩率相关，只能实测【经验】；上例中的 40 字节是估算输入【推算】。
+
+**统计信息与 CBO（工程侧）**
+
+- **做法**：把统计信息收集做成导入之后的自动任务，而不是靠人记得跑；在查询变慢时先看一眼执行计划里「估算行数 vs 实际行数」的偏差。
+- **机制**：因为 CBO 的决策完全建立在统计信息上（行数、NDV、Min/Max），统计过期时优化器会在「Broadcast 还是 Shuffle」「Join 顺序」这类分叉上系统性地选错——而选错不报错，只表现为慢。
+- **失效条件**：**当表经历了一次大批量导入或数据分布突变之后**，过期统计信息仍会被继续使用。**症状**是同一个查询昨天秒级、今天分钟级，且计划里出现与预期相反的选择（例如大表被广播、小表被 Shuffle）。判据是一句话：最后一次收集统计信息的时间是否晚于最后一次大导入。
+- **档位**：收集频率按导入频率定；大表全量收集本身有代价，要单独评估并排进低峰【经验】。
+
+### 4.3 工具链与平台
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 实时报表 / 交互式分析 | StarRocks / Apache Doris | 查询以点查 + 固定看板为主、要求高并发且写入带更新 → 这两个。二者之间的取舍集中在存算分离成熟度、物化视图与周边生态；拿不准时用你们最慢的 10 条真实查询在同规格集群上各跑一遍 | 换成单表极致型引擎后，Join 与更新语义要在应用侧自行弥补（见下一行） |
+| 大宽表单表极致扫描 | ClickHouse | 查询形态是单表宽表聚合、Join 少、点查少 → 选它；关联一旦成为主要形态，先把关联前移到写入侧（见 [§ 6 落地实践](11-olap-engine-section-6-sec6.md)） | Join 能力弱、更新要靠 ReplacingMergeTree 加查询侧去重；把关联留在查询侧会长期占用调优人力 |
+| 云原生 / 托管 | SelectDB Cloud / Snowflake | 不愿或不能长期承担集群运维、且负载有明显峰谷 → 托管；稳态负载、追求单位成本可控 → 自建 | 成本随用量上升、缓存与调优粒度受产品约束、数据驻留与合规要求要先确认 |
+| 联邦 / 即席跨源 | Trino | 查询跨多源、频率低、对延迟不敏感 → 用它；高频固定查询不要压在它上面 | 每次查询现算，点查延迟由远端文件解析与网络往返决定 |
+| 实时预聚合型 OLAP | Apache Druid / Apache Pinot | 场景是事件流的切片与汇总、维度集固定、摄取即可查 → 这一族；需要复杂 Join 与灵活即席 → 回到 MPP 列存 | 数据模型偏预聚合，维度与指标变更常要重新摄取；组件多，运维面大 |
+| 内嵌 / 单机分析 | DuckDB | 数据量单机可容纳、分析发生在单机进程里（数据科学与 AI 工作流）→ 用它；需要多用户并发与服务化 → 集群引擎 | 并发与数据规模上不去，不能替代服务化 OLAP |
+| 向量能力 | StarRocks 3.x 向量索引 / Snowflake 侧向量能力 / 专用向量库 | 混合查询（标量过滤 + 近邻）是不是主路径：是且标量分析已在这套引擎上 → 用引擎内建；向量检索重而标量分析轻 → 专用向量库 | 向量索引常驻内存（量级推算见 4.2）、向量列几乎不可压缩、混合查询的代价模型尚不成熟 |
+| 实时接入 | Kafka / Flink；Stream Load（StarRocks）/ Routine Load（Doris）/ Kafka 引擎（ClickHouse） | 按目标引擎选导入方式；真正的判据是「攒批窗口与合并能力的比值」，不是导入方式的名称 | 小批量高频导入会以版本堆积的形式反噬（4.2）；导入链路本身也要有责任人 |
+| 生态与周边 | StreamX / SeaTunnel（实时摄入平台）；dbt + OLAP（SQL 化建模）；Apache Superset / Grafana（BI） | 摄入平台看「数据源与目标引擎清单是否覆盖你现有的」；BI 看「能否直连多引擎并做行级权限」 | 多一层平台就多一条要维护的链路与一套元数据；dbt 的物化方式与引擎自带 MV 能力可能重叠，需先划边界 |
+
+表里最容易被误选的是 **ClickHouse 用于关联查询重的场景**：它在单表宽表聚合上的表现会让团队形成「这类引擎都很快」的印象，于是把关联查询原样搬过来，随后在查询侧不断改写 SQL。误选的后果不是一开始就慢，而是**调优人力被一条一条查询长期吃掉**，而正确的修法在写入侧（宽表化）。反过来，正因为关联查询多而选了 MPP 列存，也要接受它在单表极致扫描上不如前一族的现实。
+
+另有三处不适合用表格代替判断：**版本号与特性开关随时在变**，任何「某版本支持某特性」的结论都应以你锁定版本的官方文档当前内容为准；**托管产品的计费模型差异很大**（容量 / 计算单元 / 对象存储请求数三者权重不同），选型前要按自己的访问形态算一次账单而不是比单价；**存算分离这一格要先确认缓存命中率与对象存储请求成本是否有指标可看**，看不到这两项时，弹性带来的收益很容易被冷读与请求费吃掉。
+
+### 4.4 存量迁移
+
+存量改造在 OLAP 上最常见的起点不是「换引擎」，而是**分析查询还压在生产业务库上**（§3.5 的第一条反模式）。迁移的目标是：把分析流量摘出来、把历史资产按要不要重做分类、并且在每一步都留一条可回退的路。
+
+**① 先做可回退的那一半：只迁查询，不动业务库。** 建只读副本或 CDC 通道到 OLAP，**先只迁「最拖垮业务库的那几条查询」**，查询路由层保留一键切回原库的开关。这一步立刻见效且可回退的原因很具体：业务库一行数据没动，回退只是改一个路由配置。不要第一步就做「把所有分析都搬过去」，那会让两边的口径与性能问题同时爆发，失去干净对照。
+
+**② 历史资产按三类处理，判断依据是查询日志而不是数据量。**
+
+| 类别 | 典型特征 | 处理方式 |
+| --- | --- | --- |
+| 必须重建 | 分桶键或排序键选错、且已被查询依赖的表 | 一次全量重写，选低峰窗口；重写前冻结写入或做双写过渡；重建窗口要实测并写进变更单 |
+| 只增量迁移 | 已有 Hive / Spark 数仓里仍在持续产出的分区表 | 新分区写新结构，历史分区留在原路径；用视图把两段拼起来，并在表属性里写明「历史段不参与新口径重算」 |
+| 打标挂账 | 老 Cube / 老物化表、最近 90 天无查询的表 | 不迁结构只迁查询；下线前先统计最近 30 天被谁用过，加标签进待清理清单 |
+
+按查询日志分层能看清一个量级：若保留 90 天的数据里查询只集中在前 7 天，则前 8% 的数据承载了绝大部分读；把这 92% 移到单价更低的对象存储上，若冷侧单价约为热侧的四分之一，总存储成本约降到三成【推算】（0.08 × 1 + 0.92 × 0.25 = 0.31；假设冷热单价之比为 1:4、查询全部落在最近 7 天，实际倍数取决于真实单价与你自己的查询分布）。这也是为什么分类依据必须是查询日志——**搬一张没人查的大表是纯成本，而漏掉一类高频查询会让新集群一上线就被投诉**。
+
+三类里最容易被忽略的是**边界**：老数仓里仍有下游、但下游已经改读新表的那部分历史分区。它们必须在登记项里显式标出来，因为双轨期的口径争议几乎都发生在一条缝上——上游按新口径重算、下游仍读旧分区，失败形态是「数字不再更新」而不是报错。
+
+**③ 双轨怎么维持。** 存量改造期通常同时存在两组双轨：读侧的「旧路径 / 新路径」分派，以及历史段的「内表 / 外表」两读。双轨期的成本不只是存储（副本数 3 意味着同一份数据在 OLAP 侧至少是 3 倍【推算】，按 3 副本估算，不含压缩差异），更贵的是**口径漂移与排查成本**：同一个指标在两套引擎上算出两个数时，排查要同时覆盖两条链路。因此双轨必须带退出日期并写进登记项。经验上这套双轨按季度计【经验，随表数与下游数量变化】。
+
+**④ 什么信号说明可以退出双轨。** 三条同时满足才退：新路径的 P99 连续若干天达到承诺值（用慢查询台账核对，不是看平均值）；慢查询台账里没有一条指向旧路径；关掉旧路径的读入口后所有下游告警为零。退的顺序是「先停新的写入到旧表 → 观察一个完整业务周期 → 再下线旧读入口」——反过来做，会让还在读旧表的那个看板静默读到一份不再更新的数据。
+
+### 4.5 模板 / 示例
+
+**模板 1：Flink → StarRocks 实时链路**
 
 ```sql
--- StarRocks 主键模型（实时更新）
+-- 目标表：主键模型 + 分桶键（点查列）+ 副本数
 CREATE TABLE orders (
-    order_id BIGINT,
-    user_id BIGINT,
-    amount DECIMAL(18, 2),
-    order_time DATETIME,
-    PRIMARY KEY (order_id)
-)
+  order_id BIGINT, user_id BIGINT, amount DECIMAL(18,2), order_time DATETIME
+) PRIMARY KEY (order_id)
 DISTRIBUTED BY HASH(order_id) BUCKETS 16
 PROPERTIES ("replication_num" = "3");
 
--- Stream Load（Kafka 实时）
-STREAM LOAD FROM KAFKA (
-    "kafka_broker_list" = "kafka:9092",
-    "kafka_topic" = "orders",
-    "property.kafka_default_offsets" = "OFFSET_BEGINNING"
-);
+-- 写入：Stream Load（HTTP 接口提交批次，或经 Flink connector 写入）
+-- curl -XPUT 'http://<fe>:8030/api/shop/orders/_stream_load' -H 'Expect: 100-continue' --data-binary @batch.csv
+-- 批次大小与提交频率一起决定版本产生速率，按合并能力反推
 ```
 
-**2. Doris 实时数仓**
+```sql
+-- Flink 侧：Kafka 源表 + StarRocks 结果表；攒批在 Flink 这一层完成
+CREATE TABLE kafka_orders (
+  order_id BIGINT, user_id BIGINT, amount DECIMAL(18,2), order_time TIMESTAMP(3)
+) WITH (
+  'connector' = 'kafka',
+  'topic' = 'orders',
+  'format' = 'json',
+  'properties.bootstrap.servers' = 'kafka:9092'
+);
+
+CREATE TABLE starrocks_orders (
+  order_id BIGINT, user_id BIGINT, amount DECIMAL(18,2), order_time TIMESTAMP(3),
+  PRIMARY KEY (order_id) NOT ENFORCED    -- 必须与目标表主键一致，否则去重语义对不上
+) WITH (
+  'connector'     = 'starrocks',
+  'jdbc-url'      = 'jdbc:mysql://<fe>:9030',
+  'load-url'      = '<be>:8040',
+  'database-name' = 'shop',
+  'table-name'    = 'orders'
+  -- 攒批参数（缓冲行数 / 提交间隔）在 WITH 里显式写出，参数名与默认值以官方文档当前版本为准
+);
+
+INSERT INTO starrocks_orders SELECT * FROM kafka_orders;
+```
+
+**怎么用**：填 `BUCKETS`、`replication_num`、Flink 的批次大小与两处 `jdbc-url` / `load-url` 共五格。`BUCKETS` 按「单桶目标数据量」反推，不要照抄 16；批次大小要与后台合并能力匹配（4.2），先按默认值跑一轮拿到合并滞后曲线再调。导入接口、连接器名与参数细节以官方文档当前版本为准。
+
+**模板 2：Doris Routine Load（Kafka 实时摄入）**
 
 ```sql
--- Doris Unique Key 模型
-CREATE TABLE orders (
-    order_id BIGINT,
-    user_id BIGINT,
-    amount DECIMAL(18, 2),
-    order_time DATETIME,
-    UNIQUE KEY(order_id)
-)
-DISTRIBUTED BY HASH(order_id) BUCKETS 16
-PROPERTIES ("replication_num" = "3");
-
--- Routine Load（Kafka 实时）
-CREATE ROUTINE LOAD orders_load ON orders
+CREATE ROUTINE LOAD shop.orders_load ON shop.orders
 COLUMNS (order_id, user_id, amount, order_time)
 PROPERTIES (
-    "desired_concurrent_number" = "3",
-    "max_error_number" = "1000"
+  "desired_concurrent_number" = "3",
+  "max_error_number" = "1000"          -- 配合错误行落表 + 告警，否则脏数据被静默跳过
 )
 FROM KAFKA (
-    "kafka_broker_list" = "kafka:9092",
-    "kafka_topic" = "orders"
+  "kafka_broker_list" = "kafka:9092",
+  "kafka_topic" = "orders",
+  "property.kafka_default_offsets" = "OFFSET_BEGINNING"
 );
 ```
 
-**3. ClickHouse 实时数仓**
+**怎么用**：填并发数、错误阈值、消费起始位点三格。`max_error_number` 不要只当阈值用——它决定了脏数据是被看见还是被吞掉，必须配一条错误行旁路；`OFFSET_BEGINNING` 在首次导入时才有意义，重置位点前要确认会不会重复写入。
+
+**模板 3：ClickHouse 向量化查询（列存聚合与数据块跳过）**
 
 ```sql
--- ClickHouse ReplacingMergeTree（upsert）
 CREATE TABLE orders (
-    order_id Int64,
-    user_id Int64,
-    amount Decimal(18, 2),
-    order_time DateTime
-)
-ENGINE = ReplacingMergeTree()
+  order_id Int64, user_id Int64, amount Decimal(18,2), order_time DateTime
+) ENGINE = ReplacingMergeTree()
 PARTITION BY toYYYYMM(order_time)
-ORDER BY (order_id, order_time);
+ORDER BY (order_id, order_time);      -- ORDER BY 决定能跳过多少块，建表后改它等于重建
 
--- Kafka 表引擎（实时摄入）
-CREATE TABLE orders_kafka (
-    order_id Int64,
-    user_id Int64,
-    amount Decimal(18, 2),
-    order_time DateTime
-)
-ENGINE = Kafka()
-SETTINGS kafka_broker_list = 'kafka:9092',
-         kafka_topic = 'orders',
-         kafka_format = 'JSONEachRow',
-         kafka_group_name = 'clickhouse-consumer';
-
--- 物化视图（实时同步）
-CREATE MATERIALIZED VIEW orders_mv TO orders AS
-SELECT * FROM orders_kafka;
-```
-
-**4. 物化视图（自动增量）**
-
-```sql
--- StarRocks 自动增量物化视图
-CREATE MATERIALIZED VIEW order_summary
-DISTRIBUTED BY HASH(user_id)
-REFRESH ASYNC
-AS SELECT
-    user_id,
-    dt,
-    SUM(amount) AS gmv,
-    COUNT(*) AS orders
-FROM orders
-GROUP BY user_id, dt;
-```
-
-**5. 向量索引（2024 新特性）**
-
-```sql
--- StarRocks 3.x 向量索引
-ALTER TABLE products ADD COLUMN description_embedding ARRAY<FLOAT>;
-CREATE VECTOR INDEX idx_embedding ON products(description_embedding);
-
--- 向量检索
-SELECT product_id, product_name,
-    l2_distance(description_embedding, [0.1, 0.2, ...]) AS distance
-FROM products
-ORDER BY distance ASC
-LIMIT 10;
-```
-
-### 4.3 工具链与平台（含 2024-2025 新工具）
-
-**OLAP 引擎（2024-2025）**：
-
-| 工具 | 版本 | 特点 |
-| --- | --- | --- |
-| Apache Doris | 2.1+ / 3.0 | 国产开源、存算分离 |
-| StarRocks | 3.x | 国产开源、Cloud Native + 向量索引 |
-| ClickHouse | 24.x | 单表性能极致、SharedMergeTree |
-| SelectDB Cloud | - | 云原生实时数仓 |
-| Apache Druid | - | 实时 OLAP |
-| Apache Pinot | - | 实时 OLAP |
-| Trino | 420+ | 联邦查询 |
-| DuckDB | 1.x | 内嵌 OLAP |
-
-**实时接入**：
-
-- Kafka / Flink：主流摄入。
-- Stream Load（StarRocks）、Routine Load（Doris）、Kafka Engine（ClickHouse）。
-
-**生态工具**：
-
-- StreamX / SeaTunnel：实时摄入平台。
-- DBT + OLAP：SQL 化建模。
-- Apache Superset / Grafana：BI 工具。
-
-### 4.4 代码 / 示例
-
-**示例 1：StarRocks + Flink 实时数仓**
-
-```java
-// Flink → StarRocks
-TableEnvironment tEnv = ...;
-
-tEnv.executeSql("""
-    CREATE TABLE kafka_orders (
-      order_id BIGINT,
-      user_id BIGINT,
-      amount DECIMAL(18, 2),
-      order_time TIMESTAMP(3)
-    ) WITH (
-      'connector' = 'kafka',
-      'topic' = 'orders',
-      'format' = 'json'
-    )
-""");
-
-tEnv.executeSql("""
-    CREATE TABLE starrocks_orders (
-      order_id BIGINT,
-      user_id BIGINT,
-      amount DECIMAL(18, 2),
-      order_time TIMESTAMP(3),
-      PRIMARY KEY (order_id) NOT ENFORCED
-    ) WITH (
-      'connector' = 'starrocks',
-      'jdbc-url' = 'jdbc:mysql://starrocks-fe:9030',
-      'load-url' = 'starrocks-be:8040',
-      'database-name' = 'shop',
-      'table-name' = 'orders'
-    )
-""");
-
-tEnv.executeSql("""
-    INSERT INTO starrocks_orders
-    SELECT * FROM kafka_orders
-""");
-```
-
-**示例 2：Doris Routine Load（Kafka 实时摄入）**
-
-```sql
--- Doris Routine Load
-CREATE ROUTINE LOAD shop.orders_load ON shop.orders
-COLUMNS (order_id, user_id, amount, order_time),
-ORDER BY order_id
-PROPERTIES (
-    "desired_concurrent_number" = "3",
-    "max_error_number" = "1000"
-)
-FROM KAFKA (
-    "kafka_broker_list" = "kafka:9092",
-    "kafka_topic" = "orders",
-    "property.kafka_default_offsets" = "OFFSET_BEGINNING"
-);
-```
-
-**示例 3：ClickHouse 向量化查询**
-
-```sql
--- ClickHouse 列存 + 向量化
-SELECT
-    region,
-    product_category,
-    sum(amount) AS gmv,
-    count(DISTINCT user_id) AS unique_users,
-    avg(amount) AS avg_order
-FROM orders
-WHERE order_time BETWEEN '2025-01-01' AND '2025-01-31'
+SELECT region, product_category,
+       sum(amount) AS gmv, count(DISTINCT user_id) AS unique_users
+FROM   orders
+WHERE  order_time BETWEEN ? AND ?
 GROUP BY region, product_category
-ORDER BY gmv DESC
-LIMIT 100;
-
--- 利用 Zone Map 跳过数据块
-SELECT * FROM orders WHERE order_id = 12345;
--- → ClickHouse 自动用 order_id 索引跳过 99% 数据块
+ORDER BY gmv DESC LIMIT 100;          -- 先看执行计划确认聚合是两阶段的
 ```
 
-**示例 4：DuckDB 内嵌 OLAP（2024 AI 时代）**
+**怎么用**：`ORDER BY` 按最常用的范围过滤与去重键定，别照抄示例；`PARTITION BY` 的粒度按「单分区数据量」定（过细会让分区数膨胀）。跳过多少块由数据分布决定，用真实查询的读取行数验证，不要按经验比例估算。
+
+**模板 4：ClickHouse 实时摄入（Kafka 表引擎 + 物化视图）**
+
+```sql
+-- 目标表沿用模板 3 的 ReplacingMergeTree 表 orders
+
+-- 缓冲区表：Kafka 表引擎只负责读取，本身不存数据
+CREATE TABLE orders_kafka (
+  order_id Int64, user_id Int64, amount Decimal(18,2), order_time DateTime
+) ENGINE = Kafka()
+SETTINGS kafka_broker_list = 'kafka:9092',
+         kafka_topic       = 'orders',
+         kafka_format      = 'JSONEachRow',
+         kafka_group_name  = 'clickhouse-consumer';
+
+-- 物化视图把缓冲区表的数据搬到目标表；没有它，数据读过即丢
+CREATE MATERIALIZED VIEW orders_mv TO orders
+AS SELECT * FROM orders_kafka;
+```
+
+**怎么用**：填 Broker、Topic、消费组与目标表四格；`kafka_group_name` 一旦改写，位点按新消费组重新算，重置位点前先确认会不会重复写入。这条链路有三个对象（缓冲区表 / 物化视图 / 目标表），登记项里要写清哪一个出问题该找谁。参数名以官方文档当前版本为准。
+
+**模板 5：物化视图（自动增量）：建 MV 与命中登记**
+
+```sql
+-- 只对「查询日志证明重复出现」的形态建；REFRESH ASYNC = 自动增量刷新
+CREATE MATERIALIZED VIEW mv_order_daily
+DISTRIBUTED BY HASH(shop_id) BUCKETS 8
+REFRESH ASYNC EVERY(INTERVAL 10 MINUTE)      -- 刷新间隔 = 看板新鲜度的上限
+PROPERTIES ("replication_num" = "3")
+AS SELECT shop_id, dt, SUM(amount) AS gmv, COUNT(*) AS orders
+FROM dwd_order GROUP BY shop_id, dt;
+-- 避开不可增量化的写法（COUNT(DISTINCT)、自定义函数）：它们会把增量刷新退化成全量重算
+
+-- 淘汰判据：命中次数取自查询审计 / 慢查询日志，按 MV 名匹配
+SELECT count(*) AS hits
+FROM   <query_audit_table>
+WHERE  query_time > now() - INTERVAL 30 DAY
+  AND  sql_text LIKE '%mv_order_daily%';     -- hits 接近零的 MV 直接下线
+```
+
+**怎么用**：填 `BUCKETS`、`REFRESH ASYNC` 的间隔与审计表名三格。刷新间隔就是看板的新鲜度上限，要能向用户解释；`DISTRIBUTED BY` 决定 MV 自身的分布，别照抄示例；第二段查询必须真的排进一条定期任务——淘汰判据不落成能跑的语句，MV 数量就只会增。
+
+**模板 6：DuckDB 内嵌 OLAP（单机分析）**
 
 ```python
 import duckdb
 
-# 直接查询 Parquet
 result = duckdb.query("""
-    SELECT
-        region,
-        SUM(amount) AS gmv,
-        COUNT(DISTINCT user_id) AS users
-    FROM read_parquet('s3://lake/orders/dt=2025-01-01/*.parquet')
-    WHERE order_status = 'paid'
-    GROUP BY region
-    ORDER BY gmv DESC
-""").to_df()
-
-# DuckDB + Pandas（嵌入分析）
-import pandas as pd
-df = pd.read_parquet("s3://lake/orders/dt=2025-01-01/")
-result = duckdb.query("""
-    SELECT region, SUM(amount) FROM df GROUP BY region
+    SELECT region, SUM(amount) AS gmv, COUNT(DISTINCT user_id) AS users
+    FROM   read_parquet('s3://lake/orders/dt=2025-01-01/*.parquet')
+    WHERE  order_status = 'paid'
+    GROUP  BY region
+    ORDER  BY gmv DESC
 """).to_df()
 ```
 
----
+**怎么用**：适用于单机可容纳的数据量与「分析就发生在这一台机器上」的场景（数据科学、AI 工作流、本地验证）。不要用它替代服务化 OLAP——并发与规模是两回事。对象存储的凭据走环境配置，不写进脚本。
+
+**模板 7：表与键的登记项（每张表一行）**
+
+```yaml
+table: dwd_order
+owner: <具体人名>          # 不写团队名
+model: primary-key         # primary-key / unique / aggregate / duplicate
+partition_key: dt          # 服务哪一类查询过滤
+order_key: updated_at      # 服务最常用的范围条件
+bucket_key: order_id       # 服务点查与 JOIN；基数须远大于桶数
+buckets: 32                # 按「单桶目标数据量」反推
+replication: 3
+retention: 90d             # 与冷热分层任务衔接
+last_rebuild: <日期>       # 最近一次重建；空 = 从未重建过
+```
+
+**怎么用**：`owner`、`partition_key`、`order_key`、`bucket_key`、`buckets` 五格必填；`last_rebuild` 为空说明这张表从建成起没重建过，迁移评审时要单独问一次它当初的键是怎么定的。
+
+**模板 8：外表直查（冷历史）与热转冷校验**
+
+```sql
+-- 冷数据留在湖上，由 OLAP 外表直查；热数据留在内表
+CREATE EXTERNAL TABLE ext_orders_hist
+ENGINE = iceberg                      -- 或 hive / hudi / paimon
+PROPERTIES (
+  "iceberg.catalog.type" = "rest",
+  "iceberg.catalog.uri"  = "http://catalog:8181",
+  "iceberg.database"     = "prod",
+  "iceberg.table"        = "orders"
+);
+
+-- 热转冷前后必须核对两段能拼上：行数与时间边界都要对
+SELECT count(*) FROM orders          WHERE dt < ?;   -- 内表待迁出的部分
+SELECT count(*) FROM ext_orders_hist WHERE dt < ?;   -- 外表迁入后的部分
+```
+
+**怎么用**：填 Catalog 连接与迁移边界日期两格，然后实测一次冷查询延迟并把它写进登记项——热转冷会让查询 P99 跳变，上层路由（或视图）要能把这类请求单独区分出来。`ENGINE` 的可用取值与属性名以官方文档当前版本为准。
+
+### 4.6 自检清单
+
+- [ ] 登记表里有多少张表的 `last_rebuild` 是空的？这些表在历次评审里是否被逐张问过「三个键当初是按哪条查询定的」，并留下了记录？
+- [ ] 集群容量规划表里是否写明了为后台合并与导入预留的比例，且该比例与实测的合并滞后对得上？
+- [ ] 「未合并版本数 / 合并任务滞后时间」两条告警挂在哪个看板上，阈值触达时发给的是值班人名还是一个大群？上季度这两条各响了几次、是否全部关闭？
+- [ ] 倾斜度量（最大桶与最小桶相差几倍）是否有常驻看板与阈值，还是出问题时才临时查一次？最近一次触达阈值是谁处理的？
+- [ ] 统计信息收集是否做成了「导入后自动跑」的任务？这个任务最近一次失败有没有人知道（还是任务挂了没人发现，直到查询变慢）？
+- [ ] 导入作业的攒批窗口当前值登记在哪里？最近一次改动的变更单在哪里，改动前后的合并滞后曲线是否留档？
+- [ ] MV 清单里每个 MV 是否登记了 Owner 与它服务的查询形态？最近一次下线 MV 是什么时候、走的是谁的审批（若从未下线过，数量上限由谁在守）？
+- [ ] 慢查询台账里，根因分类为「计划」或「布局」的条目有没有处理时限与责任人？任取 3 条，能否从台账直接翻到当时的那份执行计划？
+- [ ] 冷热分层的调度任务是否带迁移后校验（两段的行数与时间边界对得上）？冷查询延迟的实测值是否写进登记项，并在路由层被单独区分出来？
+- [ ] 多业务是否用资源组 / 计算组隔离？一个业务的突发查询会不会拖慢其他业务（压测过还是推断的）？
+- [ ] 从业务库摘分析流量的方案里，是否有「查询切回原库」的回退开关？这个开关演练过吗？
+- [ ] 每张表的保留期与「是否需要历史重算」是否写进表属性，并与冷热分层的迁移任务衔接上？
+
+### 4.7 小结
+
+> 本节小结：OLAP 落地里唯一决定成败的环节是 **Step 3：把分区键、排序键、分桶键与它服务的那条查询一起定下来**。原因是这个主题里其他步骤做错都可以补救——引擎慢可以加资源、MV 建错可以下线、接入方式不合适可以换——而这三个键一旦落进 DDL，改它的代价就是一次全量重建；同时它也是唯一一个「做对之后不再产生后续成本」的决定，其余环节（合并、MV、冷热分层、倾斜治理）都要长期维护。
+>
+> 配合 [§ 2 核心原理](11-olap-engine.md)、[§ 3 设计模式与范式](11-olap-engine-section-3-sec3.md) 与 [§ 6 落地实践](11-olap-engine-section-6-sec6.md) 阅读。

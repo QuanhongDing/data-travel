@@ -50,7 +50,7 @@
 
 **第三层：Skill Extraction 相对微调的优势。** 微调是"内化能力"——改的是模型参数，成本是 GPU 小时数与数据集构建。Skill 是"**外挂能力**"——它以结构化文本形式存在，可以**秒级热更新、A/B 实验、按租户隔离**。这一点对生产系统至关重要：当某条业务规则（如合规口径）变化时，等重训模型上线要等几天，而改一个 Skill 的步骤几乎是即时生效。Cognition Labs 公开介绍 Devin 的演进路线时也强调，**将"会做的事"外化为可审计的 Skill**，比持续微调模型更可控（本节无法核验该说法的公开出处，引用时请自行查证）。
 
-**第四层：不可替代性——Skill Extraction 是 Agent 的"程序性记忆"。** 这一观点在学术与工业界有清晰对应：**Reflexion**（Shinn et al., NeurIPS 2024）明确把 Self-Reflection 沉淀为「**verbal reinforcement**」（语言化强化记忆），把成功经验变成可重读的"反思文本"——这本质上就是 Skill Extraction。NVIDIA 与斯坦福在 **Voyager**（Wang et al., 2023-11）中更进一步：在 Minecraft 中用一个常驻的 **Skill Library**（不断增长的代码技能库）让 Agent 终身学习，并把每个 Skill 写成可组合、可检索的描述块——这正是 Skill Extraction 不可替代的工业实证。
+**第四层：不可替代性——Skill Extraction 是 Agent 的"程序性记忆"。** 这一观点在学术与工业界有清晰对应：**Reflexion**（Shinn et al., NeurIPS 2023）明确把 Self-Reflection 沉淀为「**verbal reinforcement**」（语言化强化记忆），把成功经验变成可重读的"反思文本"——这本质上就是 Skill Extraction。NVIDIA 与斯坦福在 **Voyager**（Wang et al., 2023-11）中更进一步：在 Minecraft 中用一个常驻的 **Skill Library**（不断增长的代码技能库）让 Agent 终身学习，并把每个 Skill 写成可组合、可检索的描述块——这正是 Skill Extraction 不可替代的工业实证。
 
 **第五层：落点——Skill Extraction 在自进化体系中的位置。** 一句话：**Skill Extraction 是 Agent 自进化"经验→资产"的最后一公里**。它连接"行为日志"与"资产注册中心"，只有它能把离散的轨迹沉淀为可复用、可治理、可计量的资产。这是 RAG / 微调都做不到的——前者不沉淀执行经验，后者改了不可热替换。
 
@@ -70,7 +70,7 @@
 
 **5. 参考资料**
 
-- Noah Shinn 等（Northeastern 等）《Reflexion: Language Agents with Verbal Reinforcement Learning》，NeurIPS 2024——把"自我反思 → 语言化强化记忆 → 沉淀为可复用 Skill"作为完整闭环提出，是 Skill Extraction 学术定义的关键来源。
+- Noah Shinn 等（Northeastern 等）《Reflexion: Language Agents with Verbal Reinforcement Learning》，NeurIPS 2023——把"自我反思 → 语言化强化记忆 → 沉淀为可复用 Skill"作为完整闭环提出，是 Skill Extraction 学术定义的关键来源。
 - Guanzhi Wang 等（NVIDIA / Stanford / Caltech）《Voyager: An Open-Ended Embodied Agent with Large Language Models》，2023-11 arXiv——Minecraft 中"自动技能库发现 + Skill Library 终身增长"的原始系统，是 Skill Extraction 在开放环境里的标志工作。
 - Anthropic Engineering Blog《Building effective agents》（2024-10）——对 Tool / Prompt / Workflow 关系的清晰工程总结；该文对「Skills 是工具的编排」这一提法的表述，本节无法核验，引用时请对照原文。
 - Lilian Weng（前 OpenAI）博客《LLM-powered Autonomous Agents》——程序性记忆 vs 陈述性记忆的概念区分及其在 Agent 中的落地。
@@ -175,7 +175,7 @@
 **5. 参考资料**
 
 - Guanzhi Wang 等《Voyager: An Open-Ended Embodied Agent with Large Language Models》，arXiv 2023-11——端到端 Skill Library 构建流水线的开创性系统。
-- Noah Shinn 等《Reflexion》，NeurIPS 2024——离线 + 在线自我反思 + Skill 积累的具体机制。
+- Noah Shinn 等《Reflexion》，NeurIPS 2023——离线 + 在线自我反思 + Skill 积累的具体机制。
 - LangChain / LangGraph 官方文档——Agent 状态与轨迹持久化的工程范式。
 - Anthropic Engineering Blog《Building effective agents》（2024-10）——Tool 定义与 Workflow 编排的工程纪律；该文对「Skill 编排」的表述本节无法核验，引用时请对照原文。
 - Lilian Weng（前 OpenAI）博客《LLM-powered Autonomous Agents》——长期记忆 / 程序性记忆 / Trajectory 结构化存储的方法论总结。
@@ -366,7 +366,7 @@
 
 **5. 参考资料**
 
-- Noah Shinn 等《Reflexion》，NeurIPS 2024——Self-Reflection + 失败反思 → 沉淀 Skill 的循环，最早的"程序性对抗幻觉"模式之一。
+- Noah Shinn 等《Reflexion》，NeurIPS 2023——Self-Reflection + 失败反思 → 沉淀 Skill 的循环，最早的"程序性对抗幻觉"模式之一。
 - Yuntao Bai 等（Anthropic）《Constitutional AI: Harmlessness from AI Feedback》，2022——原则驱动自我批评与修正的范式，可直接迁移到 Skill 抽象的对抗验证。
 - Anthropic Engineering Blog《Building effective agents》（2024-10）——结构化 Tool Definition 的工程纪律，间接给出 Skill 反幻觉的 prompt 模板范例。
 - Lilian Weng（前 OpenAI）博客《LLM-powered Autonomous Agents》——长期记忆 / Skill 的反幻觉经验。
@@ -491,7 +491,7 @@
 - DeepMind 关于 **AlphaProof**（2024，IMO 解题）与 **AlphaCode 2**（2023-2024）的公开技术报告——Self-Play + RL 在数学与代码上的工业级验证。
 - Anthropic《Constitutional AI: Harmlessness from AI Feedback》与 RLAIF 系列论文——AI 反馈代替人类反馈的强化训练，可视为 Self-Play 的延伸。
 - Cognition Labs 关于 Devin 训练范式的公开材料（2024-2025）。
-- Noah Shinn 等《Reflexion》，NeurIPS 2024——Self-Play 与 Self-Reflection 的工程耦合范式。
+- Noah Shinn 等《Reflexion》，NeurIPS 2023——Self-Play 与 Self-Reflection 的工程耦合范式。
 - **米哈游原神 / 崩坏：星穹铁道的 NPC 战斗 Skill Library** —— 通过 Self-Play 让 NPC Agent 自主生成对战任务、尝试多种技能组合并按胜负评估，逐步沉淀可复用的战斗 Skill 库，体现游戏域「任务可机器判定 + 自博弈循环」的 Self-Play 范式。
 - **鹰角网络明日方舟的关卡解法 Self-Play** —— 让 Agent 自主探索关卡、尝试编队组合并按通关结果归纳「战术 Skill」，验证合成任务生成 + 真实结果判定的 Self-Play 闭环在策略类游戏中的适用性。
 - **网易雷火永劫无间的 NPC 行为训练** —— 在吃鸡 / 多人对抗场景下用 Self-Play 让 NPC 自主生成战术、归纳新 Skill，证明 Self-Play 在「胜负可判定」博弈类游戏中的规模化应用与 Reward Hacking 抑制实践。

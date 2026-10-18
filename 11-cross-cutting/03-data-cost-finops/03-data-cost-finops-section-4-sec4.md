@@ -1,376 +1,345 @@
-> 本文件是 **03-data-cost-finops.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](03-data-cost-finops.md)。
+> 本文件是 **03-data-cost-finops.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](03-data-cost-finops-section-3-sec3.md) 里的六个模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](03-data-cost-finops.md)。
 
 ## 4. 工程实现
 
+[§ 3](03-data-cost-finops-section-3-sec3.md) 已经回答了「在你家的约束下该先按哪个模式做」，本节不复述模式本身，只回答三个工程问题：**按什么顺序装、每一步手上该多出什么可被检查的东西、已经存在的资源和账单怎么改造。**
+
+分两类读者。**从零搭建**（新建平台，或刚接手一个还没做过成本治理的平台）读 §4.1 的顺序与判据、§4.2 七项技术点的机制与失效条件、§4.3 的选型判据、§4.5 的可套用模板即可，§4.4 可以后读。**在存量上改造**（平台跑了几年、账已经堆了一堆、标签当年没打）的读者顺序相反：先读 §4.4，再回到 §4.1——因为你的第一步不是「接账单、建看板」（这些今天就能做完，也今天就能见效），而是**决定哪些历史资源补账、哪些挂账、哪些直接回收**。§3.1 那条前置约束（计费单元决定哪个杠杆有收益）在本节里落成一条硬规矩：**Step 1 的动作不是「看账单」，而是「把自家账单拆到计费单元这一层」**——拆不开的账单，后面每一步都会打偏。
+
 ### 4.1 落地步骤
 
-**Step 1：成本可见性（4-6 周）**
+**Step 1：成本可见性与标签地基（4–6 周【经验：随资源类型数量与账单口径数量变】）**
 
-1. 接入云厂商账单（AWS Cost Explorer / Azure / 阿里云）。
-2. 资源标签标准化（团队 / 项目 / 环境 / Owner）。
-3. 自建 FinOps 看板（按团队 / 项目 / 服务 / 时间维度）。
-4. 异常告警（成本异常波动 > 20% 触发告警）。
+1. 接入云厂商账单与用量数据（AWS Cost Explorer / Azure Cost Management / 阿里云费用中心一类），**先接用量与计费单元，再接金额**——金额会被折扣、退税、跨期调整改写，用量才是可复算的那一份。
+2. 资源标签标准化：定下四项最小标签（团队 / 项目 / 环境 / Owner），写清每一项的取值域与默认值（模板见 §4.5）。
+3. 自建 FinOps 看板：按团队 / 项目 / 服务 / 时间四个维度出账，**必须有一个维度叫「未归因」**，且它不能被平摊掉。
+4. 异常告警：对成本波动设阈值（起点可以取波动幅度的历史分位附近，20% 一类固定百分比只是起点，随业务波动幅度调【经验】）。
+5. 建立**账单行 → 标签**的月度对账动作（对账 SQL 见 §4.5 模板 2），并把差额归到三个已命名原因之一：口径差异 / 标签缺失 / 数据延迟。
 
-**Step 2：成本归因（4-6 周）**
+- **产物**：**成本可见性底座** = 用量与账单数据集 + 标签规范（含取值域）+ FinOps 看板 + 异常告警规则 + **月度对账结果（含未归因金额与占比）**。
+- **判据**：任取一个上月金额靠前的资源，回答三问——它属于哪个团队、它的计费单元是什么、它的金额里有多少进了「未归因」。三问中任一答不出，说明 Step 1 还没做完，只是账单能看了。
+- **为什么必须这一步 / 为什么在这个位置**：后面每一步都要一个「谁」——分层省下的存储费算给谁、可回收容量省下的钱记在谁头上、超预算拦谁提交的作业。标签与「未归因」账户是这三件事共同的落点；晚做一个月，就多一个月的账无法回溯，而历史资源当时的归属信息往往已经不存在。它排在第一，不是因为它是基础工程，而是因为它是六步里唯一一件**事后补不回来**的事。
 
-1. 标签治理（强制打标签）。
-2. 共享成本分摊规则（如 EKS Control Plane 按 Pod 数分摊）。
-3. 团队 Showback 看板。
-4. 月度成本 review 会议。
+**Step 2：成本归因与 Showback（4–6 周【经验：随资源数量与组织单元数量变】）**
 
-**Step 3：存储降本（4-8 周）**
+1. 标签治理从「建议」变成「强制」：新资源在创建路径上必须带标签；缺标签时要么拒绝创建、要么落默认值并告警——两种都合法，但必须选一个并写下来。
+2. 共享成本分摊规则：不可直接归属的部分（共享集群控制面、公共组件、平台自用资源）显式列为公共成本**单独立账**，不按比例平摊进各团队。
+3. 团队级 Showback 看板：给出成本类别、用量、单价、已归因 / 未归因、环比、主要贡献作业（字段清单见 [§3.2.5](03-data-cost-finops-section-3-sec3.md)）。
+4. 月度成本 review 会议：固定议程只留两项——未归因金额怎么处理、环比变化最大的三个作业是哪些。
 
-1. 冷热分层（最近 30 天 → 标准 S3；30-180 天 → IA；> 180 天 → Glacier）。
-2. 压缩格式统一（Parquet + ZSTD）。
-3. 备份策略优化（全量备份 → 增量 + 合成全量）。
-4. 重复数据删除。
+- **产物**：**分账视图（团队级 Showback）+ 分摊规则说明 + 未归因处理记录**。
+- **判据**：抽三个团队，各问一句「上个月你团队金额最高的那个作业是什么、它的调度频次多少」——答不出作业名，说明分账只做到团队级，而团队改不动具体作业（这也是 [§3.6](03-data-cost-finops-section-3-sec3.md) 那条跃迁的触发条件）。
+- **为什么必须这一步 / 为什么在这个位置**：归因是唯一能把「省下来的钱」与「能改变用量的人」连起来的东西。它必须先于任何降本动作——降本一旦先上线，收益就落在没有认领人的账上，此后所有优化都要靠行政命令推动，而命令推不动第二次。
 
-**Step 4：计算降本（4-8 周）**
+**Step 3：存储降本（4–8 周【经验：随数据量与访问日志可得性变】）**
 
-1. Spot 实例接入（Spark / Flink 可中断任务）。
-2. RI / Savings Plans 采购（基线负载）。
-3. 弹性伸缩（Karpenter / 自研）。
-4. 小文件 Compaction（Spark / Hudi / Iceberg）。
-5. 资源 Right-Sizing。
+1. 冷热分层：按最后访问时间与数据年龄把分区迁到低价存储类（起步可以写「30 天转低频、180 天转归档」，**天数必须按自家访问衰减曲线与最小计费时长重定**【经验】）。
+2. 压缩格式统一（Parquet + ZSTD 一类），历史文件按分区批量重写。
+3. 备份策略优化：全量备份改为增量 + 合成全量，并缩短保留期。
+4. 重复数据删除：先识别（同内容不同路径、同分区多份副本），后合并；**识别名单要留存**，因为合并是最容易删错数据的一步。
 
-**Step 5：查询降本（4-8 周）**
+- **产物**：**分层与生命周期规则（声明式配置、进版本控制）+ 各层容量与账单前后对照 + 去重清单**。
+- **判据**：从生命周期规则里任取一条，问「这条规则什么时候会误伤」——能答出「冷层里如果出现近 7 天的分区，说明前缀写错了」这类可执行检查的算通过（「7 天」本身是可调参数【经验：随各档位的最短计费时长与数据量变，通常对齐最短计费周期】）；再实际抽一层存储，核对里面的分区年龄分布是否符合规则。
+- **为什么必须这一步 / 为什么在这个位置**：它排在归因之后、计算降本之前。排在归因之后，是因为分层省下的是使用方的存储账、付出的是平台团队的人力与一次迁移风险，没有归因就没有人认领这笔收益；排在计算降本之前，是因为**重写历史文件本身要花算力**（见 §4.2 第 2 条），这笔算力应该在有便宜容量的时候付。
 
-1. 数仓自动暂停（Snowflake Auto-Suspend）。
-2. 查询结果缓存（Alluxio / 自研）。
-3. SQL 优化（Pruning、列裁剪、物化视图）。
-4. 资源队列管理（Workload Management）。
+**Step 4：计算降本（4–8 周【经验：随负载可中断比例与调度能力变】）**
 
-**Step 6：流程与文化（持续）**
+1. 负载按「可中断性」打标（可重跑 / 不可中断），可重跑部分接入可回收容量（Spot 一类）——典型对象是 Spark / Flink 这类带检查点的批式任务，接入时同步配套检查点与重试上限。
+2. 承诺折扣（RI / Savings Plans 一类）只覆盖**已被认领的基线用量**，按可预测基线封顶，不按当前总量。
+3. 弹性伸缩（Karpenter 一类或自研）：同时写下界（保护 SLO）与上界（保护预算），加冷却窗口与缩容前排空。
+4. 小文件 Compaction：在 Spark 的批式重写作业、Hudi 的 Compaction 服务、Iceberg `rewrite_data_files` 这类引擎 / 表格式过程中挑一个挂进调度，再定目标文件大小与调度频率（配置见 §4.2 第 2 条）。
+5. Right-Sizing：按历史利用率下调规格，**先降规格再加弹性**——顺序反了，会在弹性生效前先欠下一笔稳定性债。
 
-1. 成本 owner 机制（每个团队配成本 owner）。
-2. 月度成本评审。
-3. 季度降本 OKR。
-4. 工程师 FinOps 培训。
+- **产物**：**负载分级清单（含检查点与重试策略）+ 采购合同与基线认领表 + 伸缩策略配置 + Compaction 调度**。
+- **判据**：抽查三个跑在可回收容量上的作业，各问一句「被回收后它从哪个检查点续跑、重试上限是多少」——答不出，说明它本来不该待在可回收容量上；再核一次承诺量与基线量，两者相差超过一个可解释的余量，说明承诺是按总量签的。
+- **为什么必须这一步 / 为什么在这个位置**：它必须在 Step 3 之后（先缩占用量、再谈单价，否则等于按现状把规模锁进合同），也必须在 Step 2 之后（基线用量得有人认领，否则承诺买多的部分是无人承担的成本）。
+
+**Step 5：查询降本（4–8 周【经验：随业务方的 SQL 改动意愿变】）**
+
+1. 数仓侧自动暂停与自动恢复（Snowflake Auto-Suspend 一类），并按负载分队列（Workload Management 一类）。
+2. 查询结果缓存（Alluxio 一类或自研），对高频重复查询先算后存。
+3. SQL 优化：分区裁剪、列裁剪、物化视图，**优先挑「扫得多、返回少」的查询**。
+4. 把上面三条落到业务方自己的 SQL 上——这一步的阻力不在技术，在跨团队推动：谁改、什么时候改、出问题谁回滚。
+
+- **产物**：**队列与暂停策略配置 + 缓存命中统计 + 改造前后的扫描量表（按查询、按团队）**。
+- **判据**：按扫描量排序列出前 20 个查询，看其中几个来自同一个作业；再核这些查询的「扫描量 / 返回行数」比值——比值最偏斜的那几个就是第一批要改的。
+- **为什么必须这一步 / 为什么在这个位置**：如果平台按扫描字节计费，这一步的权重高于 Step 3 与 Step 4（缩集群不减少扫描量），所以它的位置不固定，取决于 Step 1 拆出来的计费单元。把它排在采购之后，是因为缓存与裁剪会改变用量，而用量一改，刚签的承诺量就要重新校对。
+
+**Step 6：流程与文化（持续【经验：以月为复盘周期、以季为目标周期】）**
+
+1. 成本 Owner 机制：每个团队一名成本 Owner（具体到人），职责是月度看账并推动本团队最大的三项。
+2. 月度成本评审：议程固定，只处理未归因与环比异常，不做通报式汇报。
+3. 季度降本目标（OKR 一类）：目标与 SLA 硬线一起写，避免降本降出事故。
+4. 工程师 FinOps 培训：内容以「你写的这条 SQL、你定的这个调度频次值多少钱」为主，不讲框架。
+
+- **产物**：**成本 Owner 名单 + 月度评审记录 + 季度降本目标（含不可退化的 SLA 硬线）**。
+- **判据**：翻出最近一次月度成本评审的会议记录，里面有没有**一条具体的作业变更**——哪个作业、改的是频次还是输入范围、由谁提交、回滚预案谁写的。记录里全是看板截图与环比数字、没有一条落到作业与提交人，说明前五步的产出还停在展示层。
+- **为什么必须这一步 / 为什么在这个位置**：前五步都是能力，这一步是让能力被使用的机制。它排在最后不是因为最不重要，而是因为它必须挂在已经存在的分账与门禁上——没有 Step 2 的分账，评审会开成对账会。
+
+**六步里最常被跳过的是 Step 2 的第 2 条：分摊规则里「不按比例平摊」那半句。** 平摊看起来最公平、最省事，也最快能让看板上每一行都好看，所以它几乎总是被默认采用。它跳过后第一个出问题的时点是第一次金额异常 review：某个共享组件的用量翻了一倍，按人头平摊之后每个团队只涨了几个百分点，**没有任何一个团队的数字难看**，于是这件事在会上不会有人提；第二个时点更贵，在 Step 4 签承诺折扣的时候——基线用量因为平摊而无法认领，只能按总量签，此后每一次缩容都是在为自己的合同付违约金。
 
 ### 4.2 关键技术点
 
-**1. 存储降本工程**：
+**1. 冷热分层与生命周期规则**
 
-- **冷热分层策略**：
+- **做法**：把分层写成声明式规则（对象存储生命周期 / 表格式的分区级重写），规则进版本控制；天数按最后访问时间统计定；对归档类档位单独标注最小计费时长与取回费用（结构见 [§3.2.2](03-data-cost-finops-section-3-sec3.md)）。
+- **机制**：因为规则由存储侧自动执行，所以第一次误配（前缀写错、天数写反）不会在查询里报错，只会在一到两个账期后的存储账单上表现为「该降的没降」或「不该转的转了」【经验：账期长度与出账延迟随云厂商结算周期与账单口径变，多数落在下一个账期】——分层没有即时反馈，唯一的反馈渠道是账单。
+- **失效条件**：触发条件与机制已写在 [§3.2.2](03-data-cost-finops-section-3-sec3.md)（访问模式从「按时间回看」变成「随机点查历史明细」时，分层反转成净增成本），本节只补实施层的那一半：这个反转**不在任何查询报错里出现**，第一个发现它的一般是下游业务方那张「查历史明细变慢了」的工单，而不是平台团队——平台侧盯的是存储账单，取回费落在另一张账单上。观测信号是「同一张历史明细表的查询 P95 与取回费用同步上行」；两份账单要放在一起看才发现。
+- **档位**：天数与档位是给读者的参数【经验：随访问衰减速度、最小计费时长与取回定价变】；降幅按自家账单实测，多数团队落在「存储账单明显下降」这一量级【经验】。
+
+**2. 小文件 Compaction 与压缩格式统一**
+
+- **做法**：定目标文件大小（512MB 一类只是起点，按引擎的读放大与并行度定【经验】），用表格式或引擎的重写过程（Iceberg `rewrite_data_files`、Hudi 的 Compaction 服务、Spark 的批式重写作业一类，可带排序 / Z-Order）定期合并；压缩统一为 Parquet + ZSTD 一类列存编码；历史文件按分区批量重写。
+- **机制**：因为 Compaction 是用计算换存储与查询，所以它的**调度位置比参数更重要**——放在计算单价最低的时段（夜间、可回收容量）跑，这笔交换才是净收益；放在白天高峰跑，省下的存储费会被算力吃掉。
+- **失效条件**：**当写入频率高于 Compaction 的调度频率时**，小文件数量净增长；症状是 Compaction 任务自己长期排在队列里（它就是被自己制造的小文件拖慢的），文件数曲线不再下降——此时要改的是写入侧（批次大小、提交间隔），而不是加调度频率。
+- **档位**：目标大小与调度频率【经验：随写入粒度与引擎并行度变】。
+
+**3. 弹性伸缩的边界与排空协议**
+
+- **做法**：伸缩策略同时写下界、上界、冷却窗口与缩容前排空；容器侧用节点池（Karpenter NodePool 一类）把实例族与容量类型写成约束，用 consolidation 与到期轮转清理碎片；缩容前给在跑的任务打「不可中断」标。
+- **机制**：因为一次伸缩生效要走过「指标上报 → 决策 → 实例就绪 → 任务重排」这条有延迟的链路，而这条链路的每一段都是分钟级，所以决定净收益的不是反应速度而是冷却窗口与实例就绪时长——窗口短于链路延迟时，容量会在负载已经回落之后才加上来、再在一个周期后减回去，账上留下两段谁也没用上的闲置容量。
+- **失效条件**：触发条件与机制见 [§3.2.3](03-data-cost-finops-section-3-sec3.md) 的失效点与 [§3.5](03-data-cost-finops-section-3-sec3.md) 反模式表的「频繁扩容 / 缩容」一行，本节不重述。实施层的差别在**发现的顺序**：值班先看到的是重试率，不是账单——重试率与队列深度当场就动，成本曲线要到下一个账期才跟着动；等账单确认这笔振荡时，已经没人能把它对应回是哪一次伸缩策略改动造成的，于是下个季度再改一次。
+- **档位**：【经验】。
+
+**4. 可回收容量与承诺折扣的落地**
+
+- **做法**：可回收容量侧配多实例族、多容量池，打开容量再平衡（`capacityRebalance` 一类），定价策略取「价格 + 容量」综合而非单纯最低价；承诺侧只覆盖已认领的基线，并保留一份承诺量与实际基线的季度对照。折扣区间的档位与口径见 [§3.2.4](03-data-cost-finops-section-3-sec3.md)。
+- **机制**：两类折扣的失效方向相反，而且先在两个完全不同的地方露头——可回收容量在凌晨以中断告警的形式叫醒值班的人，重跑成本要等下一期容量账单才看得出来；承诺折扣在业务缩量之后以「用了也付、不用也付」的形式出现在未来一年多的账单里，第一个发现它的是做季度预算的人，不是运维。
+- **失效条件**：**当基线用量还没有被任何团队认领时**，承诺只能按总量签；症状是业务缩量一个季度后，账上出现一笔没有使用方、也没有责任人的固定支出，而没有人有动机去处理它。
+- **档位**：折扣区间的口径同 [§3.2.4](03-data-cost-finops-section-3-sec3.md)——可回收容量相对按需落在 60–90% 一档【经验】、承诺折扣落在同一区间的下半段【经验】，两者都随容量池与实例类型波动，以各云定价页当前版本为准；本节真正要给的参数是**承诺量与基线的余量**，它随业务波动的可预测性定【经验：越难预测余量留得越大，或者干脆不签】。
+
+**5. 数仓侧的自动暂停、多集群与资源队列**
+
+- **做法**：按负载分仓库 / 队列，设自动暂停与自动恢复（`AUTO_SUSPEND` / `AUTO_RESUME` 一类），需要并发时用多集群按负载加集群，并对队列设并发上限与超时。
+- **机制**：因为数仓的计费单元是「仓库运行时间 × 规模」而不是「查询条数」，所以「没有查询时仓库还在跑」是唯一会持续漏钱的形态；自动暂停关掉的正是这段时间，它不需要任何 SQL 改造就能生效，也因此是最早能拿到收益的动作。
+- **失效条件**：**当暂停等待时长设得比查询间隔还长时**，暂停永远不触发；症状是仓库的日运行时长接近满值（值班可查），账单照付——这类漏钱不报错，只能从运行时长上看出来。
+- **档位**：暂停等待时长【经验：随查询间隔分布变，查询越稀疏设得越短】。
+
+**6. 查询裁剪与结果缓存**
+
+- **做法**：把高频重复查询缓存化（结果缓存 / 节点级缓存，如 Alluxio 一类），对慢查询做分区裁剪与列裁剪，把稳定复用的聚合落成物化视图；按「扫描量 / 返回行数」比值排出改造名单。
+- **机制**：因为按扫描计费的平台上「存多少」不进账单、「扫多少」才进账单，所以这里改的是用量而不是单价——只要业务 SQL 冻结不改，缓存与物化视图就是唯一能在不动业务代码的前提下减少扫描的动作。
+- **失效条件**：**当缓存键里包含时间戳一类高基数维度时**，命中率会长期接近零；症状是缓存容量在涨、命中统计在跌，而查询账单没变化——先看命中率，再谈优化。
+- **档位**：【经验】。
+
+**7. 归因对账与未归因占比**
+
+- **做法**：每月跑一次「归因视图合计 vs 账单行合计」的对账，差额必须归到三个已命名原因之一；同时记录未归因占比及其构成（新增资源未打标 / 历史资源 / 无法归属的共享项），按季度看曲线。
+- **机制**：因为归因视图是账单行的二次加工，所以它与原始账单之间的差额，是唯一能证明「归因没有悄悄失真」的指标；把差额写进月度评审议程，失真会自己暴露，而不是等到某次预算评审时才被发现。
+- **失效条件**：**当未归因部分被平摊掉时**（哪怕只在展示层平摊），对账差额会重新归零，这个指标随即失去意义；症状是每个团队的数字都合理、没有人对总量负责——这正是 [§3.2.1](03-data-cost-finops-section-3-sec3.md) 里「归因的正确性由最小的那个覆盖率决定」在运行期的样子。
+- **档位**：未归因占比的可接受水平【经验：随资源新增速度与是否强制打标变，能拒绝无标签资源创建的团队可以做到很低】。
+
+### 4.3 工具链与平台
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 云厂商原生账单与预算 | AWS Cost Explorer、AWS Cost Anomaly Detection、Azure Cost Management、阿里云费用中心、GCP Billing | 只在少数几朵云上、且账单口径要与发票对得上时选它：原生接口是唯一能拿到逐笔计费单元的地方；多云或账号结构混乱时，它只做数据源，不做汇总 | 不接原生账单而直接买第三方平台，等于把最底层那份可复算的数据交给中间层转述，口径有争议时无法自证 |
+| 第三方 FinOps 平台 | Apptio（Cloudability）、Vantage、CloudHealth、Harness Cloud Cost、Anaconda Cloud Cost、自研 FinOps 平台（阿里 / 字节 / 华为一类） | 判据是「账是不是已经拆得开」：标签覆盖低、未归因不可见时先修归因；能按团队 / 作业出账且只需归一与分摊展示时，第三方平台的边际价值才成立 | 归因缺口没补齐就上平台，会把「账拆不开」掩盖在漂亮的看板下，且平台侧的标签模型会固化一套错误口径 |
+| 数据平台内置成本视图 | Snowflake Cost Explorer、Databricks Cost、BigQuery Cost、dbt Cost、Atlan + Cost、阿里云 DataWorks 成本、字节 DataFinder 成本 | 判据是「你的计费单元是不是它的计费单元」：按 credit / DBU / 扫描字节计费时，内置视图是唯一能给出作业级构成的地方；跨平台的汇总数不要直接相加 | 用集群利用率去推断按扫描计费平台的成本，优化会全打在集群规模上，而账单不动 |
+| 弹性与容量调度 | Karpenter（项目于 2024 年发布 1.0 GA【公开】，来源：Karpenter 项目 Releases 页的 v1.0.0 条目，2024；可按「Karpenter v1.0.0 release」检索核验）、云厂商伸缩组、自研调度 | 判据是「负载能不能打标为可中断」以及「缩容有没有排空协议」；能用节点池表达实例族约束时优先节点池，自研只在配额、优先级这类调度语义原生方案表达不了时才选 | 自研伸缩的成本是长期运维与调参，一旦没人维护就退化成静态容量；先自研、再发现没人是常见的失败路径 |
+| 承诺与用量管理 | 各云的成本管理 / 预算 / 节省计划控制台、自建基线认领表 | 判据是「基线是否已被认领」：认领完成后再买承诺；没有认领时只做按需 | 提前锁定用量之后，任何缩容都变成对自己不利，且承诺买多的部分无人认领 |
+| GPU 调度与 Serverless | SkyPilot、Modal、Replicate、RunPod、Lambda Labs、Crusoe Cloud、Together AI、Anyscale | 判据是任务形态：可中断的批量训练优先跨云竞价与自动迁移；推理的低峰态优先 Serverless 按请求计费；常驻训练才用固定容量 | 用常驻容量扛批式训练，闲置的 GPU 小时按最高单价计费，而且挤占的是稀缺容量而非常规算力 |
+
+最容易被误选的是**把第三方 FinOps 平台当成第一件工具**——它看起来最「成体系」，也最容易立项。误选的典型后果是：归因与承诺这两件必须自己做、且必须在前的事被当成「买了就解决了」，半年后平台上有很完整的看板，而每一步降本动作仍然找不到认领收益的人。候选列里各产品的当前能力、命名与是否仍在维护，以各产品官方文档为准；其中目录 / 成本联动与 AI 成本一类的产品命名与边界变化较快，请按产品名自行核验后再纳入选型。
+
+### 4.4 存量迁移
+
+存量改造与从零搭建的分岔在这一节。多数平台的现实是：**账单已经堆了几年、标签是后来才有的规范、历史资源的归属信息大半已经不在系统里**，所以这里的重点不是「怎么设计」，而是「怎么在一个不能停机、不能全量返工的系统上收敛」。
+
+**① 先做能立刻见效、且随时可回退的事。** 把账单与用量接进来，算出过去一个账期的**活跃资源清单**（有费用产生的资源），只对这份清单补标签。整件事全程只读——不碰任何生产配置，随时可以停；先做活跃资源而不是全量资源，是因为给已经不再产生费用的历史资源补标签不改变任何未来支出。第二件可立刻做的是把生命周期规则**以「仅报告」模式先跑一遍**（或先在影子前缀上跑），把「如果这条规则今天生效，会移动哪些分区」的清单拉出来逐条核对。这一步的价值在于：它把「误伤」从未来的事故变成今天的一份名单。
+
+**② 历史资产分三类处理，不做一次性返工。**
+
+| 类别 | 判定方法（可执行） | 处理方式 | 为什么这样处理 |
+| --- | --- | --- | --- |
+| 仍在产生费用的活跃资源 | 上期账单里有非零金额 | 补标签纳入归因；**并加一条门禁：任何被改动过的资源必须同时带标签** | 让存量靠「改动即补账」自然收敛，而不是靠一次专项治理；门禁挂在变更路径上，成本最低 |
+| 已不被读、但仍在计费的历史资产（旧分区、多份副本、过期快照、遗留备份） | 有费用、无查询记录 | 打「挂账」标签 + 写明到期日，交给生命周期规则自动收敛 | 挂账把「还没处理」变成一件有期限、可被统计的事；专项清理的投入产出比通常最低 |
+| 无下游、无调用的僵尸资源 | 调用日志连续若干账期为空 | 先标记、通知 Owner、留可撤回的缓冲期，确认后再回收 | 回收动作不可逆，判定依据必须是调用记录而不是「看起来没人用」 |
+
+明确不做的事是**要求全部历史资源一次性返工补齐**：成本极高，且当时的归属信息多数已经不存在，返工的结果会是一批靠猜填进去的标签——它比空着更危险，因为它看起来是完整的。
+
+**③ 双轨怎么维持。** Showback 与 Chargeback 并行一段时间，规则有三条：一是**新产生的账只走一个口径进财务**（另一个口径只做展示），避免同一笔钱被扣两次；二是两个口径都必须各自能对账，各自与账单行合计的差额都要能解释；三是双轨期不发布新的分摊规则——口径一变，两个口径都会断掉历史环比。维持时长【经验：以走完一个完整预算周期为准，通常在两个季度量级；组织越大、共享成本占比越高，需要越长】。
+
+**④ 什么信号说明可以退出双轨。** 四个信号同时出现再退：未归因占比连续几个账期稳定在低位且不上升；两个口径的差额能被解释（不是「大致相等」）；出现过「因为成本改了作业」的实例，且不是靠行政命令推的；Chargeback 申诉量降到日常水平。退出时把 Showback 降为展示口径、Chargeback 成为唯一财务口径，并保留一个账期的回退窗口——回退窗口不是给技术留的，是给第一次看到自己账单的团队留的。
+
+### 4.5 模板 / 示例
+
+**模板 1：标签规范 + 按团队的 Showback 出账（Python + 云成本接口）**
 
 ```python
-# S3 Lifecycle Policy（伪代码）
-{
-    "Rules": [
-        {
-            "Id": "MoveToIA30Days",
-            "Status": "Enabled",
-            "Filter": {"Prefix": "data-lake/"},
-            "Transitions": [
-                {
-                    "Days": 30,
-                    "StorageClass": "STANDARD_IA"
-                },
-                {
-                    "Days": 180,
-                    "StorageClass": "GLACIER"
-                }
-            ],
-            "Expiration": {"Days": 365}
-        }
-    ]
+TAG_SPEC = {                      # 四项最小标签，取值域与默认值一并写死
+    "team":    {"required": True,  "default": None},          # 缺则不创建
+    "project": {"required": True,  "default": None},
+    "env":     {"required": True,  "default": "unknown"},     # 允许占位但会告警
+    "owner":   {"required": True,  "default": None},          # 具体到人
 }
-```
 
-- **小文件 Compaction**：
-
-```python
-# Iceberg Compaction（Spark）
-spark.sql("""
-    CALL catalog.system.rewrite_data_files(
-        table => 'db.orders',
-        strategy => 'sort',
-        sort_order => 'zorder(order_id, user_id)',
-        options => map(
-            'target-file-size-bytes', '536870912'  -- 512MB
-        )
+def get_cost_by_team(ce, start_date, end_date):
+    resp = ce.get_cost_and_usage(
+        TimePeriod={"Start": start_date, "End": end_date},
+        Granularity="MONTHLY",
+        GroupBy=[{"Type": "TAG", "Key": "team"}],             # 按问责单位分组
+        Metrics=["UnblendedCost", "UsageQuantity"],           # 用量与金额都取
+        Filter={"Dimensions": {"Key": "SERVICE",
+                "Values": ["Amazon S3", "Amazon EC2", "Amazon EMR"]}},
     )
-""")
+    team_costs = {}
+    for r in resp["ResultsByTime"]:
+        for g in r["Groups"]:
+            team = g["Keys"][0] or "unallocated"                # 空标签不丢，进未归因
+            team_costs[team] = team_costs.get(team, 0) + float(g["Metrics"]["UnblendedCost"]["Amount"])
+    return team_costs
 ```
 
-**2. 计算降本工程**：
+**怎么用**：`TAG_SPEC` 按你家的组织单元改名，`required` 与 `default` 两列是给创建路径用的——决定缺标签时是拒绝创建还是落默认值。**`unallocated` 这一支不要去掉**，它是这套东西唯一能自证失真的地方；也不要在这里做平摊。金额字段用哪一列（`UnblendedCost` / `AmortizedCost` 一类）随你家的对账口径定，接口参数以云厂商官方文档当前版本为准。
 
-- **Spot Fleet 配置**：
+**模板 2：归因对账（视图合计 / 账单合计 / 未归因占比）**
 
-```yaml
-# AWS Spot Fleet 配置
-capacityRebalance: true  # 启用再平衡
-allocationStrategy: priceCapacityOptimized  # 价格 + 容量优化
-instancePools:
-  - instanceType: r5.2xlarge
-    weight: 1
-  - instanceType: r5a.2xlarge
-    weight: 1
-  - instanceType: r6i.2xlarge
-    weight: 1
-  - instanceType: m5.2xlarge
-    weight: 2
+```sql
+-- 每月跑一次：三个数放一起看，差额必须归到已命名的原因
+WITH view_sum AS (
+  SELECT bill_period, SUM(amount) AS amount_view FROM cost_attributed GROUP BY 1
+),
+bill_sum AS (
+  SELECT bill_period, SUM(amount) AS amount_bill FROM cost_line GROUP BY 1
+),
+unalloc AS (
+  SELECT bill_period, SUM(amount) AS amount_unallocated
+  FROM cost_attributed WHERE team = 'unallocated' GROUP BY 1
+)
+SELECT b.bill_period,
+       b.amount_bill,
+       v.amount_view,
+       b.amount_bill - v.amount_view              AS diff,        -- 对账差额
+       u.amount_unallocated,
+       u.amount_unallocated / NULLIF(b.amount_bill, 0) AS unalloc_ratio
+FROM bill_sum b
+JOIN view_sum v USING (bill_period)
+LEFT JOIN unalloc u USING (bill_period)
+ORDER BY b.bill_period;
 ```
 
-- **Karpenter（K8s 弹性伸缩）**：
+**怎么用**：`diff` 不为 0 是正常的（跨期调整、汇率、退款），不正常的是**它没法被归到已命名的原因**——所以这张表要配一列人工填的 `reason`，并在月度评审上过一遍。`unalloc_ratio` 看曲线不看绝对值：能拒绝无标签资源创建的团队可以做到很低，老平台起步时高得难看也正常。视图定义见 [§3.2.1](03-data-cost-finops-section-3-sec3.md)，字段名按你家的改。
+
+**模板 3：弹性伸缩策略（节点池约束 + 分时容量）**
 
 ```yaml
-# Karpenter NodePool
-apiVersion: karpenter.sh/v1beta1
+# 节点池：把实例族与容量类型写成约束，而不是靠人挑
+apiVersion: karpenter.sh/v1
 kind: NodePool
-metadata:
-  name: spark-pool
 spec:
   template:
     spec:
       requirements:
         - key: karpenter.sh/capacity-type
           operator: In
-          values: ["spot", "on-demand"]
+          values: ["spot", "on-demand"]        # 竞价优先，按需兜底
         - key: karpenter.k8s.aws/instance-family
           operator: In
-          values: ["r5", "r6i", "m5"]
-        - key: karpenter.k8s/aws/instance-size
-          operator: In
-          values: ["2xlarge", "4xlarge"]
-      nodeClassRef:
+          values: ["r5", "r6i", "m5"]          # 多族 = 多容量池，降低回收影响
+      nodeClassRef:                            # v1 起需给全 group / kind / name 三项
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
         name: default
+      expireAfter: 720h                        # 到期轮转；v1 起从 disruption 移入 template.spec
   limits:
-    cpu: "1000"
-    memory: 4000Gi
+    cpu: "1000"                                 # 上界：保护预算
   disruption:
-    consolidationPolicy: WhenUnderutilized
-    expireAfter: 720h  # 30 天强制轮转
+    consolidationPolicy: WhenEmptyOrUnderutilized   # 碎片回收；v1 取值为 WhenEmpty / WhenEmptyOrUnderutilized
 ```
-
-**3. 查询降本工程**：
-
-- **Snowflake Auto-Suspend**：
-
-```sql
--- 创建数仓时配置
-CREATE WAREHOUSE analytics_wh
-WITH
-    WAREHOUSE_SIZE = 'MEDIUM'
-    AUTO_SUSPEND = 60  -- 60 秒空闲自动暂停
-    AUTO_RESUME = TRUE
-    MIN_CLUSTER_COUNT = 1
-    MAX_CLUSTER_COUNT = 10
-    SCALING_POLICY = 'ECONOMY';  -- 经济模式优先降本
-```
-
-- **Iceberg 分区裁剪**：
-
-```sql
--- 推荐：分区裁剪 + 列裁剪
-SELECT user_id, COUNT(*)
-FROM iceberg.orders
-WHERE dt = '2025-01-15'  -- 分区裁剪
-  AND status = 'PAID'    -- 列裁剪
-GROUP BY user_id;
-
--- 不推荐：全表扫描
-SELECT *
-FROM iceberg.orders
-WHERE status = 'PAID';
-```
-
-### 4.3 工具链与平台（含 2024-2025 新工具）
-
-**云厂商原生**：
-
-| 工具 | 云厂商 | 能力 |
-| --- | --- | --- |
-| **AWS Cost Explorer** | AWS | 成本可视化、RI 推荐、Savings Plans |
-| **AWS Cost Anomaly Detection** | AWS | 异常告警 |
-| **Azure Cost Management** | Azure | 成本 + 预算 + 告警 |
-| **阿里云费用中心** | 阿里云 | 成本可视化、预算管理 |
-| **GCP Billing** | GCP | 成本报告 |
-
-**第三方 FinOps 平台**：
-
-| 工具 | 定位 |
-| --- | --- |
-| **Apptio (Cloudability)** | 企业级 FinOps 龙头 |
-| **Vantage** | 多云 FinOps |
-| **CloudHealth** | VMware 系 FinOps |
-| **Harness Cloud Cost** | 持续 FinOps |
-| **Anaconda Cloud Cost** | 数据 / AI 专用 |
-| **自研 FinOps 平台** | 阿里、字节、华为自研 |
-
-**数据专用工具**：
-
-| 工具 | 定位 |
-| --- | --- |
-| **Snowflake Cost Explorer** | Snowflake 内置 |
-| **Databricks Cost** | Databricks 成本 |
-| **BigQuery Cost** | GCP BigQuery |
-| **dbt Cost** | dbt + Cost 集成 |
-| **Atlan + Cost** | 数据资产 + 成本联动 |
-| **阿里云 DataWorks 成本** | 阿里云数据中台成本 |
-| **字节 DataFinder 成本** | 字节自研 |
-
-**AI 时代新工具（2024-2025）**：
-
-- **Karpenter 1.0（2024 GA）**：K8s 弹性伸缩 + Spot 大幅降本。
-- **SkyPilot**：跨云 AI 任务调度，自动选最便宜的 GPU。
-- **Modal / Replicate**：Serverless GPU + 自动伸缩。
-- **RunPod / Lambda Labs**：便宜的 GPU 云。
-- **Crusoe Cloud**：清洁能源 + GPU。
-- **Together AI / Anyscale**：AI 推理成本优化。
-
-### 4.4 代码 / 示例
-
-**示例 1：标签驱动的成本归因（AWS）**
 
 ```python
-# cost_attribution.py
-import boto3
-from datetime import datetime, timedelta
-
-ce = boto3.client('ce')
-
-def get_cost_by_team(start_date, end_date):
-    response = ce.get_cost_and_usage(
-        TimePeriod={'Start': start_date, 'End': end_date},
-        Granularity='MONTHLY',
-        GroupBy=[{'Type': 'TAG', 'Key': 'team'}],
-        Metrics=['BlendedCost', 'UsageQuantity'],
-        Filter={
-            'Dimensions': {
-                'Key': 'SERVICE',
-                'Values': ['Amazon S3', 'Amazon EC2', 'Amazon EMR']
-            }
-        }
-    )
-    
-    team_costs = {}
-    for result in response['ResultsByTime']:
-        for group in result['Groups']:
-            team = group['Keys'][0] if group['Keys'][0] else 'untagged'
-            cost = float(group['Metrics']['BlendedCost']['Amount'])
-            team_costs[team] = team_costs.get(team, 0) + cost
-    
-    return team_costs
-
-# 月度 Showback 报表
-team_costs = get_cost_by_team('2025-01-01', '2025-02-01')
-for team, cost in sorted(team_costs.items(), key=lambda x: -x[1]):
-    print(f"{team}: ${cost:,.2f}")
+# 分时容量：基线由已知峰谷决定，突发交给指标伸缩
+def desired_capacity(now, is_promotion):
+    if is_promotion:                    return {"min": 30, "max": 100}   # 大促：提前扩容
+    if now.weekday() >= 5:              return {"min": 10, "max": 30}    # 周末：压到基线
+    if 9 <= now.hour <= 22:             return {"min": 20, "max": 80}    # 工作时段
+    return {"min": 5, "max": 20}                                         # 凌晨：只保基线
 ```
 
-**示例 2：弹性伸缩策略（Karpenter + Spot）**
+**怎么用**：`min` 是 SLO 的下界、`max` 是预算的上界，两个都要按你家实测负载改，别照抄示例值。**分时与指标要一起用**：定时兜住已知峰谷，指标接突发；只写定时会在突发时被 `max` 挡住，只写指标会在滞后时来回振荡（见 §4.2 第 3 条）。节点池的字段形状在 Karpenter 1.0 前后变过（`nodeClassRef` 的字段、`expireAfter` 所在的层级、`consolidationPolicy` 的取值都改过），本节按 v1 写；升级前请对照 Karpenter 项目的升级指南与官方文档当前版本，不要照抄到 v1beta1 的集群上。
 
-```python
-# karpenter_spot_strategy.py
-"""
-Spark on Karpenter 弹性伸缩策略：
-- 工作日 9:00-22:00：扩到 2x
-- 周末全天：基线 1x
-- 大促期间：提前 24h 扩到 3x
-- 平时：Spot 优先，On-Demand 兜底
-"""
-
-import boto3
-from datetime import datetime
-
-def get_desired_capacity():
-    now = datetime.now()
-    hour = now.hour
-    is_weekend = now.weekday() >= 5
-    is_promotion = is_promotion_period(now)  # 自定义大促判断
-    
-    if is_promotion:
-        return {"min": 30, "max": 100, "desired": 60}
-    elif is_weekend:
-        return {"min": 10, "max": 30, "desired": 15}
-    elif 9 <= hour <= 22:  # 工作时间
-        return {"min": 20, "max": 80, "desired": 40}
-    else:  # 工作日凌晨
-        return {"min": 5, "max": 20, "desired": 10}
-
-
-def is_promotion_period(now):
-    """判断是否大促期间（自定义）"""
-    promotion_dates = [
-        ("2025-01-01", "2025-01-03"),  # 元旦
-        ("2025-02-10", "2025-02-17"),  # 春节
-        ("2025-06-18", "2025-06-20"),  # 618
-        ("2025-11-10", "2025-11-12"),  # 双 11
-    ]
-    for start, end in promotion_dates:
-        if start <= now.strftime("%Y-%m-%d") <= end:
-            return True
-    return False
-```
-
-**示例 3：Snowflake 成本监控 + 自动暂停**
+**模板 4：数仓成本监控与自动暂停（Snowflake 一类）**
 
 ```sql
--- 1. 监控数仓成本
-SELECT 
-    warehouse_name,
-    SUM(credits_used) AS total_credits,
-    SUM(credits_used) * 3  -- 假设每 credit 3 美元
-        AS estimated_cost_usd
+-- ① 谁在花钱：按仓库看近 30 天用量
+SELECT warehouse_name,
+       SUM(credits_used)                          AS total_credits,
+       SUM(credits_used) * <你家的单价>            AS estimated_cost   -- 单价按合同填，别硬编码
 FROM snowflake.account_usage.warehouse_metering_history
 WHERE start_time >= DATEADD('day', -30, CURRENT_TIMESTAMP())
-GROUP BY warehouse_name
-ORDER BY total_credits DESC;
+GROUP BY 1 ORDER BY 2 DESC;
 
--- 2. 自动暂停配置
+-- ② 自动暂停：先关掉"没有查询时仓库还在跑"这段
 ALTER WAREHOUSE analytics_wh SET
-    AUTO_SUSPEND = 60,
-    AUTO_RESUME = TRUE;
+    AUTO_SUSPEND = 60,          -- 秒；按查询间隔分布定，间隔越稀设得越短
+    AUTO_RESUME  = TRUE;
 
--- 3. 资源监控（实时）
+-- ③ 队列监控视图：队列深度记在 load history、credit 记在 metering history，两张视图按仓库与小时对齐
+--    告警读它（缺了它 ④ 会报对象不存在）
 CREATE OR REPLACE VIEW v_warehouse_load AS
-SELECT 
-    warehouse_name,
-    AVG(avg_running) AS avg_queries_running,
-    AVG(avg_queued_load) AS avg_queries_queued,
-    SUM(credits_used) AS credits_per_hour
-FROM snowflake.account_usage.warehouse_metering_history
-WHERE start_time >= DATEADD('hour', -1, CURRENT_TIMESTAMP())
-GROUP BY warehouse_name;
+SELECT l.warehouse_name,
+       AVG(l.avg_running)     AS avg_running,
+       AVG(l.avg_queued_load) AS avg_queued_load,
+       SUM(m.credits_used)    AS credits_per_hour
+FROM snowflake.account_usage.warehouse_load_history l
+LEFT JOIN snowflake.account_usage.warehouse_metering_history m
+       ON m.warehouse_name = l.warehouse_name
+      AND m.start_time     = l.start_time
+WHERE l.start_time >= DATEADD('hour', -1, CURRENT_TIMESTAMP())
+GROUP BY 1;
 
--- 4. 触发告警（当队列堆积）
+-- ④ 队列堆积告警：等号右边是给读者的起点阈值，按自家 P95 队列深度重定
 CREATE OR REPLACE TASK alert_warehouse_queue
     WAREHOUSE = etl_wh
     SCHEDULE = '5 MINUTE'
 AS
     INSERT INTO alert_events
-    SELECT 
-        CURRENT_TIMESTAMP() AS alert_time,
-        warehouse_name,
-        'HIGH_QUEUE_DEPTH' AS alert_type,
-        avg_queries_queued
-    FROM v_warehouse_load
-    WHERE avg_queued_load > 10;
+    SELECT CURRENT_TIMESTAMP(), warehouse_name, 'HIGH_QUEUE_DEPTH', avg_queued_load
+    FROM   v_warehouse_load
+    WHERE  avg_queued_load > 10;
 ```
 
-**示例 4：AI GPU 成本治理（SkyPilot）**
+**怎么用**：第一段里的单价换成合同口径——数仓的 credit 单价与折扣方式各不相同，写死会让整张表失去意义。③ 的视图与 ④ 的告警要按顺序一起建：告警直接读这个视图，只跑 ④ 会在建任务时就报对象不存在。③ 之所以要 JOIN 两张视图，是因为**队列深度与运行并发记在 `warehouse_load_history`、credit 记在 `warehouse_metering_history`，同一个视图里取不到这两组列**——取错视图在建视图时就会报 invalid identifier，而不是等到告警不响才发现。两边的可用列与出账延迟不同，建视图前请按「Snowflake account_usage warehouse_load_history columns」核对一次字段名与可见范围（以官方文档当前版本为准）。④ 的告警阈值要按自家队列深度的 P95 重定，否则它会常年不响或天天在响。
 
-```python
-# sky_gpu_cost.yaml
-# SkyPilot 跨云 GPU 调度，自动选最便宜的
+**模板 5：AI GPU 成本治理（跨云竞价 + 自动释放）**
 
+```yaml
+# sky_gpu_cost.yaml —— 跨云选最便宜的可用 GPU，并默认用可回收容量
 resources:
-    cloud: gcp,aws,azure
-    accelerators: A100:1
-    use_spot: true  # 默认用 Spot
-
+  cloud: gcp,aws,azure
+  accelerators: A100:1
+  use_spot: true                 # 训练是批式负载，可中断
 run: |
-    python train.py --model gpt-2-large
-
-# 启动
-# sky launch --gpus A100:1 --use-spot train.yaml
-
-# SkyPilot 自动：
-# 1. 查询 AWS/GCP/Azure 的 A100 Spot 价格
-# 2. 选最便宜的（甚至自动迁移）
-# 3. Spot 回收时自动重新调度
-# 4. 任务完成后释放
+  python train.py --model <你的模型> --checkpoint-every <步数>
+# 启动：sky launch --gpus A100:1 --use-spot train.yaml
 ```
 
----
+**怎么用**：这份配置能生效的前提是**任务本身可断点续跑**——`--checkpoint-every` 是必填项，不是可选项；不可中断的常驻推理不要套这份模板。跨云的可用区与机型清单、`use_spot` 的取值以项目官方文档当前版本为准。判断它是否真的省了钱，看的不是单价而是「任务结束到 GPU 释放之间的空闲时长」（见 §4.6）。
+
+### 4.6 自检清单
+
+- [ ] 打开上月账单，跑一遍模板 2 的对账：「归因视图合计 vs 账单行合计」的差额是多少、能不能被归到三个已命名原因之一、上个月这笔差额是谁处理的？
+- [ ] 把生命周期规则按「仅报告」模式跑一遍：如果它今天生效会移动哪些分区？里面有没有近 30 天的分区？
+- [ ] 翻出一条已在生产生效的成本告警，找出它最近一次**真实触发**的时间与当时的金额——从没触发过的告警等于没有告警。
+- [ ] 上一次规模变更（缩容 / 换规格 / 换存储类）之后，有没有一次真实的回滚演练记录？谁执行、花了多久？
+- [ ] 从队列里取三个跑在可回收容量上的作业（含模板 5 那类 `use_spot` 训练任务），查它们最近一次被回收后的实际续跑位置与重试次数，并在同一段运行历史里量一次「任务结束 → 实例释放」的间隔（两处都看运行历史、不看配置：续跑位置不对说明断点续跑没配好，间隔过长说明省下的单价被空闲吃掉）。
+- [ ] 承诺量与「已认领基线」的季度对照表在哪？两边差额是多少、由谁认领？
+- [ ] 各仓库 / 集群的日运行时长分布是多少，有没有接近满值的？（自动暂停是否真触发，看运行时长，不看配置）
+- [ ] 缓存命中率与缓存容量最近两个月的曲线，是在升还是在降？
+- [ ] 按扫描量排序的前 20 个查询里，「扫描量 / 返回行数」最偏斜的三个占总量多少？改造名单排出来了吗？
+- [ ] 最近一次僵尸资源回收，回收前通知发给了谁、缓冲期多长、有没有发生过误回收后的恢复？
+- [ ] 调出上季度的降本目标与对应的 SLO 面板：有没有指标贴线甚至破线而无人知晓、也无人回滚的？
+- [ ] 随机抽 3 个资源，用账单里的资源 ID 反查，能不能在 10 分钟内说清它属于谁、走的是哪条归因规则？
+
+不跑系统、坐下来想一想就能回答的那一组（计费单元是什么、模式选得对不对、标签覆盖够不够、SLA 硬线该落在哪份文档上）已经收在 [§3.7](03-data-cost-finops-section-3-sec3.md) 的自检清单里，本节不重复；上面留的都是必须动过系统才有答案的动作。
+
+> 清单里的抽样规模（3 个 / 20 个 / 10 分钟一类）都是可调参数【经验：随资源总量与审计要求变，判据是抽到的样本能不能覆盖金额最大的那一部分——抽小的没用，抽全的没人做】。
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一那个决定成败的环节，是 **Step 2 的分账口径——尤其是「未归因不平摊」这一条**（这条为什么成立，机制的推导在 [§3.1](03-data-cost-finops-section-3-sec3.md)）。其余五步都是能力，而能力要被用起来，前提是每一笔省下的钱都能对应到一个名字：看板上的每一行要能追到人，季度预算要有人签字，承诺量的余量要有人认领——做不到这一点，技术动作在第二个季度就会停下来。它的代价只是少开一次平摊脚本，而漏掉它的代价要到签承诺折扣那一季、预算表上多出一笔没有认领人的固定支出时才显形。
+>
+> 存量改造者的加读一条：**§4.4 的三类处理与双轨退出信号，比 §4.1 的顺序更决定成败**——存量资源不会消失，只有「改动即补账 + 挂账带到期日」这两条能让它自然收敛。
+>
+> 配合 [§ 2 核心原理](03-data-cost-finops.md)、[§ 3 设计模式与范式](03-data-cost-finops-section-3-sec3.md) 与 [§ 6 落地实践](03-data-cost-finops-section-6-sec6.md) 阅读。

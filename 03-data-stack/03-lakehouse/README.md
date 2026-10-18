@@ -10,6 +10,7 @@
 
 | 小节 | 文件 |
 | --- | --- |
+| 2. 核心原理（深度版） | [03-lakehouse-section-2-deep-principles.md](03-lakehouse-section-2-deep-principles.md) |
 | 3. 设计模式与范式 | [03-lakehouse-section-3-sec3.md](03-lakehouse-section-3-sec3.md) |
 | 4. 工程实现 | [03-lakehouse-section-4-sec4.md](03-lakehouse-section-4-sec4.md) |
 | 5. 前沿演进（AI 时代） | [03-lakehouse-section-5-ai.md](03-lakehouse-section-5-ai.md) |

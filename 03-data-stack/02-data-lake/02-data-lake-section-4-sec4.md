@@ -1,280 +1,314 @@
-> 本文件是 **02-data-lake.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](02-data-lake.md)。
+> 本文件是 **02-data-lake.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](02-data-lake-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](02-data-lake.md)。
 
 ## 4. 工程实现
 
+§3 回答的是「schema 与一致性语义由哪一层承担、各自什么时候失效」；本节回答的是**归属定了之后，按什么顺序把它建起来、每一步手上多出什么、怎么在做的过程中就知道自己偏了**。两者失败代价不对称：模式选错还能改（改的是格式与分层），顺序错了要重做的往往是元数据——而元数据一旦被几千个下游任务引用，重做就不再是一个技术决定。
+
+本文件面向的读者以**存量改造**为主：多数组织的第一个数据湖不是规划出来的，而是几年积累下来的 HDFS 目录或一堆无人管理的 Parquet 文件，外围还挂着大量直读文件路径的作业。4.1 的六步对两类读者都成立（从零搭建者按序执行即可）；4.4 只对存量改造者有意义，从零搭建的读者只需读它前两段，那里讲的是「哪一部分不要一开始就做」。
+
 ### 4.1 落地步骤
 
-**Step 1：选型存储底座（2-4 周）**
+**Step 1：选型存储底座（2–4 周【经验】，随试点范围与合规评估变化）**
 
-- 云端：S3 / OSS / COS。
-- 本地：MinIO / HDFS / Ceph。
-- 混合云：Multi-Cloud Gateway。
+1. 按约束枚举候选：云端（AWS S3 / 阿里云 OSS / 腾讯云 COS）、本地（MinIO / HDFS / Ceph）、混合云（多云统一入口 / 网关层）。
+2. 对每个候选算一遍**真实的读写路径成本**：容量单价 × 保留期 × 数据量，再加出网流量与请求次数——三项之和才是可比的数字，只比容量单价会把「大量小对象」的负载算便宜。主文件 §1.2 给的是**成本对照**（专用数仓与对象存储的量级差），§2.2 给的是**压缩前后的单 TB 单价区间**；本步是可复算的【推算】（推导链：月成本 ≈ 压缩后容量 × 保留期单价 + 请求次数 × 单次请求价 + 出网流量 × 出网单价；压缩比与单价区间取自主文件 §1.2、§2.2，具体单价以各云厂商定价页当前版本为准，可按关键词「对象存储定价请求费用」自行核验）。
+3. 用 10 张真实表做一次试点迁移【经验：表数随候选底座之间的差异程度变，覆盖只追加与主键 upsert 两类写入模式即可】，测端到端时长与失败恢复，而不是只测 SELECT 性能。
 
-**Step 2：选定表格式（1-2 周）**
+- **产物**：一份**带成本**的候选对比（不是功能对比表），以及 10 张表的试点结果（含一次失败重跑）。
+- **判据**：算出「按请求计费」占总成本的比例——若它已经不低于按容量计费的部分，说明这条负载的形态是「大量小对象」，此时要么先做 compaction 再迁，要么这个底座不是对的（§3.2.2 的失效点）。再跑一次演练：删掉计算集群，确认数据完好无损、重新拉起能继续读。
+- **为什么必须第一步 / 为什么在表格式之前**：底座由不可谈判的约束决定（数据能不能离开机房、出网成本、已有 HDFS 存量），也是六步里唯一「选错要整体重做」的一步；表格式是方案，底座是约束——先定方案再发现底座不支持，代价是把已经注册进 catalog 的元数据重做一遍。
 
-- 通用场景：Iceberg（最流行、社区最活跃）。
-- 流批一体：Paimon（Flink 生态原生）。
-- Spark 深度集成：Delta Lake。
-- 更新密集：Hudi。
+**Step 2：选定表格式（1–2 周【经验】，随候选格式数与既有 catalog 是否需要先迁而变）**
 
-**Step 3：建立分层（2-4 周）**
+1. 按主引擎初筛：通用多引擎共读 → Iceberg；流批一体、写侧是 Flink → Paimon；Spark 生态最深 → Delta Lake；更新密集、CDC 友好 → Hudi。
+2. 造三次真实验证（见判据），而不是读对比文章。
+3. 存量读者多一条前置检查：把既有 catalog（Hive Metastore / Unity Catalog 一类）当前支持哪些表格式列出来——格式与 catalog 不匹配时，迁移期要先迁 catalog，而这件事的影响面比选格式本身更大。
 
-- Bronze（原始） → Silver（清洗） → Gold（应用）。
-- 每层有清晰的 schema 和责任。
+- **产物**：一份表格式选型记录（含三条实测结论），以及一个跑通的最小表——含一次 schema 演进、一次时间旅行。
+- **判据**：① 造一次 `ADD COLUMN` 与一次改字段类型，看 schema 变更是否只提交元数据而不重写数据；② 用**第二个引擎**读同一张表，看是否读到同一个快照；③ 回到 N 个快照之前查询，看时间旅行可用且受保留策略约束。三条都跑通才算选定。
+- **为什么必须在这一步（在分层与入湖之前）**：它决定的正是 §3.1 那条主约束——schema 与一致性归谁承担。这条差别不会在压测里显形，只在两种时刻显形：上游改字段的那一天（下游是静默算错还是一起失败），和有人要回滚的那一天。顺序上它是 Step 3、Step 4 的前置：分层的落点与分区写法、入湖作业的写入参数都随格式而定，格式未定就先建分层，格式定了之后要重做的是落点与分区变换；而先把入湖接起来、再发现格式与既有 catalog 或连接器不匹配，要改的是已经上线的所有入湖作业——它们分属不同团队，成本不在技术侧。
 
-**Step 4：搭建入湖链路（4-8 周）**
+**Step 3：建立分层（2–4 周【经验】，随表的数量与既有目录能否直接映射到三层而变）**
 
-- 离线入湖：DataX / Sqoop / Spark。
-- 实时入湖：Flink CDC / Kafka Connect / Vector。
-- 文件入湖：OSS 事件 / SQS / 定时同步。
+1. Bronze（原始）→ Silver（清洗整合）→ Gold（面向应用），每层一个**物理落点**。
+2. 每层写清三件事：Owner、SLA、保留期。层的名字用哪一套不影响判断（主文件 §2.1 的 Raw / Cleansed / Curated 与 Bronze / Silver / Gold 是同义层名）。
+3. 存量读者的既有目录通常已经事实上分了层（raw / ods / dw 一类三层目录）。先把它映射到 Bronze / Silver / Gold，只补写 Owner / SLA / 保留期，不要先重建目录——重建会让所有硬编码路径的作业在同一时刻失效。
 
-**Step 5：建设查询层（2-4 周）**
+- **产物**：三条分层约定（含各层 Owner / SLA / 保留期）+ 一套目录与命名规范。
+- **判据**：抽 3 张表，回答「它的 Bronze 副本保留多久、上游修正时谁负责沿层重放、Gold 的输出口径由谁签字」——三问答不全，说明分层只是三个目录前缀。
+- **为什么必须在这一步（不能更晚）**：分层一旦被下游依赖就很难改，而它决定的是「回滚点在哪」——每层物化一次就多一个回滚点（§3.2.4）。如果等数据已经灌进来才分层，历史数据的分层只能靠重跑，或者直接放弃。
 
-- 批量查询：Trino / Spark SQL。
-- 即席查询：StarRocks / Doris / ClickHouse。
-- AI 检索：LanceDB / Milvus / Pinecone。
+**Step 4：搭建入湖链路（4–8 周【经验】，随源系统数、要接的链路条数与是否要回填历史而变）**
+
+1. 离线入湖：DataX / Sqoop / Spark。
+2. 实时入湖：Flink CDC / Kafka Connect / Vector。
+3. 文件入湖：对象存储事件通知（OSS 事件一类）/ 队列触发（SQS 一类）/ 定时同步——前两者由「对象到达」这一事件被动触发，定时同步则是轮询目录、按固定周期扫描出新文件。三者要回答的是同一个问题（谁负责发现新文件、发现得有多及时），但触发方式不同：事件通知与队列触发的延迟取决于通知链路，定时同步的延迟等于轮询周期，三者都要单独设一条「新文件有没有被漏掉」的核对。
+
+- **产物**：每条链路一个可重放的入湖作业，外加一份**幂等性与顺序性声明**（同一批数据投两次会怎样、同主键乱序到达会怎样）。
+- **判据**：故意把同一批数据投两次，看最终表里行数是否翻倍；再故意把一次上游 schema 变更推过去，看失败发生在提交之前，还是产出了半份数据。
+- **为什么必须在分层之后**：入湖作业的写目标就是分层的落点。先定分层再接入湖，改的是一处配置；反过来要先改所有入湖作业，而它们各自属于不同团队。
+
+**Step 5：建设查询层（2–4 周【经验】，随既有直读路径的条数与它们所涉团队数而变）**
+
+1. 批量查询：Trino / Spark SQL。
+2. 即席查询：StarRocks / Doris / ClickHouse。
+3. AI 检索：LanceDB / Milvus / Pinecone。
+4. 存量读者的难点不在选引擎，而在已经存在的直读路径（脚本、Notebook、BI 数据源里写死的对象存储路径）。先数清有多少条、分别属于哪个团队，再决定哪些收进引擎、哪些留到迁移期结束。
+
+- **产物**：一张「查询类型 → 引擎」的映射表，以及各引擎的连接、权限与**直读路径的收敛方案**。
+- **判据**：拿两条真实查询（一条高并发点查、一条大范围聚合）各跑一次，看它们是否落在同一个引擎上——落在同一个上，说明查询层没有分层，这两类负载接下来会持续互相拖累（§3.5「直接把数据湖当数据仓库用」）。
+- **为什么必须在这一步（不能更早）**：引擎选型依赖表格式与分层已经确定。反过来先买引擎，会得到一批「能读文件但读不到快照语义」的直读路径；而直读路径一旦在团队里流行起来，catalog 上的权限与口径会同时失效（见 4.2 第 7 条）。
 
 **Step 6：建立治理（持续）**
 
-- 元数据：Apache Atlas / DataHub / Unity Catalog。
-- 血缘：OpenLineage / DataHub。
-- 质量：Great Expectations / Soda。
-- 权限：Apache Ranger / AWS Lake Formation。
+1. 元数据：Apache Atlas / DataHub / Unity Catalog。
+2. 血缘：OpenLineage / DataHub。
+3. 质量：Great Expectations / Soda。
+4. 权限：Apache Ranger / AWS Lake Formation。
+5. 生命周期与合并：目标文件大小、重写数据文件、快照过期策略（见 4.2 第 4 条）。
+6. 把上面这些检查挂到**发布门禁**上：新增表必须带 Owner 与 PII 标注才允许发布，把「登记」变成「不放行」。
+
+- **产物**：每张表具体到人的 Owner；一张能一键回答「哪些表含 PII」的清单；**常驻**的合并与快照过期调度。
+- **判据**：抽 3 张表问 Owner 是谁（出现团队名即视为无主）；再问「哪些表含 PII」，看能否在一分钟内给出清单而不是去翻工单。
+- **为什么必须持续做（而不是项目收尾做）**：湖的写入门槛是被刻意放低的（Schema-on-Read 本身不校验）——这是它的优点，而这个优点不可逆地带来了「无主资产」的默认状态（§3.5「数据沼泽」）。所以治理不是收尾动作，是从第一天起的常驻开销。
+
+**最常被跳过的是 Step 6 里的合并与生命周期那一半**：它最不像治理（没有清单、没有会议、只有一个调度任务），最容易被写成文档里的「运维事项」。症状的时点很具体——上线后一个季度量级【经验：随写入频率与查询形态变】，同一个查询比上线时慢了几倍而代码一行没改（§3.5「小文件爆炸」）；快照过期没做则表现为存储账单随**写入次数**增长而非随数据量增长。两者都不报错，因此都不会有人主动报障。
 
 ### 4.2 关键技术点
 
-**1. Iceberg 表格式（核心）**
+**1. 表格式的提交语义（schema 与数据同一次提交）**
+
+- **做法**：写入由表格式生成新的 metadata / manifest 快照，schema、分区与统计信息随这次提交一起落盘；schema 演进走 `ALTER TABLE ... ADD COLUMN`（Iceberg 形态，DDL 见 4.5 模板一）。
+- **机制**：schema 与数据同一次提交落盘，一致性因此是由结构承担的属性而不是流程约定（推导见 §3.2.3）——这是它与裸文件湖之间唯一不可替代的差别，不是性能优化。
+- **失效条件**：当有人**绕过表格式**把 Parquet 文件直接放进表目录时，提交语义在结构上失效——症状是「表里少了昨天那批数据」，而 catalog 上的快照没有任何异常记录。核对动作：把当前快照的 manifest 文件清单与目录实际文件清单求差集，差集非空即为直写；先查目录、不要先查引擎。这个差集做成日检指标，比事后排查便宜得多。
+- **档位**：【经验】。
+
+**2. 隐藏分区与分区演进**
+
+- **做法**：按 `days(dt)` 一类变换声明分区（4.5 模板一）；查询里直接写时间条件，剪裁由表格式完成。
+- **机制**：因为分区字段不必出现在用户 SQL 里，所以换分区策略只需改表属性、不必改所有下游 SQL——迁移成本从「改全部下游」压到「改一处」。这是「分区演进」能真正用起来的前提，否则团队会因为几千个下游任务而永远不敢改分区。
+- **失效条件**：当分区粒度过细、或按多个业务维度「顺手」分区时，分区数在查询计划阶段的枚举开销与分区数同向增长（§3.5「分区过度膨胀」）——症状是**计划阶段明显变慢而实际扫描量很小**。修法是只按时间（或明确的高频过滤维度）分区，并配保留期策略。
+- **档位**：【经验】。
+
+**3. CDC 实时入湖（Flink CDC → 表格式）**
+
+- **做法**：Flink CDC 读 binlog（或 Kafka 源），写入 Iceberg / Paimon 一类表格式表；写入侧按主键做去重与合并（4.5 模板二）。
+- **机制**：变更流被表格式的提交动作转换成不可变快照，于是同一张表既能按快照做批读、也能按变更做流读——批与流读的是同一份物理事实，不需要维护两份数据，也不会有两套口径。
+- **失效条件**：当写入速率持续超过合并吞吐时，未合并的层与文件持续累积，查询要扫的层数与文件数增加（§3.2.6 的失效点）——症状是**写入延迟正常而读取越来越慢**，因为合并是异步的。所以只看写入侧监控看不到这件事，要盯的是合并滞后量。
+- **档位**：【经验】。
+
+**4. 小文件治理与生命周期（合并 + 快照过期）**
+
+- **做法**：写入侧设目标文件大小；合并侧定期执行 Iceberg `rewrite_data_files`（可带 zorder 排序）、Hudi compaction 或 Delta `OPTIMIZE`（同一件事在三个项目里的名字，主文件 §2.3）；快照侧执行 `expire_snapshots` 并保留最近 N 个（4.5 模板三）。
+- **机制**：每次查询要为每个文件付一次打开与元数据读取的代价，对象存储上每一次打开还是一次网络请求——所以压文件数直接降查询成本，而加内存不改变文件数（§3.5）。快照过期则把存储成本从「随写入次数增长」改回「随数据量增长」。
+- **失效条件**：当合并与查询、写入争抢同一批计算资源时，合并会被排到低优先级而长期滞后——「配了合并」不等于「合并在跑」。症状是平均文件大小持续下降、合并滞后量持续上升。判断是否需要合并的两个指标很直接：**平均文件大小**与**每分区文件数分布**。
+- **档位**：【经验】。
+
+**5. 分层的物化与回滚点**
+
+- **做法**：每层物理落盘、各有 Owner 与 SLA；口径收敛集中在 Silver 一层完成（4.5 示例 1 给了最小形状）。存量改造时通常不需要新建 Bronze——原始数据已经在既有目录里，要新建的是 Silver 与 Gold，以及「哪一层是回滚点、谁有权重跑它」的书面约定。
+- **机制**：每层物理落盘，回滚点因此由结构自带而不依赖备份体系；口径收敛在 Silver，不同算法被限制在一层之内（机制与代价见 §3.2.4）。
+- **失效条件**：当上游补数或重跑历史变得频繁时，一次修正要沿三层依次重放，端到端修复时间等于各层调度周期之和（§3.2.4 的失效点）——症状是越靠下游的表修复越慢。可观测信号是各层「最近数据时间戳」与源系统修正时间的差额：它在 Gold 上持续大于 Silver 上。判据：挑一次真实修正，看它从 Bronze 走到 Gold 用掉几个调度周期。
+- **档位**：【经验】。
+
+**6. 多模态与向量索引的派生副本管理**
+
+- **做法**：湖仓侧存事实与原始二进制（外加抽出的可检索文本），向量库存嵌入；`embed_model` 与 `embed_version` 记在**事实侧**（DDL 见 §3.2.5），向量索引按版本分片。
+- **机制**：`embed_version` 是事实侧的一个列，所以换模型在实施上被拆成三步——先在事实侧把版本 +1 并按新版本落向量，再按版本分片重建索引（旧分片继续对外服务），最后切一次查询侧的路由。因为切换只改路由、不改数据，回退就是把路由改回去，整件事不需要停机窗口，也不需要与下游约维护期。
+- **失效条件**：当嵌入模型升级时，新旧向量不在同一向量空间，重建窗口内必须双版本并存——症状是「同一批资产召回结果莫名变化」。更容易被忽略的一条是**两侧没有共同的资产 ID**：此时派生副本无法验证一致性，索引会与事实长期漂移而不报错。判据是抽 10 条召回结果，看能否在湖仓侧按同一个 ID 取到原文。
+- **档位**：【经验】。
+
+**7. 权限与 PII 的落点（catalog 层，而非桶策略）**
+
+- **做法**：列级 / 行级权限配在 catalog 上，敏感字段做字段级密级标注；桶策略只保留计算角色的最小必要权限。顺序是先把敏感列标出来、再配策略——没标注过的列谈不上「要不要授权」，标注因此是列级权限的前置而不是配套。
+- **机制**：对象存储的权限粒度只到桶与对象、不区分列（§3.5「忽视数据安全」），而「哪一列是敏感列」这个信息只有 catalog 有——列级与行级控制因此在机制上只能落在 catalog 层，桶策略只承担「这个计算角色能不能碰这个桶」。
+- **失效条件**：当查询引擎或某个团队绕过 catalog 直读文件路径时（临时分析是最常见的入口），catalog 上的列级权限**全部失效**——症状是「给了一次临时分析用的桶权限，结果全组人都能读整表」。修法是把直读路径本身变成受控入口，而不是加一条流程约定（流程会漏，结构不会，§3.5）。
+- **档位**：【经验】。
+
+### 4.3 工具链与平台
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 存储底座 | HDFS / AWS S3 / 阿里云 OSS / 腾讯云 COS / MinIO / Ceph / Ozone / 多云统一入口（网关层） | 第一条是「数据能不能离开机房」（不能 → HDFS 或本地对象存储）；能离开则比「按容量 + 按请求 + 出网」三项之和；第二条是「谁承担运维」，小团队优先托管 | 选错要整体搬迁：目录约定、权限、作业里的路径全部重写 |
+| 开放表格式 | Apache Iceberg / Apache Hudi / Delta Lake / Apache Paimon | 多引擎共读同一份数据 → Iceberg；更新密集、CDC 友好 → Hudi；Spark 生态最深、已用 Unity Catalog → Delta Lake；流批一体、写侧主引擎是 Flink → Paimon | 与主引擎生态错配时，写入路径要多一层转换，且 schema 演进与快照语义要在两个生态之间对齐 |
+| 入湖链路 | DataX / Sqoop / Spark（离线）；Flink CDC / Kafka Connect / Vector（实时与日志）；对象存储事件通知 + 定时任务（文件） | 先问幂等性与顺序性能否成立（重复投递是否产生重复行、同主键能否保序），而不是先问吞吐 | 离线链路在高频增量场景下退化为「每小时跑一次全量」，成本随表数增长 |
+| 查询引擎 | Trino / Spark SQL / Flink / DuckDB / StarRocks（同类还有 Doris / ClickHouse） | 高并发点查 → StarRocks 一类；联邦与多源 → Trino；ETL 与批处理 → Spark SQL；单机百 GB → DuckDB；流批一体 → Flink | 用扫描型引擎做点查，代价随数据量线性增长，且加机器无效——机器不改变扫描量 |
+| 元数据与治理 | Apache Atlas / DataHub / Unity Catalog | 判据是血缘能不能挂到门禁上、Owner 能不能落到人；三者差别更多在既有生态绑定，而不是功能清单 | 只有元数据没有血缘，盘点靠人工；只有血缘没有 Owner，责任落不到人 |
+| 血缘 | OpenLineage / DataHub | 采集方式必须是自动解析 + 定时校准（采集入口与「血缘不更新」这条反模式见 [§ 11 血缘与影响面 §3.5](../../11-cross-cutting/05-lineage-and-impact/05-lineage-and-impact-section-3-sec3.md)）；人工登记的边会随人员变动而失准【经验：数周至一个季度量级，随团队流动率变】 | 变更影响面只能靠发通知等回应，覆盖会持续下降 |
+| 质量 | Great Expectations / Soda | 在湖边先覆盖三类就够：新鲜度、行数、schema 变更（湖之外的质量维度交给 [§ 11 数据质量](../../11-cross-cutting/01-data-quality/01-data-quality.md)） | 上游改了字段、下游静默算错，而链路上没有任何检查点 |
+| 权限 | Apache Ranger / AWS Lake Formation | 前置是「有没有 catalog」：没有 catalog 时先建 catalog，再谈列级权限 | 只在桶策略层授权，等于授权整表 |
+| AI 检索 / 向量 | LanceDB / Milvus / Pinecone / Qdrant / ChromaDB | 按嵌入规模、是否需要「过滤 + 向量」混合检索、能否自运维来分档；另加一条硬判据：索引能否按 `embed_version` 分片重建 | 派生索引与事实侧漂移而不报错，召回结果无法回溯到原文 |
+
+**这一类里最容易被误选的是「表格式按社区规模选」**：Iceberg 的社区与生态确实最广，但它成立的判据是「有几个引擎要读同一份数据」，不是「社区大所以更安全」。如果一个组织的写入主引擎是 Flink、读取只有一两个引擎，按社区规模选出来的格式会在写入侧多一层转换，而 schema 演进与并发控制要在两个生态之间对齐——这正是 §3.1 那条主约束要避免的形态：一致性又回到靠约定保证。判据顺序应当是先列「写入侧主引擎是谁、读取侧有哪些引擎」，再列「要不要流读同一张表」，最后才看社区与版本节奏；各项目的版本与能力以官方 release note 与文档当前版本为准。
+
+### 4.4 存量迁移
+
+数据湖这一节比多数主题更常用到——多数组织的第一个「湖」是几年积累的 HDFS 目录或一堆无人管理的 Parquet 文件。核心问题是：**怎么在不停止现有作业的前提下，把一致性语义从「约定」换成「结构」**。
+
+**① 先做什么：只读注册，可随时回退**
+
+把最常查的 N 张表注册进表格式 catalog（Iceberg 一类支持把既有文件目录注册成表），不改文件、不改目录、不改任何作业；回退时删掉 catalog 里的表定义，文件仍在原地。这一步立刻得到两样东西：schema 可管理、快照可追溯。
+
+- **判据**：注册后跑一次与原先完全相同的查询，逐项比对行数与关键聚合。不一致说明注册读到的文件集合与原先的目录约定不同（常见原因是目录里躺着不属于任何约定的临时文件）——这一步的价值恰恰在于把这些文件暴露出来。
+- **为什么必须是最先做的**：它是唯一一个「做错了只需删一条定义」的动作：不产生新快照、不改数据。先让它在一个业务域跑一段时间，再决定接管。
+
+**② 历史资产分三类处理**
+
+- **全部返工（重写进表格式）**：只对**高频访问 + 高频小写**的表做。这两类分别是「小文件最多」与「一致性风险最高」的，重写它们收益最大；重写要消耗计算资源，所以不适合铺开。
+- **增量接管（不重写历史，从某个时间点起新写入进表格式）**：多数表的默认做法。代价是跨接管点的时间范围查询要 UNION 两套读取路径，因此**接管点必须作为元数据写下来**（哪个日期之前的数据在旧路径上），否则半年后没人知道数据从哪天起是新的。**判据**：任意挑一张已接管的表，能否在不问人的情况下说出它的接管点日期。
+- **只打标挂账（不迁移）**：长尾与僵尸表登记三项——所在路径、最后访问时间、是否可删——进入清理流程而不是迁移流程。
+- 另单列一类：**不可回补的链路**（原始数据已删、外部源不可重放）。对这类资产不承诺可追溯，只标「可消费 / 不可消费」，避免下游按有保障的表来用。
+
+**③ 迁移期的双轨怎么维持**
+
+- **读双轨、写单路径**：同一个问题用旧目录直读与新表格式读各算一遍并比对；写入只走一条。双写在湖上尤其危险——两条写入路径的事务边界不同（一条根本没有提交动作），一旦不一致，既无法判断哪一份是对的，也无法回退。
+- **先只读注册，再做写入接管**：接管点一旦越过，回退成本随时间增长（新快照里的数据要导出成原生文件、再落回旧目录约定才能退回）。所以这两步的顺序不能颠倒。
+- **分区演进与迁移分开做**：隐藏分区（4.2 第 2 条）让换分区策略不必改下游 SQL，这是「先迁表格式、后改分区」的顺序优势；但两件事同时做时，一旦结果不对，无法区分是迁移读错了文件还是分区剪裁漏了数据。
+- **不要同时改业务口径**：把「迁移」与「口径变更」放进同一次发布，任何异常都无法归因。代价是迁移被拉长，但这是让迁移可解释的唯一做法。
+- **维持多久**【经验】：覆盖一个完整业务周期（含月末 / 季末结算）再加一次量级波动（大促 / 节假日）。
+
+**④ 什么信号说明可以退出双轨**
+
+三条同时成立才退出：**a)** 连续多个周期双读结果一致，且不一致的差异都能被解释（不是「没查出来」）；**b)** 旧路径的访问量降到只剩迁移脚本本身（看访问日志或代理侧统计，而不是问人）；**c)** 合并与快照过期已进入常驻调度且滞后量稳定。第三条最容易被忽略：如果合并还没稳定就退出双轨，之后出现的「查询变慢」会被误判为迁移失败，最后把一次正确的迁移回滚掉。
+
+### 4.5 模板 / 示例
+
+**模板一：表格式建表 DDL（含抗小文件的第一道闸）**
 
 ```sql
--- 创建 Iceberg 表
-CREATE TABLE iceberg.orders (
-  order_id    BIGINT,
-  user_id     BIGINT,
-  amount      DECIMAL(18,2),
-  order_time  TIMESTAMP
-) PARTITIONED BY (days(order_time))
-STORED AS ICEBERG;
+CREATE TABLE lakehouse.ods_order (
+  order_id  STRING,
+  user_id   STRING,
+  amount    DECIMAL(18,2),
+  dt        DATE
+) USING iceberg
+PARTITIONED BY (days(dt))        -- 隐藏分区：查询只写 WHERE dt BETWEEN ...，剪裁由格式完成
+TBLPROPERTIES (
+  'write.target-file-size-bytes' = '134217728',  -- 目标文件大小：控制单次提交产生的文件数
+  'write.distribution-mode'      = 'hash'        -- 写分布：控制单次提交的文件数量级
+);
 
--- 写入（CTAS）
-INSERT INTO iceberg.orders
-SELECT * FROM hive.orders WHERE dt = '2025-01-01';
-
--- Time Travel
-SELECT * FROM iceberg.orders
-FOR SYSTEM_TIME AS OF '2025-01-15 10:00:00';
-
--- Schema Evolution（添加列）
-ALTER TABLE iceberg.orders
-ADD COLUMN coupon_amount DECIMAL(18,2);
+ALTER TABLE lakehouse.ods_order ADD COLUMN coupon_amount DECIMAL(18,2);  -- schema 演进
+SELECT * FROM lakehouse.ods_order FOR SYSTEM_TIME AS OF '<timestamp>';   -- 时间旅行
 ```
 
-**2. Iceberg 隐藏分区（Hidden Partitioning）**
+**怎么用**：`target-file-size-bytes` 与 `distribution-mode` 两格必须按你的写入频率调，不要照抄——它们是写入侧控制文件数的唯一参数。`PARTITIONED BY (days(dt))` 是分区变换而不是普通列，这一点在从 Hive 分区表迁移时最容易写错。
 
-```sql
--- 用户不需要知道分区字段
-SELECT * FROM iceberg.orders
-WHERE order_time BETWEEN '2025-01-01' AND '2025-01-31';
--- Iceberg 自动按 days(order_time) 分区剪裁
-```
-
-**3. CDC 入湖（Flink + Iceberg）**
+**模板二：Flink CDC 入湖（实时链路）**
 
 ```java
-// Flink CDC → Iceberg
-StreamExecutionEnvironment env = ...;
-
-TableResult result = env.executeSql("""
+env.executeSql("""
     CREATE TABLE orders_cdc (
-      order_id BIGINT,
-      user_id BIGINT,
-      amount DECIMAL(18, 2),
-      order_time TIMESTAMP(3)
-    ) WITH (
-      'connector' = 'mysql-cdc',
-      'hostname' = 'mysql-host',
-      'port' = '3306',
-      'username' = 'cdc',
-      'password' = '***',
-      'database-name' = 'shop',
-      'table-name' = 'orders'
-    )
+      order_id BIGINT, user_id BIGINT, amount DECIMAL(18,2), order_time TIMESTAMP(3)
+    ) WITH ('connector'='mysql-cdc', 'hostname'='<host>', 'port'='3306',
+            'database-name'='shop', 'table-name'='orders')
 """);
 
 env.executeSql("""
-    CREATE TABLE iceberg_orders (...)
-    WITH (
-      'connector' = 'iceberg',
-      'catalog-name' = 'hive_prod',
-      'uri' = 'thrift://hive-metastore:9083',
-      'warehouse' = 's3://lake/warehouse'
-    )
+    CREATE TABLE iceberg_orders (...) WITH (
+      'connector'='iceberg', 'catalog-name'='<你的 catalog>',
+      'uri'='<metastore 地址>', 'warehouse'='s3://<bucket>/warehouse')
 """);
 
 env.executeSql("INSERT INTO iceberg_orders SELECT * FROM orders_cdc");
 ```
 
-**4. 数据压缩与生命周期**
+**怎么用**：这段解决的是「入湖」，不是「去重」——`INSERT` 之前要按主键做 upsert 或去重（由表格式决定用主键 + changelog 还是合并读），否则重放时会得到重复行；4.1 Step 4 的幂等性判据测的就是这一条。连接器属性名逐项对照官方文档再填：catalog 相关的几个属性在不同引擎里写法接近但不等价，照抄容易得到「不认识的属性」这类报错；Flink CDC 与目标表格式连接器的属性名以各自官方文档当前版本为准。
+
+**模板三：合并与生命周期（compaction + 快照过期）**
 
 ```sql
--- Iceberg 自动合并小文件
+-- 重写数据文件：把小文件合并到目标大小，可顺带按 zorder 排序
 CALL iceberg.system.rewrite_data_files(
-  table => 'iceberg.orders',
+  table => 'lakehouse.ods_order',
   strategy => 'sort',
-  sort_order => 'zorder[order_time, user_id]',
-  options => map('min-input-files', '10', 'max-concurrent-file-group-rewrites', '5')
-);
+  sort_order => 'zorder[dt, user_id]',
+  options => map('min-input-files', '10'));
 
--- 清理过期快照
+-- 过期快照：保留最近 N 个，其余删除（时间旅行的窗口由此决定）
 CALL iceberg.system.expire_snapshots(
-  table => 'iceberg.orders',
-  older_than => TIMESTAMP '2025-01-01 00:00:00',
-  retain_last => 10
-);
+  table => 'lakehouse.ods_order',
+  older_than => TIMESTAMP '<保留边界>', retain_last => 10);
 ```
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+**怎么用**：`retain_last` 直接决定时间旅行能回到多久以前，不能只当清理参数——两个下游对同一张表的回滚预期不同时，这个数要先谈再配。这两条必须挂进调度成为常驻任务，写在文档里等于没做（4.2 第 4 条的失效条件）。
 
-**存储底座**：
-
-| 工具 | 特点 | 适用 |
-| --- | --- | --- |
-| HDFS | 传统、成熟 | 本地数据中心 |
-| AWS S3 | 云对象存储标杆 | AWS 云 |
-| 阿里云 OSS | 阿里云原生 | 阿里云 |
-| 腾讯云 COS | 腾讯云原生 | 腾讯云 |
-| MinIO | 开源对象存储 | 私有云 |
-| Ceph | 统一存储（HDFS/S3/Block） | 混合云 |
-| Ozone | HDFS 继任者 | Hadoop 生态 |
-
-**开放表格式（2024-2025）**：
-
-| 工具 | 母公司 | 特点 | 最新版本 |
-| --- | --- | --- | --- |
-| Apache Iceberg | Apache | 社区最大、Trino/Spark/Flink 全支持 | 1.6.x（2024） |
-| Apache Hudi | Apache | 更新密集场景强、CDC 友好 | 0.15.x（2024） |
-| Delta Lake | Databricks | Spark 生态最深、Unity Catalog | 3.2.x（2024） |
-| Apache Paimon | Apache | Flink 生态原生、流批一体 | 1.1.x（2024 毕业） |
-
-**查询引擎**（详见 §13）：
-
-| 工具 | 特点 |
-| --- | --- |
-| Trino | 联邦查询、Iceberg/Hudi/Delta 全支持 |
-| Spark SQL | 大数据主流、生态最全 |
-| Flink | 流批一体、流式湖仓 |
-| DuckDB | 内嵌 OLAP、AI 时代新宠 |
-| StarRocks | 实时 OLAP、Iceberg 外表查询 |
-
-**AI 工具（2024-2025 新趋势）**：
-
-| 工具 | 特点 |
-| --- | --- |
-| LanceDB | 列式多模态数据湖、专为 AI 设计 |
-| Milvus | 向量数据库、可与 Iceberg 集成 |
-| Pinecone | 托管向量数据库 |
-| Qdrant | 开源向量数据库 |
-| ChromaDB | 轻量级向量数据库 |
-
-### 4.4 代码 / 示例
-
-**示例 1：Apache Iceberg + Spark 完整数据湖**
+**示例 1：Iceberg + Spark 的 Bronze / Silver / Gold**
 
 ```python
-# PySpark + Iceberg
-from pyspark.sql import SparkSession
+spark = (SparkSession.builder.appName("IcebergLake")
+         .config("spark.sql.catalog.prod", "org.apache.iceberg.spark.SparkCatalog")
+         .config("spark.sql.catalog.prod.type", "hive")
+         .config("spark.sql.catalog.prod.uri", "thrift://<metastore>:9083")
+         .config("spark.sql.catalog.prod.warehouse", "s3://<bucket>/warehouse")
+         .getOrCreate())
 
-spark = SparkSession.builder \
-    .appName("IcebergLake") \
-    .config("spark.sql.catalog.prod", "org.apache.iceberg.spark.SparkCatalog") \
-    .config("spark.sql.catalog.prod.type", "hive") \
-    .config("spark.sql.catalog.prod.uri", "thrift://metastore:9083") \
-    .config("spark.sql.catalog.prod.warehouse", "s3://lake/warehouse") \
-    .getOrCreate()
-
-# 写入数据湖（Bronze）
-df = spark.read.parquet("s3://raw/orders/dt=2025-01-01/")
+df = spark.read.parquet("s3://<bucket>/raw/orders/dt=<date>/")        # Bronze
 df.writeTo("prod.bronze.orders").createOrReplace()
-
-# 清洗（Silver）
-silver_df = df.filter("amount > 0").dropDuplicates(["order_id"])
-silver_df.writeTo("prod.silver.orders").createOrReplace()
-
-# 聚合（Gold）
-gold_df = silver_df.groupBy("user_id") \
-    .agg({"amount": "sum", "order_id": "count"})
-gold_df.writeTo("prod.gold.user_orders").createOrReplace()
-
-# Time Travel
-historical = spark.read.option("snapshot-id", "1234567890") \
-    .table("prod.silver.orders")
+silver = df.filter("amount > 0").dropDuplicates(["order_id"])         # Silver
+silver.writeTo("prod.silver.orders").createOrReplace()
+silver.groupBy("user_id").agg({"amount": "sum"}) \
+      .writeTo("prod.gold.user_orders").createOrReplace()             # Gold
+spark.read.option("snapshot-id", "<snapshot-id>").table("prod.silver.orders")  # 时间旅行
 ```
 
-**示例 2：LanceDB 多模态数据湖（2024 新趋势）**
+**怎么用**：这是「最小可用」的形状，不是生产模板——三层之间应当是分离的作业（各有调度与 Owner）。串在一个进程里意味着任何一层失败都要整体重跑，回滚点的价值也就没了（§3.2.4）。
+
+**示例 2：LanceDB 多模态数据湖**
 
 ```python
 import lancedb
-import pyarrow as pa
-
-# 连接到 LanceDB
-db = lancedb.connect("s3://lake/lancedb")
-
-# 创建多模态表（结构化 + 文本 + 向量 + 图像）
+db = lancedb.connect("s3://<bucket>/lancedb")
 table = db.create_table("products", [
-    {
-        "id": 1,
-        "name": "iPhone 15",
-        "price": 999.0,
-        "description": "Apple smartphone...",
-        "description_embedding": [...],  # 文本向量
-        "image_bytes": b"...",  # 图像二进制
-        "image_embedding": [...],  # 图像向量
-    }
+    {"id": 1, "asset_id": "<湖仓侧同一个 asset_id>", "price": 0.0,
+     "description": "<文本>", "description_embedding": [...],
+     "image_uri": "s3://<bucket>/img/1.png",
+     "embed_model": "<模型名>", "embed_version": 1},
 ], mode="overwrite")
 
-# 混合检索：向量 + 过滤
-results = table.search([0.1, 0.2, ...]) \
-    .where("price < 1000") \
-    .limit(10) \
-    .to_pandas()
+table.search([0.1, 0.2]).where("price < 1000").limit(10).to_pandas()  # 过滤 + 向量混合检索
 ```
 
-**示例 3：Flink + Paimon 流式数据湖（2024 新工具）**
+**怎么用**：`asset_id` 必须是湖仓侧的同一个 ID（§3.2.5 的桥），`embed_model` 与 `embed_version` 两格不要省——省掉之后换嵌入模型就无法区分新旧向量。API 与能力边界以 LanceDB 官方文档当前版本为准。
+
+**示例 3：Flink + Paimon 流式入湖**
 
 ```java
-// Flink + Paimon 流式入湖
-TableEnvironment tEnv = ...;
-
 tEnv.executeSql("""
-    CREATE TABLE kafka_source (
-      order_id BIGINT,
-      user_id BIGINT,
-      amount DECIMAL(18, 2),
-      ts TIMESTAMP(3)
-    ) WITH (
-      'connector' = 'kafka',
-      'topic' = 'orders',
-      'properties.bootstrap.servers' = 'kafka:9092',
-      'format' = 'json'
-    )
+    CREATE TABLE kafka_source (...) WITH (
+      'connector'='kafka', 'topic'='orders',
+      'properties.bootstrap.servers'='<brokers>', 'format'='json')
 """);
 
 tEnv.executeSql("""
-    CREATE TABLE paimon_sink (
-      order_id BIGINT,
-      user_id BIGINT,
-      amount DECIMAL(18, 2),
-      ts TIMESTAMP(3)
-    ) WITH (
-      'connector' = 'paimon',
-      'path' = 's3://lake/paimon/orders',
-      'sink.bucket-num' = '8'
-    )
+    CREATE TABLE paimon_sink (...) WITH (
+      'connector'='paimon', 'path'='s3://<bucket>/paimon/orders',
+      'sink.bucket-num'='8')
 """);
 
-tEnv.executeSql("""
-    INSERT INTO paimon_sink
-    SELECT * FROM kafka_source
-""");
+tEnv.executeSql("INSERT INTO paimon_sink SELECT * FROM kafka_source");
 ```
 
----
+**怎么用**：`sink.bucket-num` 决定并行写入的桶数与后续合并压力的分布，上线以后改它等于重排数据，所以要在建表时定；主键与 changelog 语义决定这张表能不能按流读（§3.2.6 的判据）。
+
+### 4.6 自检清单
+
+下面 11 条只问**上线与运行期才存在的状态**——抽样、对账、调度记录、账单、访问日志。模式层面的检查（提交边界该划在哪、分区按什么维度分、保留期定多长、分层粒度是否合理、权限该配在哪一层）不在这里重复，统一见 [§ 3.7 自检清单](02-data-lake-section-3-sec3.md)。
+
+- [ ] 与表格式同目录的路径下，拿当前快照的 manifest 清单与实际文件清单求一次差集：有没有**不属于任何快照**的文件（有人绕过格式直写）？
+- [ ] 抽 3 张表，在 catalog 上打开它们的 Owner 字段：是具体人名，还是团队名 / 空缺？最近一次 Owner 交接有没有留下记录？
+- [ ] 把「平均文件大小」与「每分区文件数分布」两条指标调出来：最近一个周期是在下降还是上升？
+- [ ] 合并与快照过期任务最近一次**成功执行**是什么时候？把合并滞后量（未合并文件数 / 未合并字节数）的曲线拉出来看，它在收敛还是发散？
+- [ ] 最新一次微批写入提交产生了多少个文件？目标文件大小是配在表属性 / 作业参数上，还是每个作业各自用默认值？
+- [ ] 拿一张大表的存储账单按存储类别与请求次数拆开看：最冷的那部分数据，是不是还计在单价最高的一档上？快照过期之后，按请求计费的那部分有没有降下来？
+- [ ] 造一次越权演练：拿一个不该有权限的账号，分别从查询引擎与底层文件路径各读一次同一张敏感表的敏感列——两条路径都拦住了吗？只拦住其中一条，说明权限只配在了其中一层。
+- [ ] 抽 3 张表，能否说清它们属于哪一层、各层的 Owner / SLA / 保留期分别是什么？
+- [ ] 双读对账：挑 3 张已接管的表，同一份数据走表格式读一次、走旧目录直读一次，行数与关键聚合是否逐项一致？不一致的差异每条都能解释吗？
+- [ ] 如果做过存量迁移：任意挑一张已接管的表，能否在不问人的情况下说出它的**接管点日期**？
+- [ ] 如果用了向量索引或图谱：抽 10 条召回结果，能否在湖仓侧按同一个资产 ID 取到原文？索引里现在并存几个 `embed_version`，双版本共存期结束了没有？
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一决定成败的环节是 **Step 2 的那三次实测**（schema 变更是否只提交元数据、第二个引擎能否读到同一快照、时间旅行是否可用）——因为它决定的是「一致性由流程保证还是由结构保证」，而这条差别在一个季度到半年量级之后才会以「下游静默算错」「改一个字段引爆一批任务」的形式出现【经验：随数据量与下游数量变】，届时补救的代价是重做元数据。其余各步（底座、分层、入湖、查询、治理）都能在格式确定之后按判据依次推出来；只有这三条实测，无法由任何对比表代替。
+>
+> 配合 [§ 2 核心原理](02-data-lake.md)、[§ 3 设计模式与范式](02-data-lake-section-3-sec3.md) 与 [§ 6 落地实践](02-data-lake-section-6-sec6.md) 阅读。

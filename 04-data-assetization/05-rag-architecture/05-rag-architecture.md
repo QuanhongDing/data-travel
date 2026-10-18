@@ -97,20 +97,20 @@
 
 ### 1.4 演进历程
 
-**萌芽阶段（2020-2022）**：
+**萌芽阶段**：
 
 - **2020.05**：Lewis 等人发表 RAG 原论文，奠定架构基础。
 - **2020-2022**：REALM、RETRO、Atlas 等检索增强预训练模型出现。
 - **2021**：Faiss / Annoy 等向量索引成熟，RAG 工程化成为可能。
 - **2022.11**：ChatGPT 发布，RAG 工程化需求爆发。
 
-**Naive RAG 阶段（2023-2024 上半年）**：
+**Naive RAG 阶段**：
 
 - **2023**：LangChain / LlamaIndex 爆发，Naive RAG（向量召回 + Prompt）成为 LLM 应用标配。
 - **2023.10**：RAGAS 评测框架发布。
 - **2024.01**：Advanced RAG（Query Rewrite / HyDE / Reranker）成为新主流。
 
-**Advanced / Modular RAG 阶段（2024）**：
+**Advanced / Modular RAG 阶段**：
 
 - **2024**：Modular RAG 预印本（GAIR Lab）提出「模块化 RAG」架构。
 - **2024**：Self-RAG 收录于 ICLR 2024（2023 年预印本），引入「自反思」机制。

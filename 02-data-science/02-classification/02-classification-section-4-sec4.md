@@ -1,361 +1,310 @@
-> 本文件是 **02-classification.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](02-classification.md)。
+> 本文件是 **02-classification.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](02-classification-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](02-classification.md)。
 
 ## 4. 工程实现
 
+本节把分类任务从「选一个模型」推进到「在一个真实组织里把它跑住」。模式与约束的对应关系已在 [§ 3](02-classification-section-3-sec3.md) 讲完，本节不复述任何模式本身；这里只回答四个问题：按什么顺序做、每一步怎么知道自己做对了、用什么工具、已经存在的模型与特征表怎么办。
+
+本文件同时面向两类读者，读法不同。**从零搭建**的读者按 4.1 的顺序走，用 4.5 的模板起步；**存量改造**的读者直接从 4.4 读起 —— 在已有模型、已有特征表、已有线上流量的组织里，能立刻见效且可回退的动作与从零搭建完全不同。4.2 与 4.3 对两类读者同样适用。
+
 ### 4.1 落地步骤
 
-**Step 1：业务问题抽象**
+八步的顺序不是流程习惯，而是「后一步的判据依赖前一步的产物」这条关系。每一步给三件：产物（手上多出来的、可被检查的东西）、判据（怎么知道这一步做对了）、位置理由（为什么不能换序或省掉）。
 
-- 把业务问题转化为"输入 → 输出"的分类问题。
-- 明确标签定义、类别空间、正负样本含义。
-- 输出：**问题定义文档**（业务背景、标签定义、评估指标）。
+**Step 1：业务问题抽象（1–2 周【经验：随标签定义的争议程度变，涉及法务或资金口径时可延长数周】）**
 
-**Step 2：数据准备与样本构建**
+- 把业务问题写成「输入 → 输出」的判别问题；写清标签定义、类别空间（含「其他」类是否合法）、正负样本含义 —— 业务上「坏样本」才是正类（如欺诈是 positive class）。
+- 把误判代价写成两个数：一次漏检的业务代价、一次误报的业务代价。
+- **产物**：问题定义文档（业务背景、标签定义、类别空间、评估指标、代价矩阵）。
+- **判据**：抽 3 条历史样本【经验：条数随类别空间的歧义度变，歧义越大抽得越多】，让不参与建模的人按文档独立打标，三人【经验：人数随标签定义的歧义度与可抽调的独立标注者数量变，歧义大时增到 3–5 人】给出同一标签；代价矩阵上有业务方签字的姓名与日期。
+- **为什么必须这一步、为什么在最前**：代价矩阵决定阈值、类权重与「自动处置」的边界，Step 5 的调参与 Step 6 的评估都要引用它 —— 缺了它，权重与阈值只能凭感觉调（§3.5 已把这条列成最常见的两阶段反模式）。放在最前是因为标签空间一旦返工，Step 2 的全部样本要重新标注。
 
-- 收集标注数据（有监督场景）或构造正负样本（无监督 / 半监督）。
-- 切分训练集 / 验证集 / 测试集（注意时间切分避免穿越）。
-- 处理不平衡（下采样 / 过采样 / 加权）。
-- 输出：**样本库 / 训练集 / 测试集**。
+**Step 2：数据准备与样本构建（2–6 周【经验：随数据可获取性与标注产能变】）**
 
-**Step 3：特征工程**
+- 收集标注数据（有监督）或构造正负样本（无监督 / 半监督）。
+- 按时间或实体切分训练 / 验证 / 测试集，时间相关数据不做随机切分。
+- 统计并记录不平衡比例；做下采样 / 过采样 / 加权，同时保留一份未采样的对照集。
+- **产物**：样本库 + 训练 / 验证 / 测试集（含切分键与切分时间戳）+ 不平衡比例与采样口径记录。
+- **判据**：抽 3 条训练样本与 3 条测试样本【经验：抽样条数随样本来源的异构度与标注争议率变，来源越多、争议越大，抽得越多】，能回答「这条样本的标签在其预测时刻是否已知」；训练与测试的实体重叠率写出具体数值（不是「基本没有」）。
+- **为什么必须这一步、为什么在这里**：切分必须发生在特征构造之前 —— 特征统计量（均值、方差、分箱边界）只能从训练集算出。顺序颠倒就是 §3.5「标签泄漏」的落地成因：验证指标接近 1.0，上线掉档。
 
-- 数值特征：归一化 / 分箱 / 缺失值填充。
-- 类别特征：One-Hot / Target Encoding / 嵌入。
-- 文本特征：TF-IDF / Word2Vec / BERT Embedding。
-- 图像特征：CNN 提取 / 预训练模型。
-- 时序特征：滑动窗口 / 滞后值。
-- 特征选择：方差 / IV / L1 正则 / 树模型重要性。
-- 输出：**特征 pipeline + Feature Store**。
+**Step 3：特征工程（3–8 周【经验：随特征来源数量与实时化要求变】）**
 
-**Step 4：模型选型与基线**
+- 数值特征：归一化 / 分箱 / 缺失值填充；类别特征：One-Hot / Target Encoding / 嵌入；文本特征：TF-IDF / Word2Vec / BERT Embedding；图像特征：CNN 提取 / 预训练模型；时序特征：滑动窗口 / 滞后值。
+- 特征选择：方差 / IV / L1 正则 / 树模型重要性 / SHAP。
+- 每个特征登记两件元数据：「预测时刻是否可得」与「Owner」。
+- **产物**：特征 pipeline + Feature Store 登记（一份定义、时间语义、Owner、版本）。
+- **判据**：抽 3 个特征【经验：抽样个数随特征总数与特征来源系统数变，来源越多抽得越多】，在同一实体、同一时刻分别从训练侧与推理侧各取一次值，两次一致；能当场说出这 3 个特征各自的「预测时刻可得性」依据是批次产出时间还是事件时间。
+- **为什么必须这一步、为什么在 Step 4 之前**：特征定义必须先于样本落盘。时间语义写在特征上，Step 8 才能把「分布漂移」与「口径分叉」区分开，否则两种故障会报成同一个告警，值班的人分不出该找算法还是找数据。
 
-- 用 §3.2 决策表选 1-3 个候选模型。
-- 跑基线（如 LR / XGBoost / LightGBM），建立性能下限。
-- 输出：**基线报告**（指标、训练时长、推理时长）。
+**Step 4：模型选型与基线（1–2 周【经验：随候选模型数量变】）**
 
-**Step 5：模型调优**
+- 用 §3.3 决策表选 1–3 个候选模型【经验：候选数随团队的训练算力与评估口径成熟度变，评估口径还不稳时多留候选，口径稳定后收敛到 1 个】。
+- 跑基线（LR / XGBoost / LightGBM），建立性能下限。
+- 同时跑一个**不依赖模型的下限基线**：多数类、规则、或上一版模型。
+- **产物**：基线报告（指标、训练时长、推理时长、目标 QPS 下的单次推理成本）。
+- **判据**：报告里同时有「候选模型 vs 多数类基线」的差值与「固定误报率下的召回」；延迟数字是在目标 QPS 下压测得到的，不是单条请求测的。
+- **为什么必须这一步、为什么在这里**：下限基线是后面所有「提升」判定的参照系。缺少它，Step 6 的评估无法区分「模型变好了」与「这个指标本来就容易达到」。
 
-- 超参调优（Grid Search / Random Search / Bayesian Optimization / Hyperband）。
-- 类别不平衡处理（Focal Loss / 加权 / SMOTE）。
-- 多标签处理（标签依赖 / Classifier Chain）。
-- 输出：**调优报告**（最优超参、性能对比）。
+**Step 5：模型调优（2–6 周【经验：随搜索空间与算力变】）**
 
-**Step 6：模型评估**
+- 超参调优：Grid Search / Random Search / Bayesian Optimization / Hyperband。
+- 类别不平衡处理：Focal Loss / 加权 / SMOTE。
+- 多标签处理：标签依赖 / Classifier Chain。
+- 阈值按 Step 1 的代价矩阵反推，不沿用 0.5 默认值。
+- **产物**：调优报告（最优超参、性能对比、阈值与代价曲线的对应表）。
+- **判据**：报告能回答「阈值从 t 移到 t′ 时，误报量与漏检量各变化多少」，并能指出当前阈值对应的是哪一组代价假设。
+- **为什么必须这一步、为什么在 Step 6 之前**：阈值标定必须晚于调优。反过来会把阈值当成一个超参反复试，最终无法解释线上的自动处置比例为什么偏高或偏低。
+
+**Step 6：模型评估（1–2 周【经验：随错误分桶维度变】）**
 
 - 离线评估：AUC / PR-AUC / F1 / Precision / Recall / 混淆矩阵。
-- 业务对齐：AUC 提升 1% 对应业务 GMV 提升多少？
-- 错误分析：把错误样本分类，研究是哪些场景容易错。
-- 输出：**评估报告 + 错误分析**。
+- 业务对齐：AUC 提升一个百分点量级【经验：步长随当前 AUC 水平与业务可感知的最小差异变，AUC 已高时改取 0.1–0.5 个百分点】对应业务指标提升多少（要写出推导链，写不出即说明业务对齐还没做）。
+- 错误分析：把错误样本按场景、人群、时间分桶，找出系统性错误模式。
+- 校准：在独立校准集（或交叉拟合）上拟合单调映射，报告 Brier / LogLoss。
+- **产物**：评估报告 + 错误分析 + 校准报告。
+- **判据**：主指标是 PR-AUC 或「固定误报率下的召回」，不是只有 accuracy 与 AUC；错误分析里能点出至少 2 个分桶【经验：分桶数随业务场景数与人群划分粒度变，场景单一时 2 个即可】的系统性模式（不是「某些样本会错」这种同义反复）。
+- **为什么必须这一步、为什么在 Step 7 之前**：Step 7 的「按 0.9 自动处置」这类规则（0.9 这个取值【经验：随两类错误的代价之比与可接受的人工复核容量变，须按模板 0 反推，不存在通用阈值】）依赖校准后的概率。未校准的概率会让自动处置比例整片偏移，而这个偏移在上线前看不出来 —— 它在离线指标里没有任何痕迹。
 
-**Step 7：模型上线**
+**Step 7：模型上线（2–4 周【经验：随服务栈既有程度变，已有在线服务时可压缩】）**
 
-- 模型序列化（Pickle / PMML / ONNX）。
-- 在线服务（TF Serving / Triton Inference Server / 自研 RPC 服务）。
-- 性能压测（QPS / P99 延迟 / GPU 利用率）。
-- A/B 测试（小流量 → 大流量 → 全量）。
-- 输出：**上线报告 + A/B 实验报告**。
+- 模型序列化：Pickle / PMML / ONNX。
+- 在线服务：TF Serving / Triton Inference Server / 自研 RPC 服务。
+- 性能压测：QPS / P99 延迟 / GPU 利用率。
+- A/B 测试：小流量 → 大流量 → 全量。
+- 登记三件版本：模型版本、特征口径版本、阈值版本。
+- **产物**：上线报告 + A/B 实验报告 + 版本登记（模型 × 特征口径 × 阈值）。
+- **判据**：用一批离线样本回放线上服务，逐条比对线上线下打分，差异超出浮点误差的条目占比写出具体数值；A/B 报告里同时有控制组与实验组的业务指标。
+- **为什么必须这一步、为什么版本登记放在上线时做**：上线后才发现线上线下打分不一致时，没有版本记录就无法区分是特征口径变了还是模型变了。这一步登记成本最低，事故时的定位成本最高。
 
-**Step 8：监控与闭环**
+**Step 8：监控与闭环（持续）**
 
 - 模型监控：输入分布、输出分布、AUC 实时计算。
 - 漂移检测：Data Drift / Concept Drift / Label Drift。
 - 反馈回流：线上预测 + 真实标签回流到样本库。
-- 定期重训：日 / 周 / 月粒度。
-- 输出：**监控 dashboard + 重训 pipeline**。
+- 定期重训：日 / 周 / 月粒度，粒度随漂移周期定。
+- **产物**：监控 dashboard + 重训 pipeline + 回流样本新鲜度标尺。
+- **判据**：能从 dashboard 上读出「当前模型的训练数据截止到哪一天」与「回流样本中已标注的比例」；漂移告警能定位到具体特征，而不是只报一个总分。
+- **为什么必须这一步**：它是 Step 2 的样本库持续更新的唯一来源。跳过它，Step 6 的评估口径会在几个月内与线上脱节，而脱节本身不报警。
+
+**最常被跳过的一步**是 Step 1 里的**代价矩阵**那一半 —— 它看起来像文档工作，交付物又只有两个数字。跳过后的第一个出问题的时点不是上线当天，而是**第一次需要改阈值的那次评审**：症状是团队在误报投诉与漏检事故之间连续摆动两三轮，最后把结论写成「这批数据不可用」。
 
 ### 4.2 关键技术点
 
-**特征工程关键技术**：
+每条给四件：做法、机制（为什么这么做有效）、失效条件（**什么条件下它会坏、坏的时候怎么发现**）、档位。失效条件一律写成组织侧或运行期可观测的信号，不是「效果会下降」。
 
-1. **分箱（Binning）**：将连续特征离散化（如等频分箱 / 等距分箱 / 卡方分箱）。优势：抗异常值、自动交叉、提升树模型效果。
-2. **目标编码（Target Encoding）**：用目标变量的均值替换类别特征。注意必须用 K-Fold 防止泄漏。
-3. **特征交叉（Feature Crossing）**：手动构造交叉特征（如 AND(user_country, item_category)）或用 FM / DeepFM 自动学习。
-4. **WOE / IV**：Weight of Evidence / Information Value，金融风控的特征选择标准。
-5. **特征选择**：方差过滤、卡方检验、互信息、L1 正则、树模型 feature importance、SHAP。
-6. **类别不平衡处理**：
-   - 下采样（Undersampling）：随机 / EasyEnsemble / BalanceCascade。
-   - 过采样（Oversampling）：SMOTE / ADASYN / Borderline-SMOTE。
-   - 加权（Class Weight）：对少数类提高 loss 权重。
-   - 阈值调优：调整决策阈值而非模型本身。
-   - Focal Loss：$\mathcal{L} = -\alpha (1-p)^\gamma \log p$，让模型聚焦难样本。
-7. **多标签处理**：
-   - Binary Relevance：每个标签独立训练二分类器。
-   - Classifier Chain：把前面的标签预测结果作为后面的输入。
-   - Label Powerset：每个标签组合作为一个新类别。
-   - 深度学习：sigmoid 输出 + BCE Loss。
+**分箱与 WOE / IV**
 
-**训练关键技术**：
+- **做法**：连续特征按等频 / 等距 / 卡方分箱离散化；风控场景用 WOE / IV 做单调性检查与筛选。
+- **机制**：因为分箱把取值域切成有限个桶，所以缺失、极值、稀疏尾部分别落进独立桶，模型只需为每个桶估一个参数 —— 尾部样本极少的特征不会被动几个异常点带偏。
+- **失效条件**：当分箱边界随训练集重算而下游未同步时，同一个原始值在训练侧与推理侧落进不同的桶；症状是离线指标正常、线上打分整体平移，而逐特征对账时只有分箱列对不上。
+- **档位**：分箱数 5–20【经验：随特征单调性与业务解释需求变】。
 
-8. **分布式训练**：参数服务器（Parameter Server）架构（Angel / XDL）、AllReduce 架构（PyTorch DDP / Horovod）。
-9. **混合精度训练**：FP16 + FP32 混合，训练速度提升 2-3 倍。
-10. **学习率调度**：Warmup + Cosine Decay / Linear Decay。
-11. **正则化**：L1 / L2 / Dropout / Early Stopping / Label Smoothing。
-12. **梯度累积（Gradient Accumulation）**：小显存模拟大 batch。
+**目标编码与特征交叉**
 
-**推理关键技术**：
+- **做法**：用目标均值替换类别特征，必须用 K-Fold 在折外计算；特征交叉手写（如 AND(user_country, item_category)）或交给 FM / DeepFM / xDeepFM / DCN 自动学习。
+- **机制**：因为编码值被固化成特征表里的一列，所以线上读的是训练时冻结的那个数而不是现算 —— 这把泄漏风险从运行时挪到了训练时，一次算错会整批污染而不是零星出错。
+- **失效条件**：当出现训练时未见过的类别取值（新用户、新类目）时，兜底逻辑若与训练时不一致（填 0 / 填全局均值 / 直接丢弃），线上会把新取值稳定判成同一类；症状是新实体打分集中在阈值附近。
+- **档位**：K 取 5【经验：随每个类别的样本量变，样本越少折数越多】。
 
-13. **模型压缩**：量化（INT8 / INT4）、剪枝（Pruning）、蒸馏（Distillation，如 DistilBERT）。
-14. **推理加速**：ONNX Runtime、TensorRT、OpenVINO、TVM。
-15. **模型服务**：TF Serving、Triton Inference Server、KServe、BentoML、vLLM（LLM 推理）。
-16. **特征实时化**：在线特征通过 Feature Store 实时查询（如 Redis / DynamoDB / HBase）。
+**特征选择与 SHAP**
 
-**LLM 分类关键技术**：
+- **做法**：方差过滤、卡方检验、互信息、L1 正则、树模型 feature importance、SHAP。
+- **机制**：SHAP 给出的是每个特征对**单条预测**的贡献，所以它能在错误分析里回答「这条错例是被哪个特征推错的」；全局 importance 只能回答「模型整体依赖哪个特征」，后者定位不了个案。
+- **失效条件**：当特征之间存在强相关时，importance 会在相关组内随机分配，每次重训排序都变；团队据此删「低 importance」特征会把信息删掉，症状是删完之后指标掉档，而回看相关矩阵该特征与保留特征高度相关。
+- **档位**：错误分析里按 100–500 条抽样【经验：条数随模型特征数与单条解释的耗时预算变，特征越多、时限越紧，抽得越少】算 SHAP，不对全量错例算。
 
-17. **Prompt 工程**：清晰指令 + Few-shot 示例 + JSON Schema 输出约束。
-18. **Function Calling**：让 LLM 直接输出结构化分类结果（避免解析错误）。
-19. **Self-Consistency**：多次采样 + 投票，提升鲁棒性。
-20. **LLM Embedding + 轻量分类头**：用 LLM 提 embedding，接 LR / MLP 分类头。比 fine-tuning LLM 便宜。
-21. **路由分类器**：先用轻量分类器判断"走 LLM 还是走专用模型"，控制成本。
+**类别不平衡处理**
+
+- **做法**：下采样（随机 / EasyEnsemble / BalanceCascade）、过采样（SMOTE / ADASYN / Borderline-SMOTE）、加权（Class Weight）、阈值调优、Focal Loss（$\mathcal{L} = -\alpha(1-p)^\gamma \log p$，让模型聚焦难样本）。
+- **机制**：前四种改的是「每类样本对梯度的贡献」，阈值改的是「概率到动作的映射」。这决定了想先验证效果时改阈值即可、不必重训；想改模型内部权重则必须动前四种。
+- **失效条件**：当正类占比低到某个量级时，随机下采样会丢掉大部分负例，模型对「噪音大的负例」判别力下降；症状是重采样后离线 PR-AUC 上升而线上误报量同时上升 —— 因为线上负例分布与下采样后的不同。要求保留一份未采样对照集做最终评估。
+- **档位**：选用哪种手段由正类占比与两类代价之比共同决定，无通用阈值【经验】。
+
+**多标签处理**
+
+- **做法**：Binary Relevance（每标签独立二分类）、Classifier Chain（前面标签的预测作为后面的输入）、Label Powerset（标签组合作为新类别）、深度学习下的 sigmoid 输出 + BCE Loss。
+- **机制**：因为输出层维度等于标签数，所以这个选择在实施期的代价落在**发布链路**上而不是训练上 —— 每新增一个标签就是一次「改输出层 + 登记一份新阈值 + 补一批该标签的标注」的发布，而阈值登记表必须与模型同版本回滚，否则一次回退会留下「模型回到上一版、阈值还停在新版」的半截状态。
+- **失效条件**：当标签数增长到 Label Powerset 的组合数接近样本数时，大量组合只有一个样本，模型退化为记忆；症状是训练集完美、测试集上低频组合全错，而高频组合正常。
+- **档位**：标签数超过几十条时不用 Label Powerset【经验：随标签共现密度变】。
+
+**分布式训练与混合精度**
+
+- **做法**：参数服务器（Parameter Server）架构（Angel / XDL）、AllReduce 架构（PyTorch DDP / Horovod）；混合精度 FP16 + FP32。
+- **机制**：稀疏特征场景下嵌入表的参数量远超稠密层，把它切分到多机、只更新被访问的行，通信量随 batch 内出现的特征数增长而不是随表大小增长 —— 这是亿级稀疏特征能训练起来的前提。
+- **失效条件**：当 worker 数与嵌入表切分方式不匹配（热点特征集中在某个分片）时，该分片成为瓶颈；症状是加机器后每轮耗时不再下降、部分节点 GPU 利用率明显低于同批其余节点，观测信号是分片间梯度更新量的差异。
+- **档位**：混合精度通常带来约 2–3 倍训练吞吐提升【经验：随层类型与硬件变，稠密算子占比高时靠区间上界，纯嵌入层收益很小】。
+
+**学习率调度、正则化与梯度累积**
+
+- **做法**：Warmup + Cosine Decay / Linear Decay；L1 / L2 / Dropout / Early Stopping / Label Smoothing；梯度累积用小显存模拟大 batch。
+- **机制**：梯度累积在若干 micro-batch 上求和后再更新一次参数，等效 batch size 变大而显存占用不变。它改的是优化轨迹的平滑度，同时让依赖 batch 统计的层（BatchNorm 类）看到的仍是 micro-batch 的统计 —— 两者会不一致。
+- **失效条件**：当模型含 BatchNorm 而用梯度累积换大 batch 时；症状是训练正常收敛但效果稳定低于直接用大 batch 的同配置，且这种偏低不随调学习率改善。
+- **档位**：梯度累积步数取 4–16 个 micro-batch【经验：随目标等效 batch size 与单卡显存变，目标越大、显存越紧，步数越多】。
+
+**模型压缩与推理加速**
+
+- **做法**：量化（INT8 / INT4）、剪枝（Pruning）、蒸馏（Distillation，如 DistilBERT）；推理侧用 ONNX Runtime / TensorRT / OpenVINO / TVM。
+- **机制**：量化把权重与激活的表示精度压低，单次推理的访存与算力需求同时下降，延迟收益主要来自访存而不是浮点算力；蒸馏则改变模型本身，把大模型的输出分布当作软标签。
+- **失效条件**：当模型输出要当概率用时，INT8 量化会改变输出分布，未重新校准的阈值随之失真；症状是压缩后离线 AUC 掉得很少，但线上自动处置比例明显变化。门槛在于评估口径必须包含校准指标。
+- **档位**：量化通常带来数倍吞吐提升【经验：随硬件是否含 INT8 加速单元变，没有该单元时收益可能为负】。
+
+**模型服务与特征实时化**
+
+- **做法**：模型服务用 TF Serving / Triton Inference Server / KServe / BentoML（LLM 推理用 vLLM）；实时特征经 Feature Store 在线查询（如 Redis / DynamoDB / HBase）。
+- **机制**：在线服务把「特征拼装」与「模型推理」拆成两个可独立扩容的环节，特征侧瓶颈（读 KV、算窗口）与模型侧瓶颈（算力）能分别定位；混在一个进程里时 P99 变慢无法归因给谁。
+- **失效条件**：当在线特征在请求时点计算、而训练时用的是离线表快照时，两侧时间语义不同；症状是离线指标不受影响，线上随流量峰值周期性变差（高峰期实时特征窗口更不完整），观测信号是特征缺失率随 QPS 同步变化。
+- **档位**：在线特征查询的 P99 预算按路数分摊总延迟预算【经验：单路 KV 查询常见 1–10 ms 量级，随 KV 选型、网络跳数与特征路数变，路数越多单路能分到的越紧】。
+
+**LLM 分类的五件套**
+
+- **做法**：Prompt 工程（清晰指令 + Few-shot 示例 + JSON Schema 输出约束）、Function Calling / Tool Use（直接输出结构化分类结果，避免解析错误）、Self-Consistency（多次采样 + 投票）、LLM Embedding + 轻量分类头（接 LR / MLP，比微调 LLM 便宜）、路由分类器（先判断走 LLM 还是走专用模型，控制成本）。
+- **机制**：Function Calling 把输出空间限制在声明的枚举内，「越界类别」在接口层就被拒掉，下游不必解析自由文本 —— 这比在 Prompt 里写「只输出以下类别之一」可靠，因为它不依赖模型遵守指令。
+- **失效条件**：**当类别定义依赖私有业务口径（边界与修法见 [§3.2.4](02-classification-section-3-sec3.md)）、而这条路径的回归评估只在离线的固定对照集上跑时**，它第一次暴露不会在离线报告里，而在**上线后按批次对账的时候**：症状是同一条输入在不同批次被**稳定**判成同一个错误类别（是系统性错，不是随机错），人工复核队列里的工单集中在口径最特殊的几个类上，而监控面板上的整体准确率不掉。要补的是两条运行期动作：按批次抽样比对**同一条输入**的历史标签（不是按周统计总量），以及给被点名的类目建一条「口径变更 → 重跑固定对照集」的回归任务。
+- **档位**：示例条数 1–8【经验：随类别语义的歧义度变】；Self-Consistency 的采样次数取到投票结果稳定为止【经验】。
 
 ### 4.3 工具链与平台
 
-**传统机器学习框架**：
+每一行给三件：候选、选型判据（在什么约束下选哪个）、不选它的代价。产品能力以各自官方文档当前版本为准。
 
-- **scikit-learn**（Python / 开源）——经典 ML 库，LR / SVM / 决策树 / RF 标配。
-- **XGBoost**（C++/Python / 开源）——GBDT 工业标准。
-- **LightGBM**（C++/Python / 开源）——微软出品，速度最快。
-- **CatBoost**（C++/Python / 开源）——Yandex 出品，类别特征友好。
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 通用 ML 框架 | scikit-learn / XGBoost / LightGBM / CatBoost | 表格数据、每类样本 10^3 以上【经验：随特征维度与标签噪声变】、需要可解释时先在这一行里解决；原型用 scikit-learn，规模化训练用 XGBoost / LightGBM，类别特征多时用 CatBoost | 用深度学习框架做同一件事，多付加速器、调参周期与推理延迟三笔账 |
+| 深度学习框架 | PyTorch / TensorFlow + Keras / JAX / PaddlePaddle / MindSpore | 输入是非结构化数据，或团队已有该框架的在线服务栈；有国产化要求时在 PaddlePaddle / MindSpore 里选 | 逆着团队既有栈选框架，训练脚本与在线服务要维护两套推理路径 |
+| 专用分类库 | FastText / TextCNN / TextRNN / HuggingFace Transformers / timm | 文本短且延迟敏感选 FastText 或 TextCNN / TextRNN；要预训练精度选 Transformers；图像分类选 timm | 用通用框架手写文本 / 图像骨干，等于自建一个长期维护不动的模型库 |
+| 表格深度学习模型 | TabNet / SAINT / FT-Transformer / TabPFN | 仅在 GBDT 基线已被证明不足、且样本量撑得起参数量时进入这一行；TabPFN 面向小样本免训练场景 | 样本量不足时引入，得到训练集高分、验证集不如基线的模型，同时失去可解释与低延迟 |
+| LLM 分类与编排 | LangChain / LlamaIndex / DSPy / SetFit / OpenAI Function Calling / Anthropic Tool Use / vLLM | 要结构化输出选 Function Calling / Tool Use；少样本文本分类选 SetFit；要自动优化 Prompt 选 DSPy；自托管推理选 vLLM | 只在 Prompt 里约束输出而不使用接口层的枚举约束，下游要额外写一层解析与兜底 |
+| 训练与实验平台 | MLflow / Kubeflow / TFX / Feast / Alibaba PAI / ByteDance AML / AWS SageMaker / Azure ML / Google Vertex AI | 判据是「谁维护控制面」与「要不要自建在线特征服务」：无专职平台团队时选托管型（SageMaker / Azure ML / Vertex AI / PAI / AML），有平台团队再选自建型（Kubeflow / TFX）；Feast 只在需要在线特征服务时引入，MLflow 只做实验与模型登记 | 小团队选自建型，平台本身变成需要专人维护的系统，模型迭代速度反而下降 |
+| 训练加速与微调 | PyTorch 2.x + compile / DeepSpeed + ZeRO-3 / TRL / Unsloth / LlamaFactory | 单机想提速选 compile；参数量超单卡选 DeepSpeed + ZeRO-3；LLM 做分类微调选 TRL，追求微调速度选 Unsloth 或 LlamaFactory | 参数超单卡却不去切分，训练窗口跨过可用时段，重训只能排到夜间 |
+| 编码与调试助手 | Pieces / Continue | 仅用于在 IDE 内快速跑通一个分类原型 | 无 —— 把它当生产链路依赖才是代价 |
 
-**深度学习框架**：
+这一行里**最容易被误选的是「训练与实验平台」**。它的误选方式是：团队看到成熟平台的功能列表就照着搭，而没有先回答「控制面由谁维护」。后果不是效果差，而是**平台本身成了新的欠债** —— 特征与模型都能迭代，但没人愿意动那套平台，于是新模型要多绕一层才能上线。判据很硬：找一个具体的名字回答「这个人每周在平台上花几小时做维护」，答不上来就先选托管型。
 
-- **PyTorch**（Python / 开源）——学术界主流。
-- **TensorFlow / Keras**（Python / 开源）——工业界传统主流。
-- **JAX**（Python / 开源）——Google 新一代框架。
-- **PaddlePaddle**（国产 / 百度）——国产化深度学习框架。
-- **MindSpore**（国产 / 华为）——华为全场景 AI 框架。
+### 4.4 存量迁移
 
-**专用框架**：
+已有模型、已有特征表、已有线上流量时，落地顺序与从零搭建相反：**先做不改模型的事**。下面四步按「可回退程度」从高到低排。
 
-- **FastText**（Facebook / 开源）——文本分类轻量框架。
-- **TextCNN / TextRNN**——经典文本分类模型实现。
-- **HuggingFace Transformers**（开源）——预训练模型 SOTA 库，含 BERT / RoBERTa / GPT / LLaMA 等。
-- **timm**（开源）——PyTorch Image Models，图像分类模型库。
-- **TabNet / SAINT / FT-Transformer / TabPFN**——表格数据专用深度学习。
+**① 先做立刻见效且可回退的三件事**。三件都在模型之外：给现有模型补一个**不依赖模型的下限基线**（多数类 / 规则 / 上一版模型在同一份测试集上的表现）；补一个**独立校准集**并拟合校准映射；把**阈值按代价矩阵反推**一遍并与现行的 0.5 或历史阈值做对照。三件都不动模型权重，回退方式是改回原阈值、摘掉校准映射，下一次发布即可完成。见效时点通常在同一次发布之后：自动处置比例与人工复核队列长度会同时变得可解释。
 
-**大模型分类工具**：
+**② 历史资产分三类处理，不要一律返工**。
 
-- **LangChain**（开源）——LLM 应用框架，含分类链（Classification Chain）。
-- **LlamaIndex**（开源）——LLM 数据框架，可做分类。
-- **vLLM**（开源）——LLM 高吞吐推理。
-- **SetFit**（HuggingFace / 开源）——少样本文本分类。
-- **OpenAI Function Calling**——结构化输出分类。
-- **Anthropic Tool Use**——结构化输出分类。
-- **DSPy**（Stanford / 2024）——LLM 程序化优化，分类任务可自动 prompt 调优。
+| 资产 | 处理方式 | 判据 |
+| --- | --- | --- |
+| 决定判决的头部特征（通常几十个【经验：随特征总量与模型对单特征的依赖度变】） | 全部返工：补齐「预测时刻是否可得」并做 Point-in-Time 对齐 | 抽 3 个特征【经验：抽样个数随存量特征总量与来源系统数变，来源越多抽得越多】做时间打散重训实验，指标不再大幅下跌 |
+| 其余存量特征 | 只改动的部分：下次被改到时补定义与 Owner，不主动返工 | 本季新增 / 改动的特征里有定义的比例 |
+| 存量标签口径、存量模型、历史离线样本 | 打标挂账：登记「已知偏差 + 计划处理时间」，不做人工重标 | 登记表里每条有偏差描述与责任人 |
 
-**训练平台**：
+**③ 双轨要维持多久、怎么维持**。旧模型（champion）继续服务全量流量，新模型（challenger）走影子流量打分、不参与展示，两侧同时记录。维持期不短于**两个重训周期**【经验：随漂移周期变，漂移以周计则双轨以月计】。期间每月对账三件事【经验：对账频次随双轨维持期与重训周期变，重训以周计则改为每周对账】：同 Golden Set 上的标签一致率、线上指标差值的置信区间是否跨零、口径分歧工单数。缺了第三项的对账，双轨会退化成「两个模型各跑各的」。
 
-- **MLflow**（开源）——ML 实验管理 + 模型注册。
-- **Kubeflow**（开源）——K8s 上的 ML 平台。
-- **TFX**（Google / 开源）——TensorFlow 端到端 ML 平台。
-- **Feast**（开源）——Feature Store。
-- **Alibaba PAI**（阿里云）——阿里机器学习平台。
-- **ByteDance AML**（字节）——字节机器学习平台。
-- **AWS SageMaker**——AWS 托管 ML 平台。
-- **Azure ML**——Azure 托管 ML 平台。
-- **Google Vertex AI**——GCP 托管 ML 平台。
+**④ 什么信号说明可以退出双轨**。三条同时成立才拆旧路径：标签一致率连续两个周期【经验：一个周期的长度随双轨维持期与重训节奏变，重训以周计则按周判读】不再上升；指标差值置信区间不跨零且方向为正；口径分歧工单为零。任一条回退就续期，并把回退原因记进登记表 —— 最常见的续期原因是第一条，因为口径一致率总会在某个水平上停住，此时要判断的是「剩下的不一致样本值不值得再投入一个周期」。
 
-**2024-2025 新工具**：
+### 4.5 模板 / 示例
 
-- **PyTorch 2.x + compile**——训练速度提升 30-50%。
-- **DeepSpeed + ZeRO-3**——千亿参数模型训练。
-- **TRL / HuggingFace TRL**（2023+）——LLM 分类微调（SFT / DPO）。
-- **Unsloth**（2024）——LLM 微速度提升 2-5x。
-- **LlamaFactory**（2024）——LLM 一站式微调框架。
-- **Pieces / Continue**（2024）——开发者助手，含分类能力。
+模板 0 是 Step 1 的产物，先于任何代码；模板 1–6 是模型与决策侧的最小可用集。
 
-### 4.4 代码 / 示例
+**模板 0：代价矩阵**
 
-**示例 1：LR 训练（CTR 预估）**
+| 错误类型 | 业务描述 | 单次代价 | 确认人 | 确认日期 |
+| --- | --- | --- | --- | --- |
+| 漏检（FN） | {例：放过一笔欺诈} | {金额或工时区间} | {角色姓名} | {日期} |
+| 误报（FP） | {例：拦截一笔正常交易} | {金额或工时区间} | {角色姓名} | {日期} |
+
+**怎么用**：只填「单次代价」与「确认人」两列，不写高 / 中 / 低。两列填不出来时先填区间并写清谁签字，再谈阈值 —— 阈值是从这张表推出来的，不是试出来的。
+
+**模板 1：LR 训练与阈值标定（CTR 预估）**
 
 ```python
-import numpy as np
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score, classification_report
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score, average_precision_score
 
-# 假设 X 是用户/物品特征矩阵，y 是点击标签 (0/1)
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
+# 按时间切分，不做随机切分（§4.1 Step 2）：CTR 样本带时间戳，特征与时间相关
+data = df.sort_values("event_time")
+n = len(data)
+cut_tr, cut_va = int(n * 0.7), int(n * 0.85)   # 训练 / 验证 / 测试按时间三段
+tr, va, te = data.iloc[:cut_tr], data.iloc[cut_tr:cut_va], data.iloc[cut_va:]
+X_tr, y_tr = tr[FEATURES], tr["label"]
+X_val, y_val = va[FEATURES], va["label"]
+X_te, y_te = te[FEATURES], te["label"]
 
-# 训练 LR
-model = LogisticRegression(
-    C=1.0,                    # 正则化强度倒数
-    penalty='l2',            # L2 正则
-    solver='lbfgs',          # 优化算法
-    max_iter=1000,
-    class_weight='balanced', # 类别不平衡加权
-    n_jobs=-1
-)
-model.fit(X_train, y_train)
-
-# 预测概率
-y_prob = model.predict_proba(X_test)[:, 1]
-y_pred = model.predict(X_test)
-
-# 评估
-print(f"AUC: {roc_auc_score(y_test, y_prob):.4f}")
-print(classification_report(y_test, y_pred))
+model = LogisticRegression(C=1.0, penalty="l2", solver="lbfgs", max_iter=1000,
+                           class_weight="balanced", n_jobs=-1)
+model.fit(X_tr, y_tr)
+p_val = model.predict_proba(X_val)[:, 1]
+print("val", roc_auc_score(y_val, p_val), average_precision_score(y_val, p_val))
+p = model.predict_proba(X_te)[:, 1]   # 测试集：Step 6 的那一次
+print("test", roc_auc_score(y_te, p), average_precision_score(y_te, p))  # 不平衡场景以 PR-AUC 为主
+# 阈值不取 0.5：按模板 0 的代价曲线在验证集上选点，再在测试集上核对误报量与漏检量
 ```
 
-**示例 2：XGBoost 训练（结构化数据）**
+**怎么用**：切分键必须换成本场景真实的时间列（示例里的 `event_time`），按该列排序后切成训练 / 验证 / 测试三段（示例取 70% / 15% / 15%，比例【经验：随评估所需样本量与漂移速度变，测试集至少要覆盖一个完整的漂移周期】）—— 验证集用于选型、早停与阈值标定，测试集只在 Step 6 用一次；时间相关数据若用随机分层切分，同一时段的样本会同时落进两侧，指标虚高；这正是 Step 2 要求「训练与测试的实体重叠率写出具体数值」要查的东西。若样本按用户 / 商品组织，改按实体切分，两种切分不要混用。`class_weight="balanced"` 只在还没有代价矩阵时当临时起点；一旦模板 0 填好，改成按代价比给权重，并把阈值选择逻辑与结果一并写进评估报告。
+
+**模板 2：XGBoost 训练（结构化数据）**
 
 ```python
 import xgboost as xgb
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
-
-# 计算正负样本比例，用于 scale_pos_weight
-neg, pos = (y_train == 0).sum(), (y_train == 1).sum()
-scale_pos_weight = neg / pos
-
-dtrain = xgb.DMatrix(X_train, label=y_train)
-dtest = xgb.DMatrix(X_test, label=y_test)
-
-params = {
-    'objective': 'binary:logistic',
-    'eval_metric': 'auc',
-    'max_depth': 6,
-    'eta': 0.1,                    # learning_rate
-    'subsample': 0.8,
-    'colsample_bytree': 0.8,
-    'min_child_weight': 1,
-    'gamma': 0,
-    'scale_pos_weight': scale_pos_weight,  # 不平衡处理
-    'tree_method': 'hist',         # 直方图加速
-    'device': 'cuda',              # GPU 训练
-}
-
-bst = xgb.train(
-    params, dtrain,
-    num_boost_round=1000,
-    evals=[(dtest, 'test')],
-    early_stopping_rounds=50,
-    verbose_eval=100
-)
-
-y_prob = bst.predict(dtest)
-print(f"AUC: {roc_auc_score(y_test, y_prob):.4f}")
-
-# 特征重要性
-import matplotlib.pyplot as plt
-xgb.plot_importance(bst, max_num_features=20)
-plt.show()
+neg, pos = (y_tr == 0).sum(), (y_tr == 1).sum()
+dtrain, dval = xgb.DMatrix(X_tr, label=y_tr), xgb.DMatrix(X_val, label=y_val)
+params = {"objective": "binary:logistic", "eval_metric": "auc", "max_depth": 6,
+          "eta": 0.1, "subsample": 0.8, "colsample_bytree": 0.8,
+          "scale_pos_weight": neg / pos, "tree_method": "hist"}
+bst = xgb.train(params, dtrain, num_boost_round=1000,
+                evals=[(dval, "val")], early_stopping_rounds=50)
 ```
 
-**示例 3：BERT 文本分类（Fine-tune）**
+**怎么用**：`X_tr` / `y_tr` / `X_val` / `y_val` 承接模板 1 的三段切分，换成自己的特征列与标签列即可。`scale_pos_weight` 是权重法的入口 —— 改用 Focal Loss 或重采样后这一项要改回 1，否则两个手段叠加会把阈值推偏。`early_stopping_rounds` 用验证集，测试集只在 Step 6 用一次。
+
+**模板 3：BERT 文本分类（Fine-tune）**
 
 ```python
-from transformers import (
-    AutoTokenizer, AutoModelForSequenceClassification,
-    Trainer, TrainingArguments
-)
+from transformers import (AutoTokenizer, AutoModelForSequenceClassification,
+                          Trainer, TrainingArguments)
 from datasets import load_dataset
 
-# 加载数据
-dataset = load_dataset("csv", data_files={"train": "train.csv", "test": "test.csv"})
-
-# 分词
-tokenizer = AutoTokenizer.from_pretrained("bert-base-chinese")
-
-def tokenize(batch):
-    return tokenizer(batch["text"], padding=True, truncation=True, max_length=128)
-
-dataset = dataset.map(tokenize, batched=True)
-
-# 加载模型
+dataset = load_dataset("csv", data_files={"train": "train.csv",
+                                          "validation": "validation.csv"})
+tok = AutoTokenizer.from_pretrained("bert-base-chinese")
+tokenized = dataset.map(lambda b: tok(b["text"], padding=True, truncation=True,
+                                      max_length=128), batched=True)
 model = AutoModelForSequenceClassification.from_pretrained(
-    "bert-base-chinese", num_labels=10
-)
-
-# 训练
-training_args = TrainingArguments(
-    output_dir="./results",
-    num_train_epochs=3,
-    per_device_train_batch_size=32,
-    per_device_eval_batch_size=64,
-    evaluation_strategy="epoch",
-    save_strategy="epoch",
-    learning_rate=2e-5,
-    load_best_model_at_end=True,
-    fp16=True,  # 混合精度
-)
-
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=dataset["train"],
-    eval_dataset=dataset["test"],
-)
-
-trainer.train()
+    "bert-base-chinese", num_labels=len(CLASSES))
+args = TrainingArguments(output_dir="./results", num_train_epochs=3, learning_rate=2e-5,
+                         per_device_train_batch_size=32, evaluation_strategy="epoch",
+                         save_strategy="epoch", load_best_model_at_end=True, fp16=True)
+Trainer(model=model, args=args,
+        train_dataset=tokenized["train"], eval_dataset=tokenized["validation"]).train()
 ```
 
-**示例 4：LLM 零样本分类（OpenAI Function Calling）**
+**怎么用**：`data_files` 里的两个 csv 路径与文本列名（示例用 `text`）要换成本场景的；`num_labels` 与 `CLASSES` 必须与 Step 1 文档里的类别空间逐字一致（含「其他」类是否合法）；`eval_dataset` 给验证集，测试集留到最后；`fp16` 在数值不稳或含 BatchNorm 类层时先关掉再对比。参数名以所处版本的官方文档为准。
+
+**模板 4：LLM 零样本分类（结构化输出）**
 
 ```python
-import openai
 import json
+import openai
 
-client = openai.OpenAI(api_key="sk-...")
+client = openai.OpenAI()          # 密钥从环境变量 OPENAI_API_KEY 读取
+MODEL = "..."                     # 模型名与请求参数以提供商官方文档当前版本为准
+CLASSES = ["科技", "财经", "体育", "娱乐", "教育", "医疗", "其他"]  # 与 Step 1 的类别空间逐字一致
 
-# 定义分类标签（业务约束）
-CLASSES = ["科技", "财经", "体育", "娱乐", "教育", "医疗", "其他"]
-
-tools = [{
-    "type": "function",
-    "function": {
-        "name": "classify_news",
-        "description": "对新闻文本进行分类",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string",
-                    "enum": CLASSES,
-                    "description": "新闻类别"
-                },
-                "confidence": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1,
-                    "description": "分类置信度"
-                },
-                "reason": {
-                    "type": "string",
-                    "description": "分类理由"
-                }
-            },
-            "required": ["category", "confidence", "reason"]
-        }
-    }
-}]
-
-def classify_news(text: str) -> dict:
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "你是一个新闻分类专家，精确判断新闻类别。"},
-            {"role": "user", "content": f"新闻：{text}"}
-        ],
-        tools=tools,
-        tool_choice={"type": "function", "function": {"name": "classify_news"}}
-    )
-
-    args = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
-    return args
-
-# 使用
-result = classify_news("OpenAI 发布 GPT-5，多模态能力大幅提升")
-print(result)
-# {'category': '科技', 'confidence': 0.95, 'reason': '涉及 AI 模型发布'}
+tools = [{"type": "function", "function": {
+    "name": "classify",
+    "description": "对文本分类",
+    "parameters": {"type": "object", "properties": {
+        "category": {"type": "string", "enum": CLASSES},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "reason": {"type": "string"}},
+        "required": ["category", "confidence", "reason"]}}}]
+resp = client.chat.completions.create(
+    model=MODEL, messages=[{"role": "user", "content": f"文本：{text}"}],
+    tools=tools, tool_choice={"type": "function", "function": {"name": "classify"}})
+result = json.loads(resp.choices[0].message.tool_calls[0].function.arguments)
+if result["category"] not in CLASSES:      # 越界：拒答或转人工，不落默认类
+    raise ValueError(result)
 ```
 
-**示例 5：类别不平衡处理（Focal Loss）**
+**怎么用**：`enum` 是这套模板里唯一必须逐字照抄的部分 —— 它决定越界输出会不会在接口层被挡下。模型名与请求参数以提供商官方文档当前版本为准。越界分支在生产里换成「拒绝 + 记一条越界事件」，不要静默落一个默认类。
+
+**模板 5：类别不平衡处理（Focal Loss）**
 
 ```python
 import torch
@@ -363,50 +312,53 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class FocalLoss(nn.Module):
-    """Focal Loss 用于缓解类别不平衡"""
-    def __init__(self, alpha=1, gamma=2, reduction='mean'):
+    def __init__(self, alpha=1.0, gamma=2.0):
         super().__init__()
-        self.alpha = alpha
-        self.gamma = gamma
-        self.reduction = reduction
+        self.alpha, self.gamma = alpha, gamma
 
-    def forward(self, inputs, targets):
-        BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
-        pt = torch.exp(-BCE_loss)
-        focal_loss = self.alpha * (1 - pt) ** self.gamma * BCE_loss
-
-        if self.reduction == 'mean':
-            return focal_loss.mean()
-        elif self.reduction == 'sum':
-            return focal_loss.sum()
-        return focal_loss
-
-# 使用
-criterion = FocalLoss(alpha=0.25, gamma=2.0)
-loss = criterion(logits, labels)
+    def forward(self, logits, targets):
+        bce = F.binary_cross_entropy_with_logits(logits, targets, reduction="none")
+        pt = torch.exp(-bce)
+        return (self.alpha * (1 - pt) ** self.gamma * bce).mean()
 ```
 
-**示例 6：多标签分类（BCE）**
+**怎么用**：`alpha` 与 `gamma` 是与代价矩阵挂钩的参数，不是纯调参项 —— 改动它们的同一次提交里必须附上新的阈值与校准结果，否则无法判断线上变化来自哪一处。
+
+**模板 6：多标签分类（sigmoid + BCE）**
 
 ```python
 import torch
 import torch.nn as nn
 
-class MultiLabelClassifier(nn.Module):
-    """多标签分类：sigmoid + BCE"""
-    def __init__(self, input_dim, num_labels):
-        super().__init__()
-        self.classifier = nn.Linear(input_dim, num_labels)
-
-    def forward(self, x):
-        return self.classifier(x)  # logits，不要 softmax
-
-# 损失函数必须用 BCE（不是 CrossEntropyLoss）
-criterion = nn.BCEWithLogitsLoss()  # 多标签
-# criterion = nn.CrossEntropyLoss()  # 多分类（互斥标签）
-
-logits = model(features)  # [batch, num_labels]
-loss = criterion(logits, labels.float())  # labels 必须是 float
+classifier = nn.Linear(input_dim, num_labels)   # 输出层，产出 logits，不要接 softmax
+logits = classifier(x)                          # [batch, num_labels]，不要 softmax
+loss = nn.BCEWithLogitsLoss()(logits, labels.float())   # 多标签用 BCE
+# 多分类（互斥标签）才用 nn.CrossEntropyLoss()
 ```
 
----
+**怎么用**：`num_labels` 个阈值要逐个标定（每类代价不同），不要共用一个 0.5；上线后监控每类的触发比例，某一类占比突然翻倍【经验：这个倍数随该类基线占比变，基线越低越要先排除小流量波动】通常是阈值或分布问题，而不是模型变好。
+
+### 4.6 自检清单
+
+以下每一条都要动了系统才有答案；凡是坐下来想一想就能回答的（粒度是否合理、模式是否选对、概率是否该校准），见 [§3.7](02-classification-section-3-sec3.md)。
+
+- [ ] 用一批离线样本回放线上服务，逐条比对线上线下打分：差异超出浮点误差的条目占比是多少？
+- [ ] 把训练集按时间重排后重训一次：指标是否大幅下跌？下跌的那一列即疑似穿越特征。
+- [ ] 抽 3 个关键特征【经验：抽样个数随特征侧改动频率与特征来源系统数变，刚做过特征变更时抽得更多】，在同一实体同一时刻分别从训练侧与线上各取一次值，两次一致吗？
+- [ ] 在目标 QPS 下压测，P99 延迟与「按高概率自动处置」的触发比例是否同时可接受？
+- [ ] 从监控上读出当前模型的训练数据截止日期，与线上数据日期相差多少天？
+- [ ] 阈值沿代价曲线移动两档，线上的误报量与漏检量的实际变化是否与离线预测同向？
+- [ ] 在独立校准集上算 Brier / LogLoss，并抽线上 100 条【经验：条数随流量规模变】看「输出 0.9 的样本实际正例率」是多少？
+- [ ] 抽 100 条回流样本人工核对标签一致率【经验：低于可接受线时停止用它们重训，可接受线由标注成本定】。
+- [ ] 小流量实验的新用户 / 新类目曝光量是否单独比对过（整体指标会掩盖冷启动塌陷）？
+- [ ] 多标签任务：抽 100 条【经验：条数随标签数与各类的基线触发率变，标签越多、触发率越低，抽样量要越大】，看只命中一个标签的样本比例是否异常升高（阈值未按类标定的信号）？
+- [ ] 统计上周线上出现的类别分布，与训练时相比有没有训练集里从未出现过的类？
+- [ ] 取最近一条线上错例，能否在 30 分钟内【经验：这个时间预算随值班分工与三项版本登记的完整度变，登记不全时通常做不到】定位到是特征口径、模型版本还是阈值改动引起的？
+
+### 4.7 小结
+
+> 本节小结：整条链路上唯一决定成败的环节，是**「判决所需的人工输入」有没有被显式写下来并登记版本** —— 代价矩阵（决定阈值）、校准集（决定概率能不能当频率用）、特征口径版本（决定线上线下是不是同一件事）。这三样都不在模型里，都不会随模型升级自动更新，也都只在上线后才能验证其是否缺失。
+>
+> 其余环节（特征、模型族、调参）都可以在几个月内重做一遍；这三样缺失时，重做多少遍都不会让系统变可信。
+>
+> 配合 [§ 2 核心原理](02-classification.md)、[§ 3 设计模式与范式](02-classification-section-3-sec3.md) 与 [§ 6 落地实践](02-classification-section-6-sec6.md) 阅读。

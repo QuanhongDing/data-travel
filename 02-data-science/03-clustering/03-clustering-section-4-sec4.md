@@ -1,438 +1,291 @@
-> 本文件是 **03-clustering.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](03-clustering.md)。
+> 本文件是 **03-clustering.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](03-clustering-section-3-sec3.md) 里的模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](03-clustering.md)。
 
 ## 4. 工程实现
 
+§3 回答的是「在什么约束下选哪个模式」；本节回答的是**选完之后怎么把它跑成一条能长期维护的流水线**：每一步手上应该多出什么东西、怎么在做的过程中就知道自己偏了、已经跑出来的一次性结果和已经进报表的旧标签怎么接进来、哪条信号出现时说明该重训而不是改参数。本节不复述 §3 的模式论述，凡涉及「这个模式为什么有效」的地方直接指向 §3.2。
+
+本文件按读者分两栏：**第一次搭聚类能力（从需求到标签上线）的读者按 §4.1 的 8 步走**；**已经有人在用一次性脚本产出分群标签、标签已经进了报表或下游模型的读者，先读 §4.4 再回来看 §4.1**。后者的第一步不是重新选算法，而是给已有标签补上「数据快照 + 参数 + 编码器」这套版本三元组——没有它，任何评估都建立在不可复现的结果上。
+
 ### 4.1 落地步骤
 
-**Step 1：业务问题抽象**
+**Step 1：业务问题抽象（3–5 天【经验：随业务方能给出多少历史分群直觉而变】）**
 
-- 把业务问题转化为"无标签 + 按相似度归组"的聚类问题。
-- 明确输入（特征 / Embedding）、输出（簇标签 + 簇描述）、评估方式（轮廓系数 + 业务人工）。
-- 输出：**问题定义文档**。
+- 把业务问题转成「无标签 + 按相似度归组」：明确输入（特征 / Embedding）、输出（簇标签 + 簇描述）、评估方式（几何指标 + 业务人工）。
+- 同时落字回答 §3.1 的第一条约束——**你假设一个簇长什么样**（围绕质心的球 / 密度连通的一块 / 树上一棵子树 / 图上连通块）——这条假设决定算法族，也决定它会以什么形状失效。
+- **产物**：问题定义文档。
+- **判据**：文档里能否写出「这批簇标签会被哪个下游动作消费、那个动作的负责人是谁」——写不出的，先不做。
+- **为什么必须这一步**：因为无监督评估证明不了正确性（§3.1 第三条约束），唯一的验收标准只能来自下游动作；这一步不写，Step 7 的评估会退化成只看几何指标，而几何指标在错误结构上同样能很好看。
 
-**Step 2：数据准备与特征工程**
+**Step 2：数据准备与特征工程（1–3 周【经验：随特征源数量与是否要新建 Embedding 而变】）**
 
-- 收集原始数据。
-- 数值特征标准化（StandardScaler / MinMaxScaler）。
-- 类别特征编码（One-Hot / Target Encoding / Embedding）。
-- 文本特征 Embedding（Sentence-BERT / OpenAI Embedding）。
-- 图像特征 Embedding（CLIP / ResNet）。
-- 输出：**特征矩阵 / Embedding 矩阵**。
+- 收集原始数据；数值特征标准化（StandardScaler / MinMaxScaler）；类别特征编码（One-Hot / Target Encoding / Embedding）；文本特征 Embedding（Sentence-BERT / OpenAI Embedding）；图像特征 Embedding（CLIP / ResNet）。
+- 把预处理**写进流水线定义而不是临时脚本**——这是本节唯一一条必须在第一天就做对的事。
+- **产物**：特征矩阵 / Embedding 矩阵 + 预处理流水线定义。
+- **判据**：抽 3 条样本手工算一次标准化后的值【经验：抽样条数随特征列数与流水线分支数变，字段越多、分支越多越要往上取】，与流水线输出比对；再用同一份流水线重跑一次，得到逐元素相同的矩阵。
+- **为什么必须这一步 / 为什么在这个位置**：它在降维与选算法之前，因为距离一旦被错误的量纲或度量决定，后面任何算法都只是在错的空间里分组（§3.1 第二条约束）；换序的代价，是把 Step 4 的选型再重做一遍。
 
-**Step 3：降维（可选但强烈推荐）**
+**Step 3：降维（可选但强烈推荐）（2–5 天【经验：随原始维度、样本量与调参轮次而变，维度越高、越靠近可视化与聚类两用，试的次数越多】）**
 
-- 高维数据先降维：PCA（线性） / t-SNE（可视化） / UMAP（保留局部结构）。
-- 输出：**低维表示**（通常 2-50 维）。
+- PCA（线性、可解释）/ t-SNE（可视化）/ UMAP（保留局部结构）；需要任务相关表示时用自编码器。
+- **产物**：低维表示（2–50 维【经验：随样本量、下游用于可视化还是用于聚类而变】）+ 一张二维投影图。
+- **判据**：投影图上是否看得出块状结构或明确的密度分离；一片均匀时不要往下走，先回 Step 2 换相似度或换编码器。
+- **为什么必须这一步 / 为什么在这个位置**：它必须在 Step 4 选算法之前，因为算法族的选择取决于形状（§3.3 决策表），而形状只有在投影上才看得见；跳过它就会变成「先按习惯选 K-Means，再回头解释为什么结果不合直觉」。
 
-**Step 4：选择聚类算法**
+**Step 4：选择聚类算法（2–3 天【经验：随候选算法族的个数与团队要现学的失效点多少而变，只报一个候选时更快，但也就没有了对比】）**
 
-- 用 §3.2 决策表选 1-3 个候选算法。
-- 输出：**算法选型报告**。
+- 用 [§ 3.3 模式选择决策表](03-clustering-section-3-sec3.md) 选 1–3 个候选算法【经验：候选个数随要覆盖的簇定义种数与评估人力变，只报一个候选时更快，但 Step 7 也就没有了对比】，候选之间要覆盖不同的簇定义（质心 / 密度 / 图），否则 Step 7 的对比只是在同一个假设里换实现。
+- **产物**：算法选型报告（候选、各自假设、预期失效形状、各自需要的参数）。
+- **判据**：报告里能否对每个候选写出「它在什么形状的数据上会给出错误答案」；写不出的，说明还没读它的失效点，它会以「指标不低但结构错」的方式留在生产里。
+- **为什么必须这一步 / 为什么在这个位置**：它是 Step 5 的前置——K 选择只对需要预先指定 K 的算法族适用；换了算法族，Step 5 会整个消失，把它排在 Step 5 之后就会白做一轮。
 
-**Step 5：K 选择（K-Means / GMM）**
+**Step 5：K 选择（K-Means / GMM）（2–5 天【经验：随扫描的 K 区间宽度与业务 review 轮次而变，候选分层数越多、需要复核的业务方越多，越久】）**
 
-- 肘部法则：观察 SSE 随 K 变化的拐点。
-- 轮廓系数：找轮廓系数最大的 K。
-- CH Index：找 CH 最大的 K。
-- Gap Statistic：与参考分布对比。
-- 业务可解释性：业务专家 review 不同 K 的聚类结果。
-- 输出：**最优 K + 评估报告**。
+- 肘部法则（SSE 拐点）、轮廓系数（取最大）、CH Index、Gap Statistic 四条一起跑，看它们是否指向同一个区间；再用业务可解释性收口：业务专家 review 不同 K 下的聚类结果，选一个能被运营使用的分层数。
+- **产物**：最优 K + 评估报告（含各 K 下的指标曲线，不是只留最优值）。
+- **判据**：指标给出的 K 与业务能接受的分层数是否一致；不一致时以业务分层数为准，并把理由写进报告——不一致本身就是需要记录的信息。
+- **为什么必须这一步 / 为什么在这个位置**：它必须在 Step 6 全量训练之前。K 定错之后整批标签要重算，而标签一旦进了下游报表就不再是「可随时作废的东西」（§3.2.10 失效点）。
 
-**Step 6：模型训练**
+**Step 6：模型训练（1–3 天【经验：随样本量、所选算法族与稳定性重跑次数而变，重跑轮数按 Step 7 的容忍阈值定，阈值越严轮数越多】）**
 
-- K-Means / GMM / DBSCAN / HDBSCAN / 谱聚类等。
-- 多次随机种子取最优。
-- 输出：**聚类结果**（每个样本的簇标签）。
+- K-Means / GMM / DBSCAN / HDBSCAN / 谱聚类；多次随机种子取最优，并把种子写进作业参数。
+- **产物**：聚类结果（每个样本的簇标签；密度聚类另含噪声标记）。
+- **判据**：换 5 个种子重跑【经验：种子个数随分群要进下游模型还是只进报表变，前者要多试几个】，用 ARI 比较两次划分；同一份数据在不同种子下的划分差异是否落在你设的容忍范围内【经验：容忍阈值随业务对标签稳定性的要求而变，进下游模型的特征要比只进报表的标签更严】。
+- **为什么必须这一步 / 为什么在这个位置**：它必须在 Step 8 之前产出「可复现」的结果——数据 + 参数 + 种子能重跑出同一划分。做不到这一点，Step 8 的监控就分不清「分布漂移」与「随机种子不同」，会持续误报。
 
-**Step 7：评估与可解释性**
+**Step 7：评估与可解释性（3–7 天【经验：随簇数与能抽出多少不参与本次分析的业务同事做盲判而变，簇越多、可抽的人越少，越靠上限】）**
 
-- 内部评估：轮廓系数 / CH / DBI / SSE。
-- 业务评估：业务专家 review 簇内 / 簇间差异。
-- 可解释性：每个簇的中心样本 / LLM 命名 / 业务标签。
-- 稳定性：多次聚类投票，看簇标签是否稳定。
-- 输出：**评估报告 + 簇命名 + 业务标签**。
+- 内部评估：轮廓系数 / CH / DBI / SSE；业务评估：业务专家 review 簇内 / 簇间差异；可解释性：每簇的中心样本、LLM 命名、业务标签；稳定性：多次聚类投票。
+- 命名结果落成**标签字典**（簇 ID → 名称 → 描述 → 下游动作），下游读字典而不是现场调 LLM。
+- **产物**：评估报告 + 簇命名 + 业务标签字典。
+- **判据**：找一位没参与本次分析的业务同事，只给他簇名与三个代表样本【经验：条数随簇内多样性变，簇越杂越要多给几条】，让他判断一条新样本该归哪个簇；判不准则命名不合格，回到重新取名。
+- **为什么必须这一步 / 为什么在这个位置**：它在标签进下游之前，因为下游读的是**标签字典里的签字记录**，而不是这次分析的结果（机制见 §3.2.10；失效形态见 §3.5「聚类无业务可解释性」）。跳过它的症状不会出现在评测报告里，而是出现在运营排期会上——有人问「这个群里的人本周做哪个动作」时答不上来，而这时离下一个重训窗口通常只剩一个周期，改命名的成本要按整批重算计。
 
-**Step 8：应用与监控**
+**Step 8：应用与监控（持续，首版 1–2 周【经验：随要接入的下游动作数量与它们的排期而变，接一个动作与接一条线上特征集不是一个量级】）**
 
-- 聚类标签作为新特征喂给下游模型。
-- 聚类标签作为用户/商品的"分群标签"用于精细化运营。
-- 监控：分布漂移（如用户分布变了，聚类结果要重训）。
-- 输出：**应用报告 + 监控 dashboard**。
+- 聚类标签作为新特征喂给下游模型（必须先过 Step 6 的稳定性判据）；作为用户 / 商品的分群标签用于精细化运营；监控分布漂移（用户分布变了要重训）。
+- 监控里除了漂移，**再加一条「标签被哪些下游动作引用」**——标签的使用量掉到零，是比漂移更早的失效信号。
+- **产物**：应用报告 + 监控 dashboard。
+- **判据**：抽样对账——本批数据的簇分布与上一批相比的偏移量是否在你设的阈值内；超阈值触发重训，而不是去调阈值。
+- **为什么必须这一步 / 为什么在这个位置**：聚类没有标签可算准确率，分布漂移与引用量是仅有的两个早期信号；它是这套流水线从「一次分析」变成「一项能力」的分界。
+
+**最常被跳过的是 Step 7 的业务可解释性环节，而且它跳过后不会报任何错。** 第一个出问题的时点通常不是评测那天，而是在标签进入运营排期之后的一到两个统计周期内【经验：周期数随两件事变——运营动作的排期提前量、以及报表的刷新频率；排期越提前、报表刷新越慢，发现得越晚，慢的场景会拖到第一次口径复盘才暴露】：运营仍在按原有口径投放，分群标签只出现在报表里、不进任何动作清单。这个症状不会触发告警，只能靠 Step 8 里那条「引用量」指标发现——所以它必须在 Step 8 就挂上，不能等发现问题再补。
 
 ### 4.2 关键技术点
 
-**特征工程关键技术**：
+**标准化与量纲**
 
-1. **标准化**：StandardScaler（减均值除方差）、MinMaxScaler（缩放到 [0,1]）、RobustScaler（抗异常值）。
-2. **降维**：
-   - **PCA**（线性，速度快，可解释）——最大方差保留。
-   - **t-SNE**（非线性，可视化好）——保留局部结构，但不可重复。
-   - **UMAP**（非线性，可视化 + 通用）——保留局部 + 全局结构，速度比 t-SNE 快。
-   - **自编码器**（深度学习）——非线性降维，可学习任务相关表示。
-3. **类别特征处理**：Jaccard 距离、汉明距离、Target Encoding、自编码器 Embedding。
-4. **文本特征**：TF-IDF（传统）、Sentence-BERT（语义）、OpenAI Embedding、LLM Embedding。
-5. **图像特征**：ResNet（CNN 特征）、CLIP（多模态）、DINOv2（自监督）。
+- **做法**：StandardScaler / MinMaxScaler / RobustScaler 三选一，并把它作为流水线的一步固化（特征集合变更时重新拟合参数）。
+- **机制**：因为标准化的参数（均值、方差）是在指定窗口上拟合的，写进流水线后推断会复用同一组参数，**「某次重跑忘了标准化」在结构上不再可能发生**；留在临时脚本里时，同一份数据在两次重跑里可能落进两个不同的相似度空间（几何后果见 §3.5「不处理特征量纲」）。实施期真正的差别是**责任归属**：参数固化进流水线后，量纲问题只可能来自上游字段本身的变化，能直接落到该字段 Owner 的工单上；留在脚本里时，它既不属于数据 Owner 的变更记录，也不属于模型的版本记录，谁都不认。
+- **失效条件**：**当入模特征里含量纲极大且随时间漂移的字段（金额、计数）时，均值方差本身会漂移**。症状是同一批用户在不同月份被分到不同群，而轮廓系数几乎不变；观测信号是标准化参数的历史序列出现跳变。
+- **档位**：【经验：重拟合窗口长度按业务周期定，跨周期漂移明显的字段应改用抗异常值的缩放】
 
-**聚类关键技术**：
+**降维**
 
-6. **K 选择**：
-   - 肘部法则（SSE 拐点）。
-   - 轮廓系数（Silhouette Score）。
-   - Calinski-Harabasz Index（CH）。
-   - Davies-Bouldin Index（DBI）。
-   - Gap Statistic。
-   - X-means（自动选择 K 的 K-Means 变种）。
-7. **初始化**：
-   - K-Means++（默认推荐，比随机初始化好）。
-   - 多次随机种子取最优。
-8. **距离度量**：
-   - 欧氏距离：连续型、低维数据。
-   - 余弦相似度：高维稀疏、文本、Embedding。
-   - 曼哈顿距离：稀疏特征、决策树。
-   - 马氏距离：考虑特征相关性的距离。
-   - Jaccard 距离：集合 / 类别特征。
-9. **稳定性评估**：
-   - 多次聚类投票（bootstrap）。
-   - ARI（Adjusted Rand Index）评估两次聚类的一致性。
-   - 簇标签稳定性（同一簇的样本多次聚类是否一致）。
-10. **加速技术**：
-    - Mini-Batch K-Means（大数据）。
-    - Faiss K-Means（GPU 加速）。
-    - Spark MLlib K-Means（分布式）。
-    - Canopy + K-Means 二阶段。
-    - BIRCH（增量聚类，适合流式数据）。
-11. **可视化**：
-    - t-SNE / UMAP 散点图。
-    - dendrogram（层次聚类）。
-    - Clustergram（K-Means 多次结果可视化）。
-    - PCA 散点图。
+- **做法**：PCA（线性）/ t-SNE（可视化）/ UMAP（局部结构）/ 自编码器；降维参数与聚类参数放进同一个版本号。
+- **机制**：因为降维把相似度从原始空间搬到低维空间，密度估计在高维下退化的问题才绕得开（§3.2.6）；把两层参数绑在同一版本里，标签就能按版本重算。**降维只用于看，不用于算，是这条能成立的前提。**
+- **失效条件**：**当「画图用的二维坐标」被直接拿去聚类时，结果不可复现**——t-SNE 一类方法不保持全局距离，同一份数据两次运行得到的坐标不同。症状是簇看起来很美，但换一次运行簇数就变；信号是同一份数据的两次重跑给出不同簇数。
+- **档位**：【经验：用于聚类的低维目标通常取两位数维度，具体随样本量与算法而变】
 
-**LLM 聚类关键技术**：
+**距离度量与类别特征处理**
 
-12. **Embedding 选型**：
-    - Sentence-BERT（开源、本地部署）。
-    - OpenAI text-embedding-3（API、高质量）。
-    - Cohere embed-english-v3（API、多语言）。
-    - BGE / M3E（中文 SOTA）。
-    - CLIP（多模态）。
-13. **聚类后命名**：
-    - 取簇中心最近样本的文本作为代表。
-    - c-TF-IDF 提取主题词（BERTopic）。
-    - LLM 命名（GPT-4 给每个簇起名 + 描述）。
-14. **聚类质量 LLM 评估**：
-    - LLM 判断"两个簇是否应该合并"。
-    - LLM 评估"每个簇的语义一致性"。
+- **做法**：连续低维用欧氏距离；高维稀疏与文本先 L2 归一化再用余弦；稀疏特征用曼哈顿距离；考虑特征相关性的场景用马氏距离；集合与类别特征用 Jaccard 距离或汉明距离。类别特征走 Target Encoding 或自编码器 Embedding，不要 One-Hot 后直接算欧氏。
+- **机制**：因为度量与编码一旦固定，整个流水线里只有这一个地方定义「相似」，排查相似度问题时不必遍历算法；同一份定义被离线与在线共用，也就不存在两边各算一套的可能。
+- **失效条件**：**当类别特征做完 One-Hot 就直接算欧氏距离时，任意两个类别之间的距离完全相同**——症状是聚类结果对类别字段完全不敏感，而数值字段主导全部分组；信号是把类别字段替换为随机值后重跑，划分几乎不变。
+- **档位**：【经验：切换点随类别基数与样本量一起变——基数越大、每类样本越少，越早从 One-Hot 转向 Target Encoding 或 Embedding；经验上从几十级类别值起就该把两种编码放进同一次评估，是否切换仍以本任务上的近邻排序为准】
+
+**文本与图像特征**
+
+- **做法**：文本侧可用 TF-IDF（传统）或 Sentence-BERT / OpenAI Embedding / LLM Embedding（语义）；图像侧用 ResNet（CNN 特征）/ CLIP（多模态）/ DINOv2（自监督）；选哪一种，用同一份标注集上的近邻排序效果来定，而不是按流行度定。
+- **机制**：因为特征提取器的评价指标改成「近邻排序是否与人工判断一致」，编码器选型从一次信念变成一次可复核的实验；这一步做成脚本后，换编码器只需重跑。
+- **失效条件**：**当编码器只在新数据上重算、老向量留在同一索引里时，向量空间被切成两半**（§3.2.6 纪律）。症状是新数据的聚类指标更好看（因为新向量自洽），而老数据被挤向噪声簇；发现方式是按数据入库时间切片看簇分布，断层会非常明显。
+- **档位**：【经验：文本场景下 L2 归一化后余弦与点积排序一致，未归一化时不一致——这是最常被跳过的一步】
+
+**K 选择**
+
+- **做法**：肘部法则（SSE 拐点）、轮廓系数、CH Index、DBI、Gap Statistic、X-means（自动选 K 的 K-Means 变种）一起跑，保留各 K 的完整曲线。
+- **机制**：因为多条判据被放在同一张图上看，**「哪个 K 是稳定区间」与「哪个 K 是单条曲线的偶然峰值」变得可分**；单看轮廓系数最大值时，两者长得一样。
+- **失效条件**：**当数据的真实结构与业务需要的分层粒度不一致时，所有内部指标都会一致地指向真实结构**（如真实结构是连续渐变、业务要三档分层）。症状是每个 K 的指标都平平、没有拐点；此时该做的是承认数据里没有自然分层，改用业务规则切分，而不是硬选一个 K。
+- **档位**：【经验：候选 K 的扫描范围通常覆盖业务能运营的层数区间，层数越多越难落到具体动作】
+
+**初始化**
+
+- **做法**：K-Means++ 作为默认；n_init 设大于 1 并固定随机种子；把种子与 n_init 一起写进作业参数。
+- **机制**：因为多次初始化取最优让结果的质量下限被抬高，**分群在不同批次之间的位置漂移被压住**；这使标签在同一业务周期内可比，代价是训练时间乘以 n_init。
+- **失效条件**：**当簇数多且簇大小悬殊、而 n_init 被为省时间调成 1 时，同一份数据的 SSE 会逐月跳动**，分群内容整体位移；下游看到的是「同一群人这个月叫 A 群、下个月叫 B 群」。信号是 SSE 的历史序列方差明显大于用户分布的漂移幅度。
+- **档位**：【经验：n_init 取值随簇数与样本量变，簇数越多越需要多试；固定种子是可复现的前提】
+
+**稳定性评估**
+
+- **做法**：多次聚类投票（bootstrap）；用 ARI 评估两次划分的一致性；看同一簇的样本多次聚类是否仍在一起。
+- **机制**：因为 ARI 把「两次划分像不像」变成一个可设阈值的数字，稳定性从主观判断变成进下游前的门禁动作；标签作为下游特征之前必须过这道门。
+- **失效条件**：**当样本量极大导致多次重跑成本高昂时，这道门禁会先被静默关掉**。症状是监控里 ARI 这条曲线不再更新（没数据的指标最容易先被下线），而标签照旧进下游。发现方式是定期核对监控面板上的指标覆盖清单。
+- **档位**：【经验：重跑次数与采样比例按可接受的算力成本定，进模型的特征建议比只进报表的标签多跑几轮】
+
+**加速技术**
+
+- **做法**：Mini-Batch K-Means（大数据）、Faiss K-Means（GPU 加速）、Spark MLlib K-Means（分布式）、Canopy + K-Means 二阶段、BIRCH（增量聚类，适合流式数据）。
+- **机制**：因为单轮成本从全量降到小批或摘要，**十亿级样本才有可能按周期重跑**（N ≈ 10⁹，量级与推导同 §3.2.1【推算：N=10⁹、K=10²、T=20 即约 2×10¹² 次距离计算，全量单批不可行】；小批单轮成本随批大小而不是 N 增长）；但代价是**每一轮看到的不再是全量**，小簇被抽到的概率随其规模下降。
+- **失效条件**：**当簇规模相差很大时，Mini-Batch 抽样会稳定地丢掉小簇**。症状是小簇在某些批次整体消失、过几批又出现——这比小簇一直不存在更危险，因为下游会把它当成本次新增的群体。信号是小簇样本数在批次间剧烈波动。
+- **档位**：【经验：批大小与簇规模下限要一起定，保底原则是「最小批不小于最小可运营群体的规模」】
+
+**可视化**
+
+- **做法**：t-SNE / UMAP 散点图、dendrogram（层次聚类）、Clustergram（K-Means 多次结果）、PCA 散点图。
+- **机制**：因为 Clustergram 把 K 从 2 到 N 的归属变化画成一条轨迹，K 的选择从单点指标变成可读的过程——**能看出「某个簇是在 K 增大到几时被劈开的」**，这比单看指标更接近业务的提问方式。
+- **失效条件**：**当 t-SNE 的困惑度参数与样本量不匹配时，图上会生成并不存在的团块**（聚类幻觉）。症状是业务在投影图上「看出」一个群，但在样本明细里找不到对应；判据是拿该群的样本做近邻检索，看它们在原始空间是否真的互相靠近。
+- **档位**：【经验：可视化参数与聚类参数要分开记，投影图不作为聚类输入】
+
+**Embedding 选型**
+
+- **做法**：Sentence-BERT（开源、本地部署）、OpenAI text-embedding-3（API、高质量）、Cohere embed-english-v3（英文）与同系列的 embed-multilingual-v3（多语言）——两者语言覆盖不同，请按 Cohere 官方文档当前模型名核验后选用、BGE / M3E（中文 SOTA）、CLIP（多模态）——按「是否可本地部署、语言、是否需多模态」三条约束筛，而不是按榜单排序。候选编码器支持哪些语种，一律以各家官方文档当前版本为准，不要按模型名里的字样推断。
+- **机制**：因为编码器版本就是向量空间版本，把编码器 ID 写进标签表的主键之后，「标签可比性」从口头约定变成查询条件；换编码器时也能立刻定位哪些标签需要作废。
+- **失效条件**：**当所选编码器优化的相似度与业务要分的那个维度不是一回事时（要按处理时限分流，而模型只学了「在讲什么」），聚类会稳定地按语义主题切分，业务要的那个维度根本没被分出来（机制见 §3.2.6 失效点）**。实施期能看到的信号只有一类：拿这批簇驱动一次真实动作（按簇排一批工单、按簇定一次响应时限）时，被分到同一组的样本在动作结果上表现不出差异，而轮廓系数与簇大小分布全都正常。发现方式是把这次动作的完成率与不聚类时的基线做一次对照；对照不出差别的，重算整库换编码器，不要调 K 或降维参数——这两个参数动不出语义。
+- **档位**：【经验：编码器换代导致整库重算，重算窗口要预留到全量对象数 × 单条编码时间的量级】
+
+**聚类后命名与 LLM 质量评估**
+
+- **做法**：取簇中心最近样本作为代表；用 c-TF-IDF 提取主题词（BERTopic 的做法）；用 LLM 命名（如 GPT-4 给每簇起名与写描述）；用 LLM 判断「两个簇是否应该合并」、评估「每簇的语义一致性」。命名结果落字典并由人工签字。
+- **机制**：因为命名结果被落成字典、下游读字典而不现场调 LLM，命名成本从「每次查询」变成「每次重训」，同时让名称可以被评审、被追溯、被改。
+- **失效条件**：**当簇本身不稳定而名称先被采用时，命名会把一次随机划分固化成组织事实**（§3.2.10 失效点）。症状是同一簇名在不同批次指向的样本群体差异很大；这可以查出——把「簇名 → 样本集合」按批次存历史，看集合的重合度是否随时间下滑。
+- **档位**：【经验：每簇取样送给 LLM 的条数按簇内多样性定，簇越杂需要越多；命名结果必须落库不落聊天记录】
 
 ### 4.3 工具链与平台
 
-**传统聚类库**：
+下表按「类别 — 候选 — 选型判据 — 不选它的代价」组织。候选列保留本主题的常用库名，判据列供你在自家约束下重新推一遍。
 
-- **scikit-learn**（Python / 开源）——K-Means / DBSCAN / 谱聚类 / GMM / 层次聚类标配。
-- **SciPy**（Python / 开源）——层次聚类（scipy.cluster.hierarchy）。
-- **R cluster / factoextra**——R 语言聚类。
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 传统聚类库 | scikit-learn / SciPy / R cluster + factoextra | 样本量在单机可承载范围、要一次跑通全部算法族作对比，选 scikit-learn；只要层次聚类与树状图选 SciPy；分析在 R 生态里选 cluster + factoextra | 用得上但没装，会在选型阶段被迫按「手头有什么」定算法 |
+| 工业级聚类库 | Faiss / Annoy / Spark MLlib / Mahout | 亿级向量与 GPU 加速选 Faiss；只做近似最近邻选 Annoy；已在 Spark 栈内选 Spark MLlib；Hadoop 存量栈才考虑 Mahout | 数据量跨过单机内存上限后才发现要换实现，整条流水线重写 |
+| 专用聚类库 | HDBSCAN / BERTopic / Top2Vec / CLIP + sklearn | 要密度聚类与噪声输出选 HDBSCAN；文本主题发现选 BERTopic 或 Top2Vec；图像 + 文本统一归组用 CLIP + sklearn 自拼 | 用通用库硬凑专用需求（如用 K-Means 做主题发现），结构上就不匹配 |
+| 深度聚类库 | PyTorch + 自研 DEC / DCN / TensorFlow + 自研 / Keras + 自研聚类层 | 判据是「团队能否承担两阶段训练（预训练 + 联合微调）与可复现性治理」，不能就不要自研 | 自研深度聚类在缺可复现治理时，同一份数据换 seed 可能给出不同簇结构（§3.2.5「代价」） |
+| 降维库 | scikit-learn（PCA / t-SNE）/ UMAP / openTSNE | 要线性可解释选 PCA；要保留局部结构且在意速度选 UMAP；只做可视化且样本量中小选 openTSNE | 把可视化降维当聚类输入，簇不可复现（见 §4.2「降维」失效条件） |
+| 可视化工具 | matplotlib + seaborn / plotly + bokeh / clustergram / tensorboard projector | 出静态报告用 matplotlib + seaborn；要交互下钻用 plotly；要解释 K 的选择用 clustergram；要看 embedding 分布用 tensorboard projector | 缺 Clustergram 一类工具时，K 的选择只剩单点指标可讲 |
+| LLM / Embedding 工具 | Sentence Transformers / OpenAI Embeddings API / Cohere Embed / BGE / M3E / Piccolo / Instructor / E5 / BGE-M3 / Voyage AI / Nomic Atlas / DeepSeek-Embed | 要本地部署选 Sentence Transformers 与开源模型（BGE / M3E / E5 / BGE-M3 / Piccolo）；要托管质量选 OpenAI / Cohere / Voyage AI；要指令引导选 Instructor；要 embedding 可视化平台选 Nomic Atlas | 编码器与向量库版本不绑定，换模型后新旧向量混用（§4.2「文本与图像特征」失效条件） |
 
-**工业级聚类库**：
+表里**最容易被误选的是「专用聚类库」里的 BERTopic**：它把编码、降维、聚类、主题词打包成一个对象，读起来像一个算法，实际是四个各有失效条件的组件的组合，而且它的默认降维会把向量压到很低的维度（通常是个位数维，请以 BERTopic 官方文档当前默认参数为准，可按「BERTopic UMAP n_components 默认值」自行核验）。误选的后果不是跑不动，而是**结果不对时无法定位是哪一环**——降维参数一变，密度聚类的可用簇数随之改变，而使用者以为只换了一个主题模型。判据很简单：如果你的团队不能分别替换它的四层，就不要用它，改用四个组件自己拼。
 
-- **Faiss**（Meta / 开源）——K-Means 的 GPU 加速实现，亿级数据可用。
-- **Annoy**（Spotify / 开源）——近似最近邻 + K-Means。
-- **Spark MLlib**（开源）——分布式 K-Means / GMM / Bisecting K-Means。
-- **Mahout**（Apache / 开源）——Hadoop 上的聚类。
+### 4.4 存量迁移
 
-**专用聚类库**：
+聚类场景的存量通常有四类：已经跑出来的一次性聚类脚本、已经进报表的旧分群标签、已经喂给下游模型的簇标签特征、以及没有版本号的簇名列表。迁移目标不是重跑一遍，而是**让已有结果变成可复现、可追责、可下线的东西**。
 
-- **HDBSCAN**（Python / 开源）——密度聚类工业标准。
-- **BERTopic**（Python / 开源）——文本主题聚类。
-- **Top2Vec**（Python / 开源）——文本主题聚类。
-- **CLIP + sklearn**——多模态聚类。
+**① 立刻见效且可回退的第一步：给现有标签补版本三元组，不动任何标签。** 建一张旁挂登记表，为每个在用标签记录「数据快照 ID + 参数（含距离度量、簇数、随机种子、n_init）+ 编码器 ID」，并指定 Owner。这一步只增表、不改任何已有结果，可随时回退；它立刻见效的地方是——下一次有人问「这个群是怎么来的」，能答。
+判据：抽 3 个在用标签【经验：条数随在用标签的数量与下游依赖度变，已进下游模型的标签优先抽】，按登记表重跑一次，用 ARI 比较能否复现同一划分【经验：复现阈值按下游对标签稳定性的要求设，只进报表的可放宽、进模型特征的必须更严】；复现不了但能在登记表里定位到缺哪一项，也算这一步成功。
 
-**深度聚类库**：
+**② 历史资产按三类处理，不要一刀切重跑。** 仍在运营的标签：打标挂账（Owner + 版本三元组 + 下次重训时间），保持原状；已进下游模型的簇标签特征：单独做一次稳定性评估，不稳定且已进模型的，要么冻结重训口径、要么从特征集里摘除；已无人使用的标签：走下线流程，并从报表与监控里一并摘除。
+判据：抽 5 个在报表面板上的分群图【经验：个数随报表面板数与分群标签总数变】，看是否都有 Owner 与最近一次重训时间；没有的归入挂账或下线，不要留在灰色地带。
 
-- **PyTorch** + 自研 DEC / DCN。
-- **TensorFlow** + 自研深度聚类。
-- **Keras** + 自研聚类层。
+**③ 双轨期要维持多久，取决于下游动作的切换速度，不是算法的成熟度。** 新旧标签并存【经验：以业务的统计周期为单位，通常要跨过一个完整的考核周期，让运营在旧口径下先看到一次新旧对比】。双轨期的主要成本是报表上同一群人会有两个名字，以及指标口径的并行维护；这段时间里必须明确「对外口径仍以旧标签为准」，否则一次数据修正会让两边同时被质疑。
 
-**降维库**：
+**④ 退出双轨的信号是引用关系，不是意愿。** 三条同时成立才退出：下游动作清单里只出现新标签版本；旧标签在报表与看板中的引用次数归零；标签字典里已无「无 Owner」条目。只满足前两条就退出，通常会在下一次考核口径调整时把旧标签重新翻出来。
 
-- **scikit-learn**（PCA / t-SNE）。
-- **UMAP**（开源）——非线性降维首选。
-- **openTSNE**（开源）——t-SNE 的快速实现。
+### 4.5 模板 / 示例
 
-**可视化工具**：
+以下 7 个片段覆盖本节最常用的输出物，只保留结构与必须立档的参数。
 
-- **matplotlib / seaborn**——静态可视化。
-- **plotly / bokeh**——交互可视化。
-- **clustergram**——聚类过程可视化。
-- **tensorboard projector**——embedding + 聚类可视化。
-
-**LLM 工具（2024-2025 新工具）**：
-
-- **Sentence Transformers**（HuggingFace / 开源）——文本 Embedding 首选。
-- **OpenAI Embeddings API**——商业 Embedding API。
-- **Cohere Embed**——商业 Embedding。
-- **BGE / M3E / Piccolo**（开源中文 Embedding）。
-- **Instructor**（2023）——指令引导的 Embedding。
-- **E5 / BGE-M3**（2024）——多语言 / 多功能 Embedding。
-- **Voyage AI**（2024）——高质量 Embedding API。
-- **Nomic Atlas**（2024）——Embedding 可视化 + 聚类平台。
-- **DeepSeek-Embed**（2024）——国产高质量 Embedding。
-
-### 4.4 代码 / 示例
-
-**示例 1：K-Means 聚类（用户分群）**
+**示例 1：K-Means 用户分群**
 
 ```python
-import numpy as np
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import silhouette_score, calinski_harabasz_score
-import matplotlib.pyplot as plt
-
-# 假设 X 是用户行为特征 (n_samples, n_features)
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
-
-# 选择最优 K（轮廓系数）
-silhouette_scores = []
-K_range = range(2, 15)
-for K in K_range:
-    kmeans = KMeans(n_clusters=K, n_init=10, random_state=42)
-    labels = kmeans.fit_predict(X_scaled)
-    score = silhouette_score(X_scaled, labels)
-    silhouette_scores.append(score)
-
-optimal_K = K_range[np.argmax(silhouette_scores)]
-print(f"最优 K = {optimal_K}, 轮廓系数 = {max(silhouette_scores):.3f}")
-
-# 用最优 K 训练
-kmeans = KMeans(n_clusters=optimal_K, n_init=10, random_state=42)
-labels = kmeans.fit_predict(X_scaled)
-
-# 评估
-print(f"CH Index = {calinski_harabasz_score(X_scaled, labels):.1f}")
-
-# 可视化（PCA 降到 2D）
-from sklearn.decomposition import PCA
-pca = PCA(n_components=2)
-X_pca = pca.fit_transform(X_scaled)
-plt.scatter(X_pca[:, 0], X_pca[:, 1], c=labels, cmap='viridis', s=5)
-plt.title(f'K-Means Clustering (K={optimal_K})')
-plt.show()
+X_scaled = StandardScaler().fit_transform(X)      # 必须进流水线，见 §4.2
+scores = {}
+for K in range(2, 15):                            # 扫描范围按可运营层数定
+    labels = KMeans(n_clusters=K, n_init=10, random_state=42).fit_predict(X_scaled)
+    scores[K] = silhouette_score(X_scaled, labels)
+# 保留全部 K 的曲线，不只留最优值
 ```
 
-**示例 2：HDBSCAN（异常检测 + 任意形状）**
+**怎么用**：填扫描范围与 n_init 两格；`random_state` 不要改，它是要写进版本三元组的参数。循环里同时记 CH 与 DBI，四条曲线指向同一区间时才取那个 K。
+
+**示例 2：HDBSCAN 异常检测（任意形状）**
 
 ```python
-import hdbscan
-import numpy as np
-
-# 假设 X 是已标准化的特征
 clusterer = hdbscan.HDBSCAN(
-    min_cluster_size=50,         # 最小簇大小
-    min_samples=10,               # 核心点最少邻居
-    metric='euclidean',
-    cluster_selection_method='eabm',  # Excess of Mass / Leaf
-    prediction_data=True
+    min_cluster_size=50,          # 业务含义：一个可运营群体至少多大
+    min_samples=10,               # 控制噪声比例
+    cluster_selection_method="eom",
+    prediction_data=True,         # 保留给新样本分配的能力
 )
 labels = clusterer.fit_predict(X)
-
-# 异常分数（值越大越异常）
-outlier_scores = clusterer.outlier_scores_
-
-# 统计
-n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
-n_noise = (labels == -1).sum()
-print(f"簇数 = {n_clusters}, 噪声点 = {n_noise} ({n_noise/len(X)*100:.1f}%)")
-
-# 找出最异常的 1% 样本
-threshold = np.percentile(outlier_scores, 99)
-anomaly_idx = np.where(outlier_scores >= threshold)[0]
-print(f"异常样本数 = {len(anomaly_idx)}")
+outlier_scores = clusterer.outlier_scores_     # 噪声点的异常分
 ```
 
-**示例 3：Sentence-BERT + K-Means（文本聚类）**
+**怎么用**：`min_cluster_size` 要按业务含义填而不是按默认值；`prediction_data=True` 必须开，否则新样本无法归入已有簇。噪声点的去向要单独定义，不能静默并入最近的簇。
+
+**示例 3：Sentence-BERT + K-Means 文本聚类**
 
 ```python
-from sentence_transformers import SentenceTransformer
-from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
-import numpy as np
-
-# 加载模型
-model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-
-# 计算 Embedding
-texts = ["文档1...", "文档2...", ...]
-embeddings = model.encode(texts, batch_size=64, show_progress_bar=True)
-
-# K-Means 聚类
-K = 20  # 可用轮廓系数调优
-kmeans = KMeans(n_clusters=K, n_init=10, random_state=42)
-labels = kmeans.fit_predict(embeddings)
-
-# 评估
-score = silhouette_score(embeddings, labels, metric='cosine')
-print(f"轮廓系数 = {score:.3f}")
-
-# 簇中心最近样本作为簇代表
-for k in range(K):
-    cluster_idx = np.where(labels == k)[0]
-    center = kmeans.cluster_centers_[k]
-    distances = np.linalg.norm(embeddings[cluster_idx] - center, axis=1)
-    representative_idx = cluster_idx[np.argmin(distances)]
-    print(f"簇 {k}（{len(cluster_idx)} 个文档）: {texts[representative_idx][:100]}")
+model = SentenceTransformer("<编码器 ID>")      # 编码器 ID 进版本三元组
+embeddings = model.encode(texts, batch_size=64)
+embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)  # L2
+labels = KMeans(n_clusters=K, n_init=10, random_state=42).fit_predict(embeddings)
+score = silhouette_score(embeddings, labels, metric="cosine")
 ```
+
+**怎么用**：填编码器 ID 与 K。L2 归一化那一步不要删——未归一化时欧氏与余弦的排序不一致，换距离度量会换一批分组。编码器换代必须整库重算，不能只重算增量。
 
 **示例 4：BERTopic 主题聚类**
 
 ```python
-from bertopic import BERTopic
-from sentence_transformers import SentenceTransformer
-from umap import UMAP
-from hdbscan import HDBSCAN
-
-# 自定义 Embedding 模型
-embedding_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-
-# UMAP 降维
-umap_model = UMAP(n_neighbors=15, n_components=5, min_dist=0.0, metric='cosine')
-
-# HDBSCAN 聚类
-hdbscan_model = HDBSCAN(min_cluster_size=10, metric='euclidean')
-
-# 创建 BERTopic
 topic_model = BERTopic(
     embedding_model=embedding_model,
-    umap_model=umap_model,
-    hdbscan_model=hdbscan_model,
-    top_n_words=10,
-    nr_topics="auto",  # 自动合并相似主题
-    verbose=True
+    umap_model=UMAP(n_neighbors=15, n_components=5, metric="cosine"),
+    hdbscan_model=HDBSCAN(min_cluster_size=10),
+    nr_topics="auto",
 )
-
-# 训练
 topics, probs = topic_model.fit_transform(texts)
-
-# 查看主题
-print(topic_model.get_topic_info().head(20))
-
-# 可视化
-topic_model.visualize_topics()
-topic_model.visualize_hierarchy()
 ```
 
-**示例 5：LLM 命名聚类（GPT-4 命名）**
+**怎么用**：三个子模型的参数都要单独登记（见 §4.3 对 BERTopic 的说明）；`n_components` 不要照抄 5，它决定密度聚类能分出多少簇。`nr_topics="auto"` 合并后的主题数要人工收敛到可运营的粒度。
+
+**示例 5：LLM 命名聚类**
 
 ```python
-import openai
-import json
-
-def name_cluster_with_llm(samples: list[str], cluster_id: int) -> str:
-    """用 LLM 给聚类命名"""
-    client = openai.OpenAI(api_key="sk-...")
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[{
-            "role": "user",
-            "content": f"""以下是聚类 {cluster_id} 的代表样本（来自同一类）：
-{chr(10).join(samples[:10])}
-
-请用 5-10 个字概括这群样本的共同主题，给出 3 个候选名称（JSON 数组）。
-只输出 JSON，不要其他内容。"""
-        }],
-        temperature=0.3
-    )
-    return response.choices[0].message.content
-
-# 对每个簇命名
-for cluster_id in range(K):
-    cluster_samples = [texts[i] for i in range(len(texts)) if labels[i] == cluster_id]
-    name = name_cluster_with_llm(cluster_samples, cluster_id)
-    print(f"簇 {cluster_id}: {name}")
+prompt = (
+    "以下是聚类 {cid} 的代表样本：\n{samples}\n"
+    "请用 5-10 个字概括共同主题，给出 3 个候选名称（JSON 数组）。"
+)
+# 输出落标签字典表：cluster_id / name / description / 下游动作 / 签字人
 ```
+
+**怎么用**：填样本条数与输出表名。命名结果必须落库并入字典，不要留在聊天记录里；簇数变化时字典要同步更新，否则会出现同一名字指向不同群。
 
 **示例 6：Canopy + K-Means 二阶段聚类**
 
 ```python
-from sklearn.cluster import KMeans
-import numpy as np
-
-def canopy_clustering(X, t1, t2):
-    """Canopy 粗聚类"""
-    n = X.shape[0]
-    canopies = []
-    removed = np.zeros(n, dtype=bool)
-
-    for i in range(n):
-        if removed[i]:
-            continue
-        canopy = [i]
-        for j in range(n):
-            if removed[j] or j == i:
-                continue
-            dist = np.linalg.norm(X[i] - X[j])
-            if dist < t1:
-                canopy.append(j)
-                removed[j] = True  # 进入 canopy
-            elif dist < t2:
-                canopy.append(j)  # 进入但不从候选中移除
-        removed[i] = True
-        canopies.append(canopy)
-
-    return canopies
-
-# 阶段1：Canopy 粗聚类（选 K）
-canopies = canopy_clustering(X, t1=1.0, t2=2.0)
+canopies = canopy_clustering(X, t1=1.0, t2=2.0)   # 粗阶段：给出候选 K 与初始中心
 K = len(canopies)
-print(f"Canopy 数（建议 K）= {K}")
-
-# 阶段2：K-Means 细聚类
-kmeans = KMeans(n_clusters=K, n_init=10, random_state=42)
-labels = kmeans.fit_predict(X)
+labels = KMeans(n_clusters=K, n_init=10, random_state=42).fit_predict(X)
+# 关键：K 不能就此定稿，必须回到示例 1 的指标扫描复核
 ```
+
+**怎么用**：填 `t1` / `t2` 两个半径阈值；它们是两个距离量级，不是聚类参数。粗阶段只给候选 K——直接采用它会在业务需要细粒度小簇时先把小簇合并掉（§3.2.7 失效点）。
 
 **示例 7：联邦聚类（隐私保护）**
 
-```python
-# 伪代码：联邦 K-Means（每个数据源本地训练，共享质心）
-class FederatedKMeans:
-    def __init__(self, n_clusters=10, n_rounds=10):
-        self.n_clusters = n_clusters
-        self.n_rounds = n_rounds
-        self.global_centroids = None
+| 参与方 | 数据快照 ID | 对齐字段（字段名 + 口径版本） | 本地簇摘要形式 | 轮次上限 | 隐私预算（ε） | Owner |
+| --- | --- | --- | --- | --- | --- | --- |
+| {参与方 A} | {snapshot_id} | {字段名@口径版本} | {样本数 + 线性和 + 平方和 + 质心} | {≤ N} | {ε ≤ x} | {姓名} |
+| {参与方 B} | {snapshot_id} | {字段名@口径版本} | {样本数 + 线性和 + 平方和 + 质心} | {≤ N} | {ε ≤ x} | {姓名} |
 
-    def fit(self, data_sources):
-        # 初始化：用第一个数据源初始化质心
-        kmeans = KMeans(n_clusters=self.n_clusters, n_init=1)
-        kmeans.fit(data_sources[0])
-        self.global_centroids = kmeans.cluster_centers_
+**怎么用**：填参与方行，每方一行；上传、聚合、下发的轮次结构见 §3.2.8，这里只登记落地时必须留档的东西。「对齐字段」一栏写「字段名 + 口径版本」而不是字段名——只写字段名会让「同名但口径不同」这个主失效点在联调里查不出来，聚合出的全局质心落在任何一方都不描述的位置，而各方的本地指标全都正常。「本地簇摘要形式」一栏要与你实际上传的字段逐项对齐：多上传一项（比如再带一份样本统计量）就多一份反演面。「轮次上限」与「隐私预算」必须同时填，两者都随轮次消耗；只定一个，另一个会在联调中为了收敛而被悄悄突破。这张表本身不进任何运行链路，它是联调前的验收物——填不满的行就是还没谈拢的参与方。
 
-        # 迭代
-        for round in range(self.n_rounds):
-            local_centroids = []
-            local_weights = []
-            for X in data_sources:
-                # 用全局质心初始化本地 K-Means
-                kmeans = KMeans(
-                    n_clusters=self.n_clusters,
-                    init=self.global_centroids,
-                    n_init=1
-                )
-                kmeans.fit(X)
-                local_centroids.append(kmeans.cluster_centers_)
-                local_weights.append(len(X))
+### 4.6 自检清单
 
-            # 加权平均全局质心（FedAvg 思想）
-            weights = np.array(local_weights) / sum(local_weights)
-            self.global_centroids = np.average(
-                local_centroids, axis=0, weights=weights
-            )
+以下 10 条都只能通过动系统才能回答；不跑系统、坐下来想就能答的检查项归 [§ 3.7](03-clustering-section-3-sec3.md)。
 
-        return self
+- [ ] 按登记表的版本三元组重跑一次，划分与线上是否落在你设的复现阈值内？
+- [ ] 按数据入库时间切片看簇分布，换编码器前后是否出现断层（新旧向量混用的信号）？
+- [ ] 同一份数据换 5 个种子【经验：种子个数随分群要进下游模型还是只进报表变】重跑，簇归属的 ARI 是否稳定在阈值之上？
+- [ ] 抽 3 条样本【经验：抽样条数随特征列数与流水线分支数变】手算标准化后的值，与流水线输出是否逐元素一致？
+- [ ] 抽样对账本批与上批的簇分布偏移量，超阈值时是否真的触发了重训而不是改了阈值？
+- [ ] 小簇的样本数在最近几个批次间的波动幅度是否超过阈值（Mini-Batch 抽样丢失的信号）？
+- [ ] 抽 5 个簇名【经验：个数随簇数与名称在下游的被引用面变】，回查它在最近两批里指向的样本集合，重合度是否仍然可用？
+- [ ] 抽样检查噪声样本（标记为 -1）的去向记录是否落地，而不是静默并入最近簇？
+- [ ] 下游动作清单里引用了哪些标签版本？是否仍有动作在引用旧版本？
+- [ ] 抽 3 个在报表上的分群图【经验：个数随报表面板数与分群标签总数变】，是否都能查到 Owner 与最近一次重训时间？
 
-    def predict(self, X):
-        # 用全局质心分配标签
-        distances = np.linalg.norm(X[:, None] - self.global_centroids, axis=2)
-        return np.argmin(distances, axis=1)
-```
+### 4.7 小结
 
----
+> 本节小结：聚类落地里，唯一决定成败的环节是 **Step 2 把相似度定义（度量 + 量纲 + 编码）固化进流水线**——它是本节唯一一处「错了就再也补救不回来」的地方：距离一旦由错误的量纲或度量决定，后面选算法、选 K、做命名都在错的空间里进行，而且不会报错、指标甚至可能很好看。它比其余环节更值得投入，因为其余每一步出问题都能被后续环节发现（K 错了指标会变形、簇不稳定 ARI 会报警、标签没人用引用量会掉），唯独相似度错了之后，所有下游信号都会一致地告诉你「一切正常」。
+>
+> 配合 [§ 2 核心原理](03-clustering.md)、[§ 3 设计模式与范式](03-clustering-section-3-sec3.md) 与 [§ 6 落地实践](03-clustering-section-6-sec6.md) 阅读。

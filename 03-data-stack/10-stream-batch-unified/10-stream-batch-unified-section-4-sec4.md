@@ -1,284 +1,283 @@
-> 本文件是 **10-stream-batch-unified.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](10-stream-batch-unified.md)。
+> 本文件是 **10-stream-batch-unified.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3 设计模式与范式](10-stream-batch-unified-section-3-sec3.md) 里已经选定的那个组合装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](10-stream-batch-unified.md)。
 
 ## 4. 工程实现
 
+§3 的产物是一张「约束 → 模式」的表，本节的产物是一串有先后关系的动作。两者的关系是：**选了哪个组合决定要装什么，而装配顺序决定哪一步的返工能避免、哪一步的返工无法避免**——表格式选错可以重写数据，保留策略设错只能承认历史不可重算。
+
+本文件面向两类读者：**4.1、4.3、4.5 面向从零搭建的团队**（手上还没有湖表，或只有一个不承担生产的原型）；**4.4 专门写给存量改造的团队**（已有一套 Lambda 或 Kappa 链路在跑、不能停机重建）；**4.2 与 4.6 两类共用**——技术点的机制与失效条件不随起点变化，自检清单也一样。两类读者的区别只在 4.1 第 1 步的输入与 4.4 的入口。
+
 ### 4.1 落地步骤
 
-**Step 1：选型引擎 + 表格式（1-2 周）**
+**Step 1：选型引擎 + 表格式（【经验】1–2 周；随候选数量与是否要做 PoC 变化）**
 
-- 引擎：Flink / Spark / Beam。
-- 表格式：Paimon / Iceberg / Hudi / Delta。
+先把 §3.3 决策表从「关键判据」一列倒着读：量出自己表的更新比例（追加还是 upsert）、能接受的可见延迟、最长重算窗口，再据此在 Flink / Spark / Beam 中选引擎、在 Paimon / Iceberg / Hudi / Delta 中选表格式。结论要写成一张「约束 → 选择」的两列表，而不是只写一个名字。
 
-**Step 2：搭建存储（2-4 周）**
+- **产物**：约束对照表 + 一份跑在**你们自己数据形态**上的基准脚本（不用公开基准集），记录每种候选「开 changelog 后的写入吞吐」与「查询 P95」两个数字。
+- **判据**：在**本团队更新频率最高的那张表**上把候选表格式各跑一遍并填满对照表；有任何一个格子是空的，就说明这一步没做完。
+- **为什么必须这一步**：表格式一旦落地，写放大与读放大的取舍就锁进了存储结构，后面加多少查询引擎算力都改不回来（§3.2.1 与 §3.2.2 的失效点都由存储结构决定）。换引擎的代价是一次作业重写，换表格式的代价是一次全量数据重写。
 
-- 对象存储 + Catalog。
-- Paimon / Iceberg / Hudi / Delta。
+**Step 2：搭建存储（【经验】2–4 周；随数据源数量与 Catalog 形态变化）**
 
-**Step 3：流批一体化开发（4-8 周）**
+对象存储 + Catalog 是这一步的全部内容：定目录与分区布局、建 Catalog 并确认写入引擎与至少一个查询引擎能挂上同一个 Catalog、把快照保留策略写进表属性、为 compaction/文件治理排班。
 
-- Flink + Paimon 流批一体。
-- 流批共用同一份代码。
+- **产物**：一张能被两个不同引擎读到的空表 + 一份写明保留天数的表属性配置 + 一条文件治理的排班记录（谁、多久跑一次）。
+- **判据**：用第二个引擎 `SELECT count(*)` 读到同一张表；再把快照保留期改短一天，确认过期快照真的消失——能消失才说明保留策略是生效的，而不是配置里的装饰。
+- **为什么必须这一步**：保留期决定「最长重算窗口」，这是能力而不是成本项（§3.5 的「统一了引擎，但没统一保留策略」）；它必须在建表时定，因为历史一旦过期就再也算不回来。这一步排在开发之前，是因为后面所有对账都建立在「两侧读的是同一份表」上。
 
-**Step 4：实时入湖 + 批量查询（4-8 周）**
+**Step 3：流批一体化开发（【经验】4–8 周；随作业数量与状态规模变化）**
 
-- Flink CDC 入湖。
-- Trino / StarRocks 批量查询。
+把一条已有批逻辑改写成对同一份定义可流可批执行：显式配置 `changelog-producer`、为每个有状态算子设状态 TTL、并把「流侧结果」与「批侧重算结果」的比对做成自动任务。
+
+- **产物**：一份 SQL / 代码定义 + 一条自动对账任务 + 每个状态算子的 TTL 取值与理由。
+- **判据**：同一份定义分别以流模式与批模式跑同一段数据，逐行比对；差异不为 0 就不进入下一步，并且要求把差异定位到具体主键，而不是给一个总差异数。
+- **为什么必须这一步**：这条对账任务同时是后面所有工作的前提——口径变更、模型版本、存量迁移都靠它发现漂移。没有它，漂移只能等业务对不上数才暴露（§3.5「忽视 Changelog」的典型暴露方式正是一次对账）。
+
+**Step 4：实时入湖 + 批量查询（【经验】4–8 周；随源表大小与初始快照时长变化）**
+
+Flink CDC 入湖、Trino / StarRocks 读湖表。这一步的重心不是「把数据搬进来」，而是把源库压力与下游 DDL 同步流程先定下来。
+
+- **产物**：入湖作业 + 一份「源表 DDL 变更 → 湖表 → 查询引擎」的同步流程 + 查询侧读 P95 基线。
+- **判据**：源库侧的两条曲线（初始快照阶段的读 QPS、增量阶段的日志读取带宽）是否有实测数值，并写成了入湖并行度的配置依据；再确认大表初始快照排进了低峰窗口，且作业留了可随时停的开关、并演练过一次。
+- **为什么必须这一步**：大表初始快照直接压生产库是这条链路最常见的第一次事故（§3.2.5）。它排在建表之后、治理之前，因为治理要挂在一条已经跑通的链路上才有意义。
 
 **Step 5：治理 + 监控（持续）**
 
-- 元数据 + 血缘。
-- 监控告警。
+元数据与血缘在这里补齐，监控盯三件事：compaction 滞后、小文件数、端到端可见延迟。
 
-**Step 6：AI 集成（按需）**
+- **产物**：登记完整的表（业务含义 / 分层域 / Owner / SLA / 密级）+ 由作业定义自动解析出的血缘 + 三条带阈值的监控曲线。
+- **判据**：抽 3 张新表，看 Owner 是否具体到人（不是团队名）、保留天数是否写在表属性里、compaction 滞后是否有告警阈值并指向一个人名。
+- **为什么必须这一步**：没有人负责 compaction 的表格式会退化成比朴素的批量表更差（§3.1 的最后一行约束）。治理排在开发之后，不是因为它次要，而是因为在没有真实链路时登记的元数据很快就会过期。
 
-- 流式 LLM / Agent。
+**Step 6：AI 集成（按需；【经验】以周计，取决于旁路与版本落表是否到位）**
+
+流式 LLM / Agent 的接入要先确认三件事：目标引擎是否把模型调用纳入同步点语义（参与式提交 / 幂等重试）、模型版本是否与输出一起落表、推理失败是否走旁路而不阻塞主链路。
+
+- **产物**：一份「模型版本 ↔ 输出」可对账的特征表 + 旁路（dead letter）通道 + 一次失败演练的记录。
+- **判据**：把 §3.2.7 的那次验证做成一次可重复的演练：在预发环境注入一次模型端点超时与一次重复投递，核对三件事——主链路的处理延迟曲线不出现断点、旁路通道落下的失败记录条数与注入次数一致、对账任务能把被重复的那几个主键点出来；再定期抽样比对「模型版本号 ↔ 输出」两列，旧结果能被解释才算通过。
+- **为什么必须这一步**：外部模型不是确定性算子，历史不可重现是引入 AI 算子后**新增**的失效面（§3.2.7）。它排在最后，因为它建立在 Step 3 的对账机制之上——没有对账，重放一致性无从验证。
+
+这六步里最常被跳过的是 **Step 2 的保留策略**与 **Step 3 的对账任务**，两者都属于「不做也不报错」的类型。跳过的第一个症状不会出现在上线当天，而会出现在业务第一次提出「口径改了，把过去几个月的数重算一遍」的那一刻：团队这时才发现快照保留期只有几天、队列早已清空——「可重算」这个从未被真正拥有的能力，以一次业务需求的形式暴露。
 
 ### 4.2 关键技术点
 
-**1. Flink + Paimon 流批一体**
+**Flink + Paimon 流批一体**
 
-```java
-// 流批一体配置
-tEnv.getConfig().set("table.exec.source.idle-timeout", "10s");
+- **做法**：流模式与批模式共用同一份 SQL 定义；`table.exec.source.idle-timeout` 设为小于业务可接受延迟下限的值；批模式用独立的 `EnvironmentSettings.inBatchMode()` 跑历史回填。
+- **机制**：因为流与批共用同一份表定义与同一个 Catalog，schema 与口径只有一份实现，漂移被从结构上消除；因为空闲分区会让水位线停住、下游窗口永不触发，所以 `idle-timeout` 不是可选优化，而是流模式能出结果的前提。
+- **失效条件**：**当分区间数据到达速率差异大时（跨时区业务、按小时分区）**，`idle-timeout` 设得过小会把「慢但仍有数据」的分区判成空闲，窗口提前触发并给出偏小的聚合值。**症状**是同一批数据在流侧与批侧重算后数值不一致，且差额集中在少数几个分区上。
+- **档位**：`idle-timeout` 的合适取值随分区到达间隔的分布变化，常见量级为秒级到十几秒【经验】。
 
-// 流模式（实时入湖）
-tEnv.executeSql("""
-    INSERT INTO paimon_orders
-    SELECT * FROM kafka_orders
-""");
+**Flink + Iceberg V3 流批读写**
 
-// 批模式（历史回放）
-TableEnv batchEnv = TableEnvironment.create(EnvironmentSettings.inBatchMode());
-batchEnv.executeSql("""
-    SELECT * FROM paimon_orders
-    WHERE ts BETWEEN '2025-01-01' AND '2025-01-31'
-""");
-```
+- **做法**：写入用 Flink，增量读走格式自带的增量语义（Iceberg 是「取两个快照之间新增的数据文件」，不是对某个「更新时间列」做过滤；引擎侧暴露它的语法按连接器文档核对），批量读交给任意支持该格式的引擎；需要 upsert 时显式开启对应写入属性或使用等值删除，并排班 compaction。
+- **机制**：因为删除与更新被记成独立文件而不重写数据文件，写入本身便宜；因为快照是增量读的边界，不同引擎读同一快照得到一致结果——统一发生在规范层，而不是某个引擎的运行时里。
+- **失效条件**：**当更新占写入的比例持续上升时**（例如从每日覆盖变成每分钟 upsert），delete file 随更新频率累积，而写入一直很通畅——「写便宜」这个优点正是在这里反转成「读越来越慢」的。**症状**是「写入量没涨、查询 P95 逐周上涨」，且查询计划里的文件数同步增长。此时正确动作是先做一次 compaction 前后的 P95 对比，再决定是否把这张表换成主键表。
+- **档位**：一周内 `UPDATE`/`DELETE` 占写入的比例可以直接从写入日志统计；按常见经验，这个比例进入一成到两成之间时读放大通常已经可见，具体阈值随文件大小分布与 compaction 频率变化【经验】。
 
-**2. Flink + Iceberg V3 流批读写**
+**Changelog 流（Paimon）**
 
-```sql
--- 流模式：增量读取
-SELECT * FROM iceberg.orders
-WHERE _updated_at > '2025-01-15';
+- **做法**：显式配置 `changelog-producer`（`input` / `lookup` / `full-compaction` 三档），并用 `sink.bucket-num` 控制写入并发与文件数。
+- **机制**：`input` 只把输入记录的变更外化，在 upsert 场景下拿不到更新前的旧值；`lookup` 在写入时回查前值以补齐变更流，代价是每次写多一次查找；`full-compaction` 把变更流的完整性与合并节奏绑死——**合并不跑，变更流就不完整**。
+- **失效条件**：**当上游是 upsert 且下游按 changelog 做增量聚合时**，选 `input` 会让下游「减掉旧值」这一步算不出来。**症状**是下游对账总差一截，且差额与「被更新过的主键数」相关而不是随机分布。
+- **档位**：三种档位没有免费的一项，选择取决于「旧值是否必须」与「能接受多大的写侧开销」【经验】。
 
--- 流模式：写入
-INSERT INTO iceberg.orders VALUES (1, 100, 99.99, NOW());
+**Spark Structured Streaming Trigger.Once**
 
--- 批模式：批量读取
-SELECT * FROM iceberg.orders WHERE order_time BETWEEN '2025-01-01' AND '2025-01-31';
-```
+- **做法**：`trigger(availableNow=True)` 让每轮消费当前可用数据后停止；`checkpointLocation` 单独建目录并纳入备份；批读用 `spark.read` 读同一张表。`Trigger.AvailableNow` 由 Spark 3.3 引入【公开】（Apache Spark 3.3 发布说明 · Trigger.AvailableNow，2022；具体语义与版本以官方发布说明当前版本为准）。
+- **机制**：因为「一次触发 = 一个有界批次」，补历史与跑实时是同一个算子的两种触发方式；因为一致性由事务日志提供，批读与流读看到的是同一个版本，不需要靠两条链路对账来维持一致。
+- **失效条件**：**当业务要求亚秒级端到端可见时**，微批间隔成为硬延迟下限，调小间隔同时抬高开销。**症状**是延迟承诺达不成而 CPU 利用率并不高——说明瓶颈在提交边界，不在算力。此时该链路应判定为纯流处理，另选运行时。
+- **档位**：端到端 P99 不可能小于一个批次间隔【推算】（一个批次的数据在下次提交前对该版本不可见，故延迟下限 = 微批间隔，与集群规模无关）。
 
-**3. Changelog 流（Paimon）**
+**Apache Beam 跨引擎流批**
 
-```java
-// 开启 Changelog Producer
-tEnv.executeSql("""
-    CREATE TABLE paimon_orders (
-      order_id BIGINT,
-      user_id BIGINT,
-      amount DECIMAL(18, 2),
-      PRIMARY KEY (order_id) NOT ENFORCED
-    ) WITH (
-      'connector' = 'paimon',
-      'path' = 's3://lake/paimon/orders',
-      'changelog-producer' = 'input',  -- 开启 Changelog
-      'sink.bucket-num' = '8'
-    )
-""");
-```
+- **做法**：同一份 pipeline 通过 `PipelineOptions` 切换 `StandardOptions.streaming`，在 Flink / Spark / Dataflow / Direct Runner 上运行；在 CI 里用多 Runner 对账。
+- **机制**：因为逻辑 DAG 与执行运行时被显式分离，可移植层只暴露各后端共同支持的语义子集，跨引擎行为差异被限制在一个已知、可测试的范围内——可移植性的本质是主动接受语义损失以换取可替换性。
+- **失效条件**：**当链路依赖某个引擎的独有能力时**（自定义 source/sink、与湖表格式的两阶段提交集成、专属状态后端），抽象层穿不透到后端的提交协议。**症状**是「同一份代码在两个 Runner 上结果一致，但性能差一个量级」，或某个能力只能绕过 Beam API 实现。此时应提前决定「这条链路不做可移植」。
+- **档位**：跨 Runner 对账的测试成本随 Runner 数线性增长，实践中一般只在真有第二个运行时的场景才引入【经验】。
 
-**4. Spark Structured Streaming Trigger.Once**
+**快照保留与重算窗口**
 
-```python
-# Trigger.Once 模式（流式接口 + 离线语义）
-streaming_df = spark.readStream \
-    .format("kafka") \
-    .option("subscribe", "orders") \
-    .load()
+- **做法**：把「最长重算窗口」写成天数，反推表格式的快照保留参数（Paimon 侧为 `snapshot.time-retained` 一类），并让队列保留期大于最大可容忍的下游中断时长。
+- **机制**：因为「可重算」的能力边界就是快照还在不在，保留期一到，历史再也回不去；队列承担最近几小时的重放、湖表快照承担长历史，两者是同一件事的两段，而不是两套机制（§3.4 组合 B）。
+- **失效条件**：**当保留策略被当成成本项单方面调小时**（预算评审、存储告警驱动的清理），系统仍能正常运行。**症状**是「重算」从技术问题变成「历史数据不存在」的业务问题，且它总是在有人真正需要重算时才被发现。
+- **档位**：保留期按「最长重算窗口 × 安全系数」设，安全系数随快照过期任务的可靠性变化【经验】。
 
-query = streaming_df.writeStream \
-    .format("iceberg") \
-    .option("path", "iceberg.orders") \
-    .option("checkpointLocation", "s3://checkpoints/orders") \
-    .trigger(availableNow=True) \  # 类似 Trigger.Once
-    .start()
+**小文件与提交频率**
 
-query.awaitTermination()
-```
+- **做法**：为写入端设定提交/检查点间隔与分桶数，为文件治理排班；把「小文件数」与「compaction 滞后」两条曲线放在同一张看板上。
+- **机制**：因为每次提交在各桶各留下至少一个文件，文件产生速率 ≈ 提交频率 × 桶数，而 compaction 是唯一的回收方；两者的差就是文件数的增长速率。
+- **失效条件**：**当提交间隔被调小以追求「更实时」时**，文件产生速率同比上升。**症状**是查询耗时里「打开与解析文件」的前段占比上升、扫描本身没变，最终表现为「数据没多，查询变慢」。以提交间隔 10 秒、8 个桶估算：一天 86 400 ÷ 10 × 8 ≈ 69 000 个文件【推算】（按每次提交每桶至少产生一个文件估算，不含 compaction 回收）。
+- **档位**：【推算】，倍数随提交间隔与桶数同比例变化。
 
-**5. Apache Beam 跨引擎流批**
+**Schema 演进与两侧契约**
 
-```python
-import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions, StandardOptions
+- **做法**：把「加列 / 改类型 / 删列」三类变更各自的兼容策略写成文字并放进 CI：加列通常向后兼容；改类型与删列必须走一次带影响面分析的变更流程，并在两侧各加一次契约测试。
+- **机制**：因为流侧与批侧读的是同一份 schema，而两侧对 schema 变更的反应不同——一侧可能直接失败，另一侧静默按旧类型解释——所以失败形态是「一侧报错、另一侧算错」，且算错的那一侧没有告警。
+- **失效条件**：**当上游在未通知下游的情况下改类型时**（精度调整、时间戳时区语义变更）。**症状**是下游某几个指标在一段时间后开始偏离，偏差随数据分布变化，而两侧作业都没有报错。排查顺序应是「先查 schema 变更历史，再查数据」。
+- **档位**：加列相对安全；改类型与删列应走一次正式变更流程【经验】。
 
-options = PipelineOptions()
-options.view_as(StandardOptions).streaming = True  # 流模式
-# options.view_as(StandardOptions).streaming = False  # 批模式
+### 4.3 工具链与平台
 
-with beam.Pipeline(options=options) as p:
-    (p
-     | 'Read' >> beam.io.ReadFromKafka(...)
-     | 'Parse' >> beam.Map(parse)
-     | 'Aggregate' >> beam.GroupByKey()
-     | 'Write' >> beam.io.WriteToIceberg(...)
-    )
-```
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 流批一体引擎 | Apache Flink / Apache Spark Structured Streaming / Apache Beam | 已有运行时是哪一个 + 延迟承诺档位：要秒级以内且写入带 upsert → Flink；资产与调度已在 Spark 生态、能接受微批间隔 → Spark；要求运行时可替换并接受放弃后端专属优化 → Beam | 多一套常驻资源与状态管理（Flink）；延迟下限抬到微批间隔（Spark）；性能与独有能力损失（Beam） |
+| 流批一体表格式 | Apache Paimon / Apache Iceberg / Apache Hudi / Delta Lake | 写入是追加还是 upsert + 消费者是否多引擎：高频 upsert 且 Flink 生态 → Paimon 主键表；既有湖上资产、多引擎消费、低频更新 → Iceberg（v2 引入行级删除、v3 强化增量读，见 §3.2.2）；需要 MOR 与 CDC 友好写入 → Hudi；Spark 生态内闭环 → Delta（其 UniForm 特性用于对外提供 Iceberg 兼容的元数据，是否启用按官方文档确认） | 选反了不是「慢一点」，而是写放大或读放大随更新频率与规模累积，表现为查询逐周变慢（§3.3 表后一段） |
+| 表格式的开放与生态 | 开放表格式（Iceberg / Paimon / Hudi 等）+ REST Catalog / Hive Metastore / 引擎自带 Catalog | 是否有第二个引擎要读同一份数据：有 → 走开放 Catalog，别把元数据锁在某个引擎里；没有 → 引擎自带 Catalog 更省运维 | 元数据锁进单引擎后，接第二个引擎要重做一次元数据同步；生态适配成本由你自己承担 |
+| 流原生与流式数据库 | Materialize（另有 RisingWave 一类的流数据库） | 需要的是「结果常驻最新」还是「查询时可算」：查询频率高且结果需常驻 → 流式数据库；查询低频、可接受现算 → 湖表按查询即算 | 常驻状态占用随「被维护数据量 × 查询复杂度」增长；它不承担长历史，历史仍要另建存储 |
+| 托管流式服务 | Decodable（以及同类托管流作业服务） | 团队有没有长期维护流作业与状态后端的运维能力：没有 → 托管；有 → 自建的调优粒度与可观测性更高 | 让渡了单价、执行计划可见度与调优粒度；拿不准时的筛法是「能不能拿到执行计划与状态指标」 |
+| 查询引擎 | Trino / StarRocks / Doris | 读侧要的是跨源即席还是高并发点查：跨多源即席 → Trino；高并发点查与固定看板 → StarRocks / Doris 内表 | Trino 每次查询现算、点查延迟由远端文件解析与网络往返决定；内表则要维护导入链路与冷热分层任务 |
+| 变更捕获 | Flink CDC / 各数据源自带的 CDC 通道 | 源库能否承受初始快照的读压力与增量阶段的日志读取：不能 → 先做只读副本再捕获 | 把分析查询直接指向业务库会把负载打到线上；初始快照压生产库是常见第一次事故 |
+| 文件治理与 Catalog 运维 | 表格式自带的过程（compaction / 快照过期 / 孤儿文件清理）或自建调度 | 有没有人愿意长期负责排班与告警：没有 → 先别引入需要 compaction 的表格式 | 退化形态是小文件与过期快照持续累积，查询前段耗时逐月上升，最终一次全量重写 |
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+表里最容易被误选的是**表格式**这一行：多数团队按生态亲和度选（Flink 就用 Paimon、Spark 就用 Delta），而真正决定成败的是**更新频率与是否需要变更流**。误选的典型后果不是「性能差一点」，而是代价被记到写侧或读侧、随更新频率与规模累积——具体机制与症状对照见 [§ 3.3 决策表](10-stream-batch-unified-section-3-sec3.md) 的表后一段，本节不重复。因此在这张表上做决定的顺序应是：**先用 Step 1 量出的更新比例与「下游是否需要变更流」筛掉一半候选，再看生态亲和度**。
 
-**流批一体引擎（2024-2025）**：
+另有三处不要用表格代替判断：**产品版本号与特性开关随时在变**，任何「某引擎支持某特性」的结论都应以你锁定版本的官方文档当前内容为准；**托管服务的计费模型差异很大**，同一负载在不同产品上的账单结构（容量 / 请求数 / 计算单元）不同，选型前要按自己的访问形态算一次而不是比单价；**Catalog 这一格最容易被当成纯技术决定**，实际上它是多引擎能否共读的一份契约，改 Catalog 形态的代价与迁一次元数据相当。
 
-| 工具 | 版本 | 特点 |
+还有一条不适合放进表格的判据：**先确认「谁签这个字」，再选工具**。表格式的 compaction、查询引擎的资源组、Catalog 的元数据，这三件事都必须有长期责任人；没有责任人的那一项，宁可用更简单、组件更少的方案（哪怕性能差一档），也不要在生产上引入一条没有人维护的后台作业链。
+
+### 4.4 存量迁移
+
+存量改造的对象通常是一套已经在跑的 Lambda 或 Kappa 链路。迁移目标不是「把旧链路拆掉」，而是**在不停机的前提下把实现份数从「两份」压到「一份」**，并在每一步都留一条可回退的路。
+
+**① 先做可回退的那一半：换读侧，不换写侧。** 第一步不要动流链路，而是把批侧的表换成湖表格式、让查询引擎改读湖表，写入链路照旧。这一步立刻拿到两样东西：一份存储被多引擎读、以及随时切回旧表的能力。可回退的原因很具体——查询走的是路由配置而不是数据布局，回退不需要重写数据。反过来先换写侧，一旦新链路口径与旧链路不一致，你要在「没有干净对照」的情况下定位差异，这是存量改造最常见的一次卡壳。
+
+**② 历史资产按三类处理，判断依据是查询日志而不是数据量。**
+
+| 类别 | 典型特征 | 处理方式 |
 | --- | --- | --- |
-| Apache Flink | 1.19+ | 流批事实标准 |
-| Apache Spark Structured Streaming | 3.5+ | 同一引擎流批 |
-| Apache Beam | 2.5x | 跨引擎统一 API |
-| Apache Paimon | 1.1 | Flink 生态原生流批 |
-| Materialize | 1.x | 流式 SQL 数仓 |
-| Decodable | - | 流式 SaaS |
+| 必须重建 | 高频 upsert 的事实表，且表格式与更新频率不匹配（§3.2.2 的失效点） | 一次全量重写，排在低峰窗口；重写前先冻结写入或用双写过渡 |
+| 只增量迁移 | 纯追加的历史事实表、分区表 | 新分区写新格式，历史分区留在原路径；用视图把两段拼起来，并在表属性里写明「历史段不参与新口径重算」 |
+| 打标挂账 | 最近一段时间无查询的僵尸表、口径已废的中间表 | 不迁移，登记进目录并加 `migration-status: legacy` 与 Owner，进入待清理清单 |
 
-**流批一体表格式**：
+三类里最容易被忽略的是**边界表**：上游已迁、下游未迁的那些表。它们必须在血缘里显式标出来，因为双轨期的事故几乎都发生在这条缝上——上游换了格式、下游还在按旧路径读，失败形态通常是下游静默读到一份不再更新的旧副本。
 
-| 工具 | 特点 |
-| --- | --- |
-| Apache Paimon | 流批最强、Flink 生态 |
-| Apache Iceberg V3 | 流批增强、行级删除 |
-| Apache Hudi | MOR 流批强、CDC 友好 |
-| Delta Lake | Spark 生态深、Delta UniForm |
+**③ 双轨怎么维持。** 双轨期的写入是旧格式 + 新格式并存，读侧按表名分派。这个状态的存储成本至少是单轨的两倍【推算】（两份全量数据，加上旧格式的元数据与快照；倍数随两侧压缩率差异偏离 2）；更贵的成本是维护面翻倍与口径漂移——两条链路各自演进时，「同一个数两个答案」会先出现在报表上，而不是告警里。因此双轨必须带退出日期，且日期要写进表属性或登记项，不能只是口头约定。经验上双轨期按季度计【经验，随表数与下游数量变化】。
 
-**查询引擎**：
+双轨期最贵的成本不是双份存储，而是**排查成本**：一次口径不对时，排查路径要同时覆盖新旧两条链路、两套调度、两份元数据，而这期间团队还在按新口径出决策。这也是第 ① 步要选「可回退的那一半」的原因——它让双轨期的问题可以用「切回旧表」来验证是不是迁移引起的，而不是靠猜。
 
-- Trino：跨 Iceberg / Paimon / Hudi / Delta 联邦。
-- StarRocks 3.x：Iceberg / Paimon 外表查询。
-- Doris 2.1+：Iceberg / Hive 外表查询。
+**④ 什么信号说明可以退出双轨。** 三条同时满足才退，缺一条就继续：对账任务连续跑满一个完整业务周期差异为 0（周期量级为数周【经验】，随结算周期变化——月结业务取一个月，日结业务取一周）；查询日志里没有任何一条仍在读旧格式（按表统计，而不是靠问）；关掉旧格式的写入开关之后所有下游告警为零。三条都满足仍要按「先关写、再观察一个完整业务周期、最后下线读」的顺序退——写停了而读还在是安全的，读停了而写还在会静默丢数据。
 
-### 4.4 代码 / 示例
+退不出去的双轨比迁移失败更贵：它把「临时的两套」变成「永久的两套」，而所有人已经开始按新口径做决策，旧链路没人再维护、却仍然被某个看板读着。
 
-**示例 1：Flink + Paimon 流批一体完整案例**
+### 4.5 模板 / 示例
 
-```java
-// Flink + Paimon 流批一体
-StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-env.enableCheckpointing(60000);  // 1 分钟 Checkpoint
-
-EnvironmentSettings settings = EnvironmentSettings.inStreamingMode();
-TableEnvironment tEnv = TableEnvironment.create(settings);
-tEnv.getConfig().set("table.exec.source.idle-timeout", "10s");
-
-// 1. Kafka 源
-tEnv.executeSql("""
-    CREATE TABLE kafka_orders (
-      order_id BIGINT,
-      user_id BIGINT,
-      amount DECIMAL(18, 2),
-      ts TIMESTAMP(3)
-    ) WITH (
-      'connector' = 'kafka',
-      'topic' = 'orders',
-      'format' = 'json'
-    )
-""");
-
-// 2. Paimon 表（带主键 + Changelog）
-tEnv.executeSql("""
-    CREATE TABLE paimon_orders (
-      order_id BIGINT,
-      user_id BIGINT,
-      amount DECIMAL(18, 2),
-      ts TIMESTAMP(3),
-      PRIMARY KEY (order_id) NOT ENFORCED
-    ) WITH (
-      'connector' = 'paimon',
-      'path' = 's3://lake/paimon/orders',
-      'changelog-producer' = 'input',
-      'sink.bucket-num' = '8'
-    )
-""");
-
-// 3. 流模式（实时入湖）
-tEnv.executeSql("""
-    INSERT INTO paimon_orders
-    SELECT * FROM kafka_orders
-""");
-
-// 4. 批模式（历史查询，通过 Spark）
-spark.read.format("paimon").load("s3://lake/paimon/orders").show();
-```
-
-**示例 2：Flink CDC + Iceberg V3 流批一体**
-
-```java
-// Flink CDC → Iceberg V3
-tEnv.executeSql("""
-    CREATE TABLE mysql_orders (
-      order_id BIGINT,
-      user_id BIGINT,
-      amount DECIMAL(18, 2),
-      order_time TIMESTAMP(3)
-    ) WITH (
-      'connector' = 'mysql-cdc',
-      'hostname' = 'mysql-host',
-      'port' = '3306',
-      'username' = 'cdc',
-      'password' = '***',
-      'database-name' = 'shop',
-      'table-name' = 'orders'
-    )
-""");
-
-tEnv.executeSql("""
-    CREATE TABLE iceberg_orders (...)
-    WITH (
-      'connector' = 'iceberg',
-      'format-version' = '3',
-      'write.upsert.enabled' = 'true'
-    )
-""");
-
-// 流模式（CDC 写入）
-tEnv.executeSql("INSERT INTO iceberg_orders SELECT * FROM mysql_orders");
-
-// 批模式（Trino 增量读取）
-SELECT * FROM iceberg.orders WHERE _updated_at > '2025-01-15';
-```
-
-**示例 3：Spark Structured Streaming 流批融合**
-
-```python
-# Spark + Iceberg 流批融合
-streaming_df = spark.readStream \
-    .format("kafka") \
-    .option("subscribe", "orders") \
-    .load()
-
-# 流式接口 + 离线语义（Trigger.Once）
-query = streaming_df.writeStream \
-    .format("iceberg") \
-    .option("path", "iceberg.orders") \
-    .option("checkpointLocation", "s3://checkpoints/orders") \
-    .trigger(availableNow=True) \  # 处理完所有数据后停止（批语义）
-    .start()
-
-# 批查询
-batch_df = spark.read.format("iceberg").load("iceberg.orders")
-```
-
-**示例 4：Materialize 流式 SQL 数仓**
+**模板 1：Flink + Paimon 流批一体（建表 + 流读 + 批读）**
 
 ```sql
--- Materialize 创建流式视图
-CREATE MATERIALIZED VIEW order_summary AS
-SELECT
-    user_id,
-    COUNT(*) AS orders,
-    SUM(amount) AS gmv
-FROM orders_stream
-GROUP BY user_id;
-
--- 实时查询（自动增量更新）
-SELECT * FROM order_summary WHERE user_id = 12345;
+CREATE TABLE paimon_orders (
+  order_id BIGINT, user_id BIGINT, amount DECIMAL(18,2), ts TIMESTAMP(3),
+  PRIMARY KEY (order_id) NOT ENFORCED
+) WITH (
+  'connector'              = 'paimon',
+  'path'                   = 's3://lake/paimon/orders',
+  'changelog-producer'     = 'lookup',   -- upsert 场景下游需要旧值时用 lookup
+  'snapshot.time-retained' = '30 d',     -- 这一格就是「最长重算窗口」
+  'sink.bucket-num'        = '8'
+);
+-- 流读（消费变更流）：SELECT * FROM paimon_orders;
+-- 批读（快照聚合）：  SELECT ts, SUM(amount) FROM paimon_orders GROUP BY ts;
 ```
 
----
+**怎么用**：填四格——`path`、`changelog-producer`、`snapshot.time-retained`、`sink.bucket-num`。前两格按「下游要不要旧值」和「写入形态」定，第三格按业务签署的重算窗口定，第四格按写入并发定。不要照抄 `8`：桶数要与提交间隔一起调；参数名与取值格式以官方文档当前版本为准。
+
+**模板 2：Flink CDC + Iceberg V3 流批一体**
+
+```sql
+CREATE TABLE mysql_orders (
+  order_id BIGINT, user_id BIGINT, amount DECIMAL(18,2), order_time TIMESTAMP(3)
+) WITH (
+  'connector' = 'mysql-cdc', 'hostname' = 'mysql-host', 'port' = '3306',
+  'username' = 'cdc', 'password' = '<从凭据注入>', 'database-name' = 'shop',
+  'table-name' = 'orders'
+);
+
+CREATE TABLE iceberg_orders (...)
+WITH ('connector' = 'iceberg', 'format-version' = '3', 'write.upsert.enabled' = 'true');
+
+INSERT INTO iceberg_orders SELECT * FROM mysql_orders;   -- 流模式：快照 + 增量一次写清
+-- 批模式（任意引擎）：SELECT * FROM iceberg.orders WHERE order_time BETWEEN ? AND ?;
+```
+
+**怎么用**：换掉源表连接与目标表属性即可；口令一律走凭据注入，不写进 DDL。`format-version` 与 `write.upsert.enabled` 在你所用引擎版本上是否可用，先查官方文档再填。
+
+**模板 3：Spark Structured Streaming 流批融合**
+
+```python
+streaming_df = spark.readStream.format("kafka").option("subscribe", "orders").load()
+query = (streaming_df.writeStream
+         .format("iceberg").option("path", "iceberg.orders")
+         .option("checkpointLocation", "s3://checkpoints/orders")
+         .trigger(availableNow=True)   # 消费完可用数据后停止 = 批语义
+         .start())
+query.awaitTermination()
+
+batch_df = spark.read.format("iceberg").load("iceberg.orders")   # 批读同一张表
+```
+
+**怎么用**：填 `subscribe`、`path`、`checkpointLocation` 三格。`checkpointLocation` 必须独立于数据路径并纳入备份——它的结构与算子拓扑绑定，改算子前先确认这个目录可以被丢弃重来。
+
+**模板 4：Materialize 流式 SQL（结果常驻）**
+
+```sql
+CREATE SOURCE orders FROM KAFKA CONNECTION kafka_conn (TOPIC 'orders');
+CREATE VIEW paid_orders AS
+  SELECT shop_id, SUM(amount) AS gmv FROM orders WHERE status = 'PAID' GROUP BY shop_id;
+CREATE MATERIALIZED VIEW shop_gmv AS SELECT * FROM paid_orders;
+
+SELECT * FROM shop_gmv WHERE shop_id = 12345;   -- 查的是被持续维护的结果
+```
+
+**怎么用**：只把「高频查询的那几个结果」放进 `MATERIALIZED VIEW`，其余用普通 `VIEW`。上线前必须压测状态占用与重建时间，并演练一次上游回放——上游保留期短于重建时间时，这套的可靠性承诺是空的。语法以官方文档当前版本为准。
+
+**模板 5：迁移登记项（每张表一行）**
+
+```yaml
+table: dwd_order
+owner: <具体人名>       # 不写团队名
+write_mode: upsert      # upsert / append，由实测统计得出
+format: paimon-pk
+retention: 30d          # 这一格 = 最长重算窗口
+migration: incremental  # rebuild / incremental / legacy
+boundary: false         # true = 上游已迁、下游未迁的边界表
+reconcile: daily        # 对账频率；差异告警发给 owner
+```
+
+**怎么用**：`owner`、`write_mode`、`retention`、`migration` 四格必填；`boundary: true` 的表单独列一张清单，双轨期优先盯它们。这份登记项的价值不在填表本身，而在于当 `retention` 这一格填不出来时，说明这张表的保留策略还没有人签过。
+
+**模板 6：流批两侧对账（每天一跑，差异落表而不是只发告警）**
+
+```sql
+INSERT INTO reconcile_result (dt, key_col, stream_val, batch_val, delta)
+SELECT COALESCE(s.dt, b.dt), COALESCE(s.key_col, b.key_col),
+       s.val, b.val, s.val - b.val
+FROM   (SELECT dt, key_col, SUM(val) AS val
+        FROM   stream_result GROUP BY dt, key_col) s
+FULL OUTER JOIN
+       (SELECT dt, key_col, SUM(val) AS val
+        FROM   batch_recompute GROUP BY dt, key_col) b
+  ON   s.dt = b.dt AND s.key_col = b.key_col
+WHERE  COALESCE(s.val, 0) <> COALESCE(b.val, 0);
+```
+
+**怎么用**：替换 `key_col` 与两张来源表即可。两点不要照抄：一是把差异**写成一张表**而不是只发一条告警——排查时需要看差异随时间的变化，而不是当时的快照；二是告警条件不要停在「差异行数 > 0」，还要看差额是否集中在少数主键上。差异集中在少数主键通常指向 changelog 的旧值问题（见 4.2），散落在大量主键上则通常指向口径定义或窗口边界。
+
+### 4.6 自检清单
+
+- [ ] 抽 3 张新表，`retention` 或等效参数是否写在表属性里，且与业务签署的「最长重算窗口」一致？
+- [ ] 抽 3 张需要流读的表，是否用同一份带更新的数据实测过「流侧结果 = 批侧重算结果」，并把差异定位到主键？
+- [ ] 每张表的 `changelog-producer` 档位是否有书面理由（下游到底要不要旧值），还是照抄了示例？
+- [ ] `idle-timeout` 是否小于业务可接受的延迟下限，且在有慢分区的表上验证过窗口没有被提前触发？
+- [ ] compaction 与小文件治理是否有排班、有告警阈值，并且告警发给了具体人名？
+- [ ] 每个有状态流作业是否设了状态 TTL，且能回答「窗口关闭后这份状态还有谁用」？
+- [ ] 入湖作业是否量过源库在初始快照阶段的读 QPS 与增量阶段的日志读取带宽这两条曲线？
+- [ ] 端到端可见延迟是否实测过（不是估算），且不低于同步点间隔或微批间隔这一个下界？
+- [ ] 源表 DDL 变更（加列 / 改类型 / 删列）是否有从源库到查询引擎的同步流程，并进了 CI？
+- [ ] 登记项里 `boundary: true` 的表有多少张，每一张是否有明确的迁移责任人与目标日期？
+- [ ] 双轨是否有写下来的退出日期，以及三条退出判据（对账连续跑满一个完整业务周期为 0 / 无查询读旧格式 / 关写后零告警）当前的取值？
+- [ ] 若接了模型调用：模型版本是否与输出一起落表、失败是否走旁路，以及是否做过一次超时与重复投递的演练？
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一决定成败的环节是 **Step 2 的保留策略与 Step 3 的对账任务**——它们共同决定了「可重算」与「可发现漂移」这两项能力是否存在。其余步骤做错都能补救：引擎选错可以重写作业，表格式选错可以重写数据，性能不达标可以加资源；但保留期设短之后历史不可重建，对账没做则漂移只能等业务对不上数才发现，这两件事都无法在事后补。
+>
+> 配合 [§ 2 核心原理](10-stream-batch-unified.md)、[§ 3 设计模式与范式](10-stream-batch-unified-section-3-sec3.md) 与 [§ 6 落地实践](10-stream-batch-unified-section-6-sec6.md) 阅读。

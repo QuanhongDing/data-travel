@@ -1,291 +1,359 @@
-> 本文件是 **07-data-api-gateway.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](07-data-api-gateway.md)。
+> 本文件是 **07-data-api-gateway.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3 设计模式与范式](07-data-api-gateway-section-3-sec3.md) 里选定的模式装进一个真实组织与存量系统：顺序、判据、产物与存量迁移。完整章节请回到 [index](07-data-api-gateway.md)。
 
 ## 4. 工程实现
 
+本节有两类读者，请先认领自己那一类：**存量改造**（数据服务已经能被应用直连，网关是后补的）与**从零搭建**（还没对外提供数据 API）。存量读者从 §4.1 的 Step 1 开始；从零读者可以跳到 Step 2，但要把 Step 1 的结论（所有取数只经过一个点）先写进架构约束，否则它会在第一次赶工期时被绕开。
+
+选模式的判据在 [§ 3.1](07-data-api-gateway-section-3-sec3.md) 与 [§ 3.3](07-data-api-gateway-section-3-sec3.md)：**网关能看见多少数据语义**；选错会发生什么在 [§ 3.5](07-data-api-gateway-section-3-sec3.md) 的反模式表。本节不重复这些论述，只回答下一个问题：**按什么顺序装，装完怎么知道装对了。** §4.2 给机制与失效条件，§4.3 给选型判据，§4.4 整节给存量迁移，§4.5 给可直接套用的模板。
+
 ### 4.1 落地步骤
 
-**Step 1：需求分析**
+**Step 1：出口盘点与收敛（【经验】2–4 周，随直连调用方数量增长）**
 
-- 评估 API 数量、QPS、数据敏感度。
-- 识别合规要求（等保 / GDPR / 行业法规）。
-- 输出：**API 网关需求说明书**。
+- 列出全部数据出口：应用直连域名、导出与同步任务、BI 直连、Agent 持有的数据库或 API 凭证、临时脚本。
+- 网络层先只放行网关网段并开启**观察模式**（只记录会被拦下的调用，不真的拦），跑【经验】1–2 周拿到真实调用方清单。
+- 对每个出口记录：来源系统、负责人、最近 30 天调用量、能否改、改的截止时间。
 
-**Step 2：网关选型**
+- **产物**：出口清单表（模板见 §4.5 模板 1），每条出口有负责人与迁移方式。
+- **判据**：把网关访问日志与后端访问日志按请求 id 对账 —— 后端收到的请求里有多少条在网关日志中找不到。抽 3 个后端服务各查 1 天，对不上的比例大于零，出口就没收敛完。
+- **为什么必须这一步**：权限、限流、计量、审计四项能力都建立在「所有访问经过同一个点」之上；出口未收敛时，这四项只对本条链路生效，且失效是静默的（[§ 3.1](07-data-api-gateway-section-3-sec3.md) 的出口约束、[§ 3.5](07-data-api-gateway-section-3-sec3.md) 的「无网关直接暴露」）。把它排在第一步，是因为它是唯一一个**不改变任何业务行为、可随时回退**的动作。
 
-- 自研 vs 开源（Kong / APISIX / Tyk / Envoy）。
-- 评估性能、插件生态、运维成本。
-- 输出：**选型决策书（ADR）**。
+**Step 2：需求分析（【经验】1–2 周）**
 
-**Step 3：路由与负载均衡**
+- 评估 API 数量、QPS、单次请求的返回行数与扫描量 P99、数据敏感度。
+- 识别合规要求（等保 / GDPR / 行业法规），并把它翻译成「哪一类字段必须脱敏、哪一类行必须过滤」。
+- 为每类 API 回答三个问题：谁调用（人 / 服务 / Agent）、单次允许消耗的上限是多少、出事时哪个主体负责。
 
-- 配置路由规则（path / header / method）。
-- 配置负载均衡（轮询 / 加权 / 一致性哈希）。
-- 配置健康检查。
-- 输出：**路由配置**。
+- **产物**：API 网关需求说明书，其中每个 API 类目带**资源单位上限**（最大返回行数 / 最大扫描量），而不只有 QPS。
+- **判据**：抽 3 个 API，把说明书翻到对应页，能否写出它单次请求允许返回的最大行数与最大扫描量；写不出，说明需求还停在 QPS 层面，Step 6 会返工。
+- **为什么必须这一步**：限流的单位在这里被决定。若先配好 QPS 限流再补按数据量的限流，等于把全部限流规则重配一遍，第一版的容量模型也随之作废。
 
-**Step 4：鉴权与权限**
+**Step 3：网关选型（【经验】2–4 周，含 PoC）**
 
-- 集成身份系统（OAuth 2.0 / JWT / SSO）。
-- 实现行级 / 列级权限（OPA / Casbin）。
-- 输出：**权限模型**。
+- 在自研与开源（Kong / Apache APISIX / Tyk / Envoy 一类）之间做决策，评估性能、插件生态、运维成本。
+- 用 §3.1 的两条约束压测候选：**能否拿到查询的执行统计**（返回行数 / 扫描字节）、**能否改写下推行级条件**。
+- 把结论写进一份 ADR，包含被否决的选项与理由。
 
-**Step 5：限流与配额**
+- **产物**：选型决策书（ADR），含 PoC 的压测数据与「本次不选什么、为什么」。
+- **判据**：ADR 里能否回答两个问题 ——「行级权限在这一形态下于哪一层注入」「单次请求扫描了多少数据从哪里读到」。答不出，说明选型只比了性能与插件数量。
+- **为什么必须这一步**：选定一个看不见 SQL 与结果集的形态（例如只在 Sidecar 里做治理），Step 5 的权限就只能退回应用层后置过滤，而 [§ 3.2.3](07-data-api-gateway-section-3-sec3.md) 已给出这类做法的失效形态：每个服务各自实现一遍，回到它本来要解决的问题。
 
-- 配置限流规则（QPS / 数据量 / 调用方）。
-- 配置熔断策略（错误率 / 慢调用）。
-- 配置降级策略（默认值 / 缓存）。
-- 输出：**限流 / 熔断配置**。
+**Step 4：路由与负载均衡（【经验】1–2 周）**
 
-**Step 6：缓存策略**
+- 配置路由规则（path / header / method），把灰度维度（header、用户、比例）预留成路由条件而不是后补。
+- 配置负载均衡（轮询 / 加权 / 一致性哈希）与健康检查；长查询后端与在线后端分开上下游。
 
-- 配置结果集缓存（Redis）。
-- 配置 CDN（静态响应）。
-- 配置物化（高频 API 预计算）。
-- 输出：**缓存配置**。
+- **产物**：路由配置（含环境、上游、健康检查阈值、灰度条件的完整定义）。
+- **判据**：手动下线一个上游节点，观察流量是否在健康检查周期内切走、期间错误率是否上升；再用一条不存在的 path 验证返回的是预期的 4xx 而不是 500。
+- **为什么必须这一步**：Step 10 的逐级放量按 header / 用户 / 比例切流，而这三个维度只能以**路由条件**的形式预留，灰度阶段才补路由等于把线上流量当试验场；A/B 测试的并行分组同样要求路由能按调用方稳定划分。路由写错的表现是**流量打到错误后端但请求成功** —— 它不报错，只出错答案。
 
-**Step 7：可观测**
+**Step 5：鉴权与权限（【经验】2–4 周）**
 
-- 接入 Prometheus / Grafana。
-- 接入 Jaeger / Zipkin（链路追踪）。
-- 接入 ELK / Loki（日志）。
-- 输出：**监控大盘**。
+- 集成身份系统（OAuth 2.0 / JWT / SSO），把「你是谁」与「你能看哪些行、哪些列」拆成两件事。
+- 行级 / 列级权限以**改写下推**实现（把租户条件注入下推查询），不要写成网关里的业务分支；规则由策略引擎（OPA）或权限框架（Casbin）承载。
+- 为 Agent 类调用方增加第二个主体：它代表谁。
 
-**Step 8：安全防护**
+- **产物**：权限模型，含「权限定义存放在哪一层」（资产层 / 网关配置 / 应用代码）与每条规则的维护人。
+- **判据**：用一个租户的凭证调用**汇总或聚合类接口**，看返回的数字里是否含其他租户的数据；再对最近新增的一个接口重测一次。聚合接口是行级过滤最常漏的位置。
+- **为什么必须这一步**：它必须排在 Step 7 缓存之前 —— 缓存键的身份维度由权限模型决定；权限未定时开缓存，等于把越权结果缓存并分发给其他身份（[§ 3.2.4](07-data-api-gateway-section-3-sec3.md) 的失效点）。
 
-- 配置 WAF 规则。
-- 配置数据脱敏（手机号 / 身份证 / 邮箱）。
-- 配置防爬虫 / 防注入。
-- 输出：**安全策略**。
+**Step 6：限流与配额（【经验】2–3 周）**
 
-**Step 9：上线与灰度**
+- 配两层限流：第一层按 QPS 与并发（令牌桶 / 滑动窗口），第二层按**资源量**（返回行数 / 扫描量）。
+- 配熔断（错误率 / 慢调用）与降级（默认值 / 缓存 / 简化响应），并把超时、重试、熔断三者的数值关系写在一起检查自洽。
+- 对无范围条件的查询直接拒绝并提示补条件。
 
-- 灰度发布（10% → 50% → 100%）。
-- A/B 测试不同策略。
-- 监控异常并回滚。
-- 输出：**生产级 API 网关**。
+- **产物**：限流 / 熔断配置，其中限流至少含两类单位；一份自洽检查记录（入口超时 ≥ 重试次数 × 单次超时 + 排队余量）。
+- **判据**：构造一条「1 次请求扫全表」的查询，在 QPS 远未超限时看它是否被拒绝或排队；再把入口超时、重试次数、单次超时三个数写成一行不等式核对。
+- **为什么必须这一步**：不做限流，Step 4 的负载均衡只是在更快地扩散故障；而限流单位依赖 Step 2 的产物。顺序上必须在缓存之前 —— 缓存会把命中请求挡在后端之外，使资源量限额的观测失真。
+
+**Step 7：缓存策略（【经验】1–2 周）**
+
+- 配置结果集缓存（Redis）与物化（高频 API 预计算）；字典、元数据这类与权限无关的小对象可用本地缓存（Caffeine）。
+- 静态响应走 CDN；缓存键（cache key）必须显式包含身份 / 租户维度。
+
+- **产物**：缓存配置，含缓存键的完整定义（规范化参数 + 身份维度 + 租户）。
+- **判据**：把缓存键打印出来，逐项检查是否含身份与租户维度；再用两个不同租户、完全相同参数各请求一次，看第二个请求是否命中了第一个的结果。
+- **为什么必须这一步**：缓存是唯一一个「做错会变成越权通道」的性能优化。它的收益（省后端成本）立刻可见，风险（缓存键漏身份）要等一次事故才暴露，所以顺序上必须在权限之后、且必须带判据。
+
+**Step 8：可观测（【经验】2–3 周）**
+
+- 接入 Prometheus / Grafana 做指标、Jaeger / Zipkin 做链路追踪、ELK / Loki 做日志；三者用同一个请求 id 串起来。
+- 指标至少四组：请求数、错误率、延迟、**返回行数 / 扫描量**，且可按调用方与租户切片。
+- 审计日志独立于访问日志：含调用方身份、代表谁、读了多少行、被脱敏的字段。
+
+- **产物**：监控大盘 + 审计日志口径说明（谁能在什么范围内查这些日志）。
+- **判据**：找一条已知的慢查询，能否从大盘上的网关延迟一路跳到后端执行耗时；再从日志里用同一个请求 id 还原这条请求的完整路径（含命中了哪条限流规则）。
+- **为什么必须这一步**：「按数据量限流」是否真的生效只能从资源量指标里看出来；[§ 3.6](07-data-api-gateway-section-3-sec3.md) 那条「QPS 曲线没变、单请求形状变了」的跃迁，其信号也来自这里。观测后置的代价是：从上线到装上观测之间发生的容量问题，全都无法归因。
+
+**Step 9：安全防护（【经验】1–2 周）**
+
+- 在最外层配 WAF 规则（SQL 注入 / XSS / CSRF / Bot）；在网关返回前做数据脱敏（手机号 / 身份证 / 邮箱等）。
+- 把「脱敏规则 → 维护人 → 上次更新日期」做成一张持续维护的清单。
+
+- **产物**：安全策略，含脱敏规则清单与每条规则的负责人。
+- **判据**：构造一个含敏感字段的返回，看它在出网关前是否被替换；再检查清单里每条规则的三栏是否都填了 —— 缺维护人的规则会在数据形态变化后静默失效。
+- **为什么必须这一步**：脱敏能覆盖哪些流量取决于 Step 1 的成果，存在第二个出口时网关上的脱敏等于没做。这一步还要排在鉴权（Step 5）之后：先确定「谁能取」，再决定「取到什么形态」。
+
+**Step 10：上线与灰度（【经验】2–4 周）**
+
+- 策略变更按 header（内部标识）→ 用户（内部账号）→ 比例逐级放量，【经验】常见档位为 1% → 10% → 50% → 100%，每级保留回切操作。
+- 对**同一批流量并行跑两套策略（A/B 测试）**：按调用方或租户稳定分组，对比两组的错误率、P95 延迟与单次扫描量后再定稿。A/B 用来比较两套策略谁更好，逐级放量用来控制劣策的影响面，两者不可互相替代。
+- 对每类变更做一次**回切演练**并记录实际耗时；异常时按预案回切、保留现场。
+
+- **产物**：生产级 API 网关，含回切操作手册（每类变更对应到命令级步骤）与演练记录。
+- **判据**：灰度期间把新策略切回旧策略，记录实际耗时与期间错误率；若回切耗时超过可接受的停机窗口，说明这套策略还不具备上生产的条件。
+- **为什么必须这一步**：网关策略是全局的，一次误配的影响面等于全部调用方（[§ 3.2.1](07-data-api-gateway-section-3-sec3.md) 的代价：风险统一）。它排在最后，是因为前面每一步的变更都要靠它来安全完成。
+
+十个步骤里最常被跳过的是 **Step 1 的出口收敛**与 **Step 6 里「按资源量」的那一层**。跳过出口收敛的症状在三个月后出现：权限、脱敏、审计都做完了，但被问「某个用户能取到哪些数据」时答案仍然不全 —— 因为导出任务、直连与 Agent 凭证还在走。跳过资源量限流的症状更隐蔽：QPS 曲线不动、错误率正常，只有单次请求耗时与返回行数的 P99 在动（[§ 3.6](07-data-api-gateway-section-3-sec3.md)）。
 
 ### 4.2 关键技术点
 
-1. **高性能网关**：APISIX（基于 Nginx + Lua）、Envoy（C++）、Kong（OpenResty）。
-2. **限流算法**：令牌桶（Guava / Sentinel）、滑动窗口（Redis Lua）。
-3. **鉴权框架**：OAuth 2.0（Keycloak / Auth0）、JWT（jjwt）。
-4. **权限引擎**：OPA（Open Policy Agent）、Casbin。
-5. **数据脱敏**：动态脱敏（Apache ShardingSphere）。
-6. **熔断器**：Resilience4j、Hystrix（已停止维护）、Sentinel。
-7. **缓存**：Redis（结果集）、Caffeine（本地）、CDN（静态）。
-8. **可观测**：Prometheus + Grafana + Jaeger + ELK。
-9. **WAF**：ModSecurity、Cloudflare WAF、阿里云 WAF。
-10. **灰度发布**：按 header / 用户 / 流量比例。
-11. **API 聚合**：BFF（Backend for Frontend）模式。
-12. **AI Gateway**：MCP 网关（2024）、Token 计量、Prompt 注入防护。
+**限流单位：从请求数到资源量**
+
+- **做法**：两层限流。第一层用令牌桶 / 滑动窗口（应用侧可用 Guava、Sentinel，跨副本一致计数用 Redis Lua）管 QPS 与并发；第二层管资源量（返回行数 / 扫描量），配额数字由查询侧上报。
+- **机制**：因为慢查询消耗的是后端资源而不是请求额度，所以按请求数配的限流在「请求数不超、单请求扫全表」时完全不生效；只有把计数单位换成资源量，被限制的对象才与消耗的对象是同一个。
+- **失效条件**：**当查询侧的执行统计上报缺失或延迟时，这一层会静默失效**（限额恒为零，永不拦截）。症状：配额计数器长期不增长，或增长量显著低于后端实际扫描量；观测信号是「上报条数 / 网关请求数」这个比值。
+- **档位**：【公开】令牌桶与滑动窗口是公开算法（可按算法名自行检索核验）；【经验】具体配额档位随后端容量变化，不要照抄任何示例数值。
+
+**鉴权与授权的分离（OAuth 2.0 / JWT / OPA / Casbin）**
+
+- **做法**：鉴权在入口完成（OAuth 2.0、JWT；Keycloak、托管身份服务负责签发与校验，应用内校验库如 jjwt，其版本与用法按官方文档当前版本核验），授权交给策略引擎（OPA）或权限框架（Casbin），并最终以改写下推的形式落到查询里。
+- **机制**：因为鉴权回答「你是不是你」、授权回答「你能看哪些行」，两者输入不同；把授权写成网关注册表里的接口级规则，等于把同一份数据权限在接口维度上复制多份。
+- **失效条件**：**当接口数量增长到注册表无法表达权限关系时，授权会退回应用层后置过滤**。症状：新增的聚合接口忘了过滤，返回的汇总数字里含其他租户的数据。
+- **档位**：【经验】——本条不给固定数值，规则条数随业务域数量变化。
+
+**按代价分队列 + 熔断 + 降级（Sentinel / Resilience4j / Envoy Circuit Breaker）**
+
+- **做法**：把在线小查询与大结果集查询分到不同队列与不同并发上限（舱壁）；熔断按错误率与慢调用率；降级返回默认值 / 缓存 / 简化响应。应用侧常见实现是 Sentinel 与 Resilience4j，数据面内建的是 Envoy Circuit Breaker；Hystrix 是这一类的历史代表实现，其维护状态请以该项目仓库当前状态为准。
+- **机制**：因为资源池是共享的，限制必须作用在「可能吃光池子」的那一类请求上，而不是均匀地限制所有请求；按代价分队列把「一个大查询挤死在在线看板上」从概率事件变成结构上不可能。
+- **失效条件**：**当队列的划分依据是静态标签（例如按 API 名）而查询形状发生变化时** —— 原本设计成看汇总的接口被当作明细导出调用 —— 队列失效。症状：队列上限未变，但「小查询队列」的平均耗时持续上升；观测信号是各队列 P99 耗时的比值。
+- **档位**：【经验】——队列条数与并发上限随后端容量变化。
+
+**结果集缓存与缓存键的身份维度（Redis / Caffeine / CDN）**
+
+- **做法**：结果集缓存用 Redis；本地缓存（Caffeine）只放字典、元数据这类与权限无关的小对象；静态响应对齐 CDN；缓存键 = 规范化参数 + 身份 + 租户。
+- **机制**：因为缓存命中的请求不会回源，也就不会经过中心侧的权限判断，所以权限一旦无法表达在缓存键里，缓存就从性能组件变成越权通道。
+- **失效条件**：**当出现「同一 URL、不同身份、不同结果」而缓存键没有对应维度时**。症状：两个租户用完全相同的参数各请求一次，第二次返回了第一次的结果；观测信号是越权用例在双轨期开始失败。
+- **档位**：【经验】——命中率随参数重复率变化，不给统一数值。
+
+**脱敏的执行位置（网关返回前统一替换 / Apache ShardingSphere 动态脱敏）**
+
+- **做法**：在网关返回前统一替换敏感字段；引擎侧已有动态脱敏能力时（例如 Apache ShardingSphere 的数据脱敏，具体配置项以其官方文档当前版本为准）可以下沉执行，但规则清单只维护一份。
+- **机制**：因为脱敏规则是枚举的而敏感形态是开放的，所以只能保证「经过这个点的响应被处理过」；在两个出口各做一次，漏检概率按出口数量放大。
+- **失效条件**：**当存在第二个数据出口（导出、直连、Agent 持凭证）时**，脱敏静默失效。症状：脱敏命中数与请求数的比值突然下降，或某个出口的日志里出现未脱敏字段。
+- **档位**：【公开】Apache ShardingSphere 提供数据脱敏能力（按其官方文档当前版本核验具体配置项）。
+
+**可观测的三件分工（Prometheus / Grafana + Jaeger / Zipkin + ELK / Loki）**
+
+- **做法**：指标回答「有没有问题」，追踪回答「慢在哪一跳」，日志回答「这一次具体发生了什么」；三者用同一个请求 id 串起来，指标至少含返回行数 / 扫描量。
+- **机制**：因为容量类的跃迁（QPS 不变、单请求形状变了）只能从资源量指标里读出来，所以只采请求维度的指标会让最该被发现的问题不可见。
+- **失效条件**：**当调用方 / 租户标签把指标基数推高时，采集成本会超过收益**。症状：抓取耗时变长、高基数序列占比持续上升。处置是把高基数维度移到日志或追踪，而不是继续加标签。
+- **档位**：【经验】——基数阈值随采集组件容量变化，用观测系统自身的采集耗时作为判据。
+
+**灰度分流的三个维度与 BFF 聚合（header / 用户 / 流量比例；Backend for Frontend）**
+
+- **做法**：策略变更三级放量（header → 用户 → 比例），每级都要有回切动作；BFF 只做聚合、裁剪与协议转换，不做权限判断与业务计算。
+- **机制**：因为网关策略是全局的，误配的影响面等于全部调用方，所以放量比例必须让影响面线性受控；BFF 合并多次后端调用能降低调用方复杂度，但它一旦承载权限判断，权限的实现位置就重新分散了。
+- **失效条件**：**当 BFF 里的过滤逻辑与网关的权限规则并存时**，两处规则会漂移。症状：同一用户在 BFF 接口与直连接口上看到的数据范围不一致。
+- **档位**：【经验】——比例档位是示例，按「可回切的最小影响面」自行设定。
+
+**WAF 的位置与它拦不住的东西（ModSecurity / Cloudflare WAF / AWS WAF / 阿里云 WAF）**
+
+- **做法**：WAF 放最外层，拦语法特征类攻击（SQL 注入 / XSS / CSRF / Bot）；行级权限、脱敏、按资源量限流都不放进 WAF。
+- **机制**：因为 WAF 的规则链匹配的是语法特征，而一个持有合法凭证的越权查询在语法上完全合规，所以 WAF 拦不住它 —— 那是授权问题，不是攻击特征问题。
+- **失效条件**：**当行级权限被实现成 WAF 正则时**（例如匹配某个关键字），失效是必然的。症状：规则命中率与真实越权事件不相关，且规则可被编码变形绕过。
+- **档位**：【公开】ModSecurity 是开源 WAF 的常见实现（可按其项目文档核验当前维护状态）。
+
+**AI Gateway：计量单位与鉴权主体（MCP 网关 / Token 计量 / Prompt 注入防护）**
+
+- **做法**：把 Agent 调用纳入同一网关；计量日志同时含「请求数」与资源单位（返回行数 / 扫描量 / Token），鉴权记录含「代表谁」；注入防护不作为主防线，改做输出侧脱敏、全量工具调用审计、权限收窄到它代表的人。
+- **机制**：因为数据 API 的成本主体是扫描量与结果集而不是 Token，且 Agent 的请求数与资源消耗不成比例，所以只按请求数或只按 Token 计量都会让配额失真；又因为注入的输入在语法上合法，规则链在原理上无法判定它是否恶意（[§ 3.2.5](07-data-api-gateway-section-3-sec3.md)、[§ 5.2.3](07-data-api-gateway-section-5-ai.md)）。
+- **失效条件**：**当 Agent 的调用频率远高于人时**，「统一计量」反转成「配额体系失真」。症状：Agent 把额度吃光、人访问被限流，且审计里有调用定位不到主体。
+- **档位**：【公开】Model Context Protocol 由 Anthropic 于 2024 年公开并开源（可按 MCP 官方规范页核验版本与日期）；【公开】OWASP 的 LLM 应用风险清单 2023 年首版把提示注入列在首位（可按 OWASP 官网核验版本与年份）。
+
+**网关底座与插件链顺序（Kong / Apache APISIX / Envoy 一类高性能网关）**
+
+- **做法**：策略以插件链形式落地，并显式规定链上顺序：身份 → 限流 → 缓存 → 权限改写 → 脱敏 → 计量 → 日志；把顺序断言写成测试用例。
+- **机制**：因为插件链的顺序就是处理顺序，所以「缓存放在鉴权之前」这类错误会直接造成越权读缓存（[§ 3.2.1](07-data-api-gateway-section-3-sec3.md)）；把顺序断言成用例，才让它在每次升级后仍然成立。
+- **失效条件**：**当插件版本升级改变了默认执行顺序或钩子时点时**，原有断言失效。症状：升级后越权用例开始失败，而配置本身没有改动。
+- **档位**：【公开】Kong 于 2015 年开源、Apache APISIX 于 2019 年开源（主文件 §1.4 已述，可按各自公开仓库核验）。
 
 ### 4.3 工具链与平台
 
-**开源 API 网关**：
+机制层面的对比见 [§ 7 与其他方法对比](07-data-api-gateway-section-7-sec7.md)；下表只回答一件事：**在你自己的约束下该选哪一类，以及不选它的代价是什么。**
 
-- **Kong**（开源 + 商业）——基于 OpenResty，插件生态丰富。
-- **Apache APISIX**（国产开源）——云原生、高性能、插件丰富。
-- **Tyk**（开源）——Go 语言、轻量。
-- **KrakenD**（开源）——高性能 API 聚合。
-- **Gravitee**（开源）——API 生命周期管理。
-- **Ambassador / Emissary-Ingress**（开源）——Envoy 上层封装。
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 自托管网关 | Kong、Apache APISIX、Tyk、KrakenD、Gravitee、Ambassador / Emissary-Ingress | 判据是「插件链能否被自己改」与「能否拿到查询执行统计」；要与数据语义打交道的场景选插件模型开放的；只做 API 聚合的选 KrakenD 这类聚合优先的 | 选一个插件模型封闭的网关，等于把行级权限、按资源量限流永久留在应用层 |
+| 云原生数据面 / Service Mesh | Envoy、Istio Gateway、Linkerd、Traefik、HAProxy | 判据是治理对象是**东西向**还是**南北向**；Mesh 用于服务之间，入口网关用于外部到数据 | 用 Mesh 承担南北向数据治理：权限实现分散到 N 个服务（[§ 3.3](07-data-api-gateway-section-3-sec3.md) 已给出该误选的后果） |
+| 托管 API 网关 SaaS | AWS API Gateway、Azure API Management、Google Cloud API Gateway、阿里云 API 网关、腾讯云 API 网关 | 判据是数据驻留与合规要求、以及是否允许把插件链交给云厂商；多云部署时还要问口径是否一致 | 合规边界落在境外、或插件链外的自定义治理无处安放；跨云时同一份策略要在多处各写一遍 |
+| WAF / 边缘安全 | ModSecurity、Cloudflare WAF、AWS WAF、阿里云 WAF | 判据是「它在不在最外层」与「规则维护人是谁」；只在最外层生效，位置错了等于没有 | 把 WAF 当成授权手段：越权查询语法合法，规则命中率与真实越权事件不相关 |
+| 限流与熔断运行时 | Sentinel、Resilience4j、Envoy Circuit Breaker、Hystrix（历史实现，维护状态按项目仓库核验） | 判据是语言栈与部署形态：数据面内建（Envoy）适合跨语言；应用内 SDK 适合需要业务维度配额的场景 | 选语言专属实现而团队是多语言时，跨语言的一致性要每种语言各做一遍 |
+| 可观测 | Prometheus + Grafana、Jaeger、Zipkin、ELK、Loki | 判据是「能否按调用方 / 租户切片」与「高基数维度落在哪一层」；高基数走日志或追踪，不进指标 | 只采请求维度：资源量类问题（慢查询、全表扫）在你眼里不存在 |
+| 授权与身份 | OPA（Open Policy Agent）、Casbin、Keycloak、托管身份服务（如 Auth0） | 判据是权限规则要不要跨引擎复用：要复用就把规则放在资产层、由各引擎翻译；只服务一个引擎时轻量框架更省 | 把权限写在网关注册表或应用代码里，换引擎就得重写一遍，且必然漂移 |
+| GraphQL 网关 | Hasura、Apollo Federation、GraphQL Mesh | 判据是「接口数量是否在随字段组合而非业务域增长」；且必须确认它实现了批量解析 | 无批量解析的 GraphQL 只是换了个协议，N+1 问题原样搬到网关后面 |
+| Agent 接入 / AI 网关 | MCP 类协议与各厂商 AI 网关产品 | 判据见 [§ 5.1](07-data-api-gateway-section-5-ai.md) 的 L1 / L2 / L3 三级判据：接口稳定、有第三方生产案例、有正式发布 | 在产品成熟度未定时把它设为核心取数链路，等于把可用性押在一个还在修订的规范上 |
 
-**云原生网关**：
+这一类里最容易被误选的是 **云原生数据面（Envoy / Istio Gateway）**：Service Mesh 也自称「网关」，于是团队把行级权限、脱敏、按行数限流一起搬进 Sidecar。它不会当场报错，而是让权限实现开始发散 —— 每个服务在自己的治理配置里加一段规则，半年后同一个用户在 A 接口能看到全租户数据、在 B 接口只能看本部门，且没有任何一处能回答「这个人到底能看到什么」（[§ 3.2.3](07-data-api-gateway-section-3-sec3.md)、[§ 3.3](07-data-api-gateway-section-3-sec3.md)）。
 
-- **Envoy**（Lyft 开源）——Service Mesh 事实标准。
-- **Istio Gateway**（Envoy 上层）——Service Mesh API 网关。
-- **Linkerd**（Buoyant 开源）——Service Mesh。
-- **Traefik**（开源）——云原生反向代理。
-- **HAProxy**（开源）——经典负载均衡。
+### 4.4 存量迁移
 
-**API 网关 SaaS**：
+存量改造的读者只有这一节的顺序可循：**先做能立刻见效且可回退的，再处理历史资产，最后收双轨。**
 
-- **AWS API Gateway**——托管 API 网关。
-- **Azure API Management**——Azure 生态。
-- **Google Cloud API Gateway**——GCP 生态。
-- **阿里云 API 网关**——国内云。
-- **腾讯云 API 网关**——国内云。
+**① 立刻见效且可回退的三件事。** 一是**观测先上**：网关接在旁路（镜像或日志对账）上不动路由，先拿到「谁在调、调了多少、扫了多少行」；二是**计量先记账不拦**：把计量埋点跑通，先用它校准容量模型，再拿它配限额；三是**网络层只放行网关网段前的观察模式**，记录会被拦下的调用并按来源分组。三件事都不改变业务行为，任何一件都能在一次配置回切内撤销 —— 这是存量改造能用它们开头的原因。
 
-**WAF / 安全**：
+**② 历史资产怎么分类处理。** 全部返工在做不完的存量上不现实，按「改动时要付多少代价」分三类：
 
-- **ModSecurity**（开源）——WAF 标准。
-- **Cloudflare WAF**（商业）——云 WAF。
-- **AWS WAF**（商业）——AWS WAF。
+| 资产类型 | 处理方式 | 判据 |
+| --- | --- | --- |
+| 调用方（应用 / BI / 导出任务 / 脚本 / Agent 凭证） | 可改的改到网关；不可改的登记为**挂账出口**并给复核日期 | 挂账出口的调用量在连续两个观测周期内是否下降 |
+| 存量接口 | 只改「被本次改动触碰到」的那部分，其余打标挂账 | 每个被挂账的接口是否在清单里有负责人与复核日期 |
+| 权限定义在应用层的存量 | 不批量回收；按「下次改动该接口时改到网关」的规则逐个回收 | 新增接口是否从第一天就由网关承载权限 |
 
-**限流 / 熔断**：
+打标挂账的关键是**挂账也要有判据**：没有复核日期的挂账等于永久豁免，它会成为审计时唯一答不出来的那一块。
 
-- **Sentinel**（阿里开源）——限流 / 熔断 / 降级。
-- **Resilience4j**（开源）——Java 熔断器。
-- **Hystrix**（Netflix，已停止维护）——历史经典。
-- **Envoy Circuit Breaker**——Envoy 内置。
+**③ 双轨怎么维持、维持多久。** 双轨期同时存在两条路径：老路径（直连）与新路径（经网关）。维持成本不是人力，而是**两套口径**——权限、脱敏、计量各有一份在网关上、一份在应用里，两者会随各自改动漂移。所以双轨的时长不能用日历定，要用指标定；实践中真正决定能不能收的是「挂账出口的调用量」这一个数。
 
-**可观测**：
+**④ 什么信号说明可以退出双轨。** 三个信号同时成立才收：网关网络层**封禁开启后无业务中断**（即观察模式期间没有未被登记的调用方）；后端访问日志里**已无来源不明的请求**（出口对账连续两个周期为零）；越权用例在双轨期**连续通过**（用两个租户的凭证互相试探聚合接口）。缺任何一条就延长双轨 —— 提前收的代价是一次查不出来的数据事故，而这类事故的修复成本远高于多维持一段时间的口径维护成本。
 
-- **Prometheus + Grafana**——指标 + 大盘。
-- **Jaeger / Zipkin**——链路追踪。
-- **ELK / Loki**——日志。
+### 4.5 模板 / 示例
 
-**权限**：
+**模板 1：出口清单表**
 
-- **OPA（Open Policy Agent）**——策略引擎。
-- **Casbin**——权限框架。
-- **Keycloak**——身份认证。
+| 出口 | 来源系统 | 调用方 | 最近 30 天调用量 | 可否改 | 负责人 | 复核日期 |
+| --- | --- | --- | --- | --- | --- | --- |
+| {直连域名 / 导出任务 / 凭证} | {服务名} | {团队或应用} | {条目数} | {可改 / 挂账} | {人名} | {日期} |
 
-**GraphQL Gateway**：
+**怎么用**：填满七列；`可否改` 一栏填「挂账」的行必须同时有复核日期，否则这张表会在第二次盘点时变成一份没人维护的资产清单。
 
-- **Hasura**——PostgreSQL 自动 GraphQL。
-- **Apollo Federation**——GraphQL 联邦。
-- **GraphQL Mesh**——多源 GraphQL。
-
-### 4.4 代码 / 示例
-
-**示例 1：APISIX 配置**
+**模板 2：APISIX Route 配置（限流 + 鉴权 + 指标）**
 
 ```yaml
-# APISIX Route 配置
 routes:
   - uri: /api/v1/metric/*
     upstream:
       type: roundrobin
       nodes:
-        - host: oneservice-1
-          port: 8000
-          weight: 1
-        - host: oneservice-2
-          port: 8000
-          weight: 1
+        - {host: oneservice-1, port: 8000, weight: 1}
+        - {host: oneservice-2, port: 8000, weight: 1}
     plugins:
-      jwt-auth:
+      jwt-auth:                    # 先鉴权：缓存必须排在这一步之后
         key: user-key
-      limit-count:
-        count: 1000
+      limit-count:                 # 第一层：按请求数
+        count: 1000                # 示例值，不是推荐值
         time_window: 60
         rejected_code: 429
-        key: remote_addr
-      prometheus:
+        key: remote_addr           # 生产建议改用调用方身份，避免 NAT 后互相影响
+      prometheus:                  # 指标埋点
         prefer_name: true
       cors:
         allow_origins:
           - "https://*.company.com"
-        allow_methods:
-          - GET
-          - POST
+        allow_methods: [GET, POST]
 ```
 
-**示例 2：Kong + JWT 插件**
+**怎么用**：只需替换 `uri`、`upstream.nodes` 与 `allow_origins` 三处；`count` 与 `time_window` 是格式示例，实际值来自 §4.1 Step 2 的容量模型。这一层只覆盖请求数 —— 资源量那层限流（返回行数 / 扫描量）需要从后端取执行统计，不在本文件的配置模型里。
+
+**模板 3：Kong + JWT 插件（命令行）**
 
 ```bash
-# 添加服务
+# 1. 注册服务与路由
 curl -X POST http://kong:8001/services \
-  --data name=oneservice \
-  --data url=http://oneservice:8000
-
-# 添加路由
+  --data name=oneservice --data url=http://oneservice:8000
 curl -X POST http://kong:8001/services/oneservice/routes \
   --data paths[]=/api/v1/metric
 
-# 添加 JWT 插件
-curl -X POST http://kong:8001/services/oneservice/plugins \
-  --data name=jwt
-
-# 添加限流插件
+# 2. 挂插件：鉴权与限流
+curl -X POST http://kong:8001/services/oneservice/plugins --data name=jwt
 curl -X POST http://kong:8001/services/oneservice/plugins \
   --data name=rate-limiting \
-  --data config.minute=1000 \
-  --data config.policy=local
+  --data config.minute=1000 --data config.policy=local
 ```
 
-**示例 3：FastAPI 中间件（限流 + 鉴权 + 计量）**
+**怎么用**：`config.policy` 是这条命令里唯一必须改的地方 —— `local` 只在单副本内计数，多副本部署时要换成集中式策略（具体取值按其官方文档当前版本核验），否则真实上限是「标注值 × 副本数」。
+
+**模板 4：FastAPI 中间件（限流 + 鉴权 + 计量）**
 
 ```python
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-import jwt
-import time
-import redis
+from fastapi import FastAPI, HTTPException, Request
+import jwt, redis, time
 
 app = FastAPI()
-redis_client = redis.Redis(host='redis', port=6379)
+redis_client = redis.Redis(host="redis", port=6379)
+WINDOW, LIMIT = 60, 1000  # 示例值，不是推荐值
 
-# 限流中间件
+# 注册顺序即执行顺序：Starlette 中最先注册的在最内层，
+# 所以计量（最外层）必须能容忍 request.state.user 尚未存在。
 @app.middleware("http")
 async def rate_limit(request: Request, call_next):
     api_key = request.headers.get("X-API-Key", "anonymous")
-    window = 60  # 60 秒
-    limit = 1000  # 1000 次
-    
-    key = f"ratelimit:{api_key}:{int(time.time() // window)}"
+    key = f"ratelimit:{api_key}:{int(time.time() // WINDOW)}"
     count = redis_client.incr(key)
-    redis_client.expire(key, window)
-    
-    if count > limit:
+    redis_client.expire(key, WINDOW)
+    if count > LIMIT:
         raise HTTPException(429, "Too Many Requests")
-    
-    response = await call_next(request)
-    return response
+    return await call_next(request)
 
-# 鉴权中间件
 @app.middleware("http")
 async def auth(request: Request, call_next):
     token = request.headers.get("Authorization", "").replace("Bearer ", "")
     try:
-        user = jwt.decode(token, "secret", algorithms=["HS256"])
-        request.state.user = user
+        request.state.user = jwt.decode(token, "secret", algorithms=["HS256"])
     except jwt.InvalidTokenError:
         raise HTTPException(401, "Unauthorized")
-    
     return await call_next(request)
 
-# 计量中间件
 @app.middleware("http")
 async def metering(request: Request, call_next):
     start = time.time()
     response = await call_next(request)
-    duration = time.time() - start
-    
-    redis_client.hincrby("metering:requests", request.state.user["sub"], 1)
-    redis_client.hincrbyfloat("metering:duration", request.state.user["sub"], duration)
-    
+    subject = getattr(request.state, "user", {}).get("sub", "unauthenticated")
+    redis_client.hincrby("metering:requests", subject, 1)
+    redis_client.hincrbyfloat("metering:duration", subject, time.time() - start)
     return response
 ```
 
-**示例 4：Sentinel 限流（Java）**
+**怎么用**：这段代码只演示「一次请求同时被限流、鉴权、计量」三件事的顺序关系，不要直接上线 —— 密钥要来自配置或密钥管理服务，计量单位还只有请求数与耗时，缺资源量（返回行数 / 扫描量）。缺的那一项正是 §4.2 的第一条。
+
+**模板 5：Sentinel 限流（Java）**
 
 ```java
-import com.alibaba.csp.sentinel.annotation.SentinelResource;
-import com.alibaba.csp.sentinel.slots.block.RuleConstant;
-import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
-import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
-
-@SpringBootApplication
-public class DataGatewayApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(DataGatewayApplication.class, args);
-        initFlowRules();
-    }
-
-    private static void initFlowRules() {
-        List<FlowRule> rules = new ArrayList<>();
-        FlowRule rule = new FlowRule("/api/v1/metric/gmv");
-        rule.setGrade(RuleConstant.FLOW_GRADE_QPS);
-        rule.setCount(1000); // 1000 QPS
-        rules.add(rule);
-        FlowRuleManager.loadRules(rules);
-    }
-}
+FlowRule rule = new FlowRule("/api/v1/metric/gmv");
+rule.setGrade(RuleConstant.FLOW_GRADE_QPS);
+rule.setCount(1000); // 示例值，不是推荐值
+FlowRuleManager.loadRules(List.of(rule));
 
 @RestController
 public class MetricController {
     @SentinelResource(value = "getMetric", blockHandler = "handleBlock")
     @GetMapping("/api/v1/metric/{name}")
-    public Metric getMetric(@PathVariable String name) {
-        return metricService.get(name);
-    }
+    public Metric getMetric(@PathVariable String name) { return metricService.get(name); }
 
-    public Metric handleBlock(String name, BlockException ex) {
-        return Metric.empty(); // 降级返回空
-    }
+    // 降级：返回空值而不是抛异常，避免把限流变成调用方看到的 500
+    public Metric handleBlock(String name, BlockException ex) { return Metric.empty(); }
 }
 ```
 
----
+**怎么用**：替换资源名与阈值两个位置；`handleBlock` 的返回形态要按接口契约决定 —— 返回空值、缓存数据还是带重试提示的错误码，取决于调用方能不能区分「空」与「没有权限」。
+
+### 4.6 自检清单
+
+- [ ] 后端访问日志里，有多少条请求在网关日志中找不到对应记录？抽 3 个后端服务各查 1 天。
+- [ ] 出口清单表里，每一条「挂账」的出口是否都有负责人与复核日期？
+- [ ] 需求说明书里，抽 3 个 API 能否写出它单次请求的最大返回行数与最大扫描量？
+- [ ] 限流配置里除了 QPS，是否有按返回行数 / 扫描量的那一层？它读的执行统计由谁上报、上报可用率多少？
+- [ ] 用一个租户的凭证调一次汇总接口，返回的数字里是否含其他租户的数据？
+- [ ] 缓存键里有没有身份与租户维度？用两个租户的相同参数各请求一次，第二次是否命中第一次的结果？
+- [ ] 入口超时、重试次数、单次超时三个数写成一行不等式是否成立？
+- [ ] 网关的插件链顺序有没有断言成测试用例？升级插件版本后这些用例是否仍通过？
+- [ ] 脱敏规则清单里，每条规则的维护人与上次更新日期是否都填了？
+- [ ] 审计日志能否用一条查询还原「某次 Agent 调用代表了谁、读了多少行、哪些字段被脱敏」？
+- [ ] 最近一次策略变更有没有做过回切演练？记录的实际耗时是多少？
+- [ ] 选型决策书（ADR）里能否回答「行级权限在这一形态下于哪一层注入」与「单次请求扫描了多少数据从哪里读到」？
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一决定成败的环节是 **Step 1 的出口收敛** —— 它不产出任何业务能力，也不改变任何行为，所以最容易被跳过；但它决定了后面九步是「在全部流量上生效」还是「在某一条链路上生效」。判据只有一个：把网关日志与后端日志按请求 id 对账，对不上的比例要能收敛到零。其余每一步都比它更显眼、更容易被立项，却没有一步能替代它。
+>
+> 配合 [§ 2 核心原理](07-data-api-gateway.md)、[§ 3 设计模式与范式](07-data-api-gateway-section-3-sec3.md) 与 [§ 6 落地实践](07-data-api-gateway-section-6-sec6.md) 阅读。

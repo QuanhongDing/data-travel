@@ -137,24 +137,24 @@
 
 **多模态融合阶段（2018-2020）**：
 
-- 2018-2019：CLIP（OpenAI）、ALIGN（Google）、VirTex——视觉-语言对齐模型诞生。
+- 2018-2019：VirTex——视觉-语言对齐的早期工作。
 - 2019：T5 / BERT 等统一文本架构成熟。
-- 2020：DALL-E（OpenAI）、CLIP + VQGAN 推动图像生成 + 视觉-语言联合。
+- 2020：DALL-E（OpenAI）、VQGAN 推动图像生成 + 视觉-语言联合。
 
 **多模态大模型阶段（2021-2023）**：
 
-- 2021：CLIP / ALIGN / Florence（微软）等多模态预训练模型成熟。
+- 2021：CLIP（OpenAI）、ALIGN（Google）、Florence（微软）等多模态预训练模型成熟。
 - 2022：DALL-E 2、Stable Diffusion、Imagen——图像生成大爆发。
-- 2022：GPT-4（多模态预览版）——首个 GPT 多模态模型。
+- 2023：GPT-4（多模态预览版）——首个 GPT 多模态模型。
 - 2023：GPT-4V（视觉）、LLaVA、MiniGPT-4——开源 VLM 涌现。
 
 **原生多模态阶段（2024+，GPT-4o / Gemini / Claude 驱动）**：
 
-- 2024：GPT-4o（原生多模态：文本 + 图像 + 音频）、Claude 3.5 Sonnet（视觉 + 文本）、Gemini 1.5 Pro（原生多模态）、Qwen2-VL、InternVL2、LLaVA-OneVision——开源 + 闭源大爆发。
+- 2024：GPT-4o（原生多模态：文本 + 图像 + 音频）、Claude 3.5 Sonnet（视觉 + 文本）、Gemini 1.5 Pro（原生多模态）、Gemini 2.0（原生多模态 Agent，2024-12）、Qwen2-VL、InternVL2、LLaVA-OneVision——开源 + 闭源大爆发。
 - 2024：Sora（OpenAI 视频生成）、Veo（Google 视频生成）、Suno V4（音乐）、可灵（快手）、Vidu（生数科技）——视频 / 音频生成成熟。
 - 2024：Whisper V3、VALL-E 2、GPT-4o Voice——语音 AI 大爆发。
 - 2024-2025：多模态 Agent（GPT-4o Computer Use、Claude Computer Use）、多模态 RAG、多模态世界模型。
-- 2025：Gemini 2.0（原生多模态 Agent）、Qwen2.5-VL、InternVL3、国产多模态大模型全面对标 GPT-4o。
+- 2025：Qwen2.5-VL、InternVL3、国产多模态大模型全面对标 GPT-4o。
 
 **一句话总结**：**多模态 AI 从「独立 CV + NLP → 视觉-语言对齐 → 多模态大模型 → 原生多模态大模型 + 多模态 Agent」四阶段演进，今天是「AI Native 多模态时代」的关键节点。**
 

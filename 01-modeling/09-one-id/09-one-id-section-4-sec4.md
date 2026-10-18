@@ -1,443 +1,360 @@
-> 本文件是 **09-one-id.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](09-one-id.md)。
+> 本文件是 **09-one-id.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](09-one-id-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](09-one-id.md)。
 
 ## 4. 工程实现
 
+OneID 的工程难点不在算法，在**顺序**：先做什么、每一步拿什么当过关凭据、以及在一堆已经上线的 `user_id` 上怎么落而不砸到下游。本节按「步骤 → 关键技术点 → 工具选型 → 存量迁移 → 模板 → 自检」组织。
+
+面向两类读者。**从零搭建**的读者走 §4.1 → §4.2 → §4.3，七个步骤的产物与判据可以直接当交付清单。**在存量资产上改造**的读者先读 §4.4：存量改造的第一约束是「不动线上主键」，不是「先把算例跑通」——顺序反了，返工量会按下游消费者数量放大。术语沿用主文件 §2.1（强匹配 / 弱匹配 / 连通分量 / Blocking / LTR / 设备指纹 / 手机号三要素）与 §3 的模式名；模式本身的机制、代价与失效点见 [§ 3](09-one-id-section-3-sec3.md)，本节不重复。
+
 ### 4.1 落地步骤
 
-#### 阶段 1 · 数据盘点与 ID 清单（0→1 第 1 周）
+**Step 1：数据盘点与 ID 清单（【经验：1–2 周，随上游系统数量与合规审批周期变】）**
 
-1. **盘点所有上游系统**：业务库、日志、第三方、CRM、广告投放、客服、线下
-2. **列出每个系统的 ID 类型与字段**：
-   - user_id / customer_id / member_id / open_id / union_id / 手机号 / 邮箱 / 设备 ID / IMEI / IDFA / Cookie / 微信号
-3. **输出 ID 关系清单**：`id_inventory.xlsx`
-   - 列：ID 类型、来源系统、是否实名、是否加密、更新频率、合规等级
+- 逐个登记上游来源：业务库（MySQL / Oracle）、行为日志、第三方合作、CRM 与客服、广告投放、线下 POS 与 IoT。
+- 每个来源记下 ID 类型与字段：`user_id` / `customer_id` / `member_id` / `open_id` / `union_id`、手机号、邮箱、设备 ID、IMEI、IDFA、OAID、Cookie、微信号。
+- 每列再补三件事：是否实名、是否可跨域、合规等级与是否允许留存明文。
+- **产物**：`id_inventory.xlsx`（列：ID 类型、来源系统、是否实名、是否加密、更新频率、合规等级）。
+- **判据**：随机抽 3 个来源，拿它的主键字段名去清单里对，对不上的条数必须为 0；再抽 3 条线上记录，人工回答「这条落在清单的哪一行」。
+- **为什么必须这一步**：清单决定后面所有步骤的覆盖面。跳过它，强匹配规则只会按「想得起来的那几个字段」写，到 Step 3 做弱匹配时才发现某个高频来源根本没有采集链路，整段返工。
 
-#### 阶段 2 · 强匹配规则建设（0→1 第 2-3 周）
+**Step 2：强匹配规则建设（【经验：2–3 周，随可用的「已知同一人 / 已知不同人」样本对数量与合规评审轮次变】）**
 
-1. **确定强匹配字段**：
-   - 手机号（一级，最强）
-   - 身份证号 hash（一级，最强，但需脱敏）
-   - 邮箱 hash（一级）
-   - 设备指纹 hash（一级，同设备同源）
-2. **统一脱敏规范**：
-   - 手机号 SHA-256 + 盐（盐定期轮换）
-   - 身份证号 SHA-256 + 盐
-   - 邮箱 lowercase + SHA-256 + 盐
-3. **编写强匹配 ETL**：Hive SQL / Spark SQL / Flink SQL
+- 定强匹配字段与优先级：手机号、身份证号 hash、邮箱 hash、设备指纹 hash（同设备同源）。
+- 统一规范化与脱敏：手机号带国家码、去空白后 SHA-256 加盐；邮箱先 lowercase 再哈希；身份证号哈希后保留出生日期段做一致性校验；需要可读性时另存截断值（前 7 位或后 4 位）。
+- 盐管理：业务盐 + 数据盐双盐，轮换周期【经验：季度级，随合规要求和密钥托管能力变】。
+- **产物**：规范化与哈希规范文档 + 强匹配 ETL（Hive SQL / Spark SQL / Flink SQL 任一）。
+- **判据**：从客服工单里捞 100 对「已知同一人」的记录，看强匹配规则是否条条连上；再捞 100 对「已知不同人」，看误连是否为 0。
+- **为什么必须这一步**：强匹配产出的是 [§ 3.2.1](09-one-id-section-3-sec3.md) 里 weight = 1.0 的边，它是图闭包的地基。地基里的错误无法被后面的阈值修回——一条错误的强匹配边会把两个真人锁进同一个连通分量。
 
-#### 阶段 3 · 弱匹配规则 + ML 模型（0→1 第 4-6 周）
+**Step 3：弱匹配规则 + ML 模型（【经验：3–4 周，随可用特征来源数量与人工标注预算变】）**
 
-1. **模糊字段抽取**：
-   - 姓名 → Jaro-Winkler / 拼音转换
-   - 地址 → 地址标准化 + NER（省市区提取）
-   - 公司名 → 公司名清洗 + 同义词替换
-2. **行为特征构造**：
-   - 同一 IP 段（/24 子网）
-   - 同一 WiFi BSSID / GPS 坐标（30m 内）
-   - 同一时间窗口（±30 分钟）
-   - 同一设备型号 + OS + 屏幕尺寸
-3. **训练 LightGBM 匹配模型**：
-   - 正样本：人工标注 / 已有 OneID 的成对 ID
-   - 负样本：随机采样非同 ID 对
-   - 验证：AUC ≥ 0.95，KS ≥ 0.6
+- 模糊字段抽取与归一：姓名（Jaro-Winkler / 拼音转换）、地址（地址标准化 + NER 抽省市区）、公司名（清洗 + 同义词替换）。
+- 行为特征构造：同一 IP 段（/24 子网）、同一 WiFi BSSID 或 GPS 30 米内、同一时间窗口（±30 分钟）、同一设备型号 + OS + 屏幕尺寸。【经验：窗口与半径随业务形态变——即时零售要收紧，内容类可放宽】
+- 训练匹配模型（LightGBM 一类）：正样本取人工标注与已确认合并且的对，负样本随机采样非同对；验证用 AUC 与 KS【经验：这类对级分类器在自有留出集上通常 AUC 落在 0.8–0.95、KS 落在 0.4–0.6 这一带，门槛随误合并代价往上取——误合并成本高的域要求更严，并以自己回放样本上的分布为准】。
+- **产物**：特征表 + 模型 + 双阈值标定报告（上阈值、下阈值各定在哪、依据哪份回放数据）。
+- **判据**：候选对按分数分桶，每桶抽 50 对人工判，看「分数越高、命中率越高」是否单调；不单调说明特征有泄漏或标签有错。
+- **为什么必须这一步**：它决定图里弱边的精度，而 [§ 3.2.2](09-one-id-section-3-sec3.md) 已经写明传递闭包会放大错误。跳过标定直接给个阈值灌图，误合并会沿链聚合成巨型分量，而且到那时已无法靠回调阈值回退。
 
-#### 阶段 4 · 图聚合 + OneID 生成（0→1 第 7-8 周）
+**Step 4：图聚合 + OneID 生成（【经验：1–2 周，随图规模与每日重算窗口变】）**
 
-1. **构建 ID-Graph**：Spark GraphX / Neo4j / NebulaGraph
-2. **每日跑 WCC（弱连通分量）**
-3. **每个 CC 分配 OneID**：
-   - 取最小 ID 作为 OneID 主键
-   - 或取最早注册 ID 作为 OneID 主键
-4. **OneID 表输出**：
-   - 字段：oneid, primary_id_type, primary_id_value, all_ids, first_seen, last_seen, version
+- 建 ID-Graph（Spark GraphX / Neo4j / NebulaGraph 一类，选型见 §4.2）。
+- 每日跑一次弱连通分量（WCC）；每个分量分配 OneID：取最小 ID 或最早出现的 ID 作为锚点。
+- 输出 OneID 表：`oneid` / `primary_id_type` / `primary_id_value` / `all_ids` / `first_seen` / `last_seen` / `version`。
+- **产物**：每日 OneID 快照 + 分量规模分布报表（最大分量占比这一项必须出）。
+- **判据**：随机抽 20 个 OneID，把它的 `all_ids` 回放给业务方确认是否同一个人；同时看最大分量占比是否在正常区间（【经验：曲线突然跳升即按事故处理】）。
+- **为什么必须这一步**：编号只有在闭包算完之后才是稳定的。提前把编号写进下游等于冻结错误——编号一旦被订单、画像、特征工程消费，重算就是改所有人的外键。
 
-#### 阶段 5 · 服务化（0→1 第 9-10 周）
+**Step 5：服务化（【经验：2–3 周，随要支持的上游 ID 类型数量与下游接入方数量变】）**
 
-1. **OneID 查询服务**：
-   - 输入：phone / device_id / email / cookie
-   - 输出：oneid + 关联 ID 列表
-   - 性能：P99 < 100ms
-2. **OneID 反向查询**：
-   - 输入：oneid
-   - 输出：所有关联 ID + 属性
-3. **OneID 更新服务**：
-   - 实时合并 / 拆分接口
+- 正向查询：输入 phone / device_id / email / cookie，输出 oneid + 关联 ID 列表。
+- 反向查询：输入 oneid，输出全部关联 ID 与属性。
+- 更新接口：合并 / 拆分，含人工复核入口。
+- 服务指标：P99 延迟目标【经验：百毫秒级，随数据规模、缓存命中率与查询形态变】；可用性目标【经验：通常落在 99.9% 到 99.99% 这一带，随业务对取数中断的容忍度定——取数链路被下游任务硬依赖时往 99.99% 一侧取，只供人查数时 99.9% 一侧即可】。
+- **产物**：OneID 查询服务 + 接口契约（契约里必须写明「读到的是即时视图还是已校准快照」）。
+- **判据**：在测试环境拿 10 个真实上游事件走一遍「查询 → 合并 → 再查询」，看结果是否符合预期；另测一次上游记录被删除后接口返回什么。
+- **为什么必须这一步**：没有服务化，OneID 就只是一张每天重刷的离线表，下游只能 T+1 消费。但服务化的前提是 [§ 3.2.6](09-one-id-section-3-sec3.md) 的双轨语义已写在接口上——不写明，下游无法判断结果可信度。
 
-#### 阶段 6 · 监控与治理（0→1 第 11-12 周）
+**Step 6：监控与治理（【经验：首版约 2 周，随监控指标条数与告警通道数量变，之后持续】）**
 
-1. **监控**：
-   - 合并率、强匹配占比、弱匹配占比、冲突率
-   - 服务 SLA（P99 < 100ms，可用性 99.95%）
-2. **数据质量**：
-   - OneID 覆盖率（账号有 OneID 比例）
-   - 冲突率（同 OneID 下属性矛盾比例）
-   - 回溯率（可被还原的合并比例）
-3. **审计日志**：
-   - 每次合并 / 拆分留痕
-   - 提供审计查询接口
+- 监控：合并率、强匹配占比、弱匹配占比、冲突率、服务 SLA。
+- 数据质量三指标：OneID 覆盖率（账号有 OneID 的比例）、冲突率（同 OneID 下属性矛盾比例）、可回溯率（能被还原的合并比例）。
+- 审计：每次合并 / 拆分留痕（谁、何时、依据哪条规则、置信度多少），并提供审计查询接口。
+- **产物**：监控看板 + 审计日志表 + 质量指标的告警阈值。
+- **判据**：拿一次历史上真实发生过的错误合并，用审计接口回答「这条边是谁、何时、按什么规则加的」；答不出来即留痕不完整。
+- **为什么必须这一步**：OneID 的结论会随新证据变化，没有留痕就没有回滚点（[§ 3.5](09-one-id-section-3-sec3.md) 的「一次性大合并、无回退机制」）。它排在最后不是因为可省，而是前五步之前它没有可观测的对象。
+
+**Step 7：冲突检测与回滚闸门（【经验：1–2 周，随冲突规则条数与人工 / LLM 复核队列的设计变】）**
+
+- 合并时检测强矛盾：同一 OneID 下出现出生日期相差数十年、性别不一致、证件类型冲突等。
+- 矛盾超阈值即拒绝自动合并，转入人工或 LLM 复核队列（[§ 3.2.5](09-one-id-section-3-sec3.md) 的三档分流）。
+- 保留上一版快照与图版本号；回滚走「切回上一版 + 记录回滚原因与影响面」。
+- **产物**：冲突规则表 + 回滚剧本（runbook）+ 上一版快照的保留策略。
+- **判据**：在预发环境故意造一次误合并（用一条假边把两个不同手机号的人连起来），完整走一遍回滚，看能否在不停服的前提下把主体数恢复。
+- **为什么必须这一步**：连通分量是整体，撤销不是删一条边。这一步必须排在快照与审计之后才有可回滚的对象，排在 Step 6 之前则无从判断「什么时候该回滚」。
+
+最常被跳过的是 **Step 1 与 Step 7**。跳过盘点，症状出现在 Step 3：弱匹配特征里少了一整类来源，覆盖率上不去，且团队不知道缺的是什么。跳过冲突检测与回滚，症状出现得更晚——直到某次跑批后主体数骤降，没人答得出是哪条边造成的，只能全量重跑，而重跑本身又引入新的差异。
 
 ### 4.2 关键技术点
 
-#### 4.2.1 设备指纹（Device Fingerprinting）
+**1. 设备指纹（Device Fingerprinting）**
 
-Web 端：
-- UA（User-Agent）
-- 屏幕分辨率、色深、像素比
-- 系统字体列表
-- Canvas 指纹（GPU 渲染差异）
-- WebGL 指纹
-- 已安装插件 / 已安装字体
-- 时区、语言
-- Cookie + localStorage（需用户授权）
+- **做法**：Web 端采集 UA、屏幕分辨率 / 色深 / 像素比、系统字体列表、Canvas 与 WebGL 渲染差异、已安装插件、时区与语言、Cookie + localStorage（须用户授权）；移动端记录 IDFA（iOS，用户授权后才可访问）、IDFV、OAID、Android ID、IMEI 与 MAC（部分场景受限）；服务端补 IP + 运营商 + 地理、WiFi BSSID、蓝牙 MAC，以及充电习惯、陀螺仪这类用于黑产识别的信号。
+- **机制**：因为指纹由设备与环境属性组合而成、不依赖登录，所以匿名流量与未授权设备也能被赋予一个稳定标识，OneID 覆盖面对「带强标识记录」的依赖被削弱。代价是它属于**概率性标识**：客户端升级、装了新字体、进了隐私模式，属性组合就变了，表现为「同一台设备被判成两台」，而不表现为报错。
+- **失效条件**：当客户端把属性收敛（统一冻结 UA、Canvas 返回值被随机化、IDFA 授权率低）时，这条会从「补匿名流量」退化成「给同一设备反复发新 ID」。观测信号是**指纹命中率与「新设备数 / 活跃设备数」比值同时恶化**——后者上升说明指纹在漂移。命中率按【经验】记：移动端约七到九成（随授权状态与客户端版本变，IDFA 与 OAID 的可用性差异明显），Web 端约四到六成（随清缓存频率、隐私模式使用率与浏览器策略变）。这两个区间跨平台、跨地区差异很大，正式方案请以自己在真实流量上的抽样统计为准。
+- **档位**：【经验】（区间 + 条件）。iOS 14.5 起 IDFA 需用户授权后方可获取，属公开的产品策略变更【公开：Apple App Tracking Transparency，2021】。
 
-移动端：
-- iOS：IDFA（用户授权后才可访问，14.5 后大幅收紧）、IDFV（应用级）
-- Android：OAID（替代 IMEI）、Android ID、IMEI（部分场景受限）、MAC 地址
+**2. 加密与脱敏**
 
-服务端：
-- IP + 运营商 + 地理位置
-- WiFi BSSID
-- 蓝牙 MAC
-- 充电习惯、陀螺仪数据（黑产识别）
+- **做法**：手机号按「国家码 + 去空白 + SHA-256 加盐」哈希，需要可读性时另存截断值（前 7 位或后 4 位）单独用于匹配；身份证号哈希后保留出生日期段做一致性校验；邮箱先 lowercase 再哈希，域名可单独截断；盐用双轨（业务盐 + 数据盐）并按【经验：季度级】轮换。
+- **机制**：因为匹配只需要等值比较，把明文换成加盐哈希就能在不持有明文的前提下完成强匹配——这让 ID 打通可以在「明文不出域」的约束下进行。代价是哈希不可逆，**任何规范化规则的变更会同时改变全部历史结果**：改一次空白处理，等于换了一套 ID。
+- **失效条件**：当盐与规范化规则被当成实现细节、散落在多个作业里时，同一手机号在不同作业里算出不同哈希，症状是**匹配边数无故下降**（不是报错）。观测信号：抽同一批手机号，比对两个作业输出的哈希值是否一致；以及换盐后统计匹配边数的变化是否落在预期范围内。
+- **档位**：盐轮换周期【经验：季度级，随合规要求与密钥托管能力变】；截断位数【经验：随下游对可读性的要求变】。
 
-**命中率**：
-- 移动端：70-90%（OAID 命中率高于 IDFA）
-- Web 端：40-60%（浏览器隐私模式 / 清缓存后失效）
+**3. ID-Graph 存储**
 
-#### 4.2.2 加密与脱敏
+- **做法**：把 ID 当节点、匹配关系当边；规模到图计算量级后由专用图引擎或图计算框架承载，按下表选型。
 
-- **手机号**：SHA-256(salt) + 截断（保留前 7 位或后 4 位做匹配）
-- **身份证号**：SHA-256(salt) + 生日截断（用于一致性检查）
-- **邮箱**：SHA-256(salt) + 域名截断
-- **盐管理**：定期轮换（季度），双盐（业务盐 + 数据盐）
-
-#### 4.2.3 ID-Graph 存储
-
-| 工具 | 规模 | 延迟 | 适用 |
+| 工具 | 部署形态 | 选型判据（在什么约束下选它） | 不选它的代价 |
 | --- | --- | --- | --- |
-| Neo4j | 10 亿边 | ms 级 | 中等规模 |
-| NebulaGraph | 100 亿边 | ms 级 | 大规模互联网 |
-| TigerGraph | 100 亿边 | ms 级 | 金融风控 |
-| Spark GraphX | 1000 亿边 | 分钟级 | 离线批处理 |
-| GraphScope | 1000 亿边 | 秒级 | 一站式图计算 |
-| Amazon Neptune | 100 亿边 | ms 级 | 云原生 |
-| ArangoDB | 10 亿边 | ms 级 | 多模型（文档+图） |
-| JanusGraph | 100 亿边 | ms 级 | 开源 + 可插拔后端 |
+| Neo4j | 单机 / 集群 | 需要 Cypher 生态与现成图算法库、图规模中等 | 想一步到位承接超大规模时，会先撞上容量与运维成本 |
+| NebulaGraph | 分布式 | 图规模大、需要水平扩展与多副本 | 用单机图引擎时，每日重算窗口会被全图遍历拖长 |
+| TigerGraph | 分布式 | 以在线图查询为主、风控类深链路查询多 | 换成批式图框架后，在线查询延迟不再可控 |
+| Spark GraphX | 批处理 | 已有 Spark 栈、只做每日 / 每小时的批量闭包 | 用它承接在线点查时，延迟以分钟计，做不成服务 |
+| GraphScope | 一站式 | 想在同一套栈里同时做图分析与图计算，避免多引擎切换 | 自建两套栈时，图结构与口径要在两处各维护一份 |
+| Amazon Neptune | 托管云服务 | 不想自运维图库、能接受云服务边界 | 自建时备份、升级与容灾要自己写 |
+| ArangoDB | 多模型 | 同一份数据既要文档查询又要图遍历 | 拆成两套库后，一致性同步链路要自己兜 |
+| JanusGraph | 可插拔后端 | 需要把图存储挂到已有 HBase / Cassandra 后端上 | 用自带存储的图库时，无法复用已有存储的运维体系 |
 
-#### 4.2.4 实时增量更新（Flink / Kafka）
+- **机制**：因为闭包是全局操作，「引擎能不能做全图遍历、重算窗口有多长」比「单点查询多快」更决定成败——选错引擎的表现是每日重算越跑越慢，而不是查询变慢。
+- **失效条件**：当图规模涨到单机内存装不下、或分量频繁重编号时，这条从「每天跑得完」变成「重算追不上增量」。观测信号是**重算任务完成时间曲线**：一旦开始逐周右移，通常几周内就会追平数据到达速度。各引擎宣称的容量量级随集群规格、分片与索引设计变化极大，不要引用二手数字，按自己的图规模压测后再定型。
+- **档位**：容量与延迟均为【经验】量级（区间 + 条件），本文不给任何引擎的具体边数上限与延迟数值。
 
-```
-Kafka Topic: dwd_user_change
-  Schema: { id_type, id_value, change_type, timestamp, source }
-  
-Flink Job:
-  1. 消费变更事件
-  2. 查询 OneID 主数据（Redis / HBase）
-  3. 触发合并 / 拆分
-  4. 更新 OneID 状态
-  5. 写回主数据 + 通知下游
-```
+**4. 实时增量更新（Flink / Kafka）**
 
-延迟目标：P99 < 1 秒。
+- **做法**：上游 ID 变更事件进 Kafka 的专用变更 topic（记作 `dwd_user_change`；按数仓分层命名规范也写作 `dwd.user.id_change`——模板 5 用的是后者），消息体 `Schema: { id_type, id_value, change_type, timestamp, source }`；Flink 作业依次消费变更、查 OneID 主数据（Redis / HBase）、触发合并或拆分、更新状态、写回主数据并广播到下游 topic（发布侧另起 `dwd.oneid.update` 一类的结果流）。
+- **机制**：因为事件到达即可查到结果，在线点查不必等当天批式重算——这正是 [§ 3.2.6](09-one-id-section-3-sec3.md) 双轨里流式轨要买到的性质。代价是增量侧必须处理「一条新边把两个已有大分量连起来」的重编号，而重编号耗时与分量规模成正比，表现为突发的长尾延迟。
+- **失效条件**：当上游出现事件乱序或重复投递时，这条从「即时可用」变成「同一设备在几分钟内被反复改判」。观测信号：**同一 `id_value` 在短时间窗内的 OneID 变更次数**，以及下游 topic 的重复率。
+- **档位**：延迟与吞吐目标【经验】（区间 + 条件，随主数据存储的读写形态与分量规模变），不要照抄外部 P99 数值。
 
-#### 4.2.5 准实时批量（T+1 重算）
+**5. 准实时批量（T+1 重算）**
 
-每日凌晨：
-1. 全量读上游 ID 数据
-2. 全量跑 ID-Mapping
-3. 与昨日 OneID 表对比（diff）
-4. 输出新 OneID 表 + 增量 diff
+- **做法**：每日凌晨全量读上游 ID 数据，全量跑一次 ID-Mapping，与昨日 OneID 表做 diff，输出新快照与增量 diff 供下游消费。
+- **机制**：因为批式轨的产物是整份快照、而不是散在逐条边上的补丁（[§ 3.2.6](09-one-id-section-3-sec3.md) 的双轨里批式一侧），纠错与回滚都落在「换一份快照」这一个动作上——Step 7 的回滚剧本与 Step 6 的审计口径正是建在这上面——所以它才有资格当「真相」，把流式期的局部结论整段校准掉。代价是重算窗口与数据量成正比，且每次重算都可能改写一批编号，下游必须能接受「昨天的答案今天变了」；这件事第一次暴露通常不在跑批日志里，而在下游凌晨的对账差异表里。
+- **失效条件**：当数据量增长到重算窗口超过业务可接受的空窗期时，这条从「每日校准」变成「校准追不上变更」。观测信号：**重算结束时间**与**相邻两次快照之间的 OneID 变更率**——后者持续偏高，说明增量链路与批式链路的规则已经不同步。
+- **档位**：重算窗口与数据量成正比，不给绝对时长；判断标准用「重算结束时间是否右移」这个相对量，不用具体秒数。
 
-保证：批式校准实时增量，**最终一致性**。
+### 4.3 工具链与平台
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+选型判据统一按「你被什么约束住」来写；拿不准某个产品是否支持某特性的，一律给**判定方法**（怎么自行核验），不给结论。
 
 #### 4.3.1 传统 MDM 套件
 
-| 产品 | 厂商 | 特点 |
-| --- | --- | --- |
-| InfoSphere MDM | IBM | 企业级，重型，传统金融行业 |
-| Informatica MDM | Informatica | 数据治理 + MDM 一体化 |
-| Oracle MDM | Oracle | 与 Oracle DB 深度集成 |
-| SAP MDG | SAP | ERP 厂商的 MDM |
-| Reltio | Reltio | 云原生 MDM，图原生 |
-| Tibco EBX | Tibco | 主数据 + 数据质量 |
-
-#### 4.3.2 大数据 OneID 中台（自研）
-
-- **阿里 OneID（Dataphin / Quick BI 配套）**：基于设备指纹 + 手机号三要素 + 图计算
-- **字节 UID**：基于 UID 图 + 概率匹配（公开技术博客少量披露）
-- **美团 UserID**：图数据库 + 规则引擎（公开论文已多次）
-- **腾讯 OneID**：QQ / 微信 OpenID + UnionID + 手机号 + 设备 ID
-- **京东 OneID**：电商场景的 ID-Mapping 平台
-- **网易 OneID**：游戏账号 + 实名 + 设备指纹
-
-#### 4.3.3 云厂商实体解析服务（2023-2025 新工具）
-
-| 厂商 | 服务名 | 发布时间 | 特点 |
+| 候选 | 定位 | 选型判据（什么约束下选它） | 不选它的代价 |
 | --- | --- | --- | --- |
-| AWS | **AWS Entity Resolution** | 2024 GA | ML-based 匹配，支持多种 blocking 策略 |
-| Azure | **Azure AI Foundry ID Resolution** | 2024 GA | 与 Cognitive Services 集成 |
-| GCP | **Cloud Entity Resolution (Dataplex)** | 2023 GA | BigQuery 内置 |
-| Salesforce | **Data Cloud Zero-Copy ID Resolution** | 2024 GA | 零拷贝 + CDP |
-| Palantir | **Foundry Entity Resolution** | 持续迭代 | 图原生 + Ontology |
+| IBM InfoSphere MDM / Informatica MDM / Oracle MDM / SAP MDG | 企业级重型 MDM，强规则 + 审批流 | 主数据以注册实体（客户 / 供应商 / 物料）为主、有强监管要求、且已有 ERP 与数仓生态时 | 自研打通链路后，审批流、主数据版本与 ERP 集成要自己重建 |
+| Reltio / Tibco EBX | 云原生 MDM / 主数据 + 数据质量一体 | 需要图原生匹配，或希望在 MDM 里顺带做数据质量 | 用重型套件去跑互联网量级的设备与行为打通，会先在扩展性上到顶 |
+
+#### 4.3.2 大数据 OneID 中台（自研为主，公开材料作参考架构）
+
+| 候选 | 定位 | 选型判据 | 不选它的代价 |
+| --- | --- | --- | --- |
+| 阿里 OneID（Dataphin / Quick BI 配套）、美团 UserID、腾讯 OneID、京东 OneID、网易 OneID | 多域打通中台，强标识 + 设备指纹 + 图计算 / 规则引擎 | 业务形态接近（电商 / 社交 / 游戏）且有工程人力时，参考其分层方式自建 | 照搬会带上别人业务域的假设（以社交账号为主轴等），迁到强实名域要重做匹配层 |
+| 字节 UID | UID 图 + 概率匹配 | 多端多产品线、需要概率匹配兜底时参考 | 自己从零设计，会把别人踩过的坑（弱边直接灌图等）再踩一遍 |
+
+这些中台不是可采购产品，公开披露的粒度也不一：能核到的是分层思路与术语，**具体实现与现状以各自公开技术材料为准**，不要把架构图当成可交付的实现。
+
+#### 4.3.3 云厂商实体解析服务
+
+| 候选 | 定位 | 发布时间 | 选型判据 | 不选它的代价 |
+| --- | --- | --- | --- | --- |
+| AWS Entity Resolution | 托管实体解析，多种 blocking 策略 + ML 匹配 | 2024 GA【公开：AWS 发布说明】 | 数据已在 AWS 上、不想自建匹配与标注链路 | 自建意味着把 blocking、标注、阈值标定一起承担 |
+| Azure AI Foundry ID Resolution | 与 Azure AI 服务集成的身份解析 | 2024 GA【公开：Azure 发布说明】 | 已用 Azure AI 生态、需要与既有身份体系共用 | 自建需要自己把身份解析与既有权限体系接上 |
+| GCP Cloud Entity Resolution（Dataplex） | 与 BigQuery / Dataplex 一体 | 2023 GA【公开：Google Cloud 发布说明】 | 数仓在 BigQuery、希望匹配就地执行 | 把数据搬出云做匹配，出域合规与成本都要重算 |
+| Salesforce Data Cloud Zero-Copy ID Resolution | 零拷贝 + CDP | 2024 GA【公开：Salesforce 发布说明】 | 主战场是 CRM / CDP，要求不搬迁数据即统一身份 | 自建 CDP 身份层，要自己打通 CRM 与数据仓的同步 |
+| Palantir Foundry Entity Resolution | 图原生 + Ontology | 随平台持续迭代，无单点 GA 日期 | 需要把身份与本体 / 对象模型绑在一起 | 身份与业务对象模型分成两层，跨层查询要另建映射 |
+
+上表的年份按各家发布说明里的 GA 公告登记【公开】，可按「产品全名 + generally available」自行核验；GA 状态与能力边界请以各自官方文档当前版本为准——对外公告的月份与正式 GA 日期常不是同一个月。判定方法：按**产品全名 + 该能力的输入输出形态**核对，而不是按「实体解析」这个能力名归类——同一能力在不同材料里会挂在不同的产品名下。
 
 #### 4.3.4 开源工具
 
-- **Splink**（英国 MoJ 开源）：Python 实体解析库，Fellegi-Sunter 实现
-- **dedupe**（DataMade）：Python 主动学习实体解析
-- **Jellyfish**（James Trimble）：字符串相似度算法库
-- **recordlinkage**（Python）：传统实体解析工具包
-- **Apache Hivemall**（Treasure Data）：机器学习 + UDF 实体解析
-- **Magellan**（Uber 开源）：基于 PySpark 的实体解析
-- **DeepMatcher**（UMass）：深度学习实体解析
-- **Ditto**：基于 BERT 的实体解析（GitHub）
+| 候选 | 定位 | 选型判据 | 不选它的代价 |
+| --- | --- | --- | --- |
+| Splink（英国司法部开源） | Fellegi-Sunter 的 Python 实现 | 需要可解释的概率匹配、团队以 Python 为主 | 自研打分器要自己实现 m / u 估计与 EM 标定 |
+| dedupe（DataMade） | 主动学习式去重 | 有少量人工标注预算、候选对规模中等 | 纯手工标规则在模糊字段上覆盖不住 |
+| recordlinkage | 传统实体解析工具包 | 需要现成的 blocking + 比较函数组合 | 自己拼装比较函数，容易在索引阶段引入漏检 |
+| Jellyfish | 字符串相似度算法库 | 只需要算出姓名 / 地址相似度，不要整套 ER 框架 | 为算 Jaro-Winkler 引入重型 ER 平台不划算 |
+| Apache Hivemall（Treasure Data） | 机器学习 + UDF | 计算已经全在 Hive 上、不想把数据拉出来 | 把数据拉到外部环境，成本与合规边界都要重算 |
+| Magellan（Uber 开源） | 基于 PySpark 的实体解析 | 数据在 Spark 上、要做大规模 blocking 与匹配 | 单机库在候选集变大时会先撞内存 |
+| DeepMatcher（UMass） | 深度实体解析 | 需要可训练的深度匹配模型做对照实验 | 只靠规则无法覆盖长文本变体 |
+| Ditto | 基于预训练语言模型的匹配 | 文本变体是主要证据、且有对级标注 | 字段级相似度在跨书写体系上直接归零（「张三」与「Zhang San」的 Jaro-Winkler 为 0.0，例子见主文件 §2.3.2）；称呼、缩写这类变体它也表达不了，要靠对级标注与语义匹配补 |
 
-#### 4.3.5 LLM 增强工具（2024-2025）
+这一栏里的项目**维护状态、许可与支持的引擎版本差异较大**，是否仍在维护请以各自代码仓库当前状态为准；名字在这里只作线索，不作可用性承诺。
 
-- **LangChain + Entity Resolution**：用 LLM 链做 ER
-- **LlamaIndex GraphRAG**：图 + RAG 实体解析
-- **Microsoft Presidio + LLM**：隐私 + ER
-- **AWS Entity Resolution + Bedrock**：AWS 集成 LLM 的 ER 服务
+#### 4.3.5 LLM 增强工具
 
-### 4.4 代码 / 示例
+| 候选 | 定位 | 选型判据 | 不选它的代价 |
+| --- | --- | --- | --- |
+| LangChain + 实体解析链 | 把 LLM 链挂在复核环节 | 已有编排栈、只需要对边界样本做判定 | 为一次判定调用引入整套框架 |
+| LlamaIndex GraphRAG | 图 + RAG | 打通后的实体还要供知识图谱检索 | 身份层与图谱层各存一份实体，口径会分叉 |
+| Microsoft Presidio + LLM | 隐私识别 + 复核 | 需要在打通链路里先识别 PII 再决定能否合并 | 事后补脱敏时，PII 已经进过链路 |
+| AWS Entity Resolution + Bedrock | 托管 ER + 托管 LLM | 已在 AWS 上、希望复核也托管 | 自建要同时维护匹配与模型两套调用 |
 
-#### 4.4.1 强匹配 SQL（Hive / Spark SQL）
+这一类最容易误选的形态，是**把「LLM 增强」当成主匹配器**。[§ 3.2.5](09-one-id-section-3-sec3.md) 已给出机制：复核成本与边界区间内的候选对数成正比。所以选它的判据只有一条——**复核量是否被锚定在中间区间的对数上**；回答不了这条，先不要选。另外同一能力会在「云厂商实体解析服务」与「LLM 增强工具」两栏里同时出现，这不是重复登记，而是同一个能力被挂在不同产品名下；判定方法是按产品全名与输入输出核对官方文档，而不是按能力名归类。
+
+### 4.4 存量迁移
+
+存量改造的核心问题是：**一套新结论怎么装进一堆已经在按旧键运转的系统里。** 下面五条是顺序，不是清单。
+
+**① 先做立刻见效且可回退的：旁路挂载。** 不动任何线上主键。新链路只消费上游的**只读副本**，产出一张独立的 `oneid_mapping` 派生表和一套查询接口；回退方式就是删表、摘接口，上游零改动。第一个交付的收益选「跨域找数」（下游按 OneID 查一次），而不是「改主键」（下游改成按 OneID 存）——前者随时可退，后者退不回来。
+
+**② 历史资产分三类处理，不要全量返工。** 这三类的判据是「这条历史记录还带不带可用的证据」：
+
+- **可重算类**：带明文强标识且合规允许留存的记录，重跑强匹配即可与新建链路对齐——这类全量返工。
+- **只挂账类**：只有弱证据（设备指纹、行为共现）的记录，不返工；把映射写进表并标 `provisional` 与置信度，等它下次有新事件时再并入。
+- **冻结类**：来源已下线、或合规不允许回溯的记录，标 `frozen`，只保证「不再增长」，不承诺准确。
+
+打标挂账的价值在于把「不知道准不准的数据」变成「知道准不准的数据」——下游据此可以自己决定要不要用，而不是被一个无差别的映射表骗到。
+
+**③ 双轨怎么维持、维持多久。** 新链路产出 `oneid_v2`，旧 `user_id` 继续服务线上；中间加一张 ID 别名表（alias），让下游可以按两种键查询，下游不必在同一周全部改造。双轨期【经验：一个季度到一年，随下游消费者数量、合规复核周期与埋点改造排期变】——它不是按「技术侧改造完成」收，而是按**最后一个消费者改造完成**收。
+
+**④ 退出双轨的三个信号，要同时成立。**
+
+- 旧键查询量占比降到低位，并连续多周没有新的调用方出现；
+- 下游改造清单清零，每个消费者都有明确的 owner 确认；
+- 新旧映射的对账差异稳定在阈值内，且差异能逐条归因到已知的 `provisional` / `frozen` 类别。
+
+有一条不成立就继续双轨。提前收轨的代价是下游悄悄改回旧键，而这件事只会在下一次对账时才暴露。
+
+**⑤ 一条反例：不要用「一次性改写线上主键」当迁移手段。** 外键、埋点、报表、特征工程里的旧 ID 不会同时改完；改一半的状态比不改更糟——同一个人在两套键下各有一份画像，而这正是 OneID 本来要消灭的东西。
+
+### 4.5 模板 / 示例
+
+**模板 1：强匹配 SQL（Hive / Spark SQL）**
 
 ```sql
--- 创建 OneID 中间表
 CREATE TABLE dwd.one_id_mapping (
-    id_id STRING COMMENT '原始 ID',
-    id_type STRING COMMENT 'ID 类型',
-    oneid BIGINT COMMENT 'OneID 主键',
-    version BIGINT COMMENT '版本号',
+    id_id     STRING  COMMENT '原始 ID',
+    id_type   STRING  COMMENT 'ID 类型',
+    oneid     BIGINT  COMMENT 'OneID 主键',
+    version   BIGINT  COMMENT '版本号',
     update_time TIMESTAMP
-) PARTITIONED BY (dt STRING)
-STORED AS ORC;
+) PARTITIONED BY (dt STRING) STORED AS ORC;
 
--- 强匹配：按手机号合并
 INSERT OVERWRITE TABLE dwd.one_id_mapping PARTITION (dt='${biz_date}')
-SELECT
-    id_id,
-    id_type,
-    -- 取最早出现的 ID 作为 OneID 锚点
-    MIN(oneid_anchor) OVER (PARTITION BY phone_hash) AS oneid,
-    1 AS version,
-    CURRENT_TIMESTAMP AS update_time
-FROM (
-    SELECT
-        a.id_id,
-        a.id_type,
-        a.phone_hash,
-        a.id_id AS oneid_anchor
-    FROM dwd.user_profile_dim a
-    WHERE a.dt = '${biz_date}'
-      AND a.phone_hash IS NOT NULL
-) t;
+SELECT t.id_id, t.id_type,
+       MIN(t.oneid_anchor) OVER (PARTITION BY t.phone_hash) AS oneid,
+       1 AS version, CURRENT_TIMESTAMP AS update_time
+FROM (SELECT id_id, id_type, phone_hash, id_id AS oneid_anchor
+      FROM dwd.user_profile_dim
+      WHERE dt='${biz_date}' AND phone_hash IS NOT NULL) t;
 ```
 
-#### 4.4.2 模糊匹配 + LLM 复核（Python）
+**怎么用**：把 `phone_hash` 换成你实际用于强匹配的哈希列，锚点取值规则（最小 ID 还是最早出现 ID）按 Step 4 定下来的那条填；不要照抄 `version = 1` 这一手——真实链路里 version 必须由 Step 7 的快照机制管理。
+
+**模板 2：模糊匹配 + LLM 复核（Python）**
 
 ```python
-"""
-弱匹配：模糊匹配 + LLM 复核
-适用：电商跨端用户打通
-"""
+import json
 from openai import OpenAI
 from jellyfish import jaro_winkler_similarity
-import pandas as pd
-from typing import Tuple
-
-client = OpenAI()
-
-
-def phone_match(r: dict, s: dict) -> bool:
-    """手机号强匹配"""
-    return (r.get("phone_hash") is not None
-            and r.get("phone_hash") == s.get("phone_hash"))
-
-
-def fuzzy_name_match(r: dict, s: dict) -> float:
-    """姓名模糊匹配"""
-    n1, n2 = r.get("name", ""), s.get("name", "")
-    if not n1 or not n2:
-        return 0.0
-    return jaro_winkler_similarity(n1, n2)
-
-
-def llm_judge(r: dict, s: dict) -> Tuple[str, float]:
-    """LLM 复核"""
-    prompt = f"""
-你是实体解析专家。判断两条记录是否指代同一人。
-
-Record A: {r}
-Record B: {s}
-
-输出 JSON：
-{{
-  "decision": "merge" | "split" | "unsure",
-  "confidence": 0.0-1.0,
-  "reason": "..."
-}}
-"""
-    resp = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.0,
-        response_format={"type": "json_object"}
-    )
-    import json
-    result = json.loads(resp.choices[0].message.content)
-    return result["decision"], result["confidence"]
-
+client = OpenAI()                     # 模型与接口名按你自己的部署替换
 
 def should_merge(r: dict, s: dict) -> bool:
-    """综合判定：强匹配 OR (模糊匹配高 & LLM 复核通过)"""
-    # 1. 强匹配
-    if phone_match(r, s):
-        return True
-    # 2. 模糊匹配进入边界
-    name_sim = fuzzy_name_match(r, s)
-    if name_sim < 0.6:
+    if r.get("phone_hash") and r["phone_hash"] == s.get("phone_hash"):
+        return True                      # 强匹配，直接合并
+    sim = jaro_winkler_similarity(r.get("name", ""), s.get("name", ""))
+    if sim < 0.6:                        # 【经验：随字段噪声变】
         return False
-    # 3. LLM 复核（仅在边界样本上调用，控制成本）
-    decision, conf = llm_judge(r, s)
-    return decision == "merge" and conf >= 0.85
+    resp = client.chat.completions.create(model="gpt-4o-mini", temperature=0.0,   # 只在边界样本上调用
+        response_format={"type": "json_object"}, messages=[{"role": "user", "content": f"判断两条记录是否同一人，只输出 JSON 三态决策与理由。\nA: {r}\nB: {s}"}])
+    verdict = json.loads(resp.choices[0].message.content)
+    return verdict["decision"] == "merge" and verdict["confidence"] >= 0.85   # 【经验：随误合并代价变】
 ```
 
-#### 4.4.3 图聚合（Neo4j Cypher）
+**怎么用**：两个阈值都要用自己的离线回放重新标定；模型侧必须用 `response_format` 把输出约束成 `{"decision": "merge"|"split"|"unsure", "confidence": 0-1, "reason": "..."}` 这个三态 + 理由的结构、`temperature = 0`，否则下游无法消费；`reason` 字段一定要落库，它是 Step 6 里审计接口能回答「为什么合并」的唯一来源。
+
+**模板 3：图聚合（Neo4j Cypher + WCC）**
 
 ```cypher
-// 创建 ID 节点
 UNWIND $ids AS row
-MERGE (n:ID {value: row.value})
-SET n.type = row.type;
+MERGE (n:ID {value: row.value}) SET n.type = row.type;
 
-// 创建强匹配边（手机号一致）
-MATCH (a:ID {type: 'user_id'}), (b:ID {type: 'phone_hash'})
-WHERE a.phone_hash = b.value
-MERGE (a)-[:STRONG_MATCH]->(b);
+MATCH (a:ID {type:'user_id'}), (b:ID {type:'phone_hash'})
+WHERE a.phone_hash = b.value MERGE (a)-[:STRONG_MATCH]->(b);
 
-// 创建弱匹配边（设备指纹 hash 一致 + 行为相似）
-MATCH (a:ID {type: 'device_id'}), (b:ID {type: 'user_id'})
-WHERE a.behavior_sim > 0.85
-MERGE (a)-[:WEAK_MATCH {confidence: a.behavior_sim}]->(b);
+MATCH (a:ID {type:'device_id'}), (b:ID {type:'user_id'})
+WHERE a.behavior_sim > 0.85 MERGE (a)-[:WEAK_MATCH {confidence: a.behavior_sim}]->(b);
 
-// 计算弱连通分量作为 OneID
-CALL gds.wcc.stream('id-graph')
-YIELD nodeId, componentId
-MATCH (n:ID) WHERE id(n) = nodeId
-SET n.oneid = componentId;
+CALL gds.wcc.stream('id-graph') YIELD nodeId, componentId
+MATCH (n:ID) WHERE id(n) = nodeId SET n.oneid = componentId;
 ```
 
-#### 4.4.4 Ditto 风格深度匹配（PyTorch + Hugging Face）
+**怎么用**：只改了强度不加边表就没法回滚——上线前请把 `STRONG_MATCH` / `WEAK_MATCH` 边连同规则名与置信度落到一张边表里（Step 7 的回滚要靠它）；`behavior_sim > 0.85` 这个数字是你的阈值，必须来自 Step 3 的标定报告。
+
+**模板 4：Ditto 风格深度匹配（PyTorch + Transformers）**
 
 ```python
-"""
-基于 BERT 的实体解析（Ditto 简化版）
-"""
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-
-tokenizer = AutoTokenizer.from_pretrained("bert-base-chinese")
-model = AutoModelForSequenceClassification.from_pretrained(
-    "bert-base-chinese", num_labels=2
-)
-
+tokenizer = AutoTokenizer.from_pretrained("bert-base-chinese")   # 换基座只改这两行的模型名
+model = AutoModelForSequenceClassification.from_pretrained("bert-base-chinese", num_labels=2)
 
 def serialize_record(r: dict) -> str:
-    """把 record 序列化为 Ditto 格式"""
     return " ".join(f"[COL]{k}[/COL]{v}" for k, v in r.items())
 
-
 def ditto_match(r: dict, s: dict) -> float:
-    """Ditto 风格匹配"""
-    serialized_a = serialize_record(r)
-    serialized_b = serialize_record(s)
-    inputs = tokenizer(
-        serialized_a, serialized_b,
-        return_tensors="pt", truncation=True, max_length=128
-    )
+    inputs = tokenizer(serialize_record(r), serialize_record(s),
+                       return_tensors="pt", truncation=True, max_length=128)
     with torch.no_grad():
-        outputs = model(**inputs)
-    probs = torch.softmax(outputs.logits, dim=-1)
-    return probs[0][1].item()  # merge 概率
+        probs = torch.softmax(model(**inputs).logits, dim=-1)
+    return probs[0][1].item()          # merge 概率
 ```
 
-#### 4.4.5 实时增量更新（Flink）
+**怎么用**：列名进序列是这个结构的关键（跨字段证据才能被联合使用），不要为了省 token 省掉 `[COL]` 标记；它只回答「这一对像不像」，不产出连通分量——闭包仍然要靠模板 3 补。参考实现见【公开：Yuliang Li 等《Deep Entity Matching with Pre-Trained Language Models》，2020；发表会议在不同转述里口径不一，请按题名与作者检索原文核验】。
+
+**模板 5：实时增量更新（Flink）**
 
 ```java
-/**
- * OneID 实时增量更新 Flink Job
- */
-public class OneIdStreamingJob {
-    public static void main(String[] args) throws Exception {
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        
-        // 1. 消费上游 ID 变更事件
-        DataStream<IDChangeEvent> events = env
-            .addSource(new FlinkKafkaConsumer<>(
-                "dwd.user.id_change",
-                new IDChangeEventDeserializer(),
-                kafkaProps))
-            .name("ID Change Source");
-        
-        // 2. 实时 OneID 匹配
-        DataStream<OneIdUpdate> updates = events
-            .keyBy(e -> e.idValue)
-            .process(new OneIdMatchFunction())
-            .name("OneID Match");
-        
-        // 3. 写回 OneID 主数据（HBase / Redis）
-        updates.addSink(new HBaseOneIdSink())
-            .name("HBase OneID Sink");
-        
-        // 4. 通知下游（Kafka）
-        updates.addSink(new FlinkKafkaProducer<>(
-            "dwd.oneid.update", new OneIdUpdateSerializer(), kafkaProps))
-            .name("OneID Update Notify");
-        
-        env.execute("OneID Streaming Job");
-    }
-}
+DataStream<IDChangeEvent> events = env.addSource(
+    new FlinkKafkaConsumer<>("dwd.user.id_change", new IDChangeEventDeserializer(), kafkaProps));
+DataStream<OneIdUpdate> updates = events
+    .keyBy(e -> e.idValue)                       // 按 id_value 分区，保证同一 ID 串行
+    .process(new OneIdMatchFunction());
+updates.addSink(new HBaseOneIdSink());           // 写回主数据
+updates.addSink(new FlinkKafkaProducer<>("dwd.oneid.update", new OneIdUpdateSerializer(), kafkaProps));
 ```
 
-#### 4.4.6 隐私计算 PSI（Java + Cipher）
+**怎么用**：`keyBy` 的键必须与 Step 5 服务层查询用的键一致，否则同一 ID 的两次变更可能落在不同并行度上、互相看不到；`OneIdMatchFunction` 里要有重编号的退路（写入前先比对当前分量规模），否则一次大分量合并会把这个算子卡住。
+
+**模板 6：隐私计算 PSI（Java + RSA 盲签名）**
 
 ```java
-/**
- * 基于 RSA 盲签名的 PSI（Private Set Intersection）
- * 适用：广告归因场景，媒体方 × 广告主 匹配共同用户
- */
-public class PSIExample {
-    public static void main(String[] args) {
-        // 1. 媒体方准备加密的手机号集合
-        Set<String> mediaPhones = new HashSet<>(Arrays.asList(
-            "13800001111", "13800002222", "13800003333"
-        ));
-        // RSA 盲签名加密
-        Set<String> blindedPhones = mediaPhones.stream()
-            .map(BlindSignature::blind)
-            .collect(Collectors.toSet());
-        
-        // 2. 广告主签名（不暴露明文）
-        Set<String> signedPhones = blindedPhones.stream()
-            .map(s -> BlindSignature.sign(s, adServerPrivateKey))
-            .collect(Collectors.toSet());
-        
-        // 3. 媒体方去盲
-        Set<String> unblindedPhones = signedPhones.stream()
-            .map(BlindSignature::unblind)
-            .collect(Collectors.toSet());
-        
-        // 4. 媒体方本地比对交集
-        Set<String> intersection = mediaPhones.stream()
-            .filter(unblindedPhones::contains)
-            .collect(Collectors.toSet());
-        
-        // 结果：双方都不知道对方的全集，但都知道交集
-    }
-}
+Set<String> blinded   = mediaPhones.stream().map(BlindSignature::blind).collect(toSet());
+Set<String> signed    = blinded.stream().map(p -> sign(p, adServerPrivateKey)).collect(toSet());
+Set<String> unblinded = signed.stream().map(BlindSignature::unblind).collect(toSet());
+Set<String> intersect = mediaPhones.stream().filter(unblinded::contains).collect(toSet());
+// 双方都不知道对方全集，但都知道交集
 ```
 
----
+**怎么用**：这段代码只演示协议方向，不是可上线的实现；上线前双方必须先书面对齐**同一个 ID 的表示方式**（国家码、空格、大小写、哈希算法与加盐方式），因为 PSI 是精确匹配、对表示差异零容忍，而密文下「表示不一致」与「确实没有交集」在结果上无法区分。
+
+**模板 7：合并留痕与冲突检测（SQL）**
+
+```sql
+CREATE TABLE dwd.oneid_merge_log (
+    batch_date DATE, oneid BIGINT, src_id STRING, dst_id STRING,
+    rule STRING, confidence DOUBLE, operator STRING, reason STRING
+) PARTITIONED BY (dt STRING);
+
+-- 冲突检测：同一 OneID 下出生日期相差超过阈值即拒绝自动合并
+SELECT oneid FROM dwd.one_id_mapping
+WHERE dt='${biz_date}'
+GROUP BY oneid
+HAVING MAX(birth_date) - MIN(birth_date) > 365 * 60;   -- 【经验：阈值随业务变】
+```
+
+**怎么用**：`rule` / `confidence` / `reason` 三列是回滚与审计的全部依据，缺一列就等于没有留痕；冲突查询要先在历史数据上跑一遍，看它命中多少——命中量远超预期时，问题在上游强匹配边，不在这个阈值。
+
+### 4.6 自检清单
+
+下面每一条都必须**动了系统**才有答案；设计期就能回答的问题（粒度对不对、模式选得对不对、接口有没有写明「读到的是即时视图还是已校准快照」）并成一行见 [§ 3.7](09-one-id-section-3-sec3.md)，本节不重复。
+
+1. 抽 3 个 OneID，把它的 `all_ids` 回放给业务方确认是否同一个人（错合并只有业务方判得出来）。
+2. 最大连通分量占总体量的比例今天是多少？过去 30 天的曲线是否平稳？
+3. 能不能在 10 分钟内回答「这条边是谁、何时、按哪条规则加进来的」？（做一次审计演练）
+4. 造一次误合并并回滚，能否在不停服的前提下恢复主体数？
+5. 抽同一批手机号，比对两个作业算出的哈希是否一致（盐与规范化是否统一）？
+6. 上游删除一条记录后，OneID 表里的映射是否在约定周期内失效？
+7. 弱匹配阈值的最近一次调整，能不能拿出一份离线回放评估报告？
+8. 双轨期新旧键的对账差异，上周是多少、能不能逐条归因到 `provisional` / `frozen`？
+9. LLM 复核的调用量，上周是否与边界区间的候选对数同量级（而不是与全部候选对同量级）？
+10. 设备指纹的「新设备数 / 活跃设备数」比值，最近一个月是否在上升？
+11. 重算任务的完成时间，最近 4 周是否逐周右移？
+
+第 2、第 4 两条最常被跳过，因为它们问的不是算法而是运行状态。把这两条排进上线后的第一次季度演练：演练里当场答不出的项写进值班看板、挂到当周 on-call 名下，并约定下一次演练前必须销项——它们只有在真实演练与事后对账里才答得出来，评审会上没有人会承认自己没有回滚点。
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一决定成败的环节，是**把合并结论做成一个有版本、有留痕、可回滚的状态**——而不是把算法调到最优。理由是机制性的：连通分量是整体（[§ 3.2.2](09-one-id-section-3-sec3.md)），一条错边的代价由整块成员承担，所以任何「先合起来，出错再说」的路径都必然走到无法局部撤销的那一步；反过来，只要留痕与快照在，算法不够好只是覆盖率问题，不是事故。这也解释了为什么 Step 1 与 Step 7 这两个「不算法」的步骤最常被跳过，而它们恰是后面所有步骤的返工开关。
+>
+> 配合 [§ 2 核心原理](09-one-id.md)、[§ 3 设计模式与范式](09-one-id-section-3-sec3.md) 与 [§ 6 落地实践](09-one-id-section-6-sec6.md) 阅读。

@@ -282,14 +282,12 @@ batch_df = spark.read.format("iceberg").load("iceberg.orders")
 **4. Iceberg V3 流批读写**
 
 ```sql
--- Iceberg V3 增量读取（流模式）
-SELECT * FROM iceberg.orders
-WHERE _updated_at > '2025-01-15';
-
--- Iceberg 批量读取（批模式）
+-- Iceberg 批量读取（批模式）：按时间范围过滤，剪裁在元数据层完成
 SELECT * FROM iceberg.orders
 WHERE order_time BETWEEN '2025-01-01' AND '2025-01-31';
 ```
+
+**增量读取（流模式）不是一条通用 SQL**：Iceberg 的增量语义是「取两个快照之间新增的数据文件」（V3 规范的能力条目之一，见 [03-lakehouse](../03-lakehouse/03-lakehouse.md) 的时间线），不是对某个「更新时间列」做 WHERE 过滤；引擎侧用什么语法把它暴露出来随版本变化，按你所装版本的连接器文档核对。
 
 **5. Hudi 流批读写**
 

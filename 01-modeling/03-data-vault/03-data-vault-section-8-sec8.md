@@ -83,7 +83,7 @@
 
 **5. 参考资料**
 
-- Dan Linstedt & Hans Hultgren《Building a Scalable Data Warehouse with Data Vault 2.0》——Hub / Link / Satellite 三件套的原始定义与工程规则，本题的标准出处。
+- Linstedt & Olschimke《Building a Scalable Data Warehouse with Data Vault 2.0》——Hub / Link / Satellite 三件套的原始定义与工程规则，本题的标准出处。
 - Dan Linstedt《Data Vault 2.0 Modeling》——三件套设计原则的进一步细化，特别是 Satellite 拆分粒度的指导原则。
 - Lawrence Corr & Jim Stagnitto《Agile Data Warehouse Design》——从敏捷建模视角补充三件套为什么适合"频繁加字段"的业务场景。
 - ING 银行公开技术分享与 Scalefree International 案例文档——PB 级银行环境下 Hub / Link / Satellite 拆分粒度的实战经验（该分享与案例文档本书无法给出可核验的具体题名与链接；其中「500+ Hub、1500+ Satellite」一类的规模数字属【经验】档表述，引用时请自行查证）。
@@ -181,8 +181,8 @@ FROM hub_customer h;
 
 **5. 参考资料**
 
-- Dan Linstedt & Hans Hultgren《Building a Scalable Data Warehouse with Data Vault 2.0》第 12 章——PIT 表与 Bridge 表的原始定义、构建方法、增量维护算法。
-- Lawrence Corr《Agile Data Warehouse Design》——从敏捷迭代视角补充 PIT 表在"频繁新增查询需求"场景下的实战用法。
+- Linstedt & Olschimke《Building a Scalable Data Warehouse with Data Vault 2.0》第 12 章——PIT 表与 Bridge 表的原始定义、构建方法、增量维护算法。
+- Lawrence Corr & Jim Stagnitto《Agile Data Warehouse Design》——从敏捷迭代视角补充 PIT 表在"频繁新增查询需求"场景下的实战用法。
 - Materialize 官方文档关于流式物化视图的章节——PIT 表的实时增量维护可以借助流式物化实现。
 - Databricks Delta Lake + Data Vault 模板的官方文档（2024）——用 Delta Lake 的 Change Data Feed 做 PIT 增量维护的实战范式。
 - RisingWave 官方博客关于"流式 Data Vault"的系列文章——PIT 表从离线批处理走向实时物化的工程演进。
@@ -543,8 +543,8 @@ WHERE match_rule = 'ID_CARD_EXACT_MATCH'
 
 **5. 参考资料**
 
-- Dan Linstedt & Hans Hultgren《Building a Scalable Data Warehouse with Data Vault 2.0》第 16 章——从传统数仓迁移到 Data Vault 的分阶段策略与回滚方案。
-- Lawrence Corr《Agile Data Warehouse Design》——敏捷迁移视角，强调"渐进式迁移"而非"一次性替换"。
+- Linstedt & Olschimke《Building a Scalable Data Warehouse with Data Vault 2.0》第 16 章——从传统数仓迁移到 Data Vault 的分阶段策略与回滚方案。
+- Lawrence Corr & Jim Stagnitto《Agile Data Warehouse Design》——敏捷迁移视角，强调"渐进式迁移"而非"一次性替换"。
 - ING 银行公开技术材料——200+ 源系统迁移到 Data Vault 的实战路径，含长周期迁移的经验教训（该材料本书无法给出可核验的具体题名与链接；其中的源系统数量与迁移期量级属【经验】档表述，引用时请自行查证）。
 - 阿里 DataWorks 智能建模的迁移工具——国内场景下"现有数仓 → Data Vault"的自动化迁移工具链。
 - Snowflake 与 Databricks 关于"湖仓 + DV"迁移的官方白皮书（2023-2024）——云原生时代从 Snowflake / Redshift 迁移到 Lakehouse + DV 的工程范式。

@@ -1,459 +1,332 @@
-> 本文件是 **01-embedding-and-retrieval.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](01-embedding-and-retrieval.md)。
+> 本文件是 **01-embedding-and-retrieval.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](01-embedding-and-retrieval-section-3-sec3.md) 选定的检索模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](01-embedding-and-retrieval.md)。
 
 ## 4. 工程实现
 
+本节的组织方式与模式手册不同：模式手册回答「哪几个解还没被约束否掉」，本节回答「选定之后，按什么顺序做、每一步怎么知道做对了、存量资产怎么处理」。
+
+本文件覆盖**两种读者**，但两者的第一步不同。**从零搭建**的人按 §4.1 的 8 个步骤顺序走，每一步给产物与判据，§4.2 与 §4.3 供在其中做技术取舍，§4.5 给可直接套用的模板。**已有检索系统要改造**的人先读 §4.4——在存量上，正确顺序不是「按 Step 1 到 8 重来」，而是「先做三件可回退的事，再决定要不要返工」。§4.6 与 §4.7 对两种读者共用。
+
+模式本身的原理、代价与失效点不在本节重复，见 [§ 3](01-embedding-and-retrieval-section-3-sec3.md)。
+
 ### 4.1 落地步骤
 
-**Step 1：场景识别与需求分析**
+**Step 1：场景识别与需求分析（1–2 周【经验：随合规评审轮次与数据源数量变，跨部门数据源越多越长】）**
 
-- 识别 RAG / 推荐 / 搜索的具体场景。
-- 评估数据规模（文档量、查询量、QPS 需求）。
-- 评估精度要求（粗排 / 精排）。
-- 输出：**Embedding 需求规格说明书（Embedding Requirements Specification, ERS）**。
+- 把场景写成一句可判定的话：在哪个入口、把什么语料、给谁用、答不上来会怎样。
+- 量三件事：语料条目数与平均长度、查询日 QPS、端到端可接受延迟（并拆出召回段预算）。
+- 对真实 query 抽样做分型：语义提问 / 含标识符与专名 / 混合。这一栏决定了要不要混合检索（[§ 3.2.4](01-embedding-and-retrieval-section-3-sec3.md)）。
+- 确认语料语言与模态，以及合规约束（数据能否出网、可留存多久）。
+- **产物**：Embedding 需求规格说明书（Embedding Requirements Specification, ERS），含场景一句话、规模三数字、查询形态抽样、精度目标、合规约束、12 个月后的规模上限【经验：随业务增速与扩容采购周期变，增速快或采购周期长的团队应缩短到 6 个月】。模板见 §4.5 模板 1。
+- **判据**：抽 100 条真实 query 逐条分型并给出占比【经验：随日查询量与查询形态多样性变，查询量少时全量分型】；若「含标识符/专名」占比不为 0，ERS 必须把混合检索写成必选项，而不是「以后再说」。
+- **为什么必须这一步 / 为什么在这个位置**：ERS 是后面所有取舍的唯一裁判。省掉它，Step 2 与 Step 3 只能按「榜单第一 + 公司已有」选，选完无法证明选对；更要紧的是，没有它就无法在第一次要改的时候判断改动是净收益还是净损失。
 
-**Step 2：Embedding 模型选型**
+**Step 2：Embedding 模型选型（1–3 周【经验：随评测集建设与自托管资源申请变】）**
 
-- 评估候选模型（OpenAI text-embedding-3 / BGE-M3 / Cohere Embed v3 / Snowflake Arctic / Nomic / ColBERT）。
-- 在 MTEB / 内部数据集上评测。
-- 考虑成本（API 价格 / 自托管 GPU）、延迟、合规。
-- 输出：**选型决策 ADR**。
+- 用 ERS 的查询分型先筛掉一类：单语言模型在跨语言 query 上直接出局；标识符占比高的场景要保留稀疏或多向量路。
+- 在自有评测集上评测 2–3 个候选【经验：随候选族规模与单次评测成本变】；MTEB 与 C-MTEB 只用来缩小候选，不用来下结论（名次会变，见 §4.2 第 1 条）。
+- 把三种成本一起量：API 单价、自托管 GPU 小时、以及**换模型的全量重编码成本**（这一块最常被漏）。
+- 记录候选族的差异项：输出维度、是否支持可截断维度、是否需要写入侧指令前缀（前缀会进 §4.5 模板 2 的表结构）。
+- **产物**：选型决策 ADR（候选、评测数字、否决理由、迁移代价估算）。
+- **判据**：ADR 里必须有一行「如果三个月后要换模型，全量重编码需要多少机时、索引重建窗口多长」。答不出这一行，说明这一步只做了「挑模型」，没做「选型」。
+- **为什么必须这一步 / 为什么在这个位置**：换模型是这套系统最贵的一次操作——向量空间不兼容，换模型等于全量重编码加索引重建（[§ 3.1](01-embedding-and-retrieval-section-3-sec3.md)）。把它写进 ADR，是为了让后续「换个小模型省成本」的提议先看到总账，而不是先看到单价。
 
-**Step 3：向量数据库选型**
+**Step 3：向量数据库选型（1–2 周【经验：随压测数据准备时间变】）**
 
-- 评估向量数据库（Milvus / Qdrant / Weaviate / Pinecone / pgvector / Chroma）。
-- 评估规模（10M / 100M / 1B+ 向量）。
-- 评估功能（HNSW / IVF / PQ / Hybrid / Rerank 内置）。
-- 输出：**向量库选型决策 ADR**。
+- 按 ERS 的规模、过滤需求、一致性要求筛候选，并列出必须由库承担的清单：元数据过滤（pre-filter 还是 post-filter）、增量更新与删除语义、多租户或命名空间、混合检索是否内置、重排是内置还是必须外挂一个独立重排服务（后者多一个在线服务，见 §4.2 第 4 条）。
+- 用接近真实数据量级的样本做一次压测，**通过标准是「带过滤条件下的召回率」**，不是纯向量 QPS。
+- 确认索引参数哪些是构建期生效、哪些是查询期可调（这决定了后续调参要不要停机重建）。
+- **产物**：向量库选型决策 ADR。
+- **判据**：压测里必须跑一组「高选择性过滤」的查询（例如按某个小业务域过滤）。若过滤后召回率相比无过滤明显下降，说明过滤发生在向量检索之后，ERS 里的规模上限要重估。
+- **为什么必须这一步 / 为什么在这个位置**：过滤发生在检索前还是后，决定了要不要为每个租户或业务域建独立 collection——这是物理布局决策。等数据灌进去再改，代价是一次全量迁移，而不是改一行配置。
 
-**Step 4：Embedding Pipeline 建设**
+**Step 4：Embedding Pipeline 建设（2–4 周【经验：随语料解析难度变，扫描件与 PDF 越多越长】）**
 
-- 离线批量 Embedding（Airflow / Spark / Ray）。
-- 文档分块策略（按 token / 段落 / 语义）。
-- Embedding 缓存（避免重复计算）。
-- 输出：**离线 Embedding Pipeline**。
+- 离线批量编码：调度层用团队已有的（Airflow / Spark / Ray 任选其一，不要为此引入新调度）。
+- 定分块策略（按 token / 段落 / 语义 / 结构），并把**分块器版本当作一等公民**写进 chunk 表——它和模型版本一样会改变全部存量向量。
+- 建 Embedding 缓存，key 必须含：模型标识与版本、写入侧前缀（若有）、分块器版本、文本哈希。少任何一项，换配置后都会命中旧向量。
+- 写入侧与查询侧共用同一份编码代码（同一函数、同一版本、同一前缀），并在服务启动时做版本一致性检查。
+- 补齐元数据：doc_id、chunk_id、source、timestamp。
+- **产物**：离线 Embedding Pipeline + chunk 表（含模型版本、前缀、分块器版本三列）。
+- **判据**：抽 3 个文档，人工核对每个 chunk 的原文范围与表里的 offset 一致【经验：随语料结构复杂度变，结构越杂越要多抽】；再把分块器版本改一位重跑，确认缓存全部 miss——若仍命中，说明缓存 key 少了这一项。
+- **为什么必须这一步 / 为什么在这个位置**：索引一旦建好，chunk 边界就固化成了物理布局。先建索引再改分块，等于 Step 5 白做一次，而且返工窗口要等下一次停机。
 
-**Step 5：索引构建与更新**
+**Step 5：索引构建与更新（1–3 周【经验：随向量总量与是否要停机重建变】）**
 
-- 构建 HNSW / IVF 索引。
-- 配置副本、分片、备份。
-- 设计增量更新策略（追加 / 删除 / 更新）。
-- 输出：**可用的向量索引**。
+- 选索引类型与参数（HNSW / IVF / PQ，见 §4.2 第 3 条），把构建期参数与查询期参数分开标定并各自留档。
+- 配置副本、分片与备份；定期演练一次从备份恢复。
+- 设计增量更新策略（追加 / 删除 / 更新），并明确「删除」在该索引里是物理删除还是标记删除——标记删除需要定期的段合并或重索引窗口。
+- **产物**：可用的向量索引 + 一份「索引参数 → 召回率」的标定记录（含标定当时的数据量）。
+- **判据**：用固定 query 集测三组不同索引参数的召回率曲线【经验：随参数空间大小变】，确认最终参数不是默认值；再做一次删除演练——删掉 100 条文档【经验：随索引规模与删除语义变，标记删除的库要多验一轮】，确认它们不再出现在 Top-K 里。
+- **为什么必须这一步 / 为什么在这个位置**：删除不生效是这类系统最常见的静默脏数据来源：不报错、不超时，只是让答案持续引用一份已经不存在的文档。而索引参数只在构建期生效，所以调参必须排在「确定数据布局」之后、上线之前。
 
-**Step 6：检索服务部署**
+**Step 6：检索服务部署（2–3 周【经验：随是否需要自建重排服务变】）**
 
-- 暴露 ANN 检索 API。
-- 集成 Reranker（Cohere Rerank 3 / BGE Reranker）。
-- 集成 BM25（如需 Hybrid）。
-- 输出：**检索 API 服务**。
+- 暴露检索 API，具备元数据过滤、分页或去重、超时与降级开关。
+- 集成 Reranker（Cohere Rerank 3 / BGE Reranker 一族，见 §4.3），并把阈值标定在精排分数上，粗排分数只用于取候选。
+- 按 ERS 决定是否集成 BM25 做 Hybrid。
+- 把「查询编码服务、索引、重排服务」三者的版本一致性做成启动检查，任一不一致即拒绝启动或进入显式降级。
+- **产物**：检索 API 服务 + 一份降级策略说明（重排不可用时回退到什么、谁有权摘掉它）。
+- **判据**：做一次重排服务拔线演练——把 reranker 打不通，确认接口仍返回结果、日志或响应头里标记了降级，且降级后的 Top-K 里仍然保留了正确文档。
+- **为什么必须这一步 / 为什么在这个位置**：Hybrid RAG 的端到端质量诊断，以「召回层可被单独测量」为前提。召回层没有独立接口，任何质量问题都只能靠猜，而猜错的成本会一路传导到 Step 8 的评测口径上。
 
-**Step 7：Hybrid RAG 集成**
+**Step 7：Hybrid RAG 集成（2–4 周【经验：随生成端上下文预算与 Prompt 迭代轮次变】）**
 
-- 集成向量检索 + 关键词检索。
-- 集成 LLM 生成层。
-- 集成 Prompt 模板。
-- 输出：**端到端 RAG 系统**。
+- 接两路召回（向量 + 关键词）与融合函数；接 LLM 生成层与 Prompt 模板。
+- 把召回数 K 与 chunk 长度一起对齐生成端的上下文预算，而不是各自定一个值。
+- 建端到端评测口径：从「召回率」改为「答案质量」，并按 [§ 3.6](01-embedding-and-retrieval-section-3-sec3.md) 最后一行提醒，重新标定 K 与 chunk 长度——这两个值在检索时代的最优点通常不再成立。
+- **产物**：端到端 RAG 系统 + 端到端评测集。
+- **判据**：对同一批 query 分别跑「只召回不生成」与「端到端」。若端到端明显差于召回指标所暗示的水平，说明 K 与 chunk 长度没有对齐上下文预算，问题不在生成模型。
+- **为什么必须这一步 / 为什么在这个位置**：这一步是本节唯一一次换裁判——在此之前所有判据都是召回率，在此之后 K、chunk 长度、重排候选数全部改由端到端答案质量裁断（口径为什么必须换，机制见 [§ 3.6](01-embedding-and-retrieval-section-3-sec3.md) 末段）。不先建口径，之后每一轮调参都在优化一个已经不存在的目标，而且这个错误不会以任何形式报出来——接口全绿、召回持平、答案不对。
 
-**Step 8：评估与可观测**
+**Step 8：评估与可观测（持续，首版 2–3 周【经验：随评测集标注量变】）**
 
-- 建立评估集（MTEB 子集 + 内部业务集）。
-- 配置监控（QPS、延迟、命中率、成本）。
-- 建立用户反馈闭环。
-- 输出：**可观测的 Embedding + 检索平台**。
+- 建评估集：MTEB 子集或 C-MTEB 只用于筛候选，结论用内部业务集。
+- 上监控：QPS、延迟 P50/P95/P99、召回率与准确率（基于标注集）、Embedding 成本（token 用量与 API 调用次数）、索引大小与内存、用户反馈（点赞 / 点踩 / 标注）。
+- 所有指标按「入口 × 模型版本 × 索引版本」三维拆分——只有总量指标时，版本切换带来的退化会被平均掉。
+- 建用户反馈回流到评测集的通道，并让每次改动产出一组对照数字。
+- **产物**：可观测的 Embedding + 检索平台 + 一份回归基线。
+- **判据**：随口挑一次历史模型或参数改动，团队能否报出「改前 / 改后」的三组数字而不是一个例子。报不出，说明第 8 步只有形式、没有机制。
+- **为什么必须这一步 / 为什么在这个位置**：向量检索的退化是静默的——不报错、不超时，只变差。只有基线与监控能把「慢慢变差」变成「某天开始变差」，而基线必须在第一次改动之前就存在。
+
+整条路径上**最常被跳过的是 Step 1 的 ERS 与 Step 8 的基线**，标准做法是「先把索引搭起来跑通再说」。它不会在上线当天出问题，而出**第一次需要取舍的那天**——要改分块长度、要换模型、要加一级重排。那一天团队被迫在没有裁判的条件下投票，结论只能由声音大小决定。「无评估体系」这类反模式的机制与症状见 [§ 3](01-embedding-and-retrieval-section-3-sec3.md) §3.5；本节要补的是它的时点：代价不在搭系统时付，在第一次想改系统时付。
 
 ### 4.2 关键技术点
 
-**1. Embedding 模型选型原则**：
+**1. Embedding 模型选型原则**
 
-- **精度优先场景**：Cohere Embed v3、Snowflake Arctic Embed、OpenAI text-embedding-3-large。
-- **多语言场景**：BGE-M3（开源、中文 SOTA）、multilingual-E5、Cohere Embed v3。
-- **长文本场景**：BGE-M3（8192 token）、Nomic Embed v1.5（8192）、ColBERT v2。
-- **成本敏感场景**：BGE-small、GTE-small、自托管小模型。
-- **多模态场景**：CLIP、Visualized BGE、ColPali。
-- **Late Interaction**：ColBERT v2（长文档精确）。
+- **做法**：按 ERS 的查询分型与语料特征圈定候选族，再在族内比。精度优先场景：Cohere Embed v3、Snowflake Arctic Embed、OpenAI text-embedding-3-large；多语言场景：BGE-M3、multilingual-E5（微软）、Cohere Embed v3；长文本场景：BGE-M3、Nomic Embed Text v1.5、ColBERT v2；成本敏感场景：bge-small-en-v1.5、GTE-small 一类小模型或自托管小模型；多模态场景：CLIP、Visualized BGE、ColPali；Late Interaction：ColBERT v2。
+- **机制**：「选型决定的是哪一类匹配错误可以容忍」这一层机制（分辨率只能花在若干维度上，多语言能力常以单语言精度为代价换取）见 [§ 3.2.1](01-embedding-and-retrieval-section-3-sec3.md)，本节不重述。实施层的机制是：**模型标识必须写进每一行向量的元数据（§4.5 模板 2 的 `embed_model` 列），而一个标识对应一个向量空间，标识一换，存量每一行都要重算**——这就是「选型是一次带迁移成本的签约」在数据上的落点：签字的不只是挑模型的人，还有排 GPU 窗口的人和付编码账单的人。
+- **失效条件**：**当选型依据只有公开榜单名次、自有评测集尚未建立时，这条会在下一次选型的评审桌上失效**——那次评审里没有任何人能给出改前 / 改后的对照数字，结论由谁在场、谁声音大决定。症状：同一个换模型提案每隔一两个季度被重新提出一次，每次都附一份新的榜单截图；模型也确实换过，但线上指标没有对应的台阶。观测信号：查变更单里「换模型 / 换编码器」类的条目，数一数有多少带着一次 A/B 或对照评测记录、有多少只有榜单链接。
+- **档位**：本条的候选族是产品存在性判断，不是量化断言，因此不标档位——模型名与能力项请按各模型官方模型卡核验，以当前版本为准；维度与上下文长度取值同样以官方文档为准，本书不给快照数字。「公开榜单上的名次不能外推到自有语料」为通用工程观察【经验：结论随自有语料与榜单语料的分布差异大小变】。
 
-**2. 文档分块（Chunking）策略**：
+**2. 文档分块（Chunking）策略**
 
-- **按 Token 固定分块**（512 token / 256 重叠）：简单、通用。
-- **按段落 / 标题分块**：保留语义完整性。
-- **按语义分块**（基于 Embedding 相似度）：高质量，但慢。
-- **按结构分块**（Markdown / PDF 章节）：适合文档知识库。
-- **大小**：典型 256-1024 token，重叠 10-20%。
-- **元数据**：保留 doc_id、chunk_id、source、timestamp。
+- **做法**：按 token 固定分块（从 512 token、重叠 10–20% 起步，典型 256–1024 token【经验：随答案平均跨度与生成端上下文预算变，跨度越大越要加大 chunk 与重叠】）、按段落或标题分块、按语义分块（基于 Embedding 相似度切）、按结构分块（Markdown / PDF 章节）。元数据保留 doc_id、chunk_id、source、timestamp，并追加模型版本与分块器版本。
+- **机制**：chunk 长度与召回 K 是同一枚硬币的两面——你在这里切多长，就决定了第 4 条的重排要为多少候选买单。实施层的机制是：**分块器版本一旦进入生产，改它就等于重算全量向量并重建索引**，所以它必须和模型版本一样落库；否则第一次改分块时才会发现，没有人知道现有向量是用哪一版切出来的。
+- **失效条件**：**当语料的答案跨度在改版中变大时（例如文档从 FAQ 变成合同），这条会静默失效**——chunk 长度没变，召回率却开始下降，因为跨 chunk 才能拼出的答案现在一个 chunk 装不下。症状：用户开始举出「他明明说了，系统却说没有」的例子。观测信号：对漏召回样本统计「答案在原文的字符跨度」分布（见 §4.6 第 11 条）。
+- **档位**：区间类参数为【经验】；「改分块 = 全量重编码」为机制性结论。
 
-**3. ANN 索引调优**：
+**3. ANN 索引调优**
 
-- **HNSW**：`M=16-64`，`ef_construction=200-400`，`ef_search=50-200`。召回率与速度权衡。
-- **IVF**：聚类数 $k = 4\sqrt{n}$，probe 数 8-32。
-- **PQ**：子向量数 $m = 32-64$，码本大小 256。压缩比 10-100x。
-- **混合索引**：HNSW + PQ（内存优化）、DiskANN（磁盘优化）。
+- **做法**：HNSW 的 M 与 ef_construction 是构建期参数（改它们必须重建索引），ef_search 是查询期参数（可在线调）；起点区间 M 16–64、ef_construction 200–400、ef_search 50–200【经验：起点值，随向量总量、维度与延迟预算变，必须在本库标定后才上线】。IVF 的聚类数按向量数的开方量级取，probe 数从 8–32 起调【经验：随召回率缺口与延迟预算变】；PQ 用 32–64 个子向量、码本 256，压缩比通常落在 10–100 倍【经验：随可接受的精度损失与内存预算变】；混合索引用于内存或磁盘优化：HNSW + PQ（内存优化）、DiskANN（磁盘优化）。构建期与查询期参数分开标定，每次标定同时记录当时的数据量。
+- **机制**：索引参数同时决定「索引在内存里占多少」和「一次遍历访问多少节点」，所以调参是买「召回率」与「内存/延迟」之间的兑换率；而这条兑换率随向量总量变化。实施层后果是：**索引参数不是配置项，而是随规模漂移的量，必须挂在监控上定期复标定**。
+- **失效条件**：**当数据量或过滤条件分布跨过某个量级时，同一组参数不再等价**——向量翻几倍后召回率下降，或在「高选择性过滤」查询上几乎全部落空（过滤后候选不足）。症状：整体召回指标尚可，但带强过滤的入口（报表、单客户视图）开始明显答非所问。观测信号：按过滤条件的选择性分桶统计召回率，而不是看总平均。
+- **档位**：参数候选区间【经验：随数据量、维度与延迟预算变】；「改构建期参数需重建索引」为机制性结论。
 
-**4. Reranking 集成**：
+**4. Reranking 集成**
 
-- **Cohere Rerank 3**：商业 API，多语言，Cross-Encoder。
-- **BGE Reranker v2-m3**：开源，多语言，长文本。
-- **Jina Reranker**：开源。
-- **LLM Rerank**：GPT-4 / Claude 做精排（成本高）。
-- **策略**：Top-100 粗排 → Top-10 精排。
+- **做法**：粗排 Top-K（几十到几百）→ 精排 Top-N（3–10，与生成端上下文预算对齐）【经验：K 随召回率与延迟预算变，N 随生成端 token 预算变】。候选实现：Cohere Rerank 3、Cohere Rerank 3.5（商业 API）；BGE Reranker v2-m3、Jina Reranker（可自托管）；LLM Rerank——用 GPT-4 / Claude 一类通用大模型直接对候选打分（成本最高、延迟也最高，且要把模型输出解析成有序结果）。阈值必须标定在精排分数上，粗排分数只用于取候选。
+- **机制**：精排按候选数计费、不按语料规模计费，所以它能把预算集中花在几十个候选上。实施层的机制在于它是一个**独立的在线服务**，于是多出一整套普通检索没有的失效面：超时、并发配额、版本切换。绝大多数团队的问题不是「没用上重排」，而是「重排在没人注意的时候被摘掉了」。
+- **失效条件**：**当精排服务的 P99 超过端到端 SLO 时，这条会被绕过而不是被修好**——值班同学会先摘掉重排保住延迟，检索接口的返回码全部正常，只有答案质量下降。症状：延迟监控显示「优化成功」，同一时段用户反馈变差。判定动作是查降级开关的历史状态，而不是查代码。
+- **档位**：K 与 N 为【经验】参数；「粗排分数不可用于定阈值」为机制性结论（见 [§ 3.2.2](01-embedding-and-retrieval-section-3-sec3.md)）。
 
-**5. Hybrid 检索融合**：
+**5. Hybrid 检索融合**
 
-- **RRF**（Reciprocal Rank Fusion）：$\text{score}(d) = \sum \frac{1}{k + \text{rank}_i(d)}$，简单有效。
-- **加权融合**：$\text{score}(d) = \alpha \cdot \text{vec_score}(d) + (1-\alpha) \cdot \text{bm25_score}(d)$。
-- **Cohere Rerank** 内置 Hybrid。
+- **做法**：RRF（Reciprocal Rank Fusion，只用排名，不需要跨路归一化，先拿到可复现基线）；加权融合（必须先各自归一化，而归一化方式本身会改变结果）；第三类候选是**由平台内置融合**——Cohere Rerank 常被列在这一类，但「是否内置 Hybrid」属产品特性断言，请以该产品官方文档当前版本为准，本节不据此选型（它在 §4.3 只以「Cohere Rerank + 自建」的平台候选身份出现）；融合后的并集再交精排。
+- **机制**：为什么取并集而不是交集，取决于两路各自的漏检形态（见 [§ 3.2.4](01-embedding-and-retrieval-section-3-sec3.md)），本节不重述；本节要补的是它多出来的那条运维面——**同一份文档必须同时存在于两条索引里、且都是最新版本**。写入链路只接了一条时，线上不报错，只会出现「关键词能搜到、向量路搜不到」的偏科结果，而先发现它的是客服工单，不是值班看板。
+- **失效条件**：**当两条写入链路的延迟差超过业务可接受范围时（例如向量路批量更新、关键词路实时），这条会表现为「刚发布的文档搜不到」**。症状：运营或客服反馈新内容检索不到，而两条索引各自看都正常。观测信号：对同一文档统计它在两条索引里的可见时间差（见 §4.6 第 9 条）。
+- **档位**：RRF 由 Cormack 等人提出（SIGIR 2009），是多路结果融合的经典做法【公开：可按作者与会议名检索核验】；融合参数为【经验】。
 
-**6. Fine-Tuning 技巧**：
+**6. Fine-Tuning 技巧**
 
-- **Hard Negative Mining**：用 BM25 + Embedding 召回边界作为 Hard Negative。
-- **In-Batch Negatives**：同 batch 样本互为负例。
-- **Matryoshka Loss**：支持维度截断。
-- **Instruction Tuning**：用不同 prefix 支持多任务。
-- **领域数据合成**：用 GPT-4 / Claude 合成领域训练数据。
+- **做法**：Hard Negative Mining（用 BM25 与向量两路召回的边界样本作难负例）；In-Batch Negatives（同 batch 样本互为负例）；Matryoshka Loss（让前若干维前缀也能单独成立）；Instruction Tuning（用不同前缀支持检索 / 分类 / 聚类）；领域数据合成（用 GPT-4 / Claude 一类通用大模型合成领域训练数据与查询-文档对）。微调前后必须保留同一套评测集。
+- **机制**：微调改变的是整个向量空间，所以它的代价不是一次训练，而是**一次全量重编码加索引重建，外加所有阈值与 K 的重新标定**。实施层机制是：微调与换模型走同一条迁移路径，必须共用同一套已经演练过的重编码流程（见 §4.4）。
+- **失效条件**：**当领域语料持续变化时（新品类、新口径、新话术），一次微调会随时间失效**——微调把当时语料分布的状态编进了权重。症状：上线后一个月内指标好看，之后逐月回落到微调前水平。观测信号：把微调模型的召回率按周画线，看是否单调下滑；若在下滑，正确动作是排定周期性重编码或重微调，而不是再补一次微调。
+- **档位**：方法名与代表模型（BGE-M3 同时输出稠密、稀疏与多向量三路，arXiv:2402.03216, 2024）可按论文编号检索核验【公开】；「向量空间不兼容」为机制性结论。
 
-**7. 可观测与监控**：
+**7. 可观测与监控**
 
-- **检索延迟**（P50 / P95 / P99）。
-- **召回率 / 准确率**（基于标注集）。
-- **Embedding 成本**（Token 用量、API 调用次数）。
-- **索引大小**、内存使用。
-- **用户反馈**（点赞 / 点踩 / 标注）。
+- **做法**：监控检索延迟（P50/P95/P99）、召回率与准确率（基于标注集）、Embedding 成本（token 用量、API 调用次数）、索引大小与内存、用户反馈（点赞 / 点踩 / 标注）。关键是把这些指标拆到「入口 × 索引版本 × 模型版本」三个维度上。
+- **机制**：这类退化为什么静默（不报错、不超时），机制见 [§ 3.5](01-embedding-and-retrieval-section-3-sec3.md)；本节要补的是它在实施层的用法——监控的作用不是发现故障，而是把「变差」变成**可归因的比较**；归因需要基线，而基线只在版本维度上存在，且必须在第一次改动排期之前上线：改动之后补建的基线只能证明「改后是这样」，证明不了「改前更好」。总量指标无法承担这个功能。
+- **失效条件**：**当看板只有总量指标、没有版本维度时，这条会在一次模型或索引参数切换后失效**——新旧两个版本在同一张图上被平均，指标看起来平缓，问题被推给「数据质量」。症状：改动评审时拿不出改前 / 改后两组数字。
+- **档位**：指标清单为方法论；具体 SLO 阈值由业务延迟预算决定【经验：随入口重要性与用户容忍度变】。
 
 ### 4.3 工具链与平台
 
-**Embedding 模型（API）**：
+品牌列只列候选，**选型判据另开一列**——同一类别里选哪个，取决于你的约束而不是产品热度。
 
-- **OpenAI text-embedding-3-small**（2024）——1536 维（可截断到 512），性价比高。
-- **OpenAI text-embedding-3-large**（2024）——3072 维，SOTA。
-- **OpenAI text-embedding-ada-002**（2022）——1536 维，经典。
-- **Cohere Embed v3**（2024）——1024 维，多语言，Matryoshka。
-- **Voyage AI Embeddings**（2024）——专注企业级检索。
-- **AWS Bedrock Embeddings**（Titan Embeddings v2）——AWS 托管。
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| Embedding 模型（商业 API） | OpenAI text-embedding-3-small / text-embedding-3-large / text-embedding-ada-002；Cohere Embed v3；Voyage AI Embeddings；AWS Bedrock Titan Embeddings v2 | 判据是「语料能否出网 + 成本结构」：合规要求数据不出网、或需要为海量离线语料做长周期重编码，走自托管；要快速起步且可出网，走 API | 选错方向后，一次模型升级从「改一行配置」变成一次需要 GPU 排期的迁移；反向误选的代价是模型长期锁死在初版 |
+| Embedding 模型（开源 / 可自托管） | BGE-M3；BGE-large-en-v1.5；bge-small-en-v1.5；GTE-Qwen2-7B-instruct；Nomic Embed Text v1.5；Nomic Embed Vision v1.5；Snowflake Arctic Embed；mxbai-embed-large；Jina Embeddings v3；multilingual-E5；M3E；text2vec；ColBERT v2；ColPali；SPLADE++ | 判据是查询分型与语料形态：含标识符 / 专名 → 稀疏或 Late Interaction（SPLADE++ / ColBERT v2）；跨语言 → BGE-M3 / multilingual-E5；长文档 → BGE-M3 / Nomic Embed Text v1.5；页面图像 → ColPali；中文且要轻量 → M3E / text2vec 一类 | 单语言模型的代价要等第一个非中文入口上线才暴露：该入口上「搜不到」的反馈占比长期高于中文入口，而排查顺序通常先把账记在模型头上（对应 [§ 3.6](01-embedding-and-retrieval-section-3-sec3.md) 的两条跃迁）；纯双编码器则让订单号、专案名一类查询持续答非所问，表现为同一类客服工单反复出现（[§ 3.2.1](01-embedding-and-retrieval-section-3-sec3.md)） |
+| Rerank 模型 | Cohere Rerank 3；Cohere Rerank 3.5；BGE Reranker v2-m3；BGE Reranker v2-gemma；Jina Reranker；mixedbread Rerank | 判据是「延迟预算 + 语言覆盖 + 能否出网」：延迟预算宽松且可出网 → 商业 API；必须在自有网络内 → 开源自托管 | 不加精排时，非相关段落会挤掉生成端预算；加了却只看总量指标，会把召回问题误判成重排问题 |
+| 向量数据库 | Milvus；Qdrant；Weaviate；Pinecone；pgvector；Chroma；Vespa；Marqo；LanceDB；Elasticsearch dense_vector；OpenSearch k-NN；TiDB Vector；阿里云 VectorDB；腾讯 VectorDB | 判据按三条：数据已经在哪、过滤需求、规模。已在 PostgreSQL 且量级不极端 → pgvector（少一个系统）；要内置 Hybrid → Weaviate / Vespa / Elasticsearch dense_vector；要亿级与 GPU 索引 → Milvus；要托管 Serverless → Pinecone；原型阶段 → Chroma / LanceDB；HTAP 场景 → TiDB Vector | 为「以后可能要亿级」提前上重型分布式向量库，先多出一整套运维面（分片、副本、段合并），而数据量可能长期停在千万级 |
+| 自托管 Embedding 推理 | vLLM；Text Embeddings Inference（TEI）；SGLang；Ollama；LM Studio | 判据是「吞吐优先还是能跑就行」：批量离线编码且有多卡 → vLLM / TEI / SGLang；本地开发与单机演示 → Ollama / LM Studio | 用桌面级工具承担生产批量编码，吞吐会成为重编码窗口的瓶颈，把「换模型两小时」变成「换模型一整天」 |
+| Hybrid 检索平台 | Elasticsearch + ELSER；OpenSearch + Neural Search；Vespa；Weaviate（内置 Hybrid）；Cohere Rerank + 自建 | 判据是「团队是否已有一套搜索引擎」：已有 ES / OpenSearch 集群 → 在其上做混合，省掉第二套运维；追求检索质量上限且愿意自建 → Vespa | 为混合检索再引入一套独立引擎，等于把一致性维护面翻倍（见 §4.2 第 5 条） |
+| 可观测与评估 | Langfuse；Arize Phoenix；RAGAS；LangSmith；MTEB Leaderboard；C-MTEB | 判据是「要链路观测还是要评测结果」：要 trace 与成本核算 → Langfuse / LangSmith；要 RAG 指标（忠实度、上下文相关性）、要看 Embedding 漂移 → RAGAS / Arize Phoenix；选候选 → MTEB / C-MTEB（只用于缩小候选） | 用榜单名次替代自有评测集，代价在下一次改动评审时暴露：桌上只有一份新榜单截图，没有改前 / 改后的对照数字，这次改动无法被判成净收益或净损失（见 §4.2 第 1 条）；只看链路不建评测集同理 |
 
-**Embedding 模型（开源）**：
+**候选的推出年份**【公开：按各产品官方发布说明或模型卡核验，以官方文档当前版本为准；与主文件 §1.4 的演进时间线互为交叉参照，两处不一致时以官方发布说明为准】：OpenAI text-embedding-ada-002 2022、text-embedding-3-small / 3-large 2024、Cohere Embed v3 2024、Voyage AI Embeddings 2024、BGE-M3 2024、BGE-large-en-v1.5 2023、GTE-Qwen2-7B-instruct 2024、Nomic Embed Text v1.5 2024、Snowflake Arctic Embed 2024、mxbai-embed-large 2024、Jina Embeddings v3 2024、multilingual-E5 2024、M3E 2023、text2vec 2023、ColPali 2024、SPLADE++ 2023、Cohere Rerank 3 / 3.5 2024、BGE Reranker v2-m3 2024。向量数据库与推理框架一类是持续演进的既有项目，不标发布年份，按各自官方文档当前版本的版本号核验。
 
-- **BGE-M3**（智源，2024）——多语言（100+）、多功能（dense / sparse / multi-vector）、长文本（8192）。
-- **BGE-large-en-v1.5**（智源，2023）——英文 SOTA。
-- **bge-small-en-v1.5**——轻量。
-- **GTE-Qwen2-7B-instruct**（阿里 2024）——基于 Qwen2，强大。
-- **Nomic Embed Text v1.5**（2024）——长上下文 8192，Matryoshka。
-- **Nomic Embed Vision v1.5**——多模态。
-- **Snowflake Arctic Embed**（2024）——SOTA 检索模型。
-- **mxbai-embed-large**（MixedBread 2024）——SOTA 之一。
-- **Jina Embeddings v3**（2024）——多任务，8192 token。
-- **multilingual-E5**（微软 2024）——多语言 SOTA。
-- **M3E**（Moka AI 2023）——中文 SOTA，开源。
-- **text2vec**（Chinese 2023）——中文开源。
-- **ColBERT v2**（Stanford 2024）——Late Interaction，长文档 SOTA。
-- **ColPali**（2024）——文档图像 Late Interaction。
-- **SPLADE++**（Naver 2023）——学习型稀疏向量。
+**能力名与产品名分开核验**：长上下文、可截断维度（Matryoshka）、多向量、内置 Hybrid 都是**能力名**，不是某个产品的专属功能，同一能力在不同模型卡里挂在不同的名字下；上表按模型卡与官方文档两类入口列候选，某个能力项是否属该版本的正式条目（而不是预览或路线图），请以对应产品的官方文档当前版本为准。
 
-**Rerank 模型**：
+表里**最容易被误选的是向量数据库这一类**：判据被误设成「按向量总量选库」，于是团队为还没到来的亿级规模先上了重型分布式方案。真实的分水岭是**过滤方式与写入模式**（Step 3 的两条判据），而不是规模数字。误选的典型后果是运维面先于数据量增长：工程预算被花在分片、副本与段合并上，而召回率一次也没有被标定过——等到业务方问「检索准不准」时，手上只有一张延迟曲线。
 
-- **Cohere Rerank 3**（2024）——商业 API，多语言 SOTA。
-- **Cohere Rerank 3.5**（2024）——更快、更便宜。
-- **BGE Reranker v2-m3**（智源 2024）——开源，多语言。
-- **BGE Reranker v2-gemma**（2024）——基于 Gemma。
-- **Jina Reranker**（2024）——开源，长文本。
-- **mixedbread Rerank**（2024）。
+### 4.4 存量迁移
 
-**向量数据库**：
+这一节只面向**已经有一套跑着的检索系统**（BM25 或早期向量检索）的人。存量改造的正确顺序不是从 Step 1 重来，而是先把「不可回退的动作」往后推。
 
-- **Milvus**（国产开源，2024+ SOTA）——亿级向量、HNSW / IVF / GPU 加速。
-- **Qdrant**（开源）——Rust 实现，高性能。
-- **Weaviate**（开源）——内置 Hybrid 检索、模块化。
-- **Pinecone**（云）——Serverless，企业级托管。
-- **pgvector**（PostgreSQL 扩展）——与 PG 集成。
-- **Chroma**（轻量开源）——适合原型。
-- **Vespa**（Yahoo）——大规模企业级。
-- **Marqo**（开源）——端到端 Embedding 平台。
-- **LanceDB**（开源）——嵌入式向量库。
-- **Elasticsearch dense_vector**（8.x+）——与 ES 集成。
-- **OpenSearch k-NN**（AWS）——ES 兼容。
-- **TiDB Vector**（PingCAP）——HTAP + 向量。
-- **阿里云 VectorDB**（2024）——阿里云原生。
-- **腾讯 VectorDB**（2024）——腾讯云原生。
+**① 先做三件立刻见效且可回退的事**
 
-**LLM 推理框架（自托管 Embedding）**：
+- **加一级精排**：它是独立在线服务，可以随时接上、随时摘掉，不需要重建索引、不需要重编码。这是存量系统里性价比最高的第一步。
+- **给 chunk 表补齐元数据列**：doc_id / chunk_id / source / timestamp，以及在下次重编码时补上的模型版本与分块器版本。加列不影响现有读路径，可回退。
+- **建评测集与基线**：纯离线工作，不改任何线上组件。它的产出是后续一切改造的裁判。
 
-- **vLLM**（UC Berkeley）——高吞吐 Embedding 推理。
-- **Text Embeddings Inference**（HuggingFace TGI）——TEI 专用。
-- **SGLang**（2024）——高性能 Embedding 推理。
-- **Ollama**——本地 Embedding（轻量场景）。
-- **LM Studio**——本地桌面。
+**判据**：这三件做完之后，你必须能回答一个问题——「当前系统的召回率是多少」。存量改造要从一次盘点开始，没有这个数字，后面所有改动都无法验收。
 
-**Hybrid 检索平台**：
+**② 历史资产按三类处理，逐条判定**
 
-- **Elasticsearch + ELSER**（2024）——BM25 + 向量混合。
-- **OpenSearch + Neural Search**（2024）——AWS。
-- **Vespa**——Hybrid 检索引擎。
-- **Weaviate**——内置 Hybrid。
-- **Cohere Rerank + 自建**——商业 Hybrid。
+- **全部返工**：换编码模型、改分块器、改指令前缀——这三件任发生一件，向量空间或 chunk 边界就变了，存量向量全部作废。返工量级可用一次抽样估算：【推算】抽 N 条文档求平均 token 数，乘以文档总数得总 token，再除以编码服务的每秒 token 吞吐，即得理论重编码时长（尚未计入索引重建与限流）。
+- **只改动的部分**：新增文档走新配置，存量文档保留旧配置。前提是两套配置的向量**不得进同一个索引**——不同向量空间的分数不可比（[§ 3.1](01-embedding-and-retrieval-section-3-sec3.md)），必须按 collection、namespace 或模型版本字段隔离。
+- **打标挂账**：进不了流水线的资产——扫描件、加密文档、解析失败的文件、外部系统只给链接不给正文的内容。做法是登记成目录条目并标注「未向量化 + 原因」，让检索侧能回答「哪些内容不在库里」。这类资产的危险不在于缺席，而在于**缺席是不可见的**：用户看到的是「没有相关信息」，而不是「这份文件没入库」。
 
-**可观测与评估**：
+**判据**：随机抽 20 个业务方举过例子的文档【经验：随业务方数量与已知问题数变】，逐个确认它属于三类中的哪一类，且分类与系统里的标记一致。不一致处就是挂账清单的缺口。
 
-- **Langfuse**（开源）——LLM + 检索可观测。
-- **Phoenix**（Arize）——RAG 评估。
-- **RAGAS**（开源）——RAG 评估框架。
-- **LangSmith**（LangChain）——RAG Trace + 评估。
-- **Arize Phoenix**——Embedding Drift 检测。
-- **MTEB Leaderboard**（HuggingFace）——Embedding 模型排行榜。
-- **C-MTEB**（智源）——中文 Embedding 评测。
+**③ 双轨怎么维持、维持多久**
 
-### 4.4 代码 / 示例
+- **双轨期的硬约束**：两套向量空间不可比，所以不能「两路召回后融合原始分数」，只能「两路分别取候选后按文档 id 去重、再合并结果集」。若必须融合，用 RRF——它只用排名，不需要跨空间归一化。
+- **双轨期要看的是覆盖差异**：同一批 query 在两套索引下各返回多少、有多少文档只在一边出现。这个数字决定退出时机，而不是日历。
+- **维持多久**：以「新侧在自有评测集上不劣于旧侧、且覆盖差异收敛」为退出条件【经验：常见为个位数周，随语料更新速度变，语料更新越快双轨越短，因为存量会自然被新内容稀释】。
 
-**示例 1：OpenAI Embedding + 向量检索（Python）**
+**④ 退出信号**
+
+四个信号齐了才切主：
+
+1. 同一评测集上，新侧召回率不低于旧侧；
+2. 对「旧侧能命中的 query」，新侧覆盖率不低于约定阈值；
+3. 全量重编码 + 索引重建的窗口已在可接受的停机或降级范围内演练过一次；
+4. 回退路径演练过一次——把流量切回旧侧需要多久，有人知道谁有权按这个开关。
+
+**反向信号**：如果双轨跑了几个周期而覆盖差异不再收敛，说明还有一条写入链路没接过来。此时切主会丢掉那部分资产，应该先查写入侧的遗漏，而不是延长双轨。
+
+### 4.5 模板 / 示例
+
+**模板 1：ERS 最小字段表（Step 1 产物）**
+
+```text
+Embedding 需求规格说明书（ERS）—— 只填这几格，其余不要照抄
+ 场景一句话   ：<在哪个入口，把什么语料，给谁用，答不上来会怎样>
+ 语料         ：条目数 ______  平均长度 ______ token  语言 ______  模态 ______
+ 查询         ：日 QPS ______  语义提问占比 ___%  含标识符/专名占比 ___%
+ 延迟预算     ：端到端 P95 ______ ms（其中召回段 ____ ms）
+ 精度目标     ：召回率 ______%  端到端答案质量口径：<怎么量>
+ 合规         ：数据能否出网 ______  可留存期限 ______
+ 规模上限     ：12 个月后条目数 ______（决定现在要不要谈量化与分片）【经验：随业务增速与采购周期变，增速快则改看 6 个月】
+```
+
+**怎么用**：只填「场景一句话 / 查询分型 / 合规 / 规模上限」四格也能开工——这四格决定了模型能否用 API、要不要上混合检索；「精度目标」一栏必须写成可量的口径，写不出来就先建评测集再回来填。
+
+**模板 2：chunk 表 DDL（Step 4–5 产物）**
+
+```sql
+CREATE TABLE doc_chunk (
+  chunk_id     BIGINT PRIMARY KEY,
+  doc_id       BIGINT      NOT NULL,
+  chunk_no     INT         NOT NULL,
+  content      TEXT        NOT NULL,
+  embedding    VECTOR(1024) NOT NULL,
+  source       TEXT        NOT NULL,
+  ts           TIMESTAMPTZ NOT NULL,
+  embed_model  TEXT        NOT NULL,   -- 模型 + 版本
+  embed_prefix TEXT,                   -- 写入侧指令前缀，必须落库
+  chunker_ver  TEXT        NOT NULL,   -- 分块器版本
+  meta         JSONB
+);
+-- 构建期参数：改它必须重建索引；ef_search 属查询期参数，可在线调
+CREATE INDEX idx_chunk_hnsw ON doc_chunk USING hnsw (embedding vector_cosine_ops)
+  WITH (m = 16, ef_construction = 64);
+```
+
+**怎么用**：`embed_model` / `embed_prefix` / `chunker_ver` 三列是这张表的关键——存量迁移与双轨全靠它们区分向量来源；`m` 与 `ef_construction` 不要照抄，按 §4.2 第 3 条用自有数据标定（示例值以 pgvector 官方文档当前版本为准）。
+
+**示例 1：OpenAI Embedding + 向量检索（Qdrant）**
 
 ```python
-import os
-import numpy as np
 from openai import OpenAI
 from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct, VectorParams, Distance
+from qdrant_client.models import VectorParams, Distance, PointStruct
 
-# 1. 初始化
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-qdrant = QdrantClient(host="localhost", port=6333)
+client, qdrant = OpenAI(), QdrantClient(host="localhost", port=6333)
+qdrant.create_collection("docs", vectors_config=VectorParams(size=1536, distance=Distance.COSINE))
 
-# 2. 创建 collection
-qdrant.create_collection(
-    collection_name="docs",
-    vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-)
+def embed(text: str) -> list:                    # 写入侧与查询侧必须共用这一个函数
+    return client.embeddings.create(model="text-embedding-3-small", input=text).data[0].embedding
 
-# 3. 文档 Embedding + 入库
-documents = [
-    {"id": "doc1", "text": "苹果公司发布 iPhone 16", "source": "news"},
-    {"id": "doc2", "text": "Apple Inc. launched new iPhone", "source": "news"},
-    {"id": "doc3", "text": "华为发布 Mate 70", "source": "news"},
-]
-
-def embed_text(text: str, model: str = "text-embedding-3-small", dimensions: int = 1536) -> list:
-    """Embedding 文本"""
-    response = client.embeddings.create(
-        model=model,
-        input=text,
-        dimensions=dimensions,
-    )
-    return response.data[0].embedding
-
-points = []
-for doc in documents:
-    vector = embed_text(doc["text"])
-    points.append(PointStruct(id=doc["id"], vector=vector, payload=doc))
-
-qdrant.upsert(collection_name="docs", points=points)
-
-# 4. 检索
-query = "Apple 最新手机"
-query_vector = embed_text(query)
-
-results = qdrant.search(
-    collection_name="docs",
-    query_vector=query_vector,
-    limit=3,
-)
-
-for r in results:
-    print(f"Score: {r.score:.3f} | {r.payload['text']}")
-# Score: 0.876 | Apple Inc. launched new iPhone
-# Score: 0.821 | 苹果公司发布 iPhone 16
-# Score: 0.412 | 华为发布 Mate 70
+qdrant.upsert("docs", [PointStruct(id=d["id"], vector=embed(d["text"]), payload=d) for d in documents])
+hits = qdrant.search("docs", query_vector=embed(query), limit=3)   # 返回 score + payload
 ```
+
+**怎么用**：`size` 必须与模型输出维度一致，换模型时这一行要一起改；把 `embed()` 封成唯一入口，两侧版本漂移才不会发生——漂移不会报错，只会让结果变差。维度取值请以该模型官方文档当前版本为准。
 
 **示例 2：BGE-M3 多语言 Embedding（开源）**
 
 ```python
 from FlagEmbedding import BGEM3FlagModel
-import torch
+model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True)   # 同一模型支持 dense / sparse / multi-vector
 
-# 1. 加载模型
-model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True)
-# 支持 dense / sparse / multi-vector 三种模式
-
-# 2. 多语言 Embedding
-sentences = [
-    "苹果公司发布 iPhone 16",          # 中文
-    "Apple Inc. launched new iPhone",   # 英文
-    "Appleは新型iPhoneを発表しました",  # 日文
-]
-
-# Dense 向量（1024 维）
-embeddings = model.encode(
-    sentences,
-    return_dense=True,
-    return_sparse=False,
-    return_colbert_vecs=False,
-)
-dense_vecs = embeddings["dense_vecs"]  # numpy array (3, 1024)
-print(f"Dense shape: {dense_vecs.shape}")
-
-# 多向量（ColBERT 风格）
-multi_vec = model.encode(
-    sentences,
-    return_dense=False,
-    return_sparse=False,
-    return_colbert_vecs=True,
-)
-colbert_vecs = multi_vec["colbert_vecs"]  # list of tensors
-
-# Sparse 向量（类似 SPLADE）
-sparse = model.encode(
-    sentences,
-    return_dense=False,
-    return_sparse=True,
-    return_colbert_vecs=False,
-)
+out = model.encode(sentences, return_dense=True, return_sparse=True, return_colbert_vecs=False)
+dense, sparse = out["dense_vecs"], out["lexical_weights"]   # 一次编码，两路都能用
 ```
+
+**怎么用**：一次编码同时拿到稠密与稀疏表示，是混合检索里最省事的一路；但 `return_colbert_vecs=True` 会让每篇文档产生 n 个向量、存储按 token 数放大（[§ 3.2.3](01-embedding-and-retrieval-section-3-sec3.md)），只在确需 Late Interaction 时才开。
 
 **示例 3：Cohere Embed v3 + Cohere Rerank 3（完整 RAG）**
 
 ```python
 import cohere
-import os
-from typing import List
-
-co = cohere.Client(api_key=os.environ["COHERE_API_KEY"])
-
-# 1. Embedding 文档
-documents = [
-    {"id": "1", "text": "苹果公司发布 iPhone 16，售价 7999 元起"},
-    {"id": "2", "text": "华为发布 Mate 70，搭载麒麟 9100 芯片"},
-    {"id": "3", "text": "小米发布 SU7 Ultra 电动跑车"},
-    {"id": "4", "text": "Apple's iPhone 16 features A18 chip"},
-]
-
-doc_response = co.embed(
-    texts=[d["text"] for d in documents],
-    model="embed-english-v3.0",
-    input_type="search_document",
-    embedding_types=["float"],
-)
-doc_vectors = doc_response.embeddings.float
-
-# 2. 粗排（向量检索 Top-100）
-query = "Apple 最新手机有什么特点"
-query_response = co.embed(
-    texts=[query],
-    model="embed-english-v3.0",
-    input_type="search_query",
-    embedding_types=["float"],
-)
-query_vector = query_response.embeddings.float[0]
-
-# 计算余弦相似度
-import numpy as np
-query_arr = np.array(query_vector)
-scores = []
-for i, doc_vec in enumerate(doc_vectors):
-    doc_arr = np.array(doc_vec)
-    sim = np.dot(query_arr, doc_arr) / (np.linalg.norm(query_arr) * np.linalg.norm(doc_arr))
-    scores.append((i, sim))
-
-# 排序取 Top-100
-top_100 = sorted(scores, key=lambda x: x[1], reverse=True)[:100]
-
-# 3. 精排（Cohere Rerank 3）
-rerank_docs = [documents[i[0]]["text"] for i in top_100]
-rerank_response = co.rerank(
-    query=query,
-    documents=rerank_docs,
-    model="rerank-english-v3.0",
-    top_n=3,
-)
-
-for r in rerank_response.results:
-    print(f"Rerank Score: {r.relevance_score:.3f} | {rerank_docs[r.index]}")
+co = cohere.Client(api_key=COHERE_API_KEY)
+docs = co.embed(texts=texts, model="embed-english-v3.0",
+                input_type="search_document", embedding_types=["float"]).embeddings.float
+q = co.embed(texts=[query], model="embed-english-v3.0",
+             input_type="search_query", embedding_types=["float"]).embeddings.float[0]
+cand = vector_search(q, top_k=100)                                   # 粗排：取候选
+r = co.rerank(query=query, documents=cand, model="rerank-english-v3.0", top_n=3)  # 精排：定阈值
 ```
+
+**怎么用**：`input_type` 必须成对出现（文档侧 `search_document`、查询侧 `search_query`），写错不报错、只让召回变差——把它封在服务端，不要交给调用方；`top_k` 与 `top_n` 都是可调参数，按生成端上下文预算定，不要照抄。
 
 **示例 4：ColBERT v2 Late Interaction（长文档检索）**
 
 ```python
 from colbert import Searcher, ColBERTConfig
-
-# 1. 配置 ColBERT
-config = ColBERTConfig(
-    doc_maxlen=512,
-    query_maxlen=64,
-    nbits=2,  # 2-bit 压缩
-    kmeans_niters=4,
-)
-
-# 2. 创建 Searcher（假设已构建索引）
+config = ColBERTConfig(doc_maxlen=512, query_maxlen=64, nbits=2)   # nbits：残差压缩档位
 searcher = Searcher(index="colbertv2.0", config=config, checkpoint="colbert-ir/colbertv2.0")
-
-# 3. 检索
-query = "Apple iPhone 16 评测"
-results = searcher.search(query, k=10)
-
-for passage_id, rank, score in zip(*results):
-    passage = searcher.collection[passage_id]
-    print(f"Rank {rank} | Score {score:.3f} | {passage[:200]}...")
+results = searcher.search("Apple iPhone 16 评测", k=10)             # 假定索引已离线构建完成
 ```
+
+**怎么用**：`nbits` 压得越狠索引越小、精度损失越大，必须用评测集标定；这个示例假定索引已构建——构建工序比单向量索引多一道离线步骤，迁移时要把它的窗口单独排进计划。
 
 **示例 5：Hybrid Retrieval（向量 + BM25 + Rerank）**
 
 ```python
-from elasticsearch import Elasticsearch
-from sentence_transformers import SentenceTransformer
-import numpy as np
-
-es = Elasticsearch(["http://localhost:9200"])
-encoder = SentenceTransformer("BAAI/bge-m3")
-
-def hybrid_search(query: str, top_k: int = 10, alpha: float = 0.7) -> list:
-    """混合检索：向量 + BM25，加权融合"""
-
-    # 1. 向量检索
-    query_vec = encoder.encode(query).tolist()
-    vec_results = es.search(
-        index="docs",
-        knn={
-            "field": "embedding",
-            "query_vector": query_vec,
-            "k": 50,
-            "num_candidates": 200,
-        },
-    )
-    vec_scores = {hit["_id"]: hit["_score"] for hit in vec_results["hits"]["hits"]}
-
-    # 2. BM25 检索
-    bm25_results = es.search(
-        index="docs",
-        query={
-            "multi_match": {
-                "query": query,
-                "fields": ["title^2", "content"],
-            }
-        },
-        size=50,
-    )
-    bm25_scores = {hit["_id"]: hit["_score"] for hit in bm25_results["hits"]["hits"]}
-
-    # 3. 归一化 + 加权融合
-    def normalize(scores):
-        if not scores:
-            return {}
-        max_s = max(scores.values())
-        min_s = min(scores.values())
-        if max_s == min_s:
-            return {k: 1.0 for k in scores}
-        return {k: (v - min_s) / (max_s - min_s) for k, v in scores.items()}
-
-    vec_norm = normalize(vec_scores)
-    bm25_norm = normalize(bm25_scores)
-
-    all_ids = set(vec_norm.keys()) | set(bm25_norm.keys())
-    fused_scores = {}
-    for doc_id in all_ids:
-        vec_s = vec_norm.get(doc_id, 0)
-        bm25_s = bm25_norm.get(doc_id, 0)
-        fused_scores[doc_id] = alpha * vec_s + (1 - alpha) * bm25_s
-
-    # 4. 排序返回
-    ranked = sorted(fused_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-    return ranked
-
-# 使用
-results = hybrid_search("Apple iPhone 16 评测", top_k=5)
+# 两路各取候选 → 融合（RRF，只用排名，避免跨路归一化）→ 精排
+vec  = knn_search(q_vec, k=50)
+bm25 = es.search(index="docs", size=50,
+                 query={"multi_match": {"query": q, "fields": ["title^2", "content"]}})
+fused = rrf([vec, bm25], k=60)        # score(d) = Σ 1 / (k + rank(d))
+final = rerank(q, [doc_text(i) for i in fused[:100]], top_n=10)
 ```
 
----
+**怎么用**：优先用 RRF 而不是加权——加权要先归一化，而归一化方式本身会改变结果；`k=60` 是 RRF 的平滑常数，属可调参数【经验】，先用默认值跑出可复现基线再动它。两路候选必须按文档 id 去重后再送精排。
+
+### 4.6 自检清单
+
+以下每条都必须**动了系统才有答案**；「坐下来想一想就能回答」的建模类问题（模式选得对不对、粒度合不合理、前缀有没有封装在服务端）见 [§ 3](01-embedding-and-retrieval-section-3-sec3.md) §3.7，本节不重复。
+
+1. 拔线演练：把 reranker 打不通，接口是否仍返回结果并标记降级？降级后的 Top-K 里是否仍含正确文档？
+2. 删除演练：删掉 100 条文档【经验：随索引规模与删除语义变】，它们是否从 Top-K 中消失？段合并或重索引窗口安排在什么时间？
+3. 编码对拍：抽 20 条文本【经验：随入口数量与文本长度分布变】分别走写入侧与查询侧的编码入口，两侧返回的向量是否逐位一致？不一致时，两侧当时的版本号与生效时间有没有一起留档？
+4. 缓存失效验证：改掉缓存 key 的任一组成（模型版本 / 前缀 / 分块器版本）后重跑，缓存是否全部 miss？仍命中即说明该项没进 key。
+5. 过滤分桶：按过滤条件的选择性分桶统计召回率，高选择性入口是否明显低于整体均值？
+6. 参数复标定：在当前数据量下按上次那组参数重跑一遍「索引参数 → 召回率」标定，结论是否与上次记录的那一行一致？那一行里有没有记当时的向量总量（没记就无法判断它今天是否还成立）？
+7. 切换计时：全量重编码、索引重建、回退，各实测需要多少小时（不许估）？这三个数字有没有落进变更预案的停机窗口栏——没落进去的预案，评审时按高风险处理。
+8. 成本对账：按入口拆分的编码调用量与 token 用量，能否对上账单？有无某个入口在被反复重编码？
+9. 写入链路时差：新发布一篇文档，测它在两条索引里各自多久可见？
+10. 版本维度：延迟 / 召回 / 成本看板能否按「模型版本 × 索引版本」切分？切不了就无法归因。
+11. 答案跨度实测：对当前漏召回样本，实测「答案在原文的字符跨度」分布，是否有一批超过 chunk 长度？
+12. K 调参留档：把 K 调大一级重跑同一评测集，端到端答案质量有没有跟着抬高？若只有召回率抬高而端到端不动，说明瓶颈在生成端预算而不在召回——这个结论有没有写进变更记录？
+
+### 4.7 小结
+
+> 本节小结：这条落地路径上唯一决定成败的环节，是**在动第一根向量之前先给系统一个可对照的基线**（Step 1 的 ERS 加 Step 8 的评测集与监控）。因为这套系统的所有后续取舍——换模型、改分块、加一级重排、上量化——本质都是「用一个现在换一个以后」，没有基线就无法判断换来的是不是净收益；而向量检索的退化又是静默的，不会报错，只会一天天变差。它比模型选型与索引调优更值得投入的原因在于：那两件事只决定一次，基线决定之后每一次改动能不能被判对错。
+>
+> 配合 [§ 2 核心原理](01-embedding-and-retrieval.md)、[§ 3 设计模式与范式](01-embedding-and-retrieval-section-3-sec3.md) 与 [§ 6 落地实践](01-embedding-and-retrieval-section-6-sec6.md) 阅读。

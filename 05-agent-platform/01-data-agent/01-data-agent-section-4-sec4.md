@@ -1,226 +1,199 @@
-> 本文件是 **01-data-agent.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](01-data-agent.md)。
+> 本文件是 **01-data-agent.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](01-data-agent-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](01-data-agent.md)。
 
 ## 4. 工程实现
 
+Data Agent 的落地顺序里有一条比技术选型更容易被搞反的约束：**语义层在前，模型在后**。模型决定的是「这一版比上一版准几个点」，而语义层决定的是「答案会不会算错还不报错」——所以 §4.1 的八个步骤里，第 2 步（指标语义层）和第 8 步（评估）是最常被跳过、也最先出事的两步。
+
+面向两类读者。**从零搭建**的读者走 §4.1 → §4.3，八步的产物与判据可以直接当交付清单；**在已有 BI / 报表体系上改造**的读者先读 §4.4——存量改造的第一约束是「不动现有报表链路」，不是「先把自然语言入口接上」。术语沿用主文件 §2.1（指标语义层 / OneMetric / Schema Linking / Self-Correction / Reflexion / 沙箱执行 / 多轮精修）与 §3 的模式名；模式本身的机制、代价与失效点见 [§ 3](01-data-agent-section-3-sec3.md)，本节不重复。
+
 ### 4.1 落地步骤
 
-**Step 1：业务边界与场景识别**
+**Step 1：业务边界与场景识别（【经验：1–2 周，随业务线数量与口径评审周期变】）**
 
-- 识别核心数据查询场景（建议从高频问题开始，如"DAU / GMV / 留存率"）。
-- 梳理核心指标（5-30 个起步）。
-- 梳理核心表（10-50 张起步）。
-- 输出：**Data Agent 需求说明书（Data Agent Requirements Specification, DARS）**。
+- 从高频问题起（DAU / GMV / 留存率一类），而不是从「模型能做多难」起。
+- 梳理核心指标【经验：5–30 个起步，随业务覆盖面变】与核心表【经验：10–50 张起步，随数仓分层现状变】。
+- 同时写下**这个系统不回答什么**：涉及写回生产、涉及外部数据、涉及未声明口径的问题。
+- **产物**：Data Agent 需求说明书（Data Agent Requirements Specification, DARS）。
+- **判据**：拿 DARS 问 5 个真实业务用户【经验：随业务线数量与角色覆盖面变，覆盖不到的域按域补抽】「你上周问过的三个问题在不在清单里」，命中不到一半即边界选错。
+- **为什么必须这一步**：它决定 Step 2 的指标清单范围。跳过它直接接库，语义层会按「模型能理解什么」建，而不是按「业务在问什么」建——症状是高准确率、低使用率。
 
-**Step 2：指标语义层建设**
+**Step 2：指标语义层建设（【经验：3–6 周，随指标数量与跨部门对齐难度变】）**
 
-- 选择指标语义层工具（dbt Semantic Layer / Cube.js / MetricFlow / 阿里 QuickBI 指标中台）。
-- 定义核心指标（Name / Formula / Dimensions / Filters / Owner / Description）。
-- 与数据团队 / 业务团队对齐口径。
-- 输出：**OneMetric 体系（指标中台）**。
+- 选语义层承载（dbt Semantic Layer / Cube.js / MetricFlow / 阿里 QuickBI 指标中台一类）。
+- 每个指标写全六项：Name / Formula / Dimensions / Filters / Owner / Description，并给版本号。
+- 与数据团队、业务团队逐条对齐口径，对齐结果留签字记录（口径是组织决定，不是技术决定）。
+- **产物**：OneMetric 体系（指标中台）+ 每个指标的 Owner 与版本。
+- **判据**：抽 3 个指标【经验：随指标数量与口径复杂度变，优先抽跨部门在用的】，让两个人分别照定义手写 SQL，执行结果是否一致；不一致说明定义里还缺维度或过滤条件。
+- **为什么必须这一步**：它是唯一能把口径错误从「静默算错」转成「明确拒答」的结构（[§ 3.1](01-data-agent-section-3-sec3.md)）。跳过它，Step 5 的 Prompt 再精细也只是教模型猜口径，而口径分歧一旦进答案就不可逆。
 
-**Step 3：数据连接与权限配置**
+**Step 3：数据连接与权限配置（【经验：1–2 周，随数据源数量与权限矩阵复杂度变】）**
 
-- 接入数据源（数仓 / 业务库 / API）。
-- 配置 Agent 专用账号（只读、行级权限）。
-- 配置敏感列脱敏规则。
-- 输出：**可连接的数据源 + 权限策略**。
+- 接入数据源（数仓 / 业务库 / API），屏蔽方言差异。
+- 建 Agent 专用账号：只读，配行级权限。
+- 配敏感列脱敏规则，并确认脱敏发生在**结果进入模型上下文之前**。
+- **产物**：可连接的数据源清单 + 权限策略（账号、可访问 schema、行级条件、脱敏列）。
+- **判据**：用 Agent 账号跑两条越权 SQL（读别的部门、读未授权表），看是否被拒绝且留下告警；再确认模型上下文里抓不到敏感明文。
+- **为什么必须这一步**：权限必须在执行层强制，提示词不是权限系统。它必须排在 Step 4 之前——Step 4 抽取的 schema 范围应当等于「Agent 有权访问的范围」，反过来会让索引里混进无权访问的表，症状是「系统说没这张表」。
 
-**Step 4：Schema 索引与文档化**
+**Step 4：Schema 索引与文档化（【经验：1–3 周，随表数量与注释完备度变】）**
 
-- 抽取每张表的 schema（表名、列名、类型、注释、示例值）。
-- 写入向量数据库（用于 RAG / Schema Linking）。
-- 输出：**Schema 文档 + 向量索引**。
+- 抽取每张表的表名、列名、类型、注释、示例值。
+- 写入向量库，供 Schema Linking 与 Schema RAG 使用。
+- 补两样索引里最容易缺的东西：业务口径说明，以及「什么时候**不要**用这张表」。
+- **产物**：Schema 文档 + 向量索引。
+- **判据**：从 Step 1 的问题清单抽 10 个问题【经验：随问题类型数变，每类至少覆盖一题】，人工看检索 top-5【经验：随表数量与上下文预算变】是否包含正确的表；漏表率超标先修索引，不要先换模型。
+- **为什么必须这一步**：它决定 Step 5 往上下文里放什么。跳过它，Prompt 只能全库注入 schema，上下文爆炸且选表错误率随表数上升（[§ 3.6](01-data-agent-section-3-sec3.md) 的第一行跃迁）。
 
-**Step 5：Text2SQL 模型选型与 Prompt 设计**
+**Step 5：Text2SQL 模型选型与 Prompt 设计（【经验：2–4 周，随候选模型数与评估集建设方式变】）**
 
-- 选择 LLM（GPT-4 / Claude / DeepSeek-Coder / 通义千问 / Qwen2.5-Coder）。
-- 设计 Prompt（含角色定义、Schema 上下文、Few-shot 示例、输出格式约束）。
-- 在 BIRD / Spider 内部测试集评估。
-- 输出：**Text2SQL Prompt + 评估报告**。
+- 选 LLM（闭源通用模型或可私有化的开源代码模型，判据见 §4.3）。
+- Prompt 写全五件：角色定义、Schema 上下文、Few-shot 示例、输出格式约束、失败处理指令。
+- 在公开基准（BIRD / Spider 系列）与内部测试集上评估，并把错例**按类型**分类。
+- **产物**：Text2SQL Prompt 版本 + 评估报告（含基线与错例分类）。
+- **判据**：错例里「选错表」与「口径错」各占多少——两类修法不同（回 Step 4 / 回 Step 2），分不出来说明评估只产出了总分。
+- **为什么必须这一步**：它把前三步的成果装配起来。顺序不能前置：先选模型再建语义层，模型的能力会被上游约束层吃掉，表现是「换了更强的模型，准确率没动」。
 
-**Step 6：Agent 编排框架选择**
+**Step 6：Agent 编排框架选择（【经验：1–2 周，随框架熟悉度与要注册的工具数变】）**
 
-- 选择框架（LangChain / LangGraph / LlamaIndex / AutoGen）。
-- 设计 Agent 工作流（ReAct / Plan-Execute / Multi-Agent）。
-- 集成工具（SQL 执行 / Python 执行 / 指标检索 / 可视化）。
-- 输出：**可运行的 Agent**。
+- 选框架（LangChain / LangGraph / LlamaIndex / AutoGen 一类）。
+- 按 [§ 3.3](01-data-agent-section-3-sec3.md) 决策表定工作流（ReAct / Plan-Execute / Multi-Agent）。
+- 注册工具（SQL 执行 / Python 执行 / 指标检索 / 可视化），每个工具的描述里写明「什么时候不要用它」。
+- **产物**：可运行的 Agent + 工具注册表（含描述与禁用条件）。
+- **判据**：把最长的一条链路跑通并数出模型调用次数；调用次数上限如果没写进配置，成本上界就是不可控的。
+- **为什么必须这一步**：它排在沙箱之前，因为沙箱的账号、配额与审计字段是**按工具的动作面逐项配的**——SQL 工具给只读账号与语句超时，代码工具给独立容器与出网策略。注册表没定就先配沙箱，之后每注册一个工具都要回头再改一次沙箱配置，而每次改配置都要重跑一遍越界用例；这条返工在项目里以「注册表晚定 → 沙箱配置改了三轮 → 上线前一周发现还有一个工具没进演练清单」的形式出现。Step 7 的三条越界用例正是按工具注册表逐项列举的，注册表缺一项，就有一条越界路径没有人测过。
 
-**Step 7：沙箱执行与审计**
+**Step 7：沙箱执行与审计（【经验：1–2 周，随沙箱形态与审计字段数量变】）**
 
-- 部署 SQL 沙箱（基于 Postgres / Doris / ClickHouse 副本 + 资源配额）。
-- 配置审计日志（所有 SQL、结果集、执行时长）。
-- 配置告警（长查询、大结果集、敏感列访问）。
-- 输出：**可审计的沙箱执行环境**。
+- 部署 SQL 沙箱（数据库只读副本 + 资源配额）。
+- 配审计日志：所有 SQL、结果集（脱敏后）、执行时长、调用者。
+- 配告警：长查询、大结果集、敏感列访问。
+- **产物**：可审计的沙箱执行环境 + 告警规则。
+- **判据**：跑三条越界用例（无行数上限的大表扫描、跨部门行、敏感列），看拦截与告警是否都落到日志；同时确认日志里留有 **Schema Linking 的候选表与校验结论**——只有最终 SQL 的链路等于没有可复盘的证据。
+- **为什么必须这一步**：它把 Step 3 的权限策略变成运行期的事实。排在 Step 6 之后，是因为要先知道有哪些工具、各自能做什么动作。
 
-**Step 8：可观测与评估**
+**Step 8：可观测与评估（【经验：2–3 周建立，随评估集规模与标准答案的获取方式变，之后持续运行】）**
 
-- 集成 Langfuse / Phoenix / LangSmith。
-- 配置指标（准确率、延迟、成本、用户满意度）。
-- 建立 BIRD / Spider 内部评估集（≥ 200 条）。
-- 建立人工反馈闭环。
-- 输出：**可观测的 Data Agent 平台**。
+- 接入可观测平台（Langfuse / Phoenix / LangSmith 一类）。
+- 配指标：准确率、延迟、成本、用户满意度。
+- 建内部评估集【经验：200 条量级起步，随问题类型覆盖度变】，并接入回归流程。
+- 建人工反馈闭环：用户反馈 → 回灌评估集。
+- **产物**：可观测的 Data Agent 平台 + 固定评估集 + 反馈回灌流程。
+- **判据**：改一版 Prompt，能否在一天内给出「这版比上一版好还是差」的结论；给不出说明评估集没有接进流程。
+- **为什么必须这一步**：没有固定评估集就没有回归信号，改动方向不可判断——迭代会停在原地却看起来一直在优化（[§ 3.5](01-data-agent-section-3-sec3.md) 的「无评估体系」）。
+
+最常被跳过的是 **Step 2 与 Step 8**，而这两步的共同点是「做完了在功能列表上看不出任何变化」，所以它们被砍的时间点通常落在一次压缩排期的评审上，而不是落在技术判断出错时。跳过 Step 2 的第一个信号不是查询失败，而是**对账日的工单**：月度对账时同一个指标在 Agent 与报表上给出两个数，工单最后落到数据团队而不是模型团队——因为口径从来没有声明过，谁也说不清哪一个是错的。跳过 Step 8 的第一个信号是改动失去方向：某一版 Prompt 上线后没人能回答「比上一版好还是差」，下一次改动就只剩上一次改动的手感——症状出现在**发布评审**上（没人敢批一个无法证伪的改动），而不是出现在监控曲线上。
 
 ### 4.2 关键技术点
 
 **1. 指标语义层（Metric Semantic Layer）**
 
-- **dbt Semantic Layer**（2023）：YAML 定义指标，dbt 编译 SQL，REST API 查询。
-- **Cube.js**：前端友好，TypeScript schema 定义。
-- **MetricFlow**（Airbnb）：与 dbt 集成，支持复杂指标。
-- **阿里 QuickBI 指标中台**：国内最大实践，统一指标定义 + 权限 + 血缘。
-- **网易有数指标库**：游戏行业广泛使用。
+- **做法**：用 YAML / TypeScript schema 定义指标（Name / Formula / Dimensions / Filters / Owner / Description），由语义层编译成 SQL 并提供 API 查询。承载可选 dbt Semantic Layer、Cube.js、MetricFlow、阿里 QuickBI 指标中台、网易有数指标库。
+- **机制**：指标定义是一份带 Owner 与版本号的受控配置，不是散在 Prompt 与报表 SQL 里的一段口径文字——所以口径变更是一次走评审、留版本记录的改动，对账时两个数对不上，可以直接归到「谁在什么时候改了哪一版」，而不是变成两个都跑得通、都说不清对错的数。为什么这条比「换一个更准的模型」更根本，见 [§ 3.2.6](01-data-agent-section-3-sec3.md)。
+- **失效条件**：当「答不上来」的投诉进到解决流程、而指标清单的补齐速度跟不上投诉速度时，兜底通常以一次热修的形式被打开（改一行配置就能上线，不需要走语义层的评审），此后错的数字不再有拒答这道挡板。观测信号：**未命中率下降与口径类错误上升同时出现**——两条曲线一交叉，说明兜底路径已经开着；再确认一步的方法是翻变更记录，问最近一次调低拒答率的工单上写的是不是业务投诉。
+- **档位**：无数字断言；产品能力与版本以各自官方文档当前版本为准。
 
 **2. Text2SQL Prompt 工程**
 
-- **角色定义**：明确告诉 LLM 它是"资深 SQL 工程师"。
-- **Schema 上下文**：只注入相关表 / 列的 schema（不要全库 schema，否则上下文爆炸）。
-- **Few-shot 示例**：给 3-5 个高质量示例，覆盖 JOIN、聚合、子查询、窗口函数等。
-- **输出格式约束**：强制 JSON / XML 输出，便于解析。
-- **错误处理指令**：明确告诉 LLM 如果 SQL 执行失败怎么反思。
+- **做法**：角色定义（资深 SQL 工程师）、只注入相关表 / 列的 schema、3–5 个覆盖 JOIN / 聚合 / 子查询 / 窗口函数的 Few-shot、强制 JSON / XML 输出、写明执行失败后如何反思与终止。
+- **机制**：因为 Few-shot 与输出约束把候选 SQL 的分布压低到可解析范围，下游的校验与解析才可能稳定成功；没有输出约束时，解析失败会伪装成「模型答错了」。
+- **失效条件**：当 Few-shot 与线上问题分布不一致时（示例全是单表聚合、线上全是多表归因），这条从「指导生成」变成「把模型引向错误模式」。观测信号：错例里的表结构与 Few-shot 示例高度同构。
+- **档位**：示例条数【经验：3–5 条，随问题类型数与上下文预算变】。
 
 **3. Schema Linking**
 
-- **基于 Embedding**：用 BGE-M3 / OpenAI Embedding 对表名 / 列名 / 注释做向量检索。
-- **基于 LLM**：让 LLM 根据用户问题直接选相关表 / 列（DIN-SQL、CHESS 范式）。
-- **混合**：字符串匹配 + 向量召回 + LLM 精排三件套。
+- **做法**：字符串匹配 + 向量召回（BGE-M3 / OpenAI Embedding 一类 embedding 模型）+ LLM 精排（DIN-SQL / CHESS 一类让 LLM 直接选表选列的范式）三件套；表名、列名、注释、示例值全部进索引。
+- **机制**：候选集是「建索引那一刻的表名、列名与注释」的快照，所以这道闸门的上限由索引的**维护节奏**决定，而不是由模型的选表能力决定：新上线的表、改过名的列、没人写注释的宽表，都不会自己走进候选集。它的运维含义是索引必须有人认领并约定重建节奏，否则每次新表上线后，漏表都要靠一张「答不上来」的工单才被发现。
+- **失效条件**：当表命名与业务词汇脱节（`t_ord_hdr` 这类）或注释为空时，这条从「精准召回」变成「稳定漏表」。观测信号：一周内的漏表工单是否**集中落在新上线的表上**（集中说明索引没跟上变更，散落则更像命名与注释的问题）；另一个信号是索引重建任务的最近一次成功时间，与数仓最近一次建表时间相差多远。
+- **档位**：无。
 
 **4. Self-Correction / Reflexion**
 
-- **执行错误修正**：基于 PostgreSQL / MySQL 错误码（语法错、权限错、表不存在）。
-- **结果异常修正**：行数为 0 / 空值比例过高 / 数值异常 → 自动反思。
-- **Explain 计划修正**：检测全表扫描 → 自动建议索引或重写。
-- **业务规则修正**：GMV 不为负、DAU 不会突然涨 100 倍 → 自动校验。
+- **做法**：按四类信号触发重试——执行错误（语法、权限、表不存在）、结果异常（行数为 0、空值比例过高、数值异常）、Explain 计划（全表扫描）、业务规则（GMV 不为负、DAU 不会单日涨百倍）；重试上限写死在配置里。
+- **机制**：失败原因是被执行器与业务规则校验器**分档回灌**的（错误码 / 行数为 0 / 数值越界各占一档），所以值班面上看到的是「哪一档在涨」，而不是一句「模型答错了」；这在运维上的含义是**换模型版本不必触发一轮人工复核**——升级只改变「生成得准不准」，不改变「错了能不能被发现」，后者由重试链路与业务规则校验兜着，排班表上不需要为每次升级单开一次抽检（这类外部信号为什么有效，见 [§ 3.2.3](01-data-agent-section-3-sec3.md)）。
+- **失效条件**：当重试触发原因里权限不足 / 数据缺失 / 口径分歧占到多数时，重试兜不住它们——这三类失败模型改不动，重试只是把单次问数的成本乘上重试上限，最先出现在监控上的是**同一时段的查询量与账单一起抬高而答案质量不动**。观测信号：**按失败原因分类的重试分布**；这三类占比高时应直接终止，并把「为什么答不了」当作产品文案交给用户，而不是继续重试。
+- **档位**：重试上限【经验：常见个位数，随单次调用成本与用户等待容忍度变】。
 
 **5. 沙箱执行（Sandbox）**
 
-- **数据库账号**：独立只读账号，限定可访问 schema / 表。
-- **查询超时**：默认 30 秒，可配置。
-- **行数限制**：默认返回 10000 行，可配置。
-- **敏感列脱敏**：身份证、手机号、邮箱自动 mask。
-- **资源配额**：每用户 / 部门每日查询次数、扫描行数。
-- **审计日志**：所有 SQL、结果集（脱敏后）、执行时间。
+- **做法**：独立只读账号并限定可访问 schema / 表；查询超时【经验：数十秒级，随查询类型分布变】；返回行数上限【经验：万行级，随下游消费方式变】；敏感列脱敏；按用户 / 部门设查询次数与扫描行数配额；审计日志记录 SQL、脱敏后结果集与执行时长。
+- **机制**：存量系统里的权限通常分散在三处——数仓账号的角色、BI 平台的行级过滤、报表层的字段遮罩，而这三处都不会被自然语言入口自动继承；把判定收敛到执行层的账号与策略上，入口、BI 与直连三条路径才共用同一套判定。它的运维含义是**权限只在这里改一次**，而不是在每个入口各改一次——后者一定会漏，而漏掉的那一处不报错，只安静地放行，事后只有在审计日志里按账号逐条对才能发现。
+- **失效条件**：当脱敏发生在展示层而不是进入模型上下文之前时，这条从「保护数据」退化为「保护屏幕」——敏感值已经进过模型上下文与日志。观测信号：翻日志，看能否搜到明文敏感值。
+- **档位**：超时与行数上限均为【经验】参数，随业务形态变。
 
 **6. 多轮精修（Multi-turn）**
 
-- **对话历史管理**：滑动窗口（保留最近 N 轮）+ 摘要压缩。
-- **澄清反问**：Agent 不确定时主动反问（"你要看北京还是全国？"）。
-- **意图追踪**：识别用户是想"查询"、"对比"还是"归因"。
+- **做法**：对话历史用滑动窗口【经验：保留最近若干轮，随单轮上下文占用变】加摘要压缩；不确定时主动澄清反问；先识别意图（查询 / 对比 / 归因）再选链路。
+- **机制**：因为同一句话在不同意图下要走的链路不同（点查 vs 归因），意图先定能把后续 SQL 复杂度、调用次数与成本一起压低。
+- **失效条件**：当窗口过长或摘要丢掉关键约束（地区、时间口径）时，这条从「延续上下文」变成「继承错误约束」。观测信号：用户重复同一句澄清（「我说的是北京」）的频次上升。
+- **档位**：窗口轮数【经验：随单轮上下文占用与问题链长度变】，不给固定值。
 
 **7. Python 沙箱（Code Interpreter）**
 
-- **E2B**：云端 Python 沙箱，支持 numpy / pandas / matplotlib。
-- **阿里 Code Interpreter**：阿里云函数计算 + 隔离容器。
-- **OpenInterpreter**：开源本地版。
+- **做法**：把需要迭代计算、可视化、统计检验的问题交给独立代码执行环境（E2B 一类云沙箱、阿里 Code Interpreter 一类云函数 + 隔离容器、OpenInterpreter 一类本地执行），并与 SQL 沙箱分开配额与审计。
+- **机制**：因为代码执行把生成空间重新打开了（模型可以写任意逻辑，而不只是选指标），它在探索类问题上能力上限更高；代价是 SQL 链路里的口径约束在这里不生效。
+- **失效条件**：当它成为 SQL 链路的默认备用路径时，这条从「补足探索能力」变成「绕过口径治理」。观测信号：**同一问法在两条链路上给出不同数字**，且差异无法用口径解释。
+- **档位**：无。
 
 **8. 可观测（Observability）**
 
-- **Langfuse**（开源）：Agent 可观测平台，含 Trace、Token 用量、Prompt 版本管理。
-- **Phoenix**（Arize）：LLM 可观测，含 Drift 检测、Evaluation。
-- **LangSmith**（LangChain 官方）：含 Debug、Eval、Monitor。
-- **Helicone**：专注 LLM 成本优化的可观测平台。
+- **做法**：用 Langfuse / Phoenix / LangSmith / Helicone / Datadog LLM Observability 一类平台采集调用链、token 用量、Prompt 版本、分段延迟与成本；要求按「段」上报，而不是只报总耗时。
+- **机制**：因为一次问数是多段链路，排障的对象是「哪一段坏了」；只报总耗时的链路在出错时定位不到段，于是每次排障都退回人工复现。
+- **失效条件**：当只有总耗时与总成本两个数时，这条从「可观测」退化为「有日志」。观测信号：一次线上错误排查，能否在半小时内指出是检索段还是生成段的问题。
+- **档位**：排查时效【经验：半小时量级，随分段粒度与日志保留期变，段分得越粗越快】。
 
 **9. 评估体系（Evaluation）**
 
-- **BIRD-SQL 2.0**：企业级 Text2SQL 基准（2024），含真实业务库、跨方言、复杂查询。
-- **Spider 2.0**（2024）：更复杂的企业级 SQL 基准。
-- **内部评估集**：≥ 200 条业务问题 + 标准答案。
-- **LLM-as-a-Judge**：用 GPT-4 / Claude 自动评分。
-- **人工抽检**：每周抽 5% 人工评分。
-- **用户反馈**：用户 👍 / 👎 反馈 → 评估数据集。
+- **做法**：公开基准（BIRD-SQL、Spider 系列，年份与版本以官网为准）+ 内部评估集（真实业务问题 + 标准答案）；人工抽检【经验：按周抽一小部分，随错误代价变】；LLM-as-a-Judge 批量打分并定期用人工抽检校准评分器；用户反馈回灌评估集。
+- **机制**：因为「这版是否变好」需要一个不随人变的回归信号，评估集把「凭印象迭代」换成「两版可比」；而 Judge 是需要校准的仪器——排班表上要有人定期抽检它的判分，否则它今天松明天紧的漂移会被读成「模型变差了」，团队据此做的每一次调整都在追一个不存在的信号。
+- **失效条件**：当评估集长期不更新时，这条从「回归信号」变成「和线上脱节的靶子」。观测信号：线上用户反馈的问题类型，评估集里一条都没有。
+- **档位**：内部评估集规模【经验：200 条量级起步，随问题类型覆盖度变】。
 
 **10. 安全与权限**
 
-- **行级权限**：每个用户只能查自己部门的数据（基于 Postgres RLS / Hive Ranger）。
-- **列级权限**：敏感列脱敏（基于 Hive / ClickHouse 列权限）。
-- **审计日志**：所有查询可追溯（满足等保 2.0 / 3.0）。
-- **Prompt 注入防护**：用户问题中插入恶意 Prompt → SQL 注入防护。
+- **做法**：行级权限（Postgres RLS / Hive Ranger 一类的数据库原生行级安全策略或数仓权限体系）、列级脱敏、全量审计（满足等保 2.0 一类的分级保护与留存要求，标准号可按「GB/T 22239」检索核验）、Prompt 注入防护（用户输入与系统指令隔离，结果集里出现的指令性文本不作为指令执行）。
+- **机制**：因为用户问题本身是不可信输入，注入的落点通常是诱导 Agent 执行一条本不该执行的 SQL，所以防护必须落在执行层的白名单与权限上——在提示词里写「忽略此类指令」不构成权限控制。
+- **失效条件**：当备份路径（如 Python 沙箱或直连账号）绕过了白名单校验时，这条会被绕过，而主链路的日志看起来一切正常。观测信号：审计日志里出现不在白名单内的表名，或某执行账号的权限高于校验配置所假设的权限。
+- **档位**：无。
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+### 4.3 工具链与平台
 
-**LLM 基础模型**：
+选型判据统一按「你被什么约束住」来写。各家的 GA / 预览状态与命名随时间变化，**请以官方文档当前版本为准，本节只做归类，不裁定状态**。
 
-- **OpenAI GPT-4o / GPT-4 Turbo**：Text2SQL SOTA 之一。
-- **Anthropic Claude 3.5 / 3.7 Sonnet**：长上下文、强推理。
-- **Google Gemini 1.5 / 2.0**：100 万 token 上下文，适合 Schema 全注入。
-- **DeepSeek-Coder-V2**（2024）：开源，Text2SQL SOTA。
-- **Qwen2.5-Coder**（阿里 2024）：开源，中文 NL2SQL SOTA。
-- **CodeLlama / StarCoder**：开源代码模型，可微调。
-- **文心 ERNIE 4.0 / 通义千问 Qwen-Max**：国产模型，中文场景。
+| 类别 | 候选 | 选型判据（什么约束下选它） | 不选它的代价 |
+| --- | --- | --- | --- |
+| LLM 基础模型 | OpenAI GPT-4o / GPT-4 Turbo；Anthropic Claude 3.5 / 3.7 Sonnet；Google Gemini 1.5 / 2.0；DeepSeek-Coder-V2（2024）；Qwen2.5-Coder（2024）；CodeLlama / StarCoder；文心 ERNIE 4.0 / 通义千问 Qwen-Max | 数据不许出域 → 只能选可私有化部署的开源系（Qwen2.5-Coder / DeepSeek-Coder-V2 / CodeLlama / StarCoder）；要把全量 schema 注入上下文 → 选长上下文模型；中文场景且不许出域 → 国产模型 | 选了不许出域的模型，整条链路要推倒重来：Prompt、Few-shot 与评估集全部重跑 |
+| Agent 编排框架 | LangChain（2022+）；LangGraph（2024）；LlamaIndex（2022+）；AutoGen（Microsoft 2023）；CrewAI（2024）；OpenInterpreter（2023）；MetaGPT（2024） | 单循环 + 工具调用 → LangChain；要显式图状态与人工闸门 → LangGraph；只做检索增强 → LlamaIndex；按角色拆多 Agent → AutoGen / CrewAI / MetaGPT；要在本地执行代码 → OpenInterpreter | 用重框架做点查，调用次数与延迟先涨上去而准确率不动（[§ 3.3](01-data-agent-section-3-sec3.md) 的误选顺序） |
+| 指标语义层 | dbt Semantic Layer（2023）；Cube.js；MetricFlow；阿里 QuickBI 指标中台；网易有数指标库；Kylin（Apache，OLAP 引擎，间接支持） | 已有 dbt 项目 → dbt Semantic Layer / MetricFlow；前端要直连出图 → Cube.js；国内要采购与本地支持 → QuickBI 指标中台 / 网易有数指标库；已有 Kylin 存量 → 在既有 OLAP 上叠语义定义 | 语义层与转换层分家（指标定义一处、SQL 又一处），口径分叉重新出现 |
+| 向量数据库（Schema RAG） | Milvus；Qdrant；Weaviate；Pinecone；Chroma；pgvector | 已有 Postgres 且 schema 条目不多 → pgvector（少一套系统）；要独立扩缩容 → Milvus / Qdrant / Weaviate；不想自运维 → Pinecone；只做本地验证 → Chroma | 引入独立向量库却没人为它做运维，索引过期后的表现是「偶尔漏表」 |
+| 沙箱执行 | PostgreSQL Read Replica；Apache Doris；ClickHouse；阿里云 MaxCompute / Hive；E2B（云 Python 沙箱）；Jupyter Kernel Gateway | 成本优先的 SQL 沙箱 → 只读副本；大查询要隔离 → Doris / ClickHouse 副本；国内数仓存量 → MaxCompute / Hive；要跑 Python → E2B 或 Jupyter Kernel Gateway | 直接在生产库上跑 Agent 生成的 SQL，一次误写或一次大扫描即可造成事故 |
+| 评估与基准 | BIRD-SQL 2.0（2024）；Spider 2.0（2024）；EHRSQL（医疗领域）；Spider 1.0（2018）；WikiSQL（2017） | 要横向可比 → 公开基准，年份与版本以官网榜单为准；要做回归 → 内部真实问题集；垂直域 → 领域基准 + 自建集 | 只用公开基准判断「能不能上生产」，会把榜单成绩当成业务准确率 |
+| 可观测与成本 | Langfuse（开源）；Phoenix（Arize）；LangSmith（LangChain 官方）；Helicone；Datadog LLM Observability（2024+） | 要开源自托管 → Langfuse / Phoenix；已在 LangChain 生态 → LangSmith；只关心成本 → Helicone；已有 Datadog 栈 → Datadog LLM Observability | 没有分段观测，成本与延迟问题定位不到具体一段 |
+| 国产平台（2024-2025） | 阿里瓴羊 QuickBI 智能助手；字节豆包数据分析；百度 Sugar BI 智能助手；腾讯 ChatBI（金融场景）；网易有数 AI；火山引擎 Data Agent | 判据不是「哪个更强」，而是**它接的是自家语义层，还是允许接入你已有的语义层**；金融 / 政务场景优先看权限与审计能力是否可核 | 买来的入口挂不上自己的口径与权限边界时，等于多开了一个数据出口 |
+| 国际平台（2025） | Salesforce Tableau GPT（2023）；Microsoft Copilot for Power BI（2024）；ThoughtSpot Sage（2023）；Google Gemini in Looker（2024）；Databricks Assistant / Genie（2024）；Snowflake Cortex Analyst（2024） | 同一条判据：能否接入你已有的语义层与权限体系；云栈已定（Snowflake / Databricks）时可优先考虑同栈产品 | 语义层被绑在某个 BI 平台上之后，换平台等于重建指标定义 |
 
-**Agent 编排框架**：
+这张表里最容易被误选的是「国产平台」与「国际平台」两行的采购决策。误选的表现不是报错，而是上线后业务发现同一个问法在自家平台与买入的平台给出两个数——因为被买走的那部分是入口，口径与权限边界并没有一起买过来。判据只有一条：**它接的是你的语义层，还是它自己的。** 判定方法是看官方文档里有没有「接入外部语义层 / 外部指标定义」这条路径，以及权限是复用它自己的模型还是能接到你的行级策略上。
 
-- **LangChain**（2022+）：最早的 LLM 编排框架，含 SQL Agent 模板。
-- **LangGraph**（2024）：基于图的工作流编排，适合 Multi-Agent。
-- **LlamaIndex**（2022+）：RAG 框架，含 SQL Connector。
-- **AutoGen**（Microsoft 2023）：Multi-Agent 框架。
-- **CrewAI**（2024）：角色化 Multi-Agent 框架。
-- **OpenInterpreter**（2023）：本地代码执行 Agent。
-- **MetaGPT**（2024）：多 Agent 协作框架。
+### 4.4 存量迁移
 
-**指标语义层**：
+Data Agent 的存量不是数据，而是**已经存在的报表、口径与权限体系**。迁移的目标是让自然语言入口挂到既有治理成果上，而不是在旁边再建一套。
 
-- **dbt Semantic Layer**（2023）。
-- **Cube.js**。
-- **MetricFlow**（Airbnb）。
-- **阿里 QuickBI 指标中台**。
-- **网易有数指标库**。
-- **Kylin**（Apache，OLAP 引擎，间接支持）。
+**① 先做立刻见效且可回退的：单域只读挂载。** 只挂一个业务域，只注册 Step 2 里已声明口径的指标，只读、不改任何报表。回退方式就是下线入口——报表、BI、调度链路一样没动。第一个交付的收益选「高频问题自助」，不要选「替换报表」：前者随时可退，后者退不回来。
 
-**向量数据库（Schema RAG）**：
+**② 历史资产分三类处理，不要全量返工。**
 
-- **Milvus**（国产开源）。
-- **Qdrant**（开源）。
-- **Weaviate**（开源）。
-- **Pinecone**（云）。
-- **Chroma**（轻量）。
-- **pgvector**（Postgres 插件）。
+- **已治理类**：有 Owner、有定义的指标，直接注册进语义层。
+- **有报表无定义类**：口径事实存在于报表 SQL 里但没写成定义——从事有报表反向写成定义，判据是**报表 SQL 与定义能互推**（照定义手写 SQL，与报表结果一致）。
+- **口径冲突类**：两个部门各有一套的指标，不进语义层，挂「争议」标并让 Agent 拒答。拒答的代价是体验，答错的代价是信任——后者不可逆。
 
-**沙箱执行**：
+**③ 双轨怎么维持、维持多久。** 报表链路与 Agent 链路并存，同一指标定期比对两条链路的数（对账），差异进清单逐条归因。维持期【经验：数月到一年，随指标数量与对账收敛速度变】。退出信号是连续多周对账差异为零、且没有新增争议指标——如果争议还在增加，说明 Step 2 的对齐没做完，收轨只会把分歧藏起来。
 
-- **PostgreSQL Read Replica**：低成本 SQL 沙箱。
-- **Apache Doris**：MPP 架构，适合大查询隔离。
-- **ClickHouse**：列存，OLAP 沙箱首选。
-- **阿里云 MaxCompute** / **Hive**：国内数仓主流。
-- **E2B**（云 Python 沙箱）。
-- **Jupyter Kernel Gateway**：本地 Python 沙箱。
+**④ 权限存量怎么映射。** 把报表侧的权限模型（角色、行级条件、字段级遮罩）逐条映射到 Agent 的账号与行级策略，**映射不上的项默认拒绝**，而不是默认放行后再补规则。
 
-**评估与基准**：
+**⑤ 一条反例：不要在存量改造期开自由生成兜底。** 为了「问什么都答得上」而放开自由生成的后果，是把已经解决的口径问题重新变成模型的随机选择，且这个过程不留痕——用户只看到两个数，看不到谁在什么时候放弃了治理。
 
-- **BIRD-SQL 2.0**（2024-05）：企业级 Text2SQL 基准，含真实业务库、跨方言、复杂查询。
-- **Spider 2.0**（2024-12）：更复杂的企业级 SQL 基准。
-- **EHRSQL**（医疗领域）。
-- **Spider 1.0**（2018，经典）。
-- **WikiSQL**（2017，最早）。
+### 4.5 模板 / 示例
 
-**可观测与成本**：
-
-- **Langfuse**（开源，2023-）——LLM 可观测事实标准之一。
-- **Phoenix**（Arize，开源）。
-- **LangSmith**（LangChain 官方）。
-- **Helicone**（成本优化）。
-- **Datadog LLM Observability**（2024+）。
-
-**国产平台（2024-2025）**：
-
-- **阿里瓴羊 QuickBI 智能助手**——企业级 Data Agent。
-- **字节豆包数据分析**——多模态数据分析。
-- **百度 Sugar BI 智能助手**——对话式 BI。
-- **腾讯 ChatBI**——金融场景。
-- **网易有数 AI**——游戏 / 电商场景。
-- **火山引擎 Data Agent**——云原生 Data Agent。
-
-**国际平台（2025）**：
-
-- **Salesforce Tableau GPT**（2023）——BI + LLM。
-- **Microsoft Copilot for Power BI**（2024）——自然语言数据分析。
-- **ThoughtSpot Sage**（2023）——Search + LLM。
-- **Google Gemini in Looker**（2024）——Looker + Gemini。
-- **Databricks Assistant / Genie**（2024）——Lakehouse + LLM。
-- **Snowflake Cortex Analyst**（2024）——Cortex + Text2SQL。
-
-### 4.4 代码 / 示例
-
-**示例 1：基于 LangChain 的基础 SQL Agent（带 Reflexion）**
+**模板 1：基于 LangChain 的基础 SQL Agent（带 Reflexion）**
 
 ```python
 from langchain_community.utilities import SQLDatabase
@@ -228,232 +201,134 @@ from langchain_community.agent_toolkits import create_sql_agent
 from langchain_openai import ChatOpenAI
 from langchain.agents.agent_types import AgentType
 
-# 连接数据库
-db = SQLDatabase.from_uri(
-    "postgresql://readonly:***@localhost:5432/analytics",
-    include_tables=["orders", "customers", "products"],
-    sample_rows_in_table_info=2,
-)
-
-# 初始化 LLM
-llm = ChatOpenAI(model="gpt-4o", temperature=0)
-
-# 创建 SQL Agent（带 Reflexion）
+db = SQLDatabase.from_uri("postgresql://readonly:***@host:5432/analytics",
+                          include_tables=["orders", "customers", "products"],
+                          sample_rows_in_table_info=2)
 agent_executor = create_sql_agent(
-    llm=llm,
-    db=db,
-    agent_type=AgentType.OPENAI_FUNCTIONS,
-    verbose=True,
-    max_iterations=5,  # 最多反思 5 次
-    max_execution_time=30,  # 单次 SQL 超时 30s
-    handle_parsing_errors=True,
-)
+    llm=ChatOpenAI(model="gpt-4o", temperature=0), db=db,
+    agent_type=AgentType.OPENAI_FUNCTIONS, verbose=True,
+    max_iterations=5,          # 反思上限，必须显式
+    max_execution_time=30,     # 【经验：随查询类型分布变】
+    handle_parsing_errors=True)
 
-# 多轮精修
-questions = [
-    "昨天 GMV 是多少？",
-    "那按地区拆分呢？",
-    "为什么华南下降这么多？",
-]
-
-for q in questions:
-    result = agent_executor.invoke({"input": q})
-    print(f"Q: {q}\nA: {result['output']}\n")
+# 多轮精修：同一个 executor 连续问（历史窗口与摘要压缩见 §4.2 第 6 条）
+for q in ["昨天 GMV 是多少？", "那按地区拆分呢？", "为什么华南下降这么多？"]:
+    print(agent_executor.invoke({"input": q})["output"])
 ```
 
-**示例 2：基于 LangGraph 的 Multi-Agent Data Analyst**
+**怎么用**：`include_tables` 要与 Step 3 的权限范围一致（不是与「有哪些表」一致）；`max_iterations` 是成本上界的来源，改它等于改预算；`temperature=0` 不要动，问数不是创作。
+
+**模板 2：基于 LangGraph 的 Multi-Agent Data Analyst**
 
 ```python
 from langgraph.graph import StateGraph, END
-from typing import TypedDict, Annotated, List
-import operator
 
-class AgentState(TypedDict):
-    question: str
-    intent: str
-    schema: List[str]
-    sql: str
-    result: List[dict]
-    error: str
-    answer: str
-
-def intent_classifier(state):
-    """意图分类 Agent"""
-    prompt = f"判断问题类型：指标查询 / 归因分析 / 数据探索 / 元数据问答\n问题：{state['question']}"
-    intent = llm.invoke(prompt).content
-    return {"intent": intent}
-
-def schema_retriever(state):
-    """Schema 检索 Agent"""
-    schema = vector_db.similarity_search(state["question"], k=5)
-    return {"schema": [s.page_content for s in schema]}
-
-def sql_generator(state):
-    """SQL 生成 Agent"""
-    prompt = f"""你是资深 SQL 工程师。
-问题：{state['question']}
-Schema：{state['schema']}
-请生成 PostgreSQL SQL，使用 ```sql``` 包裹。"""
-    sql = llm.invoke(prompt).content
-    return {"sql": sql}
-
-def sql_validator(state):
-    """SQL 校验 Agent"""
-    sql = state["sql"]
-    # 语法校验（基于 sqlglot）
-    from sqlglot import parse_one
-    try:
-        parsed = parse_one(sql, dialect="postgres")
-        # 权限校验（表必须在白名单）
-        for table in parsed.find_all(__import__('sqlglot').exp.Table):
-            if table.name not in ALLOWED_TABLES:
-                return {"error": f"禁止访问表 {table.name}"}
-        return {"sql": sql, "error": ""}
-    except Exception as e:
-        return {"error": str(e)}
-
-def sql_executor(state):
-    """SQL 执行 Agent（沙箱）"""
-    if state.get("error"):
-        return {"result": []}
-    result = sandbox.execute(state["sql"], timeout=30, max_rows=10000)
-    if result.error:
-        return {"error": result.error}
-    return {"result": result.rows}
-
-def reflexion(state):
-    """反思 Agent：决定是否重新生成 SQL"""
-    if state.get("error") and state.get("retry_count", 0) < 3:
-        return "retry"
-    return "continue"
-
-def answer_synthesizer(state):
-    """答案综合 Agent"""
-    prompt = f"""用户问题：{state['question']}
-SQL 结果：{state['result']}
-请用自然语言回答用户问题，并解释关键数字。"""
-    answer = llm.invoke(prompt).content
-    return {"answer": answer}
-
-# 构建 LangGraph
 workflow = StateGraph(AgentState)
-workflow.add_node("intent", intent_classifier)
-workflow.add_node("schema", schema_retriever)
-workflow.add_node("sql_gen", sql_generator)
-workflow.add_node("sql_val", sql_validator)
-workflow.add_node("sql_exec", sql_executor)
-workflow.add_node("answer", answer_synthesizer)
-
+for name, fn in [("intent", intent_classifier), ("schema", schema_retriever),
+                 ("sql_gen", sql_generator), ("sql_val", sql_validator),
+                 ("sql_exec", sql_executor), ("answer", answer_synthesizer)]:
+    workflow.add_node(name, fn)
 workflow.set_entry_point("intent")
-workflow.add_edge("intent", "schema")
-workflow.add_edge("schema", "sql_gen")
-workflow.add_edge("sql_gen", "sql_val")
-workflow.add_edge("sql_val", "sql_exec")
-workflow.add_conditional_edges(
-    "sql_exec",
-    reflexion,
-    {"retry": "sql_gen", "continue": "answer"}
-)
-workflow.add_edge("answer", END)
-
-app = workflow.compile()
-result = app.invoke({"question": "昨天 GMV 是多少？"})
+workflow.add_edge("sql_gen", "sql_val")      # 生成后必须先校验再执行
+workflow.add_conditional_edges("sql_exec", reflexion,
+                              {"retry": "sql_gen", "continue": "answer"})
 ```
 
-**示例 3：指标语义层（dbt Semantic Layer YAML）**
+`schema_retriever` 用向量检索取 top-k 表；`sql_validator` 用 `sqlglot` 解析并校验表白名单；`reflexion` 在重试次数达上限或错误属权限 / 数据缺失类时返回 `continue`。
+
+**怎么用**：本模板只固定 wiring——`AgentState` 与六个节点函数（intent_classifier / schema_retriever / sql_generator / sql_validator / sql_executor / answer_synthesizer）要自备，各段该产出什么见 [§ 3.2.4](01-data-agent-section-3-sec3.md)。这套结构只在「同一类错误反复落在同一段职责上」时才值得拆（[§ 3.3](01-data-agent-section-3-sec3.md)）；`sql_val` 与 `sql_exec` 之间不要省略，校验是唯一能在执行前拦住越权的地方；`ALLOWED_TABLES` 必须与沙箱账号的实际权限一致，否则校验只是一张纸。
+
+**模板 3：指标语义层（dbt Semantic Layer YAML）**
 
 ```yaml
-# metrics.yml (dbt)
 metrics:
   - name: dau
     description: "Daily Active Users - 当日活跃用户数"
-    owner: "[email protected]"
+    owner: "data-team@example.com"
     type: simple
     sql: "COUNT(DISTINCT user_id)"
-    filters:
-      - "{{ Dimension('activity__is_active') }} = TRUE"
-    dimensions:
-      - activity_date
-      - platform
-      - country
+    filters: ["{{ Dimension('activity__is_active') }} = TRUE"]
+    dimensions: [activity_date, platform, country]
     time_grains: [day, week, month]
-    
   - name: gmv
     description: "Gross Merchandise Volume - 商品交易总额"
-    owner: "[email protected]"
+    owner: "data-team@example.com"
     type: simple
     sql: "SUM(order_amount)"
-    filters:
-      - "{{ Dimension('order__status') }} IN ('paid', 'shipped', 'completed')"
-    dimensions:
-      - order_date
-      - region
-      - channel
-      - category
+    filters: ["{{ Dimension('order__status') }} IN ('paid', 'shipped', 'completed')"]
+    dimensions: [order_date, region, channel, category]
     time_grains: [day, week, month]
-
-# Data Agent 自动基于此生成 SQL
 ```
 
-**示例 4：SQL 沙箱执行 + 审计日志（Python）**
+**怎么用**：`owner` 与口径是这套定义里唯一不能省的字段，其余都可以后补；新增指标前先查是否已有同义指标（否则语义层会变成第二个口径战场）；Step 2 的六个字段（Name / Formula / Dimensions / Filters / Owner / Description）要与签字记录对齐，代码里的定义是结果不是依据。
+
+**模板 4：SQL 沙箱执行 + 审计日志（Python）**
 
 ```python
-import psycopg2
-from contextlib import contextmanager
 import logging
+from contextlib import contextmanager
+
+import psycopg2
+from sqlglot import parse_one, exp
 
 audit_logger = logging.getLogger("data_agent.audit")
-
 ALLOWED_TABLES = {"orders", "customers", "products", "order_items"}
 MAX_ROWS = 10000
 TIMEOUT_SEC = 30
 
 @contextmanager
 def sandbox_connection(user_id: str):
-    """SQL 沙箱连接"""
-    conn = psycopg2.connect(
-        "postgresql://readonly:***@localhost:5432/analytics",
-        options=f"-c statement_timeout={TIMEOUT_SEC * 1000}",
-    )
+    conn = psycopg2.connect("postgresql://readonly:***@host:5432/analytics",
+                            options=f"-c statement_timeout={TIMEOUT_SEC * 1000}")
     try:
         yield conn
     finally:
         conn.close()
 
 def execute_sql_safely(sql: str, user_id: str):
-    """安全执行 SQL（含白名单、超时、行数限制、审计）"""
-    # 1. 表白名单校验
-    from sqlglot import parse_one
     parsed = parse_one(sql, dialect="postgres")
-    for table in parsed.find_all(__import__('sqlglot').exp.Table):
+    for table in parsed.find_all(exp.Table):
         if table.name not in ALLOWED_TABLES:
-            audit_logger.warning(f"User {user_id} 尝试访问表 {table.name}")
+            audit_logger.warning("user=%s 尝试访问表 %s", user_id, table.name)
             raise PermissionError(f"禁止访问表 {table.name}")
-    
-    # 2. 强制 LIMIT
-    if not sql.upper().strip().endswith("LIMIT 10000"):
-        sql = sql.rstrip(";").strip() + f"\nLIMIT {MAX_ROWS}"
-    
-    # 3. 执行 + 审计
-    with sandbox_connection(user_id) as conn:
-        with conn.cursor() as cur:
-            try:
-                cur.execute(sql)
-                rows = cur.fetchall()
-                columns = [d[0] for d in cur.description]
-                result = [dict(zip(columns, row)) for row in rows]
-                
-                audit_logger.info(
-                    "user=%s, sql=%s, rows=%d, duration=%.2fs",
-                    user_id, sql, len(result), cur.query.duration
-                )
-                return {"success": True, "data": result}
-            except Exception as e:
-                audit_logger.error(
-                    "user=%s, sql=%s, error=%s",
-                    user_id, sql, str(e)
-                )
-                return {"success": False, "error": str(e)}
+    if not sql.upper().rstrip().endswith(f"LIMIT {MAX_ROWS}"):
+        sql = sql.rstrip(";") + f"\nLIMIT {MAX_ROWS}"
+    with sandbox_connection(user_id) as conn:      # statement_timeout 在连接参数里设
+        ...                                        # 执行 + 记录 user / sql / rows / duration
 ```
 
----
+**怎么用**：强制 `LIMIT` 只是兜底，真正的隔离靠只读账号与语句超时；审计记录必须含 `user_id` 与 SQL 原文，否则事后无法回答「谁查了什么」。
+
+**模板 5：评估集条目（CSV / 表格一行一条）**
+
+```text
+question_id,question,intent,expected_sql,expected_columns,standard_answer,tolerance,owner,added_by_event
+q_0017,"上周华东区新客 GMV 按渠道拆一下",attribution,...,[channel,gmv],...,rel_0.01,analytics-team,user_feedback_2026-03
+```
+
+**怎么用**：`intent` 与 `standard_answer` 缺一条就退化成「只比 SQL 文本」；`tolerance` 用来处理浮点与四舍五入，不给它就会把正确结果判成错；来源列（`added_by_event`）要写明这条是人工设计的还是线上反馈回灌的——两者在回归里的权重不同。
+
+### 4.6 自检清单
+
+以下每一条都必须**动了系统**才有答案；设计期就能回答的问题（模式选得对不对、生成空间约束在哪一层、日志里该留哪些中间产物、重试要不要按失败原因分类、改动后要不要跑评估集）并到 [§ 3.7](01-data-agent-section-3-sec3.md)，本节只留抽样、演练、对账与下线验证这类动作。
+
+1. 抽 3 个已注册指标【经验：随指标数量与口径复杂度变】，让两个人照定义各写一遍 SQL，执行结果是否一致？
+2. 用 Agent 账号跑一条跨部门查询，是否被拒绝、是否留下告警？
+3. 翻一次模型上下文日志，能否搜到明文敏感值（脱敏是否发生在进入上下文之前）？
+4. 执行账号的权限，是否与校验用的白名单一致？（不一致时白名单可被绕过）
+5. 一次问数触发了多少次模型调用？这个次数有没有写进配置的上限？
+6. 未命中指标时系统是拒答还是自由生成？拒答率今天是多少？
+7. 同一问法在 SQL 链路与 Python 沙箱链路上，给出的数字是否一致？
+8. 单次问数的成本，能否按「段」拆开看（检索 / 生成 / 校验 / 执行）？
+9. 线上用户反馈的问题类型，评估集里有覆盖吗？最近一条是什么时候加进去的？
+10. 挑一条线上链路，与同口径的报表数做一次对账：差异为零吗？不为零时，差异清单里有没有写归因与责任人？
+11. 数据源或权限策略发生变更（新增一张表、调整一次行级条件）之后，越界用例有没有重跑一遍？
+12. 最近一次上线（模型 / Prompt / 语义层定义任一变更）的回滚动作演练过没有？回滚一次要多久、谁批准？
+
+第 2、第 4 两条最常被跳过，因为它们看起来「已经配过了」；但从越界事故的形态看，绝大多数不是权限没配，而是**配的权限与校验所假设的权限不是同一套**。
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一决定成败的环节，是**先让生成空间被约束在语义层上，再谈模型与 Prompt**。理由是机制性的：语义层把口径错误从「静默算错」转成「明确拒答」——拒答可被监控、可被治理，而算错会直接进入业务决策且不可逆（[§ 3.1](01-data-agent-section-3-sec3.md) 第一条约束）。所以 Step 2 与 Step 8 这两步「不产生功能」的步骤最常被跳过，而它们恰恰决定了后面所有步骤是在同一个口径上迭代，还是各自跑偏。
+>
+> 配合 [§ 2 核心原理](01-data-agent.md)、[§ 3 设计模式与范式](01-data-agent-section-3-sec3.md) 与 [§ 6 落地实践](01-data-agent-section-6-sec6.md) 阅读。

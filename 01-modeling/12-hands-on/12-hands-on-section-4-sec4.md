@@ -1,207 +1,347 @@
-> 本文件是 **12-hands-on.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](12-hands-on.md)。
+> 本文件是 **12-hands-on.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](12-hands-on-section-3-sec3.md) 里选定的落地方案装进一个真实的组织与存量系统：分层与粒度的落地顺序、每一步的产物与判据、DataWorks / MaxCompute / Hologres / Iceberg·Hudi·Paimon 这一族工具的具体配置，以及已经存在的表与口径怎么挂账。模式本身被什么约束逼出来、代价与失效点见 §3；真实公司的案例叙述见 [§ 6 落地实践](12-hands-on-section-6-sec6.md)。完整章节请回到 [index](12-hands-on.md)。
 
 ## 4. 工程实现
 
-### 4.1 DataWorks 数仓建模实战（电商案例）
+本节按「落地步骤 → 关键技术点 → 工具链 → 存量迁移 → 模板 → 自检」组织，术语一律沿用主文件 [§ 2 核心原理](12-hands-on.md)，不另立口径：**ODS 贴源层 / DWD 明细层 / DWS·ADS 指标汇总层** 指的就是主文件 §2.2 工程架构图里的那几层；**OneData / OneID / OneService** 与**指标平台与 OSCAR 模型** 取主文件 §2.1 的关键概念表；**粒度（一行代表什么）** 是 [§ 3](12-hands-on-section-3-sec3.md) 的机制与 [§ 6 落地实践](12-hands-on-section-6-sec6.md) 的落地纪律里被锁定的那件事。
+
+读者分两类，本节都覆盖。**从零搭建**的团队直接按 4.1 的六步往下走；**在存量上改造**的团队（已经有跑了多年的 Hive 表、有几百张 ADS、有散在 Excel 与 PowerPoint 里的模型文档）建议先读 4.4 再回到 4.1——存量改造最贵的不是把新分层画出来，而是让已经上线的表和已经在用的口径在新结构下仍然可解释。
+
+### 4.1 落地步骤（六步，顺序不能换）
+
+**Step 1：把「一行代表什么」写下来（1-2 周【经验】，工时随表数与评审人数增长）**
+
+1. 逐层写粒度声明：**ODS 一行** = 源系统的一条记录或一次变更；**DWD 一行** = 一次业务过程事件（一次下单、一次支付）；**DWS 一行** = 一个「维度组合 × 天」的汇总；**ADS 一行** = 一个指标在某维度组合上的取值。
+2. 同一份声明写三处并保持一致：建模文档的第一行、表的 `COMMENT`、指标定义里的粒度字段。
+3. 先列业务过程清单（下单、支付、退款、发货……），再据此决定建哪几张事实表——顺序反了就会出现「表建得挺规范、但没人能说清它服务哪个业务过程」。
+
+- **产物**：一份分层粒度声明表（层 / 表名 / 一行代表什么 / 唯一键 / 时间维度 / 版本号 + 生效日期）。
+- **判据**：随机抽 3 张已建的表，把表 `COMMENT` 里的粒度声明与建模文档逐字对照；再对每张表追问「能不能直接加一列商家名称」——答「能」即说明维度被塞进了事实表，粒度声明没有约束住设计。
+- **为什么必须第一步**：代理键、分区、汇总口径全都是粒度声明的实现细节。粒度先错，DWS 与 ADS 每一层都要跟着改，而改粒度必须回填历史分区，代价随数据量增长（§3.1 的「锁得越早、查询越便宜、变更越贵」就是这条）。
+
+**Step 2：建一致性维度与代理键（2-4 周【经验】，工期随维度数量与需要回溯的历史长度增长）**
+
+1. 建日期维（`dim_date`：日期键 / 是否工作日 / 财年）与各实体维（`dim_user`、`dim_merchant`），**代理键与自然键分列存放**。
+2. 会变的属性用 SCD2（`effective_from` / `effective_to` / `is_current`）而不是覆盖更新。
+3. 维度先于事实落地：事实表只带代理键，维度查找在写入时完成。
+
+- **产物**：一批带代理键与 SCD2 区间的维度表，外加一份「哪些属性走 SCD2、哪些直接覆盖」的清单。
+- **判据**：构造或找 3 条迟到事实（事件时间早于入库时间），检查它匹配到的是**事件发生时刻**的维度版本还是当前版本；若按当前版本匹配，说明加载逻辑里没有做时间点归属，历史分析会静默算错。
+- **为什么必须排在 Step 3 之前**：DWD 的每一行都要做维度查找，维度一旦改动，DWD 的 JOIN 与回填全部要重做。维度是整个链路上被引用次数最多的一层，它的改动成本最高，所以要最先冻结。
+
+**Step 3：ODS 接入、分区与业务日期参数（2-4 周【经验】，工期随源表数量与同步方式（全量 / 增量 / CDC）变化）**
+
+1. 用数据集成把源系统接进来；ODS 只做「贴源」——字段名与类型尽量保持原样，业务清洗放到 DWD。
+2. 分区按 **`dt`（业务日期）** 而不是入库时间；业务日期由调度参数传入（模板 1 里的 `${biz_date}`）。
+3. 建一张接入登记表：源表 / 目标表 / 分区字段 / 更新方式（全量、增量、CDC）/ 负责人。
+
+- **产物**：一套可重跑的 ODS 同步任务 + 分区与调度参数约定 + 源表登记表。
+- **判据**：把同一天的调度重跑一次，检查是否幂等（分区行数与内容一致，不产生重复）；再抽 3 张 ODS 表比对字段名与源表——出现重命名或类型收窄，即说明在 ODS 层做了加工，贴源层的定位已经破了。
+- **为什么必须排在 DWD 之前**：DWD 的分区裁剪、DWS 的窗口汇总、ADS 的回溯查询全都建立在「分区 = 业务日期」这个约定上。约定不统一（有的表按入库时间分区），按天回溯就会差一天，而且这类偏差不会报错，只会在对账时以「口径不一致」的形式出现。
+
+**Step 4：DWD → DWS → ADS 三层物化（3-6 周【经验】，工期随主题域数量与需要覆盖的消费面（看板 / 指标）增长）**
+
+1. DWD：关联维度、统一度量（`gmv`、`order_count`）、保留业务过程的最细粒度。
+2. DWS：按「维度组合 × 天」预聚合，一个主题域一张或少数几张，不面向单个看板。
+3. ADS：只放要被 BI 与指标平台消费的结果，并按指标口径命名。
+4. 每层挂基础质量规则：主键唯一、分区行数波动在范围内、金额非负、必填字段非空。
+
+- **产物**：三层可调度链路 + 每层的质量规则 + 一张「ADS 表 ↔ 指标」对照表。
+- **判据**：挑 3 个在用的看板，把它们底层的 SQL 反查一遍，看读到的是 ADS 还是 DWD——BI 直连 DWD 说明 ADS 没有覆盖真实消费面；再抽 3 张 ADS 表问「它服务哪个指标」，答不出即说明明细被漏到了 ADS。
+- **为什么必须自下而上，不能先做 ADS**：先做 ADS 会先产出一批为单个看板定制的表，同一口径被写很多遍；等 DWD 粒度定下来，这些表的差异才暴露，而那时合并它们要重算历史。自下而上的代价是 ADS 出得晚，收益是它只出一次。
+
+**Step 5：实时链路——Flink + Hologres 宽表（4-8 周【经验】，工期随实时指标条数与上游数据源的稳定性变化）**
+
+1. 先定实时指标清单：哪些指标真的要分钟级或秒级，其余留在离线，避免「什么都实时」。
+2. Hologres 宽表按主键（`user_key` 一类）建，只放**需要被点查或实时更新的属性 + 窗口指标**，不做全量镜像。
+3. Flink 作业从 Kafka 消费，按事件时间做滚动窗口，写入 Hologres 主键表。
+4. 离线与实时同源：同一份指标定义生成两套 SQL（§3.5「忽略实时」的修法就是这条）。
+
+- **产物**：实时宽表 DDL + Flink 作业 + 一张「实时指标 ↔ 离线指标」对照表（含允许偏差与比对频率）。
+- **判据**：对同一个指标跑一次离线值与实时值做比对，差异是否落在对照表声明的范围内；若这张对照表从来没跑过比对，说明实时链路还没有验收方式，它的正确性目前只靠「上线时看过一眼」。
+- **为什么必须排在离线链路之后**：实时链路要复用离线已经定好的粒度与口径。先做实时等于在口径未定时开第二条实现路径，此后每次口径变更都要在两个团队、两套代码上各改一次，而两侧何时不一致是不可见的。
+
+**Step 6：湖仓表格式与指标定义（持续）**
+
+1. 需要被多个引擎读的表迁到开放表格式（Iceberg / Hudi / Paimon），并显式配置写入参数：文件大小、分布模式、格式版本（见模板 3）。
+2. 指标定义落成机器可读文件（OSCAR 风格：`metric_id` / 指标类型 / 原子指标 / 时间周期 / 维度 / 公式 / Owner / SLA），**无 Owner 不发布**。
+3. 把 compaction 与快照过期清理做成常驻调度作业，并记录最近一次执行时间。
+4. 登记字段级血缘，使改动前能列出下游表、下游字段与责任人。
+
+- **产物**：开放表格式的表 + 指标定义文件 + compaction 作业 + 字段级血缘。
+- **判据**：抽 3 个指标定义问「这条口径由谁签」，能否立刻指到一个具体的人（不是团队邮箱）；再查最近一次 compaction 的执行记录——查不到时间，说明它已经不是常驻作业，只是「上线时跑过一次」。
+- **为什么排在最后而不是最前**：表格式解决的是共享与演进，不解决粒度与口径（§3.3 末段的误选就在这里）。在粒度与指标定义齐备之前迁移，只是把「一批没有粒度声明的表」换了一个存储格式，读写两边的成本都花了，可见性一点没增加。
+
+**最常被跳过的是 Step 1**：写粒度声明不产生当期可见的产出，而建表、接数、出看板都是当期能被看见的动作，因此前者被系统性地推迟。跳过之后**第一个出问题的时点通常不是当季**，而是第一次口径对齐会或第一次源系统改字段：前者的表现是两个部门拿着同名指标给出两个数，谁也说不清哪个对；后者的表现是上游加了一个字段，DWS 与 ADS 的表跟着改了一圈，却没有人能说清哪些下游真的受影响（血缘此时也不存在）。这两件事发生时再补，成本里已经包含了一次口径争议或一次事故。
+
+### 4.2 关键技术点
+
+**1. 粒度声明的三处一致性**
+
+- **做法**：粒度同时写进建模文档第一行、表 `COMMENT`、指标定义的粒度字段；三处版本号与生效日期一致，改一处必须同时改另两处。
+- **机制**：因为粒度声明一旦被写在结构之外（只在文档里），它就不会随结构变更被检查，所以只有把它挂到表与指标这两个**会被 CI 与评审读到的对象**上，声明才会在改动时被强制执行——这是「无 Owner 不发布」能落地的前提。
+- **失效条件**：**当表数量超过一次人工评审能覆盖的量、且 COMMENT 不进发布检查时，这条失效**。症状是同一张表在两个文档里有两份粒度描述，且两份都在被引用；可观测信号是「这张表一行代表什么」在不同评审会上得到不同答案。
+- **档位**：覆盖量阈值属【经验】，取决于评审节奏而非表数硬界限。
+
+**2. 代理键与时间点归属**
+
+- **做法**：事实表只存代理键；维度查找在写入时完成；迟到事实按事件时间匹配历史维度版本。
+- **机制**：因为 SCD2 把「属性随时间变化」显式存成了带区间的行，所以「按历史属性归属」从时间推理降级成一次等值 JOIN，这在列存引擎上是可执行的；代价是维度行数随属性变更累积，加载端多一步查找。
+- **失效条件**：**当源系统补数、重跑或迟到时间超过维度区间跨度时，这条会坏**。症状是同一条事实在两次重跑后归到了不同的维度版本，指标在两个分区之间小幅跳动；可观测信号是重跑同一分区得到不同的汇总值。此时要在加载逻辑里显式定义「迟到多久之内仍按事件时间归属」。
+- **档位**：【经验】。
+
+**3. 业务日期参数与幂等重跑**
+
+- **做法**：分区键取业务日期 `dt`，值由调度参数传入（`${biz_date}`）；写分区用覆盖写而不是追加。
+- **机制**：因为分区是幂等重跑的最小单位，所以只要「一个分区只由一次调度、一份输入决定」，重跑同一分区就能得到相同结果；代价是迟到数据必须回刷对应历史分区，跨分区回刷要有清单，否则会漏。
+- **失效条件**：**当上游补数跨多个业务日期、而回刷按天手工执行时，这条失效**。症状是某天的汇总只补了一半（比如订单表补了、支付表没补），结果既不报错也不自洽；可观测信号是对账时「按天加起来」与「按总量算」对不上。
+- **档位**：【经验】。
+
+**4. 实时宽表的窗口语义**
+
+- **做法**：Flink 按事件时间开滚动窗口（模板 2 的 30 天窗口），Hologres 侧按主键整行更新；窗口边界与离线口径在指标定义里写明。
+- **机制**：因为实时链路是「按事件到达持续重算」，而离线是「按分区一次性算」，两者的**同一指标在窗口边界附近必然出现差异**；把这个差异显式写进对照表，它才是可验收的偏差，而不是数据质量问题。
+- **失效条件**：**当实时作业上线后不再比对、或窗口长度被单方面调整时，这条失效**。症状是实时值与离线值的差异随时间缓慢扩大，且没人知道从哪天开始；可观测信号是比对任务停跑超过一个调度周期。
+- **档位**：【经验】。
+
+**5. 开放表格式的写入参数**
+
+- **做法**：显式配置写格式（`write.format.default`）、目标文件大小（`write.target-file-size-bytes`）、分布模式（`write.distribution-mode`）与格式版本（`format-version`）；Hudi 侧显式声明表类型（`type`）、主键（`primaryKey`）与预合并字段（`precombineField`）。属性名与默认值以你所用的引擎版本与表格式规范版本为准。
+- **机制**：因为表格式把「表状态」与「数据文件」分离，改 schema 与回滚是元数据操作、代价与数据量解耦；代价是写入侧必须产出并维护元数据，文件布局（分区、文件大小、排序）直接决定读性能——**参数不配，收益拿不到**。
+- **失效条件**：**当写入以高频小批（间隔远短于 compaction 的调度周期）为主、且 compaction 不是常驻作业时，这条失效**——模式层的机制与代价见 §3.2.4，此处只补落地期的观测面。症状是写入与查询同时变慢，规划阶段要打开的 manifest 数量随时间增长；可观测信号有两条：表的文件数曲线单调上升而平均文件大小持续下降，以及最近一次 compaction 的执行时间戳不再前移。此时团队通常会先怀疑引擎，而不是文件布局——所以把这两条信号放进日常监控，比换引擎便宜得多。
+- **档位**：属性名【公开，可按 Iceberg / Hudi / Paimon 官方文档的表属性页对照当前版本核验】；「高频小批」的量级属【经验】。
+
+**6. 指标定义与发布门禁**
+
+- **做法**：指标写成机器可读定义（`metric_id`、类型、原子指标、时间周期、维度、公式、Owner、SLA），进版本控制；无 Owner、无粒度、无时间点的定义不允许发布到指标平台。
+- **机制**：因为消费方从「人 + BI」变成「人 + BI + Agent」，而 Agent 只消费被显式注册过的元数据，所以口径分散在看板 SQL 里时，模型只能猜表名与口径（§3.2.5）；把定义做成文件而不是文档，才能让「同一问题三种问法答案一致」成为可验收的判据。
+- **失效条件**：**当指标平台只做了展示、定义里的 Owner 与粒度两列长期为空时，这条失效**。症状是自然语言入口上线后，答案看起来很合理但不可复现；可观测信号是同一问题换三种问法得到不同口径的结果，而没有人察觉。
+- **档位**：【经验】。
+
+### 4.3 工具链与平台
+
+工具表给的是**类别与选型判据**，不是推荐组合。产品能力与属性名以厂商官方文档当前版本为准。
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 建模与开发平台 | DataWorks 数据开发 / 数据建模、dbt、Airflow、自研调度 | 模型定义能否作为**一等对象被版本化**并进 CI 校验（改口径能触发检查），而不是只存在于平台的一次点击里 | 变更只能靠人记住，粒度与命名规范会在半年内退化成建议 |
+| 离线数仓 | MaxCompute、Hive / Spark SQL、Snowflake、BigQuery、Databricks | 按扫描量计费还是按预留计费；分层与分区语义是否原生支持（`dt` 分区、分区裁剪） | 计费模型与访问模式错配，成本随一次全表扫描跳变 |
+| 实时数仓 | Hologres、StarRocks、Doris、ClickHouse | 是否需要**主键更新 + 高频点查**（宽表要能按 user_key 覆盖写），还是只要聚合扫描 | 只要聚合的负载买了主键表能力，写放大与 compaction 都白付 |
+| 流计算 | Flink、Spark Structured Streaming | 事件时间与状态管理是否是一等能力（窗口、水位、状态后端），还是需要自己实现 | 自己用批处理拼实时，迟到数据与重跑语义都要自建，且难以验收 |
+| 湖仓表格式 | Iceberg、Hudi、Paimon | 有几个引擎要读同一张表（一个就不用湖仓）；写入形态是批量追加还是高频更新（更新多则看 Hudi MOR 一类） | 单引擎组织上湖仓，付出的是 catalog 与 compaction 的常驻成本，换来的共享没人用 |
+| 指标 / 语义层 | 指标平台（OSCAR 风格定义）、dbt 一类的语义层、BI 内的语义模型 | 口径、粒度、时间点、Owner 是否是**可校验字段**并进版本控制 | 口径留在看板 SQL 里，同一指标有 N 份实现，Agent 接不进来 |
+| 治理与元数据 | DataWorks 数据治理、DataHub、OpenMetadata、Apache Griffin 一类质量工具 | 是否支持**字段级血缘与影响面查询**，血缘是自动采集还是人工登记 | 人工登记的血缘会过期，改字段前的影响面清单不可信 |
+| BI 与可视化 | Quick BI、Apache Superset、Metabase、Grafana | 语义层能否与指标平台共用一份定义，而不是各自重建一份计算字段 | 看板里的计算字段成为事实上的第二个口径来源，且不可审计 |
+
+**这一类里最容易被误选的是「指标 / 语义层」。** 常见做法是把 BI 工具里的「计算字段」当作指标定义——两者形式相似，判据完全不同：计算字段挂在某一张报表上，不解决「这个口径由谁签、时间点是什么、粒度是什么」。误选的典型后果是同一个指标在不同看板里有若干份实现，数值接近但不相等；等 AI 取数接进来时，它会从这些实现里随便挑一个，把口径分裂从前台搬到自动化的通路上。
+
+### 4.4 存量迁移
+
+存量组织的迁移目标不是「把旧表重建成新分层」，而是**让已有的表和已经在用的口径在新结构下仍然可解释**。下面四步按「可回退 → 分类 → 双轨 → 收口」排，最后一组是这一步最常见的三个错误。
+
+**① 先做一次只读盘点（2-3 周【经验】，工时随表数量与现有元数据的完备程度变化；这一步完全可回退）**
+
+不动任何表，用现有元数据与查询历史跑四张清单：表数量与 Owner 覆盖率（有多少张表没人认领）、**没有粒度声明的表占比**、跨层直连清单（BI 或应用直连 ODS / DWD 的查询）、最贵的查询（按扫描量或耗时排序）。这一步不产出模型，只产出**一次事实基线**，后面每一步都能对回这份基线；它可回退，因为结论不进任何表的定义，只作为设计输入。
+
+**判据**：拿「没有粒度声明的表」这份清单去问两位互不相干的建模负责人「哪一张最危险」，两人指向同一张，说明现有元数据已足够支撑讨论；给出不同答案，说明粒度声明还没有被当成共同语言，先回到 Step 1。
+
+**② 存量资产分类处理（不要全部返工）**
+
+| 存量资产 | 处置 | 理由 |
+| --- | --- | --- |
+| 已经在上面的 ADS 与看板 | 不改结构，只补「口径 + Owner」两列登记 | 回改会影响正在被使用的数字，代价是一次无法补偿的信任支出 |
+| 正在被使用的 DWD | 只改**正在改动的部分**：本次要动的表按新规范补齐粒度与维度键，其余挂账 | 全量返工要重跑历史分区，成本随数据量增长，且收益要等全部完成才出现 |
+| 无粒度声明、无 Owner 的表 | **打标挂账**（标注「待定粒度 / 待认领」），纳入盘点清单按季度消化 | 强行一次性判定粒度，会把两层的差别写没，日后再也拆不开 |
+| Excel / PowerPoint 里的模型文档 | 不回改，作为**回测集**：用新规范重判 3-5 个历史案例 | 文档的价值在于它记录的决策理由，改写等于销毁证据 |
+| 旧口径（同一指标多种算法） | 逐个收敛：定一份为准，其余标注「历史口径 + 停用日期」 | 直接删除会让历史报表无法解释，保留旧口径才是可审计的做法 |
+
+**判据**：随机抽 3 个已有看板，用新规范重判它的底层表——若 2 个以上的粒度与维度键定义在当前规范下站不住，说明新规范与现状差距过大，应先调规范而不是宣布旧表全错。
+
+**③ 双轨怎么维持、维持多久**
+
+双轨的形态是：**新建立的表按新规范，已有表按「改动触发」改造**；两套约定各自带版本号，表定义里写清它是按哪一版建的。维持 **1-2 个迭代周期**【经验，随发布节奏变——双周迭代时约 2-4 周，月度迭代时约 1-2 个月】。
+
+双轨期有三条纪律：不把两套粒度下的汇总值直接相加或比较；口径对齐会上同时过两套，并把「这个数按哪一版口径出的」写进结论；新规范在旧表上只做观察记录（比如标注缺哪一列），不阻塞旧表的正常发布。这三条把双轨的成本限在「解释」上，而不让它渗进结果——因为两套规范各自演化出新惯例后，收口成本会高于重做。
+
+**④ 什么信号说明可以退出双轨**
+
+三个可观测信号，同时出现两个即可收口：① 新提交的表定义里没有人再缺粒度声明（随机抽 3 张看 `COMMENT`）；② 口径对齐会上不再出现「按旧口径算出来是另一个数」的记录；③ 同一张表分别按两套规范判定，结论一致——这一条最难满足，也最能说明规范已经收敛。
+
+若经过两个迭代周期三个信号全不成立，正确的动作是**回退到单一旧规范**、把新规范退回 Step 1 重写，而不是继续双轨：双轨的隐性成本是所有人对「这张表一行代表什么」的解释都不一样，它比规范暂时落后更伤可信度。
+
+**⑤ 迁移期最常见的三个错误**
+
+1. **先迁存储格式，后补粒度。** 把表搬到 Iceberg / Hudi 之后再补粒度声明，等于在已经付出迁移与 compaction 成本之后才开始做真正决定可用性的那件事；判据是看迁移前后「能回答一行代表什么的表」占比有没有变化——没变，说明这次迁移只换了格式。
+2. **把双轨当成两套并行生效的规范。** 双轨的正确形态是「按表分线」（新表新规范、旧表改动触发），不是「同一张表两套都跑」；后者会让同一张表在不同工具里有不同定义，判据是每张表能否指到唯一的规范版本号。
+3. **只迁表结构，不迁指标定义。** 指标定义、DWS 汇总、看板口径共用同一份粒度与时间点约定；若只把表结构规范化而指标定义还停在中途，同一个指标会在两个口径之间摆动——看起来像数据质量问题，实际是迁移没有完成。
+
+### 4.5 模板 / 示例
+
+**模板 1：DataWorks 数仓建模实战（电商案例）**
 
 ```sql
--- ODS 层（贴源层）
+-- ODS 层（贴源层）：字段与源系统保持一致，只做落地
 CREATE TABLE ods_trade_order (
-    order_id           STRING  COMMENT '订单 ID',
-    user_id            STRING  COMMENT '用户 ID',
-    merchant_id        STRING  COMMENT '商家 ID',
-    order_amount       DECIMAL(18,2) COMMENT '订单金额',
-    order_status       STRING  COMMENT '订单状态',
-    created_at         TIMESTAMP COMMENT '创建时间',
-    updated_at         TIMESTAMP COMMENT '更新时间',
-    dt                 STRING  COMMENT '分区日期'
+    order_id      STRING  COMMENT '订单 ID',
+    user_id       STRING  COMMENT '用户 ID',
+    merchant_id   STRING  COMMENT '商家 ID',
+    order_amount  DECIMAL(18,2) COMMENT '订单金额',
+    order_status  STRING  COMMENT '订单状态',
+    created_at    TIMESTAMP COMMENT '创建时间',
+    updated_at    TIMESTAMP COMMENT '更新时间'
+    -- 注意：Hive / MaxCompute 的分区列只声明在 PARTITIONED BY 里，写进列清单反而会建表失败；
+    -- Spark 的 USING 语法相反——分区列必须出现在列清单里（模板 3 的 Iceberg 与 Hudi 两例即此写法）
 ) PARTITIONED BY (dt STRING);
 
--- DWD 层（明细层）
+-- DWD 层（明细层）：关联一致性维度，产出统一度量；一行 = 一次下单事件
 CREATE TABLE dwd_trade_order_created AS
-SELECT
-    order_id,
-    user_id,
-    merchant_id,
-    order_amount,
-    order_status,
-    -- 维度关联
-    dim_user.user_key,
-    dim_merchant.merchant_key,
-    -- 时间维度
-    dim_date.date_key,
-    -- 度量
-    order_amount                         AS gmv,
-    1                                    AS order_count
-FROM ods_trade_order
-LEFT JOIN dim_user ON ods_trade_order.user_id = dim_user.user_id
-LEFT JOIN dim_merchant ON ods_trade_order.merchant_id = dim_merchant.merchant_id
-LEFT JOIN dim_date ON TO_CHAR(ods_trade_order.created_at, 'yyyyMMdd') = dim_date.date_key
-WHERE ods_trade_order.dt = '${biz_date}';
+SELECT o.order_id, o.user_id, o.merchant_id, o.order_amount, o.order_status,
+       dim_user.user_key, dim_merchant.merchant_key, dim_date.date_key,
+       o.order_amount AS gmv, 1 AS order_count, o.dt AS dt
+FROM ods_trade_order o
+LEFT JOIN dim_user     ON o.user_id     = dim_user.user_id
+LEFT JOIN dim_merchant ON o.merchant_id = dim_merchant.merchant_id
+LEFT JOIN dim_date     ON TO_CHAR(o.created_at, 'yyyyMMdd') = dim_date.date_key
+WHERE o.dt = '${biz_date}';
 
--- DWS 层（汇总层）
+-- DWS 层（汇总层）：一行 = 一个「用户 × 天」的汇总
 CREATE TABLE dws_trade_user_order_1d AS
-SELECT
-    user_key,
-    date_key,
-    SUM(order_amount)                    AS gmv_1d,
-    COUNT(DISTINCT order_id)             AS order_count_1d,
-    COUNT(DISTINCT merchant_id)          AS merchant_count_1d
+SELECT user_key, date_key, dt,
+       SUM(order_amount)           AS gmv_1d,
+       COUNT(DISTINCT order_id)    AS order_count_1d,
+       COUNT(DISTINCT merchant_id) AS merchant_count_1d
 FROM dwd_trade_order_created
 WHERE dt = '${biz_date}'
-GROUP BY user_key, date_key;
+GROUP BY user_key, date_key, dt;
 
--- ADS 层（应用层，指标平台直接消费）
+-- ADS 层（应用层）：一行 = 一个指标在某维度组合上的值，指标平台与 BI 直接消费
 CREATE TABLE ads_gmv_daily AS
-SELECT
-    date_key,
-    SUM(gmv_1d)                          AS gmv,
-    SUM(order_count_1d)                  AS order_count,
-    COUNT(DISTINCT user_key)             AS active_user_count
+SELECT date_key, dt,
+       SUM(gmv_1d)              AS gmv,
+       SUM(order_count_1d)      AS order_count,
+       COUNT(DISTINCT user_key) AS active_user_count
 FROM dws_trade_user_order_1d
 WHERE dt >= '${biz_date - 30}'
-GROUP BY date_key;
+GROUP BY date_key, dt;
 ```
 
-### 4.2 MaxCompute + Hologres 实时数仓
+**怎么用**：照抄的是四层的**顺序与粒度关系**（一行代表什么、上层的度量从哪来），不是表名与列名。`${biz_date}` 是调度参数，落地时必须换成你所用调度系统的参数写法并验证幂等重跑；这四条 DDL 都是示意写法，其中三条 `CREATE TABLE ... AS SELECT` 生产上应改为先建表（带分区与 `COMMENT` 粒度声明）再按分区 `INSERT OVERWRITE`，否则无法只回刷某一天；改造成这种两段式时，分区列 `dt` 必须同时出现在建表列清单、每层的 `SELECT` 投影与 `WHERE` 里（示例已贯穿 DWD / DWS / ADS 三层），漏在任何一层都会让上一层的 `WHERE dt = ...` 报「找不到列」；`dim_user` / `dim_merchant` / `dim_date` 的代理键与 SCD2 区间不要照抄成单列主键。
+
+**模板 2：MaxCompute + Hologres 实时数仓**
 
 ```sql
--- Hologres 创建实时宽表（用于实时 OLAP）
+-- Hologres：实时宽表，主键 user_key，供点查与实时更新
 CREATE TABLE holo_user_profile_realtime (
-    user_key            BIGINT PRIMARY KEY,
-    user_id             VARCHAR(64),
-    -- 用户基本属性
-    user_name           VARCHAR(128),
-    register_date       DATE,
-    -- 实时行为（来自 Kafka）
-    last_30d_pv         BIGINT,
-    last_30d_order_cnt  BIGINT,
-    last_30d_gmv        DECIMAL(18,2),
-    -- 实时风控标签
-    risk_score          DECIMAL(5,2),
-    fraud_label         VARCHAR(32),
-    -- 维度
-    city_key            INT,
-    channel_key         INT,
-    -- 时间
-    update_time         TIMESTAMP
+    user_key           BIGINT PRIMARY KEY,
+    user_id            VARCHAR(64),
+    user_name          VARCHAR(128),
+    register_date      DATE,
+    last_30d_pv        BIGINT,        -- 实时行为（来自 Kafka）
+    last_30d_order_cnt BIGINT,
+    last_30d_gmv       DECIMAL(18,2),
+    risk_score         DECIMAL(5,2),  -- 实时风控标签
+    fraud_label        VARCHAR(32),
+    city_key           INT,           -- 当前维度
+    channel_key        INT,
+    update_time        TIMESTAMP
 );
-
--- Flink 实时 ETL（写入 Hologres）
-INSERT INTO holo_user_profile_realtime
-SELECT
-    user_key,
-    user_id,
-    user_name,
-    register_date,
-    -- 30 天滚动窗口
-    SUM(CASE WHEN event_type = 'pv' THEN 1 ELSE 0 END) OVER (
-        PARTITION BY user_id ORDER BY event_time
-        RANGE BETWEEN INTERVAL '30' DAY PRECEDING AND CURRENT ROW
-    ) AS last_30d_pv,
-    SUM(order_amount) OVER (
-        PARTITION BY user_id ORDER BY event_time
-        RANGE BETWEEN INTERVAL '30' DAY PRECEDING AND CURRENT ROW
-    ) AS last_30d_gmv,
-    risk_score,
-    fraud_label,
-    -- 当前维度
-    city_key,
-    channel_key,
-    NOW() AS update_time
+-- Flink 实时 ETL：按事件时间开 30 天滚动窗口，写入 Hologres 主键表（列清单必须与宽表 12 列一一对应）
+INSERT INTO holo_user_profile_realtime (user_key, user_id, user_name, register_date,
+       last_30d_pv, last_30d_order_cnt, last_30d_gmv, risk_score, fraud_label, city_key, channel_key, update_time)
+SELECT user_key, user_id, user_name, register_date,
+       SUM(CASE WHEN event_type = 'pv' THEN 1 ELSE 0 END) OVER (PARTITION BY user_id
+         ORDER BY event_time RANGE BETWEEN INTERVAL '30' DAY PRECEDING AND CURRENT ROW) AS last_30d_pv,
+       SUM(CASE WHEN event_type = 'order' THEN 1 ELSE 0 END) OVER (PARTITION BY user_id
+         ORDER BY event_time RANGE BETWEEN INTERVAL '30' DAY PRECEDING AND CURRENT ROW) AS last_30d_order_cnt,
+       SUM(order_amount) OVER (PARTITION BY user_id
+         ORDER BY event_time RANGE BETWEEN INTERVAL '30' DAY PRECEDING AND CURRENT ROW) AS last_30d_gmv,
+       risk_score, fraud_label, city_key, channel_key, NOW() AS update_time
 FROM kafka_user_events;
 ```
 
-### 4.3 Iceberg / Hudi / Paimon 湖仓建模
+**同一份物化的 PAI 一侧（模型消费的数据面）**
+
+主文件把这条工具线写成「MaxCompute / Hologres / PAI 怎么配合」。配合关系在数据侧只有三件事：
+
+| PAI 侧要定的事 | 必须指到哪里 | 定错的表现 |
+| --- | --- | --- |
+| 训练样本的粒度 | 与 DWS 的「维度组合 × 天」出自同一份粒度声明，不从 ODS 二次取数 | 训练时的粒度与线上特征粒度不同，模型结果不可复现 |
+| 标签的时间点 | 特征时间点与标签回流时间点的间隔写进指标定义（T+1 回流的标签不得用于当天特征） | 训练集混入未来数据，离线指标虚高、上线即掉 |
+| 推理输入 | 指向与训练同一张物化表（DWS 或 ADS），不另建一份特征表 | 训练与推理各写一份特征，同一特征出现两种口径 |
+
+**怎么用**：这张宽表只放**需要点查或实时更新的列**（用户属性 + 窗口指标 + 标签），不要把 ODS 明细整表镜像进来——镜像会让写入放大与存储成本同时上升，而收益只是「能查」。窗口长度（这里 30 天）必须与离线口径的定义写成同一个值，并进对照表；`risk_score` 一类标签列的上游算法要单独登记 Owner，否则它们会在宽表里长期不更新而无人发现。SQL 方言随引擎版本变化，落地前请以当前版本的官方文档为准。PAI 那一侧不要照抄平台的数据源接入参数与 SQL 方言（那部分以 PAI 官方文档当前版本为准），要照搬的是上表三行：训练样本、线上特征、推理输入都指到同一张物化表与同一份粒度声明。
+
+**模板 3：Iceberg / Hudi / Paimon 湖仓建模**
 
 ```sql
--- Iceberg 表创建（Paimon 同理）
+-- Iceberg（Paimon 思路相近）：一行 = 一个「用户 × 特征 × 日期」的特征值
 CREATE TABLE iceberg.ads.user_features (
-    user_id         STRING,
-    feature_name    STRING,
-    feature_value   DOUBLE,
-    -- 维度
-    dt              DATE,
-    -- 元数据
-    created_at      TIMESTAMP,
-    updated_at      TIMESTAMP
-) PARTITIONED BY (dt)
-STORED BY ICEBERG
+    user_id       STRING,
+    feature_name  STRING,
+    feature_value DOUBLE,
+    dt            DATE,
+    created_at    TIMESTAMP,
+    updated_at    TIMESTAMP
+) USING iceberg PARTITIONED BY (dt)
 TBLPROPERTIES (
-    'write.format.default' = 'parquet',
-    'write.target-file-size-bytes' = '134217728',  -- 128 MB
-    'write.distribution-mode' = 'hash',
-    -- Iceberg V2 元数据
-    'format-version' = '2'
+    'write.format.default'          = 'parquet',   -- 写格式
+    'write.target-file-size-bytes'  = '134217728', -- 目标文件大小（此处 128 MB）
+    'write.distribution-mode'       = 'hash',      -- 分布模式：决定单文件内是否聚簇
+    'format-version'                = '2'          -- 表格式版本
 );
 
--- Hudi 表创建
+-- Hudi：一行 = 一个事件，主键 event_id，按 event_time 预合并
 CREATE TABLE hudi.ods.user_events (
-    event_id        STRING,
-    user_id         STRING,
-    event_type      STRING,
-    event_time      TIMESTAMP,
-    payload         STRING
+    event_id   STRING,
+    user_id    STRING,
+    event_type STRING,
+    event_time TIMESTAMP,
+    payload    STRING,
+    dt         DATE          -- 分区列必须写进列清单（Spark USING 语法与 Hive 相反）
 ) USING HUDI
 OPTIONS (
-    'type' = 'mor',  -- Merge on Read
-    'primaryKey' = 'event_id',
-    'precombineField' = 'event_time',
+    'type'                        = 'mor',     -- Merge on Read：写入快、读时合并
+    'primaryKey'                  = 'event_id',
+    'precombineField'             = 'event_time',
     'hoodie.enable.data.skipping' = 'true'
 )
 PARTITIONED BY (dt);
 
--- Flink 写入 Hudi
+-- Flink 写入 Hudi：分区列 dt 必须由写入侧产出，否则表建出来但分区一直是空的
 INSERT INTO hudi.ods.user_events
-SELECT
-    event_id,
-    user_id,
-    event_type,
-    event_time,
-    payload
+SELECT event_id, user_id, event_type, event_time, payload,
+       CAST(event_time AS DATE) AS dt
 FROM kafka.user_events_raw;
 ```
 
-### 4.4 OneData + 指标平台实战
+**怎么用**：这几个属性里真正需要按你的负载重定的只有三个——**目标文件大小**（随流式写入的批大小调，越小文件越多）、**分布模式**（写入是否需要按分区聚簇）、**表类型**（Hudi 的 `type`：更新多选 MOR，纯追加选 COW）。`format-version` 与属性名会随版本演进，迁移前请对照你所用引擎版本与表格式规范版本的官方文档，不要跨版本照抄；建表的**引擎绑定子句**同样随引擎而异——Spark 写 `USING iceberg`，Hive 侧是 `STORED BY` 加 Iceberg 的 storage handler 类名，Trino 侧靠 catalog 配置、不写子句——请按你实际使用的引擎落地，不要照抄别家写法；`hoodie.enable.data.skipping` 一类优化开关的默认值以当前版本为准。属性配置完之后必须配套 compaction 与快照过期作业，否则模板 3 的收益会在文件数上升后反转。
+
+**模板 4：OneData + 指标平台实战（OSCAR 模型）**
 
 ```yaml
-# 指标定义（OSCAR 模型）
+# 指标定义：既是口径，也是目录条目；机器可读、进版本控制
 - metric_id: gmv_1d
   metric_name: 当日 GMV
-  metric_type: 派生指标
+  metric_type: 派生指标            # 原子 / 派生 / 复合
   atomic_metric_id: order_amount_sum
   business_modifier: [all]
   time_period: 1d
   dimension: [user_id, merchant_id, city]
   formula: SUM(order_amount)
-  owner:
-    business: cfo@company.com
-    data: data-team@company.com
-  sla:
-    freshness: 1h
-    quality:
-      completeness: 0.99
-      accuracy: 0.99
+  owner: {business: cfo@company.com, data: data-team@company.com}
+  sla: {freshness: 1h, quality: {completeness: 0.99, accuracy: 0.99}}
 
 - metric_id: order_conversion_rate
   metric_name: 下单转化率
   metric_type: 复合指标
   formula: order_count / pv_count
-  source_metrics:
-    - order_count
-    - pv_count
+  source_metrics: [order_count, pv_count]
   dimension: [user_id, channel_id]
-  owner:
-    business: cmo@company.com
-    data: data-team@company.com
+  owner: {business: cmo@company.com, data: data-team@company.com}
 ```
 
 ```sql
--- 指标平台查询（自动生成 SQL）
--- 用户查询："最近 7 天各城市的 GMV"
-SELECT
-    city_name,
-    SUM(gmv_1d) AS gmv
+-- 指标平台按定义生成 SQL（此处：最近 7 天各城市 GMV）
+SELECT city_name, SUM(gmv_1d) AS gmv
 FROM ads_gmv_city_1d
 WHERE dt >= CURRENT_DATE - INTERVAL '7' DAY
 GROUP BY city_name
@@ -209,4 +349,25 @@ ORDER BY gmv DESC
 LIMIT 100;
 ```
 
----
+**怎么用**：五格必填、不要留空——`metric_id`（唯一标识，Agent 与看板都靠它引用）、`metric_type`、`time_period`（时间点口径，缺它就会出现「月度值按自然月还是按 30 天」的争议）、`dimension`（粒度，决定能被哪些维度切）、`owner`（两个人，业务签口径、数据签实现）。`sla` 里的数值是目标而不是实测值，填之前先量一遍当前实际水平，否则它会变成没人看的装饰。生成的 SQL 只是结果，落地时要一并记录「用了哪一版定义、数据截止到什么时候」，缺这两项的输出不可审计。
+
+### 4.6 自检清单
+
+1. 随机抽 3 张表，把表 `COMMENT` 里的粒度声明与建模文档逐字对照——不一致的有几张？
+2. 抽 1 张 DWD 表，问「能不能直接加一列商家名称」；能，说明维度被塞进了事实表。
+3. 找 3 条迟到事实，看它们匹配的是事件发生时刻的维度版本还是当前版本。
+4. 把某一天的调度重跑一次，分区行数与内容是否与首次一致（幂等）；不一致则回刷规则没定义。
+5. 抽查 3 张 ODS 表的字段名与源表是否一致；出现重命名，说明贴源层在偷偷做加工。
+6. 挑 3 个在用看板，反查它读的是 ADS 还是 DWD；直连 DWD 的看板有几个？
+7. 实时宽表与服务化查询的对照表最近一次比对是什么时候跑的？没跑过，实时链路就没有验收方式。
+8. 打开一张湖仓表的文件统计，看文件数曲线的方向与平均文件大小；文件数单调上升说明 compaction 已停。
+9. 查最近一次 compaction 与快照过期清理的执行时间，以及它有没有归属人。
+10. 抽 3 个指标定义，问「`time_period` 与 `owner` 两列有没有值」；空的定义不应允许发布。
+11. 拿同一份粒度声明去问两名跨团队负责人，两人的表述是否可比。
+12. 若正在双轨：本周期有没有出现「按旧口径算出来是另一个数」的记录？连续两个周期没有，才谈收口。
+
+### 4.7 小结
+
+> 本节小结：六步里唯一不可替代的是 **Step 1 把「一行代表什么」写进会被检查的地方**——代理键、分区、汇总、指标定义、血缘全都是它的实现细节，它错了其余每一步都要返工，而且返工要回填历史分区、代价随数据量增长。它比其余环节更值得投入，是因为**它把口径从会议结论变成结构约束**：一旦粒度写在表注释与指标定义上，讨论对象就从「谁说的对」移到了「声明与实现是否一致」，后面每一次变更的争议成本才会下降。
+>
+> 配合 [§ 2 核心原理](12-hands-on.md)、[§ 3 设计模式与范式](12-hands-on-section-3-sec3.md) 与 [§ 6 落地实践](12-hands-on-section-6-sec6.md) 阅读。存量改造的落地顺序以 4.4 为准，工具链的取舍判据以 4.3 为准。

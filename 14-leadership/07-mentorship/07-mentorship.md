@@ -273,6 +273,11 @@ I：这让作者不知道代码质量是否过关，也影响团队 CR 质量
 
 ---
 
+## 附：IDP 自述表模板
+
+```markdown
+# IDP 自述表 - {姓名}
+
 ## 1. 当前职级与目标
 - 当前：P6
 - 目标：P7（12 个月内）
@@ -286,14 +291,7 @@ I：这让作者不知道代码质量是否过关，也影响团队 CR 质量
 | 业务理解 | 3 | 3 | 4 |
 | 协作 | 4 | 4 | 4 |
 | 领导力 | 2 | 2 | 3 |
-
-- [§3. 设计模式与范式](07-mentorship-section-3-sec3.md)
-- [§4. 工程实现](07-mentorship-section-4-sec4.md)
-- [§9. 资源](07-mentorship-section-9-sec9.md)
-- [§5. 前沿演进（AI 时代）](07-mentorship-section-5-ai.md)
-- [§6. 落地实践](07-mentorship-section-6-sec6.md)
-- [§7. 与其他方法对比](07-mentorship-section-7-sec7.md)
-- [§8. 面试真题集](07-mentorship-section-8-sec8.md)
+```
 
 ---
 

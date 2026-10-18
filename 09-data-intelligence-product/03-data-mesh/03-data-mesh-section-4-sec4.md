@@ -1,307 +1,313 @@
-> 本文件是 **03-data-mesh.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](03-data-mesh.md)。
+> 本文件是 **03-data-mesh.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](03-data-mesh-section-3-sec3.md) 里那七个模式装进一个真实组织：顺序、产物、判据与存量迁移。完整章节请回到 [index](03-data-mesh.md)。
 
 ## 4. 工程实现
 
+[§ 3](03-data-mesh-section-3-sec3.md) 已经解决了「选哪个起手模式」，本节不再复述七个模式本身，只回答三个工程问题：**按什么顺序装、每一步手上该多出什么可被检查的东西、已经存在的资产怎么办。**
+
+本节对两类读者的用法不同。**从零搭建**的读者读 §4.1（七个步骤的顺序与判据）、§4.2（十项关键技术点的机制与失效条件）、§4.3（工具选型判据）、§4.5（可直接套用的模板）即可，§4.4 可以跳过。**在存量上改造**的读者顺序相反：先读 §4.4（历史资产怎么分类处理、双轨怎么退出），再回到 §4.1——因为你的第一步不是「识别业务域」，而是「让已经存在的资产先有一个可检查的责任人」。
+
 ### 4.1 落地步骤
 
-**Step 1：组织与战略对齐**
+**Step 1：组织与战略对齐（2–4 周【经验】，随决策链长度变）**
 
-- 高层支持（CIO / CDO 推动）。
-- 成立联邦治理委员会（跨业务域代表）。
-- 定义 Data Mesh 战略与目标。
-- 输出：**Data Mesh 战略书**。
+1. 找到一位能改动组织边界的高层支持者（CIO / CDO 层级）。要他签的不是预算，而是「域 Owner 对本域数据质量负责」这一条。
+2. 成立联邦治理委员会：成员是各域代表 + 平台 + 安全 / 合规，职责收敛为两件——裁决跨域口径冲突、批准全局策略模板。不要让它成为第二个审批队列。
+3. 写 Data Mesh 战略与目标，明确四条原则里本组织当前最缺的那一条（判断依据见 [§3.1](03-data-mesh-section-3-sec3.md)）。
 
-**Step 2：业务域识别**
+- **产物**：**Data Mesh 战略书**（一页即可：四原则现状自评 + 起手模式 + 域 Owner 任命规则）。
+- **判据**：抽 3 个候选域，各问一句「这个域的数据质量出问题时，谁被问责」——答不出一个具体的人，说明战略书还停在原则层。
+- **为什么必须这一步 / 为什么在这个位置**：四条原则是单向依赖的，第一条（领域所有权）落不下去时，后面每一步都在无主资产上施工——平台建完没人用、契约写完没人签、策略写了没人执行。把它放在最前，是为了让后面每一步都有责任主体可挂。
 
-- 基于 DDD 战略设计（bounded context）。
-- 识别核心业务域（5-10 个起步）。
-- 识别数据域（每个业务域对应 1+ 个数据域）。
-- 输出：**业务域 + 数据域映射表**。
+**Step 2：业务域识别（4–8 周【经验】，随业务线数量变）**
 
-**Step 3：自助式数据平台建设**
+1. 用 DDD 战略设计划限界上下文（bounded context）：按「业务语言的一致性边界」切，不按部门切、不按系统切（切法与反例见 [§3.2.2](03-data-mesh-section-3-sec3.md)）。
+2. 识别核心业务域，**5–10 个起步**【经验：域数下限由业务边界决定，上限由「跨域 JOIN 是否高频」决定】。
+3. 建立业务域与数据域的映射（每个业务域对应 1 个或多个数据域）。
+4. 给每个数据域任命一个**具体到人**的 Owner，并把「跨域共用的词（客户 / 商品 / 组织）」显式登记为待裁决的口径清单。
 
-- 部署存储层（Iceberg / Hudi / Delta + 对象存储）。
-- 部署计算层（Spark / Flink / Trino）。
-- 部署目录与血缘（DataHub / OpenMetadata / Gravitino）。
-- 部署治理（OPA / Apache Ranger / IAM）。
-- 部署安全（IAM / ABAC / 加密 / 审计）。
-- 部署 AI 能力（Feature Store / Model Serving / LLM Gateway）。
-- 输出：**自助式数据平台**。
+- **产物**：**业务域 + 数据域映射表**（每行含：域、边界依据、域 Owner、对外发布的数据产品清单、跨域共用词清单）。
+- **判据**：从映射表里任取两个域，问「同一个词在这两个域是不是同一个含义」——答「是」或给出裁决记录算通过；答「不确定」说明边界是按组织图画的。
+- **为什么必须这一步 / 为什么在这个位置**：域边界决定了后面所有资产与契约的归属。放在平台建设之前，是因为**边界是平台的输入**：先划边界，平台才知道要给谁开命名空间、给谁发策略；反过来先建平台，只会得到一套没有归属的命名空间。
 
-**Step 4：数据产品化（首批）**
+**Step 3：自助式数据平台建设（3–6 个月【经验】，随已有平台组件可复用程度变）**
 
-- 选定 1-2 个高价值数据域（如「客户数据域」「产品数据域」）。
-- 设计数据产品（Data Product Canvas）。
-- 实施 Data Contract（schema、SLA、版本、Owner）。
-- 暴露 Data Product API（REST / GraphQL / 流）。
-- 输出：**首批数据产品**。
+1. 存储层：部署开放表格式（Iceberg / Hudi / Delta）+ 对象存储，命名空间按域划分。
+2. 计算层：批量、流式、交互式分列选型（Spark / Flink / Trino）。
+3. 目录与血缘：部署联邦目录与自动采集（DataHub / OpenMetadata / Gravitino + OpenLineage 一类）。
+4. 治理与安全：部署策略引擎与执行点（OPA / Apache Ranger / IAM），把密级、权限、加密、审计一次接进发布路径。
+5. AI 能力面（可选、可后置）：Feature Store、Model Serving、LLM Gateway——**先只做「有」，不做「全」**。
+6. 平台验收口只留一个：记录**一个新域从零到发布第一个数据产品的实测耗时**，并逐季度重测。
 
-**Step 5：联邦治理落地**
+- **产物**：**自助式数据平台**（域可自助开通命名空间、跑作业、登记资产、发布产品的闭环）。
+- **判据**：让一个**非平台团队**的人按文档从零走一遍，量出实际耗时；再问他「哪一步要找人」——凡是必须找人才能过的步骤，都是平台能力还没建完的地方。
+- **为什么必须这一步 / 为什么在这个位置**：第 N 个域的接入边际成本要趋近**配置成本**，自治才能规模化；这一步排在产品化之前，是因为没有自助发布入口时，第一批数据产品只能由中央团队代做，代做的产品从第一天起就没有域 Owner。
 
-- 制定全局策略（OPA / Rego）。
-- 制定域本地策略。
-- 部署策略执行点（Enforcement Point）。
-- 建立联邦目录 + 联邦血缘。
-- 输出：**联邦治理框架**。
+**Step 4：数据产品化（首批，6–10 周【经验】，随是否已有可用产品模板变）**
 
-**Step 6：跨域消费与生态**
+1. 选定 1–2 个高价值数据域试点（如客户数据域、产品数据域）——选「边界清晰且消费方明确」的，不选「数据最多的」。
+2. 用 Data Product Canvas 设计数据产品：输入、输出、schema、SLA、Owner、消费方、密级。
+3. 实施 Data Contract：schema、SLA（新鲜度 / 可用性）、版本与兼容性策略、Owner、密级、消费方；**契约进入发布门禁**（模板见 §4.5）。
+4. 暴露 Data Product API（REST / GraphQL / 流），让消费者依赖接口而不是物理表。
 
-- 业务方消费数据产品（自助发现、订阅、消费）。
-- 建立数据产品市场（Marketplace）。
-- 建立计费与激励。
-- 输出：**数据产品生态**。
+- **产物**：**首批数据产品**（含契约、接口、目录登记页，每份契约的 Owner 是具体的人）。
+- **判据**：抽 3 份契约，各问一句「上一次因为契约被拒的发布是哪一次」——答不出来的那份契约已经退化成文档。
+- **为什么必须这一步 / 为什么在这个位置**：契约是「域自治」与「可被消费」能同时成立的那件东西；它必须晚于 Step 2（没有域就没有签约双方）且晚于 Step 3（没有自助入口就得中央代做），但**必须早于 Step 5**——先有契约，治理策略才有可挂靠的对象（密级、用途、消费方都写在契约里）。
 
-**Step 7：可观测与持续演进**
+**Step 5：联邦治理落地（6–12 周【经验】，随引擎数量变）**
 
-- 部署数据产品监控（QPS / SLA / 质量）。
-- 部署平台监控（资源 / 成本 / 性能）。
-- 部署治理审计（合规 / 异常）。
-- 持续优化（数据域扩展、新数据产品、治理策略更新）。
-- 输出：**Data Mesh 运营体系**。
+1. 制定全局策略：把「不可协商的底线」写进策略引擎（OPA / Rego 一类），并进版本控制与 Code Review。
+2. 制定域本地策略：域在底线之上补充本域的规则，不另行发明一套权限体系。
+3. 部署策略执行点（Enforcement Point）：每一个真实存在的取数通路都要挂一个——挂不上的通路要单独登记为盲区并指定责任人。
+4. 建立联邦目录 + 联邦血缘：登记成为发布前置条件，血缘自动采集并记录最后更新时间。
+
+- **产物**：**联邦治理框架**（策略仓库 + 执行点清单 + 盲区清单 + 登记门禁）。
+- **判据**：从策略仓库里挑一条规则，追到执行点，再追到一条**真实被拒的请求日志**——三环断在哪一环，哪一环就是当前的实际边界。
+- **为什么必须这一步 / 为什么在这个位置**：治理必须先于跨域消费（Step 6）。顺序反过来，第一次跨域访问就会发生在一套只有文本、没有执行点的策略之上；而策略一旦在无人查看的情况下「发布过」，事后补执行点会被读成收紧权限，阻力远大于一开始就装。
+
+**Step 6：跨域消费与生态（3–6 个月【经验】，随域数量与消费方数量变）**
+
+1. 业务方按数据产品消费：自助发现（目录检索）→ 订阅（契约确认）→ 消费（接口调用）。
+2. 建立数据产品市场（Marketplace）：把可消费的产品、Owner、SLA、密级、消费方列表集中展示。
+3. 建立计费与激励：让提供数据产品的域获得可度量的收益（减免指标、结算内部成本），而不是只被考核。
+
+- **产物**：**数据产品生态**（有消费、有反馈、有收益回流的市场）。
+- **判据**：数一次「过去一个月新接入的消费方里，有多少个是自助完成的（没有走进中央团队的需求队列）」——比例不上升，说明市场只是展示页。
+- **为什么必须这一步 / 为什么在这个位置**：自治的持续性来自收益而非发文。这一步放在治理之后，是因为跨域消费一旦发生，就需要 Step 5 的执行点与审计来回答「谁消费了什么、有没有越界」；没有这套，生态越大，失控面越大。
+
+**Step 7：可观测与持续演进（持续【经验：以季度为复盘周期】）**
+
+1. 数据产品级监控：QPS、SLA 达成率、质量分、契约违约次数。
+2. 平台级监控：资源、成本、查询性能与跨域查询的执行位置分布。
+3. 治理审计：访问审计、策略命中与拒绝、跨域审批记录。
+4. 持续优化：域扩展、新数据产品上线、治理策略更新，都走同一套发布门禁。
+
+- **产物**：**Data Mesh 运营体系**（数据产品与平台分级监控 + 治理审计 + 复盘节奏）。
+- **判据**：能否在 5 分钟内回答「上周有哪几个数据产品违约了 SLA、分别是谁的」——答不出说明监控的对象是平台组件而不是数据产品。
+- **为什么必须这一步 / 为什么在这个位置**：它必须最后，因为它度量的是前六步的承诺是否兑现；但它一旦缺位，前六步的产物会在两个季度内同时失效——**没有契约违约度量的契约，不构成承诺**。
+
+**七步里最常被跳过的是 Step 2 的后半步：给每个数据域任命一个具体到人的 Owner。** 它被跳过的原因很实在——组织图上已经有了「域」，再往下指一个人意味着多一个被问责的人，而这件事当天看不到任何交付物。它跳过后第一个出问题的时点是 Step 4：首批数据产品的契约找不到签字人，于是由中央团队代签；第二个时点更贵，在 Step 6——跨域消费出了口径事故，组织答得出「哪个域」，答不出「哪个人」，追责只能落在中央团队身上，而这恰好把 Data Mesh 想取消的那个瓶颈又装了回来。
 
 ### 4.2 关键技术点
 
-1. **联邦目录（Federated Catalog）**：DataHub（LinkedIn 开源）、OpenMetadata、Apache Gravitino（2024）、Unity Catalog（Databricks）、Apache Polaris（incubating）、Apache Atlas、Amundsen（Lyft）。
-2. **联邦血缘（Federated Lineage）**：OpenLineage（Linux Foundation 标准）、DataHub Lineage、Apache Atlas Lineage、Manta、Marquez。
-3. **联邦治理（Federated Governance）**：OPA（Open Policy Agent）+ Rego、Apache Ranger、AWS Lake Formation、IAM + ABAC / RBAC。
-4. **联邦查询（Federated Query）**：Trino（PrestoSQL）、Apache Calcite、Starburst、Denodo、Apache Gluten（2024 加速器）。
-5. **存储层**：Apache Iceberg（开放表格式）、Apache Hudi、Delta Lake、对象存储（S3 / OSS / MinIO）。
-6. **计算层**：Apache Spark、Apache Flink、Dask、Ray、Trino。
-7. **数据契约（Data Contract）**：Bitol、ODCS（Open Data Contract Standard）、Data Contract CLI、Pact。
-8. **AI / 特征平台**：Feast、Tecton、Databricks Feature Store、AWS SageMaker Feature Store。
-9. **LLM / Agent**：LangChain、LlamaIndex、Anthropic Claude、OpenAI、MCP（Model Context Protocol，2024）。
-10. **可观测**：Prometheus + Grafana、OpenTelemetry、DataHub Observability、Monte Carlo、Great Expectations。
+**1. 联邦目录（Federated Catalog）**
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+- **做法**：每个域自己登记本域资产（业务含义 / 分层 / Owner / SLA / 密级 / 版本），目录只负责统一检索与推荐；**登记是发布的前置条件**，不是事后补录。
+- **机制**：因为元数据的写权在域、读权在全局，新增一个域不增加中央团队的排期负担——「联邦」在工程上的具体含义就是这一条。
+- **失效条件**：**当登记不是发布前置条件时（几百个资产之后），覆盖率会随时间下降**，因为补录是确认性工作，永远排在交付之后；症状是抽 10 个在用的数据产品，数其中「口径写在目录里」的比例，逐季度在掉。
+- **档位**：覆盖率类判断用【经验】，判定方法即上面的抽样。
 
-**联邦目录**：
+**2. 联邦血缘（Federated Lineage）**
 
-- **DataHub**（LinkedIn 开源）——事实标准元数据 + 血缘 + 目录平台。
-- **OpenMetadata**（开源）——开放元数据平台。
-- **Apache Gravitino**（Apache，2024 顶级项目）——下一代联邦元数据。
-- **Unity Catalog**（Databricks）——Lakehouse 联邦元数据。
-- **Apache Polaris**（incubating，2024）——Snowflake 开源的 Lakehouse 目录。
-- **Apache Atlas**——传统元数据 + 血缘平台。
-- **Amundsen**（Lyft 开源）——元数据目录。
-- **DataHub**（LinkedIn 开源）——元数据 + 血缘 + 数据发现。
+- **做法**：从作业定义与查询日志自动解析血缘（OpenLineage 一类事件模型），人工只做校正；每条血缘记录带最后更新时间，覆盖度按来源类型分别报数。
+- **机制**：因为血缘只采集一次、以标准形态对外提供，目录 / 质量 / 权限 / CI 可以共用同一份关系，不必各自解析一遍 SQL；代价是采集侧成为新的关键路径与责任点。
+- **失效条件**：**当动态 SQL、脚本任务、外部导入这类静态解析不到的场景长期不纳入时**，血缘的盲区不可知——盲区本身不可怕，「不知道有盲区」才可怕；症状是变更影响面分析与真实故障位置长期对不上。
+- **档位**：【经验】，人工登记的血缘通常在季度量级过期。
 
-**联邦血缘**：
+**3. 联邦治理（Federated Governance）**
 
-- **OpenLineage**（Linux Foundation）——开放血缘标准。
-- **DataHub Lineage**——基于事件的血缘。
-- **Apache Atlas Lineage**——传统血缘。
-- **Manta**——自动化血缘。
-- **Marquez**（LF Open）——开放血缘标准。
+- **做法**：全局策略只写「不可协商的底线」，域本地策略在底线之上补充；策略进版本控制、走 Code Review 与单测；每个执行点做一次负向测试（用测试账号访问一个该被拒的资源，确认真的被拒且留痕）。结构见 [§3.2.5](03-data-mesh-section-3-sec3.md)。
+- **机制**：因为规则集中定义、由各域自己的管道执行，覆盖范围是全局的而执行不经过中央队列——这正是「规则统一、执行分散」能在不重新造一个审批瓶颈的前提下成立的原因。
+- **失效条件**：**当执行点没有强制能力时**（某个引擎只能按库 / 表授权，或某条导出链路根本不经过任何执行点），策略写了但不生效，而且看起来像已生效；症状是一份在测试环境全绿的策略，在生产里从未被触发过一次。
+- **档位**：【经验】；Rego 的语法与内置函数以 OPA 官方文档当前版本为准。
 
-**联邦治理**：
+**4. 联邦查询（Federated Query）**
 
-- **OPA**（Styra 开源）——策略即代码。
-- **Apache Ranger**——Hadoop 生态授权 + 审计。
-- **AWS Lake Formation**——AWS Lake 治理。
-- **IAM + ABAC / RBAC**——云厂商身份与访问控制。
-- **Immuta**（商业）——数据访问治理。
-- **Collibra**（商业）——数据治理 + 目录。
+- **做法**：按访问模式决定「就地算」还是「物化到交换区」；记录每条跨域查询的执行位置与跨域搬运行数，定期统计高频跨域路径。
+- **机制**：因为查询不搬数据就能跨域，域的所有权与责任边界在每次查询发生时都不被破坏；代价是每一次查询都要付一次跨网络、跨协议的协调成本。
+- **失效条件**：**当高频跨域聚合被硬做成联邦查询时**，协调成本会被每一次查询重复支付；症状是业务方的性能投诉——「原本一次 JOIN 能出的数，现在要走三条联邦链路」。
+- **档位**：【经验】；成本量纲的判断属【推算，推导链：单次跨域查询成本 ≈ 参与域数 × 每域往返延迟 + 跨域搬运行数 × 单位搬运成本；若该查询每天重复 N 次，则总成本随 N 线性增长，而物化只付一次】。
 
-**联邦查询**：
+**5. 存储层：开放表格式**
 
-- **Trino**（PrestoSQL）——分布式 SQL 查询引擎。
-- **Starburst**（商业）——Trino 商业版。
-- **Apache Calcite**——动态数据管理框架。
-- **Apache Gluten**（2024 加速器）——Trino 加速。
+- **做法**：域内表统一用开放表格式（Iceberg / Hudi / Delta），命名空间按域划分；对象存储作底座；catalog 按单点对待，准备降级与容量预案。
+- **机制**：因为表格式把「谁拥有这份数据」与「用什么引擎读它」解耦，上游换引擎、换调度对下游透明——这是域能自治而消费者不必跟着改的前提。
+- **失效条件**：**当命名空间不按域隔离时**，「域所有权」只是组织图上的说法；症状是权限申请里出现「我要读某个前缀下的全部表」这类无法裁决的请求。
+- **档位**：【经验】。
 
-**开放表格式**：
+**6. 计算层**
 
-- **Apache Iceberg**（事实标准）——Netflix 开源，开放表格式。
-- **Apache Hudi**——Uber 开源。
-- **Delta Lake**（Linux Foundation）——Databricks 开源。
+- **做法**：批量与流式分列选型（Spark / Flink），单机与分布式 Python 计算按需补（Dask / Ray），交互式联邦查询单列（Trino）；跨域计算统一走联邦入口，不允许把数据搬到一处再算。
+- **机制**：因为计算与存储解耦，各域可以按自己的任务形态选引擎；代价是同一份数据在不同引擎里的类型与函数语义不完全一致，跨域结果需要单独对齐。
+- **失效条件**：**当同一指标在 Spark 与 Trino 上算出不同结果时**，跨域报表的可信度直接归零，而且没人能裁决哪个对——症状是同一张看板被两个团队各算一遍、各不信对方。
+- **档位**：【经验】。
 
-**对象存储**：
+**7. 数据契约（Data Contract）**
 
-- **AWS S3**、**Aliyun OSS**、**Tencent COS**、**MinIO**（开源）。
+- **做法**：每个对外交付的数据产品都有一份机器可读契约（Bitol / ODCS 一类），含 schema、SLA、版本与兼容性策略、Owner、密级、消费方；契约进 CI 校验并阻断不合规发布。
+- **机制**：因为消费者只依赖契约而不依赖实现，上游改分区布局、改更新时点、换引擎对下游透明；代价是契约面随时间单调增长，**删除字段的成本远高于新增字段**。
+- **失效条件**：**当契约只在发布时刻校验一次时**，schema 之外的破坏性变更（分区布局、更新时点、补充文件的语义）会绕过校验；症状是下游只会在数据错的时候才发现上游改过。
+- **档位**：【经验】。
 
-**Data Contract**：
+**8. AI / 特征平台**
 
-- **Bitol**（开源）——Data Contract Specification。
-- **ODCS（Open Data Contract Standard）**（Linux Foundation，2024）——开放数据契约标准。
-- **Data Contract CLI**（开源）——Data Contract 工具。
-- **Pact**（合约测试）——API 合约。
+- **做法**：特征以「特征视图」为单位登记 Owner 与新鲜度承诺（Feast / Tecton 一类）；训练取数走数据产品接口，不直连物理表。
+- **机制**：因为同一份数据产品既喂看板又喂训练，新鲜度承诺必须在两个消费面写成同一个数；代价是特征平台成为第二份元数据，它与目录的一致性需要有人长期维护。
+- **失效条件**：**当特征侧与域侧对「新鲜度」的理解不同时**，坑会在离线评测之后才暴露——离线指标与线上不一致，而两边都认为自己是对的。
+- **档位**：【经验】。
 
-**AI 集成（2024-2025）**：
+**9. LLM / Agent 消费面**
 
-- **LangChain** + **LlamaIndex**——LLM 框架。
-- **MCP（Model Context Protocol，Anthropic 2024）**——AI Agent 数据访问协议。
-- **Feast** + **Tecton**——Feature Store。
-- **LakeFS** + **Pachyderm**——数据版本管理。
+- **做法**：把数据产品契约映射成程序可调用的资源位与工具位，口径必须是机器可读的；出口按调用方做配额与审计；开放顺序固定为**只读资源位 → 参数化工具位 → 自由探索**，不可颠倒。
+- **机制**：因为数据产品在定义上已经有 Owner、有契约、可寻址，暴露给 Agent 只需加一层协议映射，不必重新治理一遍数据（映射图见 [§3.2.6](03-data-mesh-section-3-sec3.md)）。
+- **失效条件**：**当口径只对人可读（文档、会议纪要、看板注释）时**，Agent 只拿到列名，误用会以「看起来合理的错误结果」被下游每一步推理继承——它不会对异常值产生怀疑。
+- **档位**：MCP（Model Context Protocol）由 Anthropic 于 2024 年公开【公开】，协议细节与版本以官方规范当前版本为准；口径误用率没有公开基线，须自测。
 
-### 4.4 代码 / 示例
+**10. 可观测**
 
-**示例 1：基于 OPA + Rego 的联邦治理策略**
+- **做法**：数据产品级（QPS、SLA 达成率、质量分、契约违约次数）与平台级（资源、成本、查询性能）分开度量；治理审计单独一路（谁在何时访问了哪个产品、被拒多少次）；工具用 Prometheus + Grafana、OpenTelemetry，质量与异常用 Great Expectations / Monte Carlo、DataHub Observability 一类。
+- **机制**：因为契约把承诺写成了可比的数，可观测才能把「承诺」变成告警阈值；没有契约的指标只能看，不能判。
+- **失效条件**：**当度量的对象是平台组件而不是数据产品时**，大盘全绿也不代表任何一份数据是好的；症状是业务方先发现数据错，平台侧无任何异常。
+- **档位**：【经验】。
+
+### 4.3 工具链与平台
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 联邦目录 | DataHub（LinkedIn 开源）/ OpenMetadata / Apache Gravitino（Apache 软件基金会项目，孵化与毕业节点以 Apache 官方项目状态页为准）/ Unity Catalog（Databricks）/ Apache Polaris（incubating）/ Apache Atlas / Amundsen（Lyft） | 判据是「登记能否阻断发布」与「新增一个域是否只需配置」；只能事后补录的目录，覆盖率会随时间下降 | 目录退化成另一份文档，跨域消费前先要问人 |
+| 联邦血缘 | OpenLineage（Linux Foundation 标准）/ DataHub Lineage / Apache Atlas Lineage / Manta / Marquez | 判据是「采集是否自动」与「覆盖度能否按来源类型分别报数」；依赖人工登记的血缘在季度量级过期【经验】 | 变更影响面算不出来，没人敢改上游 |
+| 联邦治理 | OPA + Rego / Apache Ranger / AWS Lake Formation / IAM + ABAC / RBAC / Immuta / Collibra | 判据是「执行点有没有强制能力」与「策略能否被单测」；按各引擎自带 ACL 各写一份必然漂移 | 策略只存在于文档与评审记录里 |
+| 联邦查询 | Trino（PrestoSQL）/ Starburst（Trino 商业发行版）/ Apache Calcite / Denodo / Apache Gluten | 判据是「高频跨域路径就地算还是物化」与「连接器对方言的覆盖」 | 高频聚合被硬做成联邦，性能投诉替代了架构讨论 |
+| 开放表格式 | Apache Iceberg / Apache Hudi / Delta Lake | 判据是「catalog 的可用性与降级预案」与「引擎覆盖是否够用」 | catalog 成为单点，一次抖动等于全部门查询失败 |
+| 对象存储 | AWS S3 / 阿里云 OSS / 腾讯云 COS / MinIO | 判据是「一致性语义与权限模型能否与统一策略引擎对接」 | 权限只能停在桶级，字段级密级无处执行 |
+| 数据契约 | Bitol / ODCS（Open Data Contract Standard）/ Data Contract CLI / Pact | 判据是「契约能否被 CI 校验并阻断发布」；Pact 解决的是 API 合约测试，不是数据交付承诺 | 契约无法阻断，退化为文档 |
+| AI / 特征平台 | Feast / Tecton / Databricks Feature Store / AWS SageMaker Feature Store | 判据是「特征视图有没有 Owner 与新鲜度承诺」 | 特征成为第二份无主元数据，与目录长期不一致 |
+| Agent 消费面与模型运行时 | MCP（Model Context Protocol，Anthropic 2024）/ LangChain / LlamaIndex / Anthropic Claude / OpenAI | 判据是「模型调用是否经过企业网关、调用是否可枚举」 | 调用不可枚举，配额与审计没有落点 |
+| 版本管理与可观测 | LakeFS / Pachyderm；Prometheus + Grafana / OpenTelemetry / DataHub Observability / Monte Carlo / Great Expectations | 判据是「度量对象是数据产品还是平台组件」 | 大盘全绿而数据是坏的 |
+
+这张表里最容易被误选的有两处。**第一处是把「目录产品」当成联邦治理**——目录只解决「看得见」，不解决「拦得住」；误选的典型后果是策略全写在文档与评审记录里，执行点一个都没装（见 §4.2 第 3 条的失效条件）。**第二处是把 Pact 当成数据契约工具**——它解决的是 API 合约测试，不承诺数据交付的 schema / SLA / 版本。上面各项的当前状态、版本与能力条目，一律以各项目或产品的官方文档当前版本为准；判据里能自行核验的那几问（登记能不能阻断发布、策略能不能被单测、覆盖度能不能按来源报数），比产品材料更值得先跑一遍。
+
+### 4.4 存量迁移
+
+**① 先做哪一件：立刻见效、可回退。**
+
+在现有元数据目录上加两个必填项——**Owner（具体到人）**与**密级**，并规定登记是发布的前置条件，但**只对新增发布生效**。这一步不改任何存量作业、不动数据流、不需要停机；回退方式是关掉门禁，已经登记的标签仍然留在那里，没有损失。见效的标志是两三个月后新资产的登记率达到高位，而存量资产一枚未动。
+
+**② 历史资产怎么分类处理（三级，不要一刀切返工）。**
+
+- **逐条返工**：只对「高消费频次且已被跨域依赖」的那一小批资产逐字段复核（口径、密级、Owner、契约）。复核成本随字段数线性增长【推算，推导链：复核工作量 ≈ 字段数 × 每字段复核时长；每字段复核以分钟量级计，一条千字段链路的复核即以人日计，因此只能对少数资产做】。
+- **只改动的部分**：存量资产在被改动的那一刻起必须补齐契约与标签——把「改动」变成补账的触发源，而不是等一次全量运动。
+- **打标挂账**：其余资产打「未契约 / 未定级」标签，挂到域 Owner 名下，并在检索入口与消费入口把标签显示出来。**挂账必须带到期日**：没有到期日的挂账等于永久豁免；到期未处理的资产按「不可对外发布」处理，这才是让挂账收敛的机制。
+
+**③ 双轨怎么维持、维持多久。**
+
+存量消费继续走原来的路径（直连、老调度、老看板），新增需求一律走数据产品接口。中央团队继续为存量兜底，但它的考核要从「产出了多少数据」改成「域自助发布占比」与「新域接入耗时」——否则双轨会变成中央团队的两份工作，而不是一次交接。双轨时长以季度计量【经验：超过一年通常会被固化，因为两侧的使用习惯都已经形成】；每季度在委员会上过一遍「存量路径减少了几条」。
+
+**④ 什么信号说明可以退出双轨。**
+
+三个可量的信号，全部指向同一件事——存量路径在自然减少，而不是被强制关停：**新域从零到发布第一个数据产品的实测耗时开始下降**（说明平台在起作用）；**不经数据产品的跨域取数调用占比降到可忽略**（说明消费者真的换了入口）；**跨域口径冲突开始由联邦治理委员会裁决，而不是由中央团队手工对齐**（说明责任已经转移）。三个里若只有第一个成立，说明平台在进步而组织没动；若只有第二个成立，说明你在靠强制收口而非靠供给替代。
+
+### 4.5 模板 / 示例
+
+**模板 1：数据产品的对外契约（Bitol 风格的 YAML）**
+
+```yaml
+# customer_360_contract.yaml —— 每行 = 一条对外承诺，缺项不允许发布
+apiVersion: bitol.io/v1
+kind: DataContract
+metadata:
+  name: customer_360
+  domain: customer
+  owner: data-product-team@company.com   # 必须具体到人，不是团队邮箱
+  version: 1.2.0
+servers:
+  - environment: production
+    type: snowflake
+    path: customer_db.customer_360_view
+schema:
+  - {name: customer_id,        type: string, classification: confidential, logicalType: primary_key}
+  - {name: email,              type: string, classification: pii,          logicalType: email}
+  - {name: total_orders_30d,   type: integer, classification: internal,   logicalType: count}
+  - {name: churn_probability,  type: number, classification: confidential, logicalType: probability}
+sla:  # 下列数值均为占位示例、不是承诺值：发布前逐项换成你实际能监控的数，填不上写「未承诺」
+  freshness: 24h
+  availability: 99.9%
+  quality: {completeness: 99.5%, accuracy: 99%, consistency: 100%}
+consumers:
+  - {team: marketing, accessLevel: read}
+  - {team: risk,      accessLevel: read}
+pricing:
+  model: free-internal
+```
+
+**怎么用**：填四段——`metadata`（Owner 到人）、`schema`、`sla`、`consumers`；`servers.path` 与 `pricing` 换成你家的物理位置与内部结算口径。**SLA 里的百分比不要照抄**：每一个都必须来自你实际能监控的数，填不上就先写「未承诺」，比写一个监控不了的数安全。这份文件要进 CI 校验，通过才允许发布。
+
+**模板 2：联邦治理策略（OPA / Rego）+ 决策调用**
 
 ```rego
-# policy.rego
 package data_mesh.access
 
-# 默认拒绝
 default allow = false
 
-# 数据所有者可访问
-allow {
-    input.user.id == input.resource.owner_id
-}
-
-# 同域可访问（非受限数据）
-allow {
-    input.user.domain == input.resource.domain
-    input.resource.classification != "restricted"
-}
-
-# 数据管理员可访问
-allow {
-    input.user.role == "data_steward"
-    input.resource.classification != "restricted"
-}
-
-# 跨域访问需要申请
-allow {
-    input.user.domain != input.resource.domain
-    input.request.approval_status == "approved"
-    input.request.approver_role == "domain_owner"
-}
+allow { input.user.id == input.resource.owner_id }               # 数据所有者
+allow { input.user.domain == input.resource.domain                # 同域且非受限
+        input.resource.classification != "restricted" }
+allow { input.user.role == "data_steward"                         # 数据管理员
+        input.resource.classification != "restricted" }
+allow { input.user.domain != input.resource.domain                # 跨域需申请
+        input.request.approval_status == "approved"
+        input.request.approver_role == "domain_owner" }
 ```
 
 ```python
-# Python 调用
 from opa_client.opa import OpaClient
 
 client = OpaClient(host="http://localhost:8181")
-client.update_policy_from_file("policy.rego")
-
-decision = client.check_policy(
-    policy="data_mesh/access",
-    data={
-        "user": {"id": "alice", "domain": "sales", "role": "analyst"},
-        "resource": {"id": "customer_360", "owner_id": "bob", "domain": "sales", "classification": "internal"},
-    },
-)
-print(decision["result"])  # True / False
+decision = client.check_policy(policy="data_mesh/access", data={
+    "user": {"id": "alice", "domain": "sales", "role": "analyst"},
+    "resource": {"id": "customer_360", "owner_id": "bob", "domain": "sales",
+                 "classification": "internal"},
+})
 ```
 
-**示例 2：基于 DataHub 的联邦目录与血缘**
+**怎么用**：四条 `allow` 规则各对应一类真实访问路径（所有者 / 同域 / 管理员 / 跨域申请），照这个骨架换成你家的路径。**唯一不能省的是 `default allow = false`**；同时要另外写下一条不写在规则里的约定——**策略服务不可用时系统是拒绝还是放行**（fail-closed 还是 fail-open）：两种行为都合法，但它读不出来，必须写进上线检查表，并照 §4.2 第 3 条的负向测试换个条件再跑一遍——停掉策略服务、发一次本该被拒的请求，看实际行为是否与约定一致。OPA 与 Rego 的当前语法以官方文档为准。
 
-```yaml
-# datahub ingestion recipe (sales_domain.yaml)
-source:
-  type: snowflake
-  config:
-    account: "acme.snowflakecomputing.com"
-    warehouse: "SALES_WH"
-    username: "datahub"
-    password: "${SNOWFLAKE_PASSWORD}"
-
-sink:
-  type: datahub-rest
-  config:
-    server: "http://datahub-gms:8080"
-
-pipeline_name: "sales_domain_ingestion"
-
-# 启用血缘（OpenLineage）
-flags:
-  enable_lineage: true
-  lineage_source: "OPEN_LINEAGE"
-```
-
-**示例 3：基于 Trino 的联邦查询（跨域）**
+**模板 3：跨域联邦查询（Trino）**
 
 ```sql
--- sales 域 + marketing 域联邦查询
 WITH sales_data AS (
-  SELECT
-    customer_id,
-    SUM(amount) AS total_sales,
-    COUNT(*) AS order_count
+  SELECT customer_id, SUM(amount) AS total_sales, COUNT(*) AS order_count
   FROM sales_catalog.sales.orders
-  WHERE order_date >= DATE '2025-01-01'
-  GROUP BY customer_id
+  WHERE order_date >= DATE '2025-01-01' GROUP BY customer_id
 ),
 marketing_data AS (
-  SELECT
-    customer_id,
-    SUM(campaign_cost) AS total_campaign_cost,
-    SUM(conversion_count) AS total_conversions
+  SELECT customer_id, SUM(campaign_cost) AS total_campaign_cost
   FROM marketing_catalog.marketing.campaigns
-  WHERE campaign_date >= DATE '2025-01-01'
-  GROUP BY customer_id
+  WHERE campaign_date >= DATE '2025-01-01' GROUP BY customer_id
 )
-SELECT
-  s.customer_id,
-  s.total_sales,
-  m.total_campaign_cost,
-  m.total_conversions,
-  s.total_sales / NULLIF(m.total_campaign_cost, 0) AS roi
+SELECT s.customer_id, s.total_sales, m.total_campaign_cost,
+       s.total_sales / NULLIF(m.total_campaign_cost, 0) AS roi
 FROM sales_data s
 JOIN marketing_data m ON s.customer_id = m.customer_id
 ORDER BY roi DESC
 LIMIT 100;
 ```
 
-**示例 4：基于 Bitol 的 Data Contract（YAML）**
+**怎么用**：这是跨域查询的**形态**示例，不是性能示例。上线前记下它的执行位置分布（哪一段在哪个域执行、跨域搬了多少行、跑了多久）；如果发现它被高频重复执行，就把它物化成交互区，而不是继续走联邦（判据见 §4.2 第 4 条）。
+
+**模板 4：域内采集与血缘接入（DataHub recipe）**
 
 ```yaml
-# customer_360_contract.yaml
-apiVersion: bitol.io/v1
-kind: DataContract
-metadata:
-  name: customer_360
-  domain: customer
-  owner: data-product-team@company.com
-  version: 1.2.0
-
-servers:
-  - environment: production
-    type: snowflake
-    path: customer_db.customer_360_view
-
-schema:
-  - name: customer_id
-    type: string
-    classification: confidential
-    logicalType: primary_key
-  - name: email
-    type: string
-    classification: pii
-    logicalType: email
-  - name: total_orders_30d
-    type: integer
-    classification: internal
-    logicalType: count
-  - name: churn_probability
-    type: number
-    classification: confidential
-    logicalType: probability
-
-sla:
-  freshness: 24h
-  availability: 99.9%
-  quality:
-    completeness: 99.5%
-    accuracy: 99%
-    consistency: 100%
-
-consumers:
-  - team: marketing
-    accessLevel: read
-  - team: risk
-    accessLevel: read
-
-pricing:
-  model: free-internal
+source:
+  type: snowflake
+  config:
+    account: "acme.snowflakecomputing.com"
+    warehouse: "SALES_WH"
+    username: "datahub"
+    password: "${SNOWFLAKE_PASSWORD}"     # 凭据一律走环境变量
+sink:
+  type: datahub-rest
+  config: {server: "http://datahub-gms:8080"}
+pipeline_name: "sales_domain_ingestion"   # 按域各建一份，域名入 pipeline 名
+flags:
+  enable_lineage: true
+  lineage_source: "OPEN_LINEAGE"
 ```
 
-**示例 5：基于 MCP（Model Context Protocol）的 Data Product for Agent**
+**怎么用**：每个域一份 recipe，新增域只是加一份配置——这正是「平台优先型」的验收口（[§3.2.4](03-data-mesh-section-3-sec3.md)）。不要照抄账号形态：采集账号通常能读到全库元数据，它的权限要单独收敛并纳入审计。能力条目以 DataHub 官方文档当前版本为准。
+
+**模板 5：把数据产品暴露成 Agent 的工具位**
 
 ```python
-# mcp_server.py
 from mcp.server import Server, Tool
 from mcp.types import TextContent
 
@@ -309,30 +315,46 @@ server = Server("customer-data-product")
 
 @server.list_tools()
 async def list_tools():
-    return [
-        Tool(
-            name="query_customer_360",
-            description="查询客户 360 度画像（Data Mesh 数据产品）",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "customer_id": {"type": "string"}
-                },
-                "required": ["customer_id"]
-            }
-        )
-    ]
+    return [Tool(
+        name="query_customer_360",
+        # description 是 Agent 唯一能读到的语义：口径 + 契约版本必须写在这里
+        description="查询客户 360 度画像（口径见契约 customer_360 v1.2.0）",
+        inputSchema={"type": "object",
+                     "properties": {"customer_id": {"type": "string"}},
+                     "required": ["customer_id"]})]
 
 @server.call_tool()
 async def call_tool(name: str, arguments: dict):
     if name == "query_customer_360":
-        # 调用 Data Mesh 的联邦查询 API
-        response = await datamesh_client.query(
+        result = await datamesh_client.query(
             data_product="customer_360",
             filters={"customer_id": arguments["customer_id"]},
-            consumer="agent_runtime"
+            consumer="agent_runtime",   # 配额与审计的落点，不可省略
         )
-        return [TextContent(type="text", text=str(response))]
+        return [TextContent(type="text", text=str(result))]
 ```
 
----
+**怎么用**：先只暴露只读资源位（目录与定义），再开参数化工具位，最后才考虑自由探索——顺序颠倒等于先把出口敞开再装锁（[§5](03-data-mesh-section-5-ai.md) §5.2.1）。`description` 与 `consumer` 两处必须按你家的口径与调用方改名，别照抄示例值；协议形态以官方规范当前版本为准，示例里的 import 路径与低层 API 名（`Server` / `Tool` / `TextContent`）随 SDK 版本变化，按 MCP Python SDK 官方文档当前版本的模块布局取，不要直接照抄。
+
+### 4.6 自检清单
+
+- [ ] 抽 3 个数据域，每个都能说出**一个具体的人**对它的数据质量负责？
+- [ ] 抽 10 个已发布的数据产品，数其中「Owner 具体到人」与「口径有机器可读定义」各占几个？
+- [ ] 登记目录是不是发布的前置条件？如果只是事后补录，覆盖率的季度曲线是升还是降？
+- [ ] 从策略仓库任取一条规则，能不能追到执行点、再追到一条真实被拒的请求日志？
+- [ ] 每个引擎都有执行点吗？挂不上执行点的取数通路，是否被单独登记为盲区并指定了责任人？
+- [ ] 血缘是自动采集的吗？覆盖度能不能按来源类型（数仓 SQL / 调度 DAG / 脚本 / 外部导入）分别报数？
+- [ ] 抽 3 份数据契约，问「上一次因为契约被拒的发布是哪一次」——几次答得出来？
+- [ ] 跨域查询是就地算还是搬数据？高频的那几条，执行位置分布看过吗？
+- [ ] 「新域从零到发布第一个数据产品」的实测耗时是多少？与上个季度比是升还是降？
+- [ ] 过去一个月新接入的消费方里，有多少个是自助完成、没走进中央团队队列的？
+- [ ] 数据产品的 SLA 违约，是平台大盘先发现还是业务方先发现？
+- [ ] 提供数据产品的域，有没有拿到可度量的收益（指标减免、内部结算）？还是只有考核？
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一那个决定成败的环节，是 **Step 2 的后半步——把每个数据域的所有权落到一个具体的人**。四条原则里其余三条都是它的派生：没有落到人，数据产品没有签字人、自助平台没有使用者、联邦治理没有责任主体；而它是七步里最没有交付物、最容易被跳过的一步，代价要到 Step 4（契约无人签）与 Step 6（事故追不到人）才显形。
+>
+> 存量改造者的加读一条：**§4.4 的三级处理与双轨退出信号，比 §4.1 的顺序更决定成败**——因为存量资产不会消失，只有「改动即补账 + 挂账带到期日」这两条能让它自然收敛。
+>
+> 配合 [§ 2 核心原理](03-data-mesh.md)、[§ 3 设计模式与范式](03-data-mesh-section-3-sec3.md) 与 [§ 6 落地实践](03-data-mesh-section-6-sec6.md) 阅读。

@@ -6,6 +6,15 @@
 | 章节 | [01-modeling](../README.md) |
 | 主文件 | [01-business-process-modeling.md](01-business-process-modeling.md) |
 
+## 子文件
+
+> 本章是全书**唯一未拆分**的一章：§1–§8 的正文都内联在主文件里，只有 §6 单独成文件。
+
+| 小节 | 位置 |
+| --- | --- |
+| 1–5、7、8 | 主文件 [01-business-process-modeling.md](01-business-process-modeling.md) 内联 |
+| 6. 落地实践 | [01-business-process-modeling-section-6-sec6.md](01-business-process-modeling-section-6-sec6.md) |
+
 ## 返回
 
 - 返回 [01-modeling 章节目录](../README.md)

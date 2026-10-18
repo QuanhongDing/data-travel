@@ -1,434 +1,297 @@
-> 本文件是 **01-ai-compute.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](01-ai-compute.md)。
+> 本文件是 **01-ai-compute.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](01-ai-compute-section-3-sec3.md) 里的七种平台模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](01-ai-compute.md)。
 
 ## 4. 工程实现
 
+§3 给的是七个模式各自的约束与失效点；本节给的是**这些模式在真实组织里被装起来的过程**：先做什么、每一步手上应该多出什么东西、怎么在做的过程中就知道自己偏了、存量资源怎么接进来、以及哪条信号出现时说明这套做法该换了。本节不复述 §3 的模式论述，凡涉及「为什么这个模式有效」的地方直接指向 §3.2。
+
+本文件按读者分两栏：**从零搭建的读者按 §4.1 的 9 步顺序走**——那 9 步是建设顺序，Step 1 的判据不通过就不要进 Step 2；**手上已经有 GPU、有 Notebook 集群、有若干团队自建推理服务的读者，先读 §4.4 再回来看 §4.1**。存量改造的难点不在建，在于把已经存在的东西收编，而收编的第一步和新建的第一步恰好相反：新建先定业务边界，改造先建统一调度入口。
+
 ### 4.1 落地步骤
 
-**Step 1：业务边界与算力规划**
+**Step 1：业务边界与算力规划（2–4 周【经验：随待支持的业务线数量与是否需要采购审批而变】）**
 
-- 圈定 AI 计算平台要支撑的业务（推荐 / 风控 / LLM / Agent / 行业模型）。
-- 评估算力需求（训练 QPS / 推理 QPS / 数据规模）。
-- 决定自建 vs 采购云服务。
-- 输出：**AI 计算平台规划书（CAP = Compute AI Platform Plan）**。
+- 圈定要支撑的业务（推荐 / 风控 / LLM / Agent / 行业模型），按 §3.1 的六条约束逐条落字：任务时间形态、单任务算力下限、流量稳定性、合规与可解释要求、数据位置、团队技能。
+- 把每条负载折算成「单任务最小卡数」与「单次最长占用时长」两列，据此估总下限与峰值；自建 vs 采购云服务，用 §3.3 的三个成本式子（闲置成本 + 运维人力 + 迁移成本）比。
+- **产物**：AI 计算平台规划书（CAP = Compute AI Platform Plan），每条业务一行四元组：模式候选 / 算力下限 / 时间形态 / 数据位置。
+- **判据**：抽 2 条业务【经验：抽几条随业务线数量与各业务负载形态的差异度变，形态越杂越要多抽，差异大到无法归成同一类时按形态各抽一条】，问「这个任务能不能装进一张卡、单次推理是不是短任务」——答不上来的业务，它的模式还没定，规划书不能签。
+- **为什么必须这一步**：省掉它，Step 3 的调度策略与 Step 7 的推理引擎选型会失去唯一输入，结果是先买卡再想用途；而算力是资本开支，选错的代价不会以报错出现，只会挂成长期闲置。
 
-**Step 2：基础设施层建设**
+**Step 2：基础设施层建设（1–3 个月【经验：随采购周期与机房条件而变】）**
 
-- 采购 GPU 资源（H100 / A100 / 国产卡）。
-- 部署并行文件系统（Lustre / GPFS / JuiceFS / 阿里 CPFS）。
-- 部署 RDMA 高性能网络（RoCE / InfiniBand）。
-- 部署 K8s 集群（自建 / 云托管 EKS / ACK / TKE）。
-- 输出：**AI 基础设施**。
+- 采购 GPU 资源（NVIDIA H100 / A100 / 国产卡），代次与互联规格（NVLink / NVSwitch 域内卡数）要和 Step 1 的算力下限对齐。
+- 部署并行文件系统（Lustre / GPFS / JuiceFS / 阿里 CPFS），部署 RDMA 高性能网络（RoCE / InfiniBand），部署 K8s 集群（自建 / 云托管 EKS / ACK / TKE）。
+- **产物**：AI 基础设施，含一份「节点 → GPU → 互联域」拓扑清单。
+- **判据**：抽 2 个节点做一次全互联带宽测试（NCCL 测试类工具）【经验：抽几个随节点总数与批次差异变，分批采购的节点要各批抽一个】，看实测带宽是否与拓扑清单声明的互联规格同量级；对不上的节点不入池。
+- **为什么必须这一步 / 为什么在这个位置**：拓扑清单是 Step 3 拓扑感知调度的输入。这一步只记「有多少卡」而不记「哪些卡在同一个高速互联域」，Step 3 的 Gang Scheduling 就只能按卡数匹配，日后表现为「卡数翻倍、吞吐不增」（机制见 §3.5「忽略 GPU 拓扑」）。
 
-**Step 3：资源调度层搭建**
+**Step 3：资源调度层搭建（2–6 周【经验：随是否已有 K8s 与队列体系而变】）**
 
-- 选择调度器（Volcano / KubeRay / YARN / Slurm）。
-- 部署 GPU Operator（NVIDIA device plugin + MIG 插件）。
-- 配置 Gang Scheduling、Queue、Fair Share。
-- 接入监控（DCGM Exporter + Prometheus + Grafana）。
-- 输出：**可被多团队共享的 GPU 资源池**。
+- 选择调度器（Volcano / KubeRay / YARN / Slurm），部署 GPU Operator（NVIDIA device plugin + MIG 插件），配置 Gang Scheduling、Queue、Fair Share。
+- 接入监控（DCGM Exporter + Prometheus + Grafana），把「排队时长」与「空闲卡数」打到同一张看板上。
+- **产物**：可被多团队共享的 GPU 资源池 + 统一调度入口。
+- **判据**：同时提交一个「N 卡同时启动」的分布式任务和一个单卡小任务，确认前者等得到 N 卡同时释放、后者能被填进训练任务的空隙；两者都成立，才说明 Gang 与碎片填充没有互相堵死。
+- **为什么必须这一步 / 为什么在这个位置**：它必须早于 Step 4–8，因为统一调度入口是后面每一层「有配额、有归属、有账」的前提；没有入口就等于各团队自己买卡，此后所有治理动作都会因「资源不在你手上」而失效（见 §3.5「烟囱式采购」）。
 
-**Step 4：数据 / 特征层构建**
+**Step 4：数据 / 特征层构建（3–8 周【经验：随要接入的存量数据源数量而变】）**
 
-- 部署数据湖（OSS / S3 / HDFS）。
-- 部署 Feature Store（Feast / Tecton / 自研）。
-- 建立样本库（Sample Store）。
-- 建立特征 lineage（特征 → 模型 → 推理的全链路追踪）。
-- 输出：**特征平台 + 样本库**。
+- 部署数据湖（OSS / S3 / HDFS），部署 Feature Store（Feast / Tecton / 自研），建立样本库（Sample Store）。
+- 建立特征 lineage（特征 → 模型 → 推理的全链路追踪），并把每条特征的离线实现与在线实现收敛到同一份定义。
+- **产物**：特征平台 + 样本库 + 特征血缘。
+- **判据**：同一条特征 ID，分别从离线接口与在线接口取值，对同一实体的同一时间点比数值；不一致的不许上线。
+- **为什么必须这一步 / 为什么在这个位置**：它要早于 Step 5 的训练环境，因为训练吃的是特征、不是原始表；先建训练环境再补特征平台，已上线的模型全部要按新口径重训一遍。
 
-**Step 5：训练框架层搭建**
+**Step 5：训练框架层搭建（2–4 周【经验：随是否要多框架并存而变】）**
 
-- 提供 Notebook / IDE（VS Code on K8s / Jupyter on K8s / Code Server）。
-- 集成分布式训练框架（PyTorch + DeepSpeed / Megatron / Ray）。
-- 集成实验管理（MLflow / W&B / 自研）。
-- 集成 AutoML 工具（FLAML / AutoGluon / NNI）。
-- 输出：**训练环境**。
+- 提供 Notebook / IDE（VS Code on K8s / Jupyter on K8s / Code Server），集成分布式训练框架（PyTorch + DeepSpeed / Megatron / Ray）。
+- 集成实验管理（MLflow / W&B / 自研）与 AutoML 工具（FLAML / AutoGluon / NNI）。
+- **产物**：训练环境，含「提交作业 → 记录实验 → 产出 checkpoint」的固定路径。
+- **判据**：让一位没参与搭建的算法工程师独立提交一个多卡作业，看它是否出现在实验记录里、checkpoint 是否落在约定的对象存储路径；两处都对才算可用。
+- **为什么必须这一步 / 为什么在这个位置**：它必须在 Step 4 之后（作业输入是特征表），也必须在 Step 3 之后（多卡作业要靠 Gang Scheduling 才起得来）。
 
-**Step 6：模型生命周期层构建**
+**Step 6：模型生命周期层构建（3–6 周【经验：随模型数量与审批环节而变】）**
 
-- 部署 Model Registry（MLflow / 自研）。
-- 部署 CI/CD for ML（GitOps for ML）。
-- 建立模型评估流水线（离线评估 + 在线 A/B）。
-- 建立模型版本管理（Staging / Production / Archived）。
-- 输出：**模型管理平台**。
+- 部署 Model Registry（MLflow / 自研），部署 CI/CD for ML（GitOps for ML），建立模型评估流水线（离线评估 + 在线 A/B），建立版本管理（Staging / Production / Archived）。
+- **产物**：模型管理平台，每个模型带版本、阶段、评估报告与 Owner。
+- **判据**：从注册表任取一个 Production 版本，问「它由谁训练、用哪份特征、离线指标是多少」——三问答不全，说明注册表只是个文件柜。
+- **为什么必须这一步 / 为什么在这个位置**：它是 Step 7 的前置。没有注册表，推理服务就没有可回滚的目标，上线只能靠覆盖，出问题时连「退回哪一版」都答不出（见 §3.5「Notebook 直接上线」）。
 
-**Step 7：推理服务层构建**
+**Step 7：推理服务层构建（3–8 周【经验：随模型类型跨度而变，纯小模型快、含大模型慢】）**
 
-- 选择推理框架（Triton / vLLM / TGI / TensorRT-LLM）。
-- 部署推理服务网关（KServe / Seldon / 自研）。
-- 部署 GPU 共享 / MIG / 池化能力。
-- 部署 Serverless Inference（可选）。
-- 输出：**推理服务平台**。
+- 选择推理框架（Triton / vLLM / TGI / TensorRT-LLM），部署推理服务网关（KServe / Seldon / 自研）。
+- 部署 GPU 共享 / MIG / 池化能力；按需部署 Serverless Inference（可选）。
+- **产物**：推理服务平台，含「模型上线 → 灰度 → 扩容 → 回滚」四个标准动作。
+- **判据**：对一个在线模型做一次真实回滚演练，从决定回滚到旧版本承接全部流量计时；超过你给运维定的恢复目标，说明流程还是纸面的。
+- **为什么必须这一步 / 为什么在这个位置**：它决定 Step 8 对外承诺的 SLA 兑现得了与否；先有对外承诺再补推理侧治理，会把每一次容量事故变成对外违约。
 
-**Step 8：模型市场 / 消费层**
+**Step 8：模型市场 / 消费层（4–8 周【经验：随租户数量与计费粒度而变】）**
 
-- 部署模型市场（Model Marketplace）。
-- 暴露统一推理 API（OpenAI 兼容 / 自定义）。
-- 建立模型卡片（Model Card）、使用说明、计费。
+- 部署模型市场（Model Marketplace），暴露统一推理 API（OpenAI 兼容 / 自定义），建立模型卡片（Model Card）、使用说明与计费。
 - 集成 LLM Gateway、Agent 平台。
-- 输出：**AI 能力产品化**。
+- **产物**：AI 能力产品化，含可自助申请、可计量、可下线的模型目录。
+- **判据**：让一个业务方不看文档、只按模型卡片自助接入一个模型并跑通一次调用；需要问人的环节就是卡片没写完的环节。
+- **为什么必须这一步 / 为什么在这个位置**：配额与计费必须在这里一并建，不能等成本失控再补——一旦对外免费开放，再收回配额要重新谈一次使用权。
 
-**Step 9：可观测与治理**
+**Step 9：可观测与治理（持续，首版 3–4 周【经验：随要接入监控的对象数量与是否已有统一告警通道而变，接入对象越杂、告警通道越散则越久】）**
 
-- 部署模型监控（数据漂移 / 概念漂移 / 推理延迟 / QPS）。
-- 部署 GPU 监控（利用率 / 显存 / 温度 / 故障）。
-- 部署成本监控（按团队 / 项目 / 模型计费）。
-- 建立 SLA（推理 P99 延迟 < 200ms、利用率 > 70%）。
-- 输出：**AI 平台可观测**。
+- 部署模型监控（数据漂移 / 概念漂移 / 推理延迟 / QPS）、GPU 监控（利用率 / 显存 / 温度 / 故障）、成本监控（按团队 / 项目 / 模型计费）。
+- 建立 SLA。延迟与利用率目标都是可按业务调的参数【经验：随业务对延迟的敏感度、硬件代次与队列策略而变，早期常见取值落在延迟百毫秒级、利用率七成上下，请按自身监控基线定，不要照抄】。
+- **产物**：AI 平台可观测，含「谁的模型、烧了多少卡时、破了哪条 SLO」的月账。
+- **判据**：抽上个月任一天任一小时，用监控回答「那个小时哪张卡在给谁干活」；答不上来，成本归因就是估的。
+- **为什么必须这一步 / 为什么在这个位置**：它是唯一不产出新能力、却决定平台能否持续拿到预算的环节。放在最后不是因为它次要，而是它需要前面每步已经产出可被观测的对象（作业有 Owner、模型有版本、卡有归属）。
+
+**最常被跳过的是 Step 4（数据 / 特征层），而且跳过后不会立刻出问题。** 第一个症状通常出现在首批评测之后：离线指标漂亮、线上效果对不上，排查方向被「模型」吸走，实际原因是训练特征与推理特征两份实现（§3.5「特征不一致」）。第二个症状通常出现在平台上线数月到一年之后【经验：时距随已上线模型数与特征变更频率变，模型越多、特征改得越勤就越早暴露】：想复用某个已上线模型，发现还原不出它当时的特征口径。补这一层的成本随已上线模型数线性增长，所以它在顺序上必须靠前。
 
 ### 4.2 关键技术点
 
-1. **GPU 资源调度**：Volcano（Gang Scheduling + Fair Share）、KubeRay（Ray on K8s）、YARN、Slurm。**核心**：拓扑感知、Gang Scheduling、MIG 支持、抢占式调度。
-2. **分布式训练**：PyTorch DDP + DeepSpeed ZeRO-3 + Megatron-LM TP/PP + Ray。**核心**：3D 并行、断点续训、Checkpoint 优化。
-3. **推理优化**：vLLM（PagedAttention）+ Continuous Batching + TensorRT-LLM + Speculative Decoding + INT4/INT8 量化。**核心**：高吞吐、低延迟。
-4. **Feature Store**：Feast（开源）/ Tecton（商业）/ 阿里 PAI FeatureStore。**核心**：Point-in-Time Correctness、离线 / 在线一致性、特征复用。
-5. **Model Registry**：MLflow Model Registry / 自研。**核心**：模型版本 + 阶段 + 血缘 + 评估。
-6. **AutoML**：FLAML（轻量首选）/ AutoGluon（多模态）/ NNI（微软）。**核心**：低成本超参搜索 + NAS。
-7. **推理服务化**：Triton（多框架）+ KServe（K8s 原生）+ BentoML（打包）。**核心**：多框架支持、自动扩缩容、流量切分。
-8. **LLM 推理**：vLLM（TGI + TensorRT-LLM）+ LoRA 热加载 + Continuous Batching。**核心**：高 QPS、低延迟、多模型复用 GPU。
-9. **Serverless Inference**：Modal / Replicate / 阿里 PAI EAS Serverless / KServe + Knative。**核心**：冷启动优化 + 自动伸缩。
-10. **模型监控**：Evidently AI / Arize / WhyLabs / 自研。**核心**：数据漂移检测 + 性能衰减告警。
-11. **可观测**：DCGM Exporter（GPU 监控）+ Prometheus + Grafana + Langfuse（LLM 链路）。
-12. **国产化适配**：昇腾 NPU（华为）/ 寒武纪 / 燧原 / 海光 DCU。**核心**：双栈适配（CUDA + CANN / MLU）。
+**GPU 资源调度（Volcano / KubeRay / YARN / Slurm；拓扑感知、Gang Scheduling、MIG 支持、抢占式调度）**
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+- **做法**：把队列、优先级、抢占策略、拓扑约束写成调度器的配置对象，而不是写在运维手册里；Gang 用于训练，时间片 / MIG 用于推理。
+- **机制**：因为「多卡必须同时启动」与「一张卡可切给多人」被表达成了调度器能判定的约束，所以资源争抢的第一个信号会出现在排队时长与空闲卡数两个指标上，而不是出现在「某团队训练起不来」的口头投诉里。
+- **失效条件**：**当单个任务的算力下限升到「整域才放得下」时，池化与碎片填充同时失效**——观测信号是利用率从常态区间掉到低位、排队时长陡增，而调度器配置本身不报任何错（机制见 §3.2.4 失效点）。第二个信号是抢占次数上升，说明队列优先级与实际业务优先级已经脱节。
+- **档位**：【经验：利用率目标区间随硬件代次、任务形态与队列策略变，以自身监控基线为准】
 
-**训练框架**：
+**分布式训练（PyTorch DDP + DeepSpeed ZeRO-3 + Megatron-LM TP/PP + Ray；3D 并行、断点续训、Checkpoint 优化）**
 
-- **PyTorch**（Meta 开源）——深度学习事实标准。
-- **TensorFlow**（Google）——工业级深度学习框架。
-- **JAX**（Google）——函数式深度学习框架，TPU 首选。
-- **MindSpore**（华为）——国产深度学习框架，昇腾 NPU 原生。
-- **PaddlePaddle**（百度）——国产深度学习框架。
+- **做法**：把并行策略（TP 组内 / PP 跨节点 / DP + ZeRO 分片）写进作业模板并版本化；checkpoint 周期与落点固定，并做过至少一次人为中断后的续训演练。
+- **机制**：因为并行度与互联拓扑的对应关系被固化在模板里而不是每次由工程师现调，所以换集群、扩节点时并行配置不会静默错配——错误会以「作业起不来」这种立即失败的形式暴露，而不是以「训练慢了三成」这种几天后才被察觉的形式。
+- **失效条件**：**当 checkpoint 间隔大于单节点平均无故障间隔时，长任务的期望进度会被反复回滚吃掉**。症状是训练「一直在跑但没有推进」：看板上 step 数长时间停留而 GPU 占用正常。集群越大，这个条件越早被满足。
+- **档位**：【经验：checkpoint 间隔按单任务期望运行时长与集群故障率核算，无通用值】
 
-**分布式训练**：
+**推理优化与 LLM 推理（vLLM PagedAttention + Continuous Batching、TensorRT-LLM、TGI、Speculative Decoding、INT4/INT8 量化、LoRA 热加载）**
 
-- **DeepSpeed**（微软）——ZeRO + 3D 并行 + 推理优化。
-- **Megatron-LM**（NVIDIA）——张量并行 + 流水并行。
-- **FSDP**（PyTorch 原生）——全分片数据并行。
-- **Horovod**（Uber）——分布式训练老牌框架。
-- **Ray**（Anyscale）——分布式计算统一框架，训练 + 推理 + 数据。
+- **做法**：把推理引擎的并发参数、显存占用比例、量化方案、最大上下文长度写进服务定义并纳入变更评审；LoRA 适配器按租户挂载，不重加载基座。
+- **机制**：因为显存按块分配、请求按批调度，单位 token 分摊的显存成本随并发序列数上升而下降（机制见 §3.2.2），所以「批大小」与「最大上下文」升格为两个必须立档的参数——它们一变，同一张卡能服务的并发数就变，而这一点不会体现在任何报错里。
+- **失效条件**：**当请求从「长上下文、批量稳定」变成「短请求、突发、长尾」时分页与连续批处理的收益下降**（§3.2.2 失效点）。运维侧信号是：显存占用高而利用率上不去，P99 延迟随 QPS 上升非线性恶化——此时该改的是请求形态或路由策略，不是加卡。
+- **档位**：【公开：Kwon 等，"Efficient Memory Management for Large Language Model Serving with PagedAttention"，SOSP 2023，可按论文标题自行检索核验】【推算：单 token 的 KV 占用 = 2(K/V) × 层数 × 头数 × head_dim × 字节数；以 7B 级模型、32 层、32 头、head_dim 128、FP16 计，约 0.5 MB/token，32k 上下文约 16 GB——与本章 §2.2 同一推导链】
 
-**AutoML**：
+**推理服务化（Triton / KServe / BentoML）**
 
-- **FLAML**（微软）——轻量 AutoML 库。
-- **AutoGluon**（AWS）——多模态 AutoML。
-- **NNI**（微软）——AutoML + NAS 平台。
-- **Optuna**——超参优化首选。
-- **H2O.ai**——商业 AutoML 平台。
+- **做法**：多框架模型统一走一个服务层，流量切分与扩缩容由服务层而不是由调用方控制；模型版本以「可回滚的最小单位」暴露。
+- **机制**：因为切流与回滚被收到服务层，灰度与回滚变成一次配置变更而不是一次重新部署，于是恢复时间与模型体积解耦——大模型回滚不再比小模型慢。
+- **失效条件**：**当团队把「先跑通再优化」当成长期状态（§3.5「推理裸奔」）时服务层会被绕过**。症状是出现一批不在网关内的直连推理端点，监控上看不到的 GPU 占用随之增长；发现方式通常是成本账对不上，而不是告警响。
+- **档位**：【经验：从框架自带服务切到专用服务层的收益随并发数变，低并发下接近于零】
 
-**Feature Store**：
+**Feature Store（Feast / Tecton / 阿里 PAI FeatureStore；Point-in-Time Correctness、离线 / 在线一致性、特征复用）**
 
-- **Feast**（Linux Foundation 开源）——Feature Store 事实标准开源。
-- **Tecton**（商业）——企业级 Feature Store。
-- **阿里 PAI FeatureStore**——阿里云原生。
-- **字节 ByteFG**——字节跳动内部使用。
-- **腾讯 TI FeatureStore**——腾讯云。
+- **做法**：离线与在线实现由同一份定义生成；历史特征查询强制带事件时间戳；特征的新增与变更走评审并留版本。
+- **机制**：因为「取哪一时点的值」被写成强制参数而不是默认行为，未来信息泄漏会在取数这一步被挡住，而不是等模型上线后由效果异常反推——前者是几分钟的返工，后者是数周的回溯排查。
+- **失效条件**：**当在线侧被某个团队用另一套代码重写时一致性保证失效**（§3.5「特征不一致」）。症状是离线指标与线上指标持续背离且**幅度稳定**——稳定背离说明是系统性口径差异而不是数据波动；这类问题不会报错。
+- **档位**：【经验：一致性核对按特征条数的个位数百分比抽样，比例随特征变更频率变】
 
-**Model Registry / MLOps**：
+**Model Registry（MLflow Model Registry / 自研；模型版本 + 阶段 + 血缘 + 评估）**
 
-- **MLflow**（Linux Foundation）——MLOps 事实标准。
-- **Weights & Biases（W&B）**——实验管理 + 模型管理 SaaS。
-- **Neptune.ai**——实验管理 + 模型管理 SaaS。
-- **DVC**——数据 + 模型版本管理。
-- **SageMaker**（AWS）——端到端 MLOps 平台。
-- **Vertex AI**（Google）——端到端 MLOps 平台。
-- **Azure ML**（Microsoft）——端到端 MLOps 平台。
-- **阿里 PAI**——端到端 MLOps 平台。
-- **腾讯 TI-One**——端到端 MLOps 平台。
-- **华为 ModelArts**——端到端 MLOps 平台。
+- **做法**：每个版本必须带训练数据快照指针、评估报告、Owner；阶段变更（Staging → Production）是受控动作，不是改一个字段。
+- **机制**：因为「线上跑的是哪一版」在注册表里是主键而不是搜索题，回滚目标可以在事故现场直接查出，恢复时间因此取决于部署速度而不是取决于找人速度。
+- **失效条件**：**当模型数量增长到「注册靠自觉」承担不了时会出现旁路模型**。症状是推理网关里的模型数与注册表里的 Production 版本数对不上（两个方向都可能）：多于说明有绕过注册的上线，少于说明有下线不彻底。发现方式是定期做两侧清单对账。
+- **档位**：【经验：旁路模型通常在平台上线后半年到一年内出现，随团队数增加而增多】
 
-**推理服务**：
+**AutoML（FLAML / AutoGluon / NNI）**
 
-- **TorchServe**（Meta + AWS）——PyTorch 推理服务化。
-- **TensorFlow Serving**（Google）——TF 推理服务化。
-- **NVIDIA Triton Inference Server**——多框架推理服务化。
-- **TorchServe** + **BentoML**——Python 推理打包。
-- **Seldon Core**——K8s 推理服务化。
-- **KServe**（K8s 原生 Serverless Inference）。
+- **做法**：限定搜索空间与时间预算后运行，把「候选模型 + 评估报告」写回注册表；AutoML 产出与人工产出走同一条上线路径。
+- **机制**：因为搜索预算被显式限定，AutoML 的产出可以按「单位算力换来的效果」比较，从而不会退化成一个与线上无关的离线活动。
+- **失效条件**：**当评估集与线上分布不一致时，AutoML 会稳定地选出离线的赢家**。症状是搜索指标逐轮变好、上线后无提升。这类失败与 AutoML 本身无关，所以调搜索策略无法修复。
+- **档位**：【经验：收益随特征工程质量变，特征层没做好时接近于噪声】
 
-**LLM 推理引擎（2024-2025）**：
+**Serverless Inference（Modal / Replicate / 阿里 PAI EAS Serverless / KServe + Knative）**
 
-- **vLLM**（UC Berkeley 开源）——PagedAttention + Continuous Batching，事实标准。
-- **TensorRT-LLM**（NVIDIA）——NVIDIA GPU 推理优化。
-- **TGI**（Hugging Face）——Transformer 生成推理。
-- **SGLang**（UC Berkeley）——结构化生成 + RadixAttention。
-- **LMDeploy**（上海人工智能实验室）——国产 LLM 推理引擎。
-- **DeepSpeed-MII**（微软）——LLM 推理优化。
-- **MLC LLM**——端侧 LLM 推理。
+- **做法**：只在「实例不会长期驻留」的场景使用；权重分层缓存与预热策略单独配置；冷启动延迟进 SLA 统计而不只是进日志。
+- **机制**：「成本随调用量近似线性化」的原因见 [§ 3.2.3](01-ai-compute-section-3-sec3.md)，本节接着写它留在实施层的后果——因为平台侧没有常驻实例可挂配额，Serverless 的容量只能按「并发上限」登记，冷启动延迟也就只能进 SLA 统计、进不了容量规划；于是一次冷启动超标在现场表现为调用方报上来的超时工单，而平台侧既没有卡也没有队列可看，只能回到调用方的日志里定位。
+- **失效条件**：**当调用密度升高、实例长期不缩容时「按调用付费」反转成「单价高于自建」**（§3.2.3 失效点）。信号是月度账单里按秒计费总额连续上升而实例并发数已接近平台上限——此时该把稳定基线迁回常驻实例。
+- **档位**：【经验：交叉点位置随模型体积、冷启动优化程度与自建折旧摊销周期变】
 
-**模型市场**：
+**模型监控与可观测（Evidently AI / Arize / WhyLabs / 自研；DCGM Exporter + Prometheus + Grafana + Langfuse）**
 
-- **Hugging Face Hub**——模型 + 数据集 + Spaces 事实标准。
-- **Replicate**——云端模型 API 市场。
-- **Civitai**——AI 模型（图像）社区市场。
-- **ModelScope**（阿里）——国产模型市场。
-- **PAI 模型市场**（阿里云）——商业模型市场。
-- **AWS SageMaker JumpStart**——预训练模型市场。
+- **做法**：分两层——基础设施层看 GPU 利用率 / 显存 / 温度 / 故障，模型层看数据漂移 / 概念漂移 / 推理延迟 / QPS；LLM 链路单独接入请求追踪。
+- **机制**：因为两层指标挂同一套告警与同一份成本账，「模型效果变差」与「卡出问题」能在同一条时间轴上对照，归因不必跨团队要数据。
+- **失效条件**：**当监控只覆盖基础设施层时模型层的退化没有任何告警**。症状是告警板全绿而业务方已在投诉效果——业务侧先于平台侧发现问题，本身就说明监控缺了一层。另一类信号是漂移告警长期高频却无人处置，说明阈值没有按本组织基线校准。
+- **档位**：【经验：漂移阈值需按自身数据分布校准，照抄的阈值通常过松或过紧】
 
-**GPU 算力池化**：
+**国产化适配（昇腾 NPU / 寒武纪 / 燧原 / 海光 DCU；双栈适配 CUDA + CANN / MLU）**
 
-- **CoreWeave**（美国，2024 年估值 190 亿美元）——GPU 云。
-- **Lambda Labs**——GPU 云 + 集群。
-- **RunPod**——Serverless GPU。
-- **Modal**——Serverless AI。
-- **Replicate**——Serverless 模型推理。
-- **阿里云灵骏**——GPU 池化。
-- **腾讯云星脉**——GPU 池化。
-- **火山引擎机器学习平台**——字节 GPU 池化。
+- **做法**：把训练框架与推理引擎的硬件相关部分收敛到一层适配（算子与通信库），并在项目早期就写明哪些组件是替换点。
+- **机制**：因为替换点被限制在一层而不是散落在各业务作业里，硬件代次切换影响的是适配层而不是全部训练代码，迁移工作量从「按作业数」变成「按算子数」。
+- **失效条件**：**当某个关键组件在目标硬件生态上没有等价实现时，替换点不存在**。症状是迁移评估做到一半卡在某个算子或某条通信库上，工期不可估（§3.5「国产化替代盲区」）。
+- **档位**：【经验：适配工作量随模型自定义算子数量变，自定义越多越难迁】
 
-**AI 计算国产化（2024-2025 重点）**：
+### 4.3 工具链与平台
 
-- **华为昇腾 910C / 昇腾 910B**——国产 AI 芯片主力。
-- **寒武纪思元 590**——国产 AI 芯片。
-- **燧原 S60 / S70**——国产 AI 芯片。
-- **海光 DCU**——兼容 CUDA 生态。
-- **摩尔线程 MTT S4000**——国产 GPU。
-- **壁仞 BR104**——国产 GPU。
+下表按「类别 — 候选 — 选型判据 — 不选它的代价」组织。候选列保留本主题的常用产品名，判据列供你在自家约束下重新推一遍。
 
-**AI 计算监控**：
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 训练框架 | PyTorch / TensorFlow / JAX / MindSpore / PaddlePaddle | 生态与团队技能优先：PyTorch 是事实标准；JAX 适合 TPU 与函数式研究；MindSpore、PaddlePaddle 在国产硬件栈上是原生路径 | 选一个团队没人用过的框架，等于把平台第一个交付变成一次学习项目 |
+| 分布式训练 | DeepSpeed / Megatron-LM / FSDP / Horovod / Ray | 单机多卡从 DDP + FSDP 起步；跨节点大模型用 DeepSpeed ZeRO + Megatron TP/PP；要把训练纳入统一任务图用 Ray | 在互联带宽不足的集群上先上 TP，通信会成为第一成本而不是算力 |
+| AutoML | FLAML / AutoGluon / NNI / Optuna / H2O.ai | 表格轻量搜索用 FLAML；多模态端到端用 AutoGluon；要 NAS 与平台化用 NNI；只调超参用 Optuna | 把 AutoML 当效果来源而不是效率工具，产出低于同等投入做特征 |
+| Feature Store | Feast / Tecton / 阿里 PAI FeatureStore / 字节 ByteFG / 腾讯 TI FeatureStore | 要自建可控选 Feast；要托管与一致性 SLA 选 Tecton；已在某云生态内优先该云原生特征平台 | 不上平台直接拼两份实现，代价在首次 A/B 才显形（§3.5「特征不一致」） |
+| Model Registry / MLOps | MLflow / W&B / Neptune.ai / DVC / SageMaker / Vertex AI / Azure ML / 阿里 PAI / 腾讯 TI-One / 华为 ModelArts | 要可迁移选 MLflow 一类开源件；用托管换运维人力选云厂商端到端平台；只管数据与模型版本用 DVC | 用「Git + 共享目录」当注册表，版本一多就回答不出线上跑的是哪一版 |
+| 推理服务 | TorchServe / TensorFlow Serving / NVIDIA Triton / BentoML / Seldon Core / KServe | 多框架混合用 Triton；要 K8s 原生与弹性语义用 KServe；只要打包简单用 BentoML | 每个模型自带一套服务实现，网关形同不存在（§3.5「推理裸奔」） |
+| LLM 推理引擎 | vLLM / TensorRT-LLM / TGI / SGLang / LMDeploy / DeepSpeed-MII / MLC LLM | 通用高吞吐用 vLLM；NVIDIA 单栈极致优化用 TensorRT-LLM；结构化生成用 SGLang；国产硬件优先国内实现（如 LMDeploy）；端侧用 MLC LLM | 拿通用推理服务跑 LLM，显存利用率低、QPS 上限被单卡锁死 |
+| 模型市场 | Hugging Face Hub / Replicate / Civitai / ModelScope / PAI 模型市场 / AWS SageMaker JumpStart | 公共模型与权重选 Hugging Face Hub；国内生态与合规选 ModelScope / PAI 模型市场 | 内部模型没有上架口径，复用只能靠问人 |
+| GPU 算力池化 | CoreWeave / Lambda Labs / RunPod / Modal / Replicate / 阿里云灵骏 / 腾讯云星脉 / 火山引擎机器学习平台 | 要裸金属与整域互联选 GPU 云；要按秒弹性选 Serverless GPU；要内网与数据主权选自有池化 + 云上补充 | 自有池化只按峰值配置，闲置与排队会同时存在（§3.3） |
+| AI 计算国产化 | 昇腾 910C / 910B、寒武纪思元 590、燧原 S60 / S70、海光 DCU、摩尔线程 MTT S4000、壁仞 BR104 | 判据是「关键算子与推理引擎在这套生态上有没有等价实现」，不是算力峰值；海光 DCU 对 CUDA 生态的兼容性是迁移场景的加分项 | 迁移评估到一半才发现某算子缺实现，工期不可估（§3.5「国产化替代盲区」） |
+| AI 计算监控 | Prometheus + DCGM Exporter / Grafana / Langfuse / Helicone / Arize Phoenix / Evidently AI | 基础设施层用 DCGM + Prometheus；LLM 链路追踪用 Langfuse 一类；ML 漂移用 Evidently AI 一类。判据是「它能否与成本账共用同一套标签」 | 监控只覆盖卡、不覆盖模型，业务先于平台发现效果退化 |
 
-- **Prometheus + DCGM Exporter**——GPU 监控事实标准。
-- **Grafana**——可视化。
-- **Langfuse**（开源，2024）——LLM 链路追踪。
-- **Helicone**（2024）——LLM 可观测 SaaS。
-- **Arize Phoenix**（2024）——LLM 评估 + 可观测。
-- **Evidently AI**——ML 监控 + 漂移检测。
+表里**最容易被误选的是「LLM 推理引擎」**：它在评测里呈现的是吞吐数字，而在生产里决定成本的是**你的请求形态**——长上下文批量请求与突发短请求在同一引擎上的最优配置相反。误选的典型后果不是跑不动，而是「加卡才顶得住」，从而触发一次不必要的扩容（§3.5「推理裸奔」）。判据是：先量出请求的长度分布与到达分布，再看该引擎的批处理与显存分页策略能不能对上这个分布——对不上时该换的是引擎或路由，不是卡。
 
-### 4.4 代码 / 示例
+### 4.4 存量迁移
 
-**示例 1：基于 vLLM 部署 LLM 推理服务（生产级）**
+组织里已有的东西通常四类：各团队自购的 GPU、散落的 Notebook 与训练脚本、已经在线但不在网关里的推理端点、各业务自己维护的特征实现。迁移目标不是推倒重来，而是**让存量资产先进入可观测范围，再逐步收敛**。
+
+**① 立刻见效且可回退的第一步：建统一调度入口与资源台账，不动任何任务。** 把已有 GPU 纳入统一排队（允许先只做「登记 + 排队」，不做抢占），同时把「谁在用哪张卡」写成台账。这一步不改任何业务作业，可随时回退；它立刻见效之处在于——闲置与排队第一次同时可见。判据：台账上的在用卡数与池内总卡数之差是否随时间剧烈波动；波动大说明登记没有持续更新。
+
+**② 历史资产按三类处理，不要一刀切返工。** 仍在产生价值的服务：打标挂账（登记 Owner、版本、SLA），保持原状运行，只要求纳入监控与台账；活跃开发的作业：只对**下一次改动**强制走平台路径（新改动必须进特征平台 / 注册表 / 网关）；已无人认领的资产：走下线流程，并从计费与监控里一并摘除。判据：抽 5 个存量服务【经验：抽几个随存量服务总数与技术栈跨度变，服务越多、栈越杂越要多抽】，看是否都有 Owner 与版本号；没有的走挂账或下线，不要留在灰色地带。
+
+**③ 双轨期要维持多久，取决于两件事。** 长度由「平台路径能否覆盖该业务的技术栈」与「平台团队能否独立承接该业务的故障」共同决定【经验：以季度为单位，通常要跨过一个完整业务迭代周期，让每个团队至少经历一次用平台路径上线和一次用平台路径回滚】。双轨期的主要成本是两套口径并存——同一份成本账里既有按卡时又有按调用，必须打平到同一口径，否则迁移的理由会被算成「平台上更贵」。
+
+**④ 退出双轨的信号是流程性的，不是意愿性的。** 三条同时成立才退出：新上线服务默认只能走平台路径（旁路已关闭）；平台侧能独立完成该类业务的回滚（不需要原团队介入）；存量清单中无 Owner 资产已清零。只满足前两条就退出，通常会在下一次跨团队事故里把旁路重新打开。
+
+### 4.5 模板 / 示例
+
+以下 5 个片段对应本节最常见的五种产物，都只保留结构，参数按自身约束填。
+
+**模板 1：LLM 推理服务（vLLM 结构）**
 
 ```python
-from vllm import LLM, SamplingParams
-from vllm.entrypoints.openai.api_server import serve_http
+from vllm import LLM
 
-# 配置 LLM 引擎
 llm = LLM(
-    model="Qwen/Qwen2.5-72B-Instruct",
-    tensor_parallel_size=4,  # 4 卡张量并行
-    gpu_memory_utilization=0.9,
-    max_model_len=32768,
-    enforce_eager=False,
-    quantization="awq",  # AWQ INT4 量化
-    dtype="float16",
-)
-
-# 配置采样参数
-sampling_params = SamplingParams(
-    temperature=0.7,
-    top_p=0.8,
-    max_tokens=2048,
-)
-
-# 启动 OpenAI 兼容 HTTP 服务
-serve_http(
-    llm,
-    host="0.0.0.0",
-    port=8000,
-    log_level="info",
-    served_model_name="qwen-72b",
+    model="<基座模型>",
+    tensor_parallel_size=4,        # 必须等于同一 NVLink / NVSwitch 域内的卡数
+    gpu_memory_utilization=0.9,    # 与同卡上其它服务协商后填
+    max_model_len=32768,           # 与显存预算一起定，机制见 §4.2
+    quantization="<awq / gptq / 无>",
 )
 ```
 
-**示例 2：基于 PyTorch + DeepSpeed 训练大模型**
+**怎么用**：填模型与量化方式两格；`tensor_parallel_size` 不要照抄 4，它必须等于同一互联域内的卡数。上下文长度与显存是同一个预算的两面，改了要重算并发上限。
 
-```python
-# deepspeed_config.json
+**模板 2：分布式训练作业配置（DeepSpeed ZeRO 结构）**
+
+```json
 {
-  "train_batch_size": 1024,
-  "gradient_accumulation_steps": 16,
-  "fp16": {"enabled": true},
-  "bf16": {"enabled": false},
-  "zero_optimization": {
-    "stage": 3,
-    "offload_optimizer": {"device": "cpu"},
-    "offload_param": {"device": "cpu"}
-  },
-  "optimizer": {
-    "type": "AdamW",
-    "params": {"lr": 1e-4, "betas": [0.9, 0.95]}
-  }
+  "train_batch_size": "<按显存与累积步数反推>",
+  "gradient_accumulation_steps": "<用累积换语义上的大 batch>",
+  "zero_optimization": {"stage": 3, "offload_optimizer": {"device": "cpu"}},
+  "optimizer": {"type": "AdamW", "params": {"lr": 1e-4}}
 }
-
-# train.py
-import deepspeed
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
-
-model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.1-8B")
-model_engine, optimizer, _, scheduler = deepspeed.initialize(
-    args=args,
-    model=model,
-    model_parameters=model.parameters(),
-    config="deepspeed_config.json",
-)
-
-for step, batch in enumerate(dataloader):
-    outputs = model_engine(**batch)
-    loss = outputs.loss
-    model_engine.backward(loss)
-    model_engine.step()
 ```
 
-**示例 3：基于 Feast 的特征平台（离线 + 在线一致性）**
+**怎么用**：改 `stage` 之前先确认单卡装不下的是「优化器状态」还是「参数」——前者 stage 2 通常够用，后者才需要 stage 3 与 CPU offload。`train_batch_size` 不要照抄，它由显存与累积步数共同决定。
+
+**模板 3：特征定义与一致性校验（Feast 结构）**
 
 ```python
-# feature_store.yaml
-project: customer_features
-registry: data/registry.db
-provider: local
-online_store:
-  type: redis
-  connection_string: localhost:6379
-offline_store:
-  type: file
-
-# features.py
-from feast import Entity, Feature, FeatureView, FileSource, ValueType
-
-customer = Entity(name="customer_id", value_type=ValueType.INT64)
-
-customer_stats_source = FileSource(
-    path="data/customer_stats.parquet",
-    event_timestamp_column="event_timestamp",
-)
-
 customer_stats_fv = FeatureView(
     name="customer_stats",
-    entities=[customer],
-    ttl=timedelta(days=7),
-    features=[
-        Feature(name="total_orders_30d", dtype=ValueType.INT64),
-        Feature(name="total_spend_30d", dtype=ValueType.FLOAT),
-        Feature(name="churn_probability", dtype=ValueType.FLOAT),
-    ],
+    entities=[customer],                 # 实体即对账的粒度
+    ttl=timedelta(days=7),               # 业务判断：这条特征多久算过期
+    features=[Feature(name="total_orders_30d", dtype=ValueType.INT64)],
     online=True,
-    source=customer_stats_source,
+    source=customer_stats_source,        # 离线与在线共用这一份定义
 )
-
-# 离线获取训练特征（Point-in-Time Correct）
-train_df = store.get_historical_features(
-    entity_df=entity_df,
-    features=[
-        "customer_stats:total_orders_30d",
-        "customer_stats:total_spend_30d",
-        "customer_stats:churn_probability",
-    ],
-).to_df()
-
-# 在线获取推理特征
-online_features = store.get_online_features(
-    features=[
-        "customer_stats:total_orders_30d",
-        "customer_stats:total_spend_30d",
-    ],
-    entity_rows=[{"customer_id": 12345}],
-).to_dict()
+# 一致性校验：同一实体、同一时间点，离线与在线取到的值必须相等
 ```
 
-**示例 4：基于 KubeRay 的 GPU 集群调度（YAML）**
+**怎么用**：填 `ttl` 与 `source` 两格；`ttl` 是业务判断而不是技术参数。末尾那段校验不是可选项——它是这份定义唯一能被验收的方式。
+
+**模板 4：GPU 集群作业提交（KubeRay 结构）**
 
 ```yaml
 apiVersion: ray.io/v1alpha1
 kind: RayCluster
-metadata:
-  name: training-cluster
 spec:
-  rayVersion: '2.30.0'
-  headGroupSpec:
-    rayStartParams:
-      dashboard-host: '0.0.0.0'
-    template:
-      spec:
-        containers:
-        - name: ray-head
-          image: rayproject/ray-ml:2.30.0-py311-gpu
-          resources:
-            limits:
-              cpu: "8"
-              memory: "32Gi"
-              nvidia.com/gpu: "1"
   workerGroupSpecs:
   - groupName: gpu-workers
     replicas: 8
-    minReplicas: 2
+    minReplicas: 2      # 可被抢占回收的下限，与抢占策略联动
     maxReplicas: 16
-    rayStartParams: {}
     template:
       spec:
         containers:
         - name: ray-worker
-          image: rayproject/ray-ml:2.30.0-py311-gpu
-          resources:
-            limits:
-              cpu: "32"
-              memory: "128Gi"
-              nvidia.com/gpu: "8"
----
-apiVersion: ray.io/v1alpha1
-kind: RayJob
-metadata:
-  name: llama3-finetune
-spec:
-  clusterSelector:
-    ray.io/cluster-name: training-cluster
-  submitter:
-    jobCommand: "python train.py --model meta-llama/Llama-3.1-8B --epochs 3"
-  runtimeEnv: |
-    pip:
-      - torch==2.4.0
-      - transformers==4.45.0
-      - peft==0.13.0
+          resources: { limits: { nvidia.com/gpu: "8" } }
 ```
 
-**示例 5：基于 Triton 的多模型推理服务**
+**怎么用**：填 `minReplicas` / `maxReplicas` 与单 worker 的卡数。`nvidia.com/gpu: "8"` 表示这个 worker 组要求整节点 8 卡同时可用，因此它只能落在有空整节点的队列里——这是 Gang 语义的体现，不是资源声明。
 
-```python
-# config.pbtxt (Triton 模型配置)
-name: "ensemble_model"
+**模板 5：多模型推理服务（Triton ensemble 结构）**
+
+```text
+name: "<服务名>"
 platform: "ensemble"
-input [
-  {
-    name: "INPUT0"
-    data_type: TYPE_FP32
-    dims: [128]
-  }
-]
-output [
-  {
-    name: "OUTPUT0"
-    data_type: TYPE_FP32
-    dims: [10]
-  }
-]
+input  [{ name: "INPUT0",  data_type: TYPE_FP32, dims: [ <输入维度> ] }]
+output [{ name: "OUTPUT0", data_type: TYPE_FP32, dims: [ <输出维度> ] }]
 ensemble_scheduling {
   step [
-    {
-      model_name: "feature_extractor"
-      model_version: -1
-      input_map: {
-        key: "INPUT0"
-        value: "input"
-      }
-      output_map: {
-        key: "feature"
-        value: "FEATURE_OUT"
-      }
-    },
-    {
-      model_name: "classifier"
-      model_version: -1
-      input_map: {
-        key: "FEATURE_OUT"
-        value: "input"
-      }
-      output_map: {
-        key: "probs"
-        value: "OUTPUT0"
-      }
-    }
+    { model_name: "<预处理模型>", model_version: -1,
+      input_map: { key: "INPUT0", value: "input" },
+      output_map: { key: "feature", value: "FEATURE_OUT" } },
+    { model_name: "<主模型>",     model_version: -1,
+      input_map: { key: "FEATURE_OUT", value: "input" },
+      output_map: { key: "probs", value: "OUTPUT0" } }
   ]
 }
 ```
 
----
+**怎么用**：填 step 列表与每步的输入输出映射——`input_map` 的 `key` 是 ensemble 层看到的张量名（首步为服务的输入名，后续步为上游步 `output_map` 的 `value`），`value` 是该模型自己的输入名；`output_map` 的 `key` 是该模型自己的输出名，`value` 是它在 ensemble 层暴露给下游的名字。两个字段都要填：省略 `value` 时调度器会拿 `key` 去该模型里找同名张量，而 ensemble 层的名字与模型自己的名字通常不同，这一步就绑不上。`model_version: -1` 表示跟随最新版本；生产环境若要可回滚，应改成固定版本号——注册表里的版本与这里写死的版本必须是同一个。除此之外，片段顶部的 `input` / `output` 两块不能省：它们声明的是 ensemble 自己对外暴露的张量名，必须与首步 `input_map` 的 `key`（`INPUT0`）和末步 `output_map` 的 `value`（`OUTPUT0`）字面一致，缺了它们 Triton 在加载时会因找不到对应张量而失败——`dims` 按各自张量的真实形状填，不要照抄。
+
+### 4.6 自检清单
+
+以下 10 条都只能通过动系统才能回答；不跑系统、坐下来想就能答的检查项归 [§ 3.7](01-ai-compute-section-3-sec3.md)。
+
+- [ ] 抽 2 个节点跑一次全互联带宽测试【经验：抽几个随节点总数与采购批次变，分批到货的要各批抽一个】，实测是否与拓扑清单声明的互联规格同量级？
+- [ ] 抽 5 个在跑的作业【经验：抽几个随作业总数与计费口径的变更次数变，口径改过就要多抽】，成本账上的卡时数与调度器记录能否逐条对上？
+- [ ] 提交一次人为中断的多卡作业，续训后的 loss 曲线是否接续，而不是从某个旧 checkpoint 重新开始？
+- [ ] 同一条特征 ID，离线与在线取同一实体同一时间点的值，抽样比对是否全等？
+- [ ] 从注册表任取一个 Production 版本，能否在推理网关里找到对应端点（两侧清单对账）？
+- [ ] 做一次真实回滚演练：旧版本承接全部流量的实际耗时，是否在恢复目标内？
+- [ ] 抽上个月任一天任一小时，用监控回答「哪张卡在给哪个团队的哪个模型干活」？
+- [ ] 给一个节点打上不可调度标记，在跑的任务是否被自动重调度，而不是等人发现？
+- [ ] 下线一批不再使用的模型，台账、计费与监控里是否同步消失（验证下线是否彻底）？
+- [ ] 月账单里 Serverless 按秒计费与自建折旧两条线是否已经交叉？交叉后稳定基线是否已迁回常驻实例？
+
+### 4.7 小结
+
+> 本节小结：AI 计算平台落地里，唯一决定成败的环节是 **Step 3 的统一调度入口**——它是后面每一层「有配额、有归属、有账」的前提；没有它，特征平台、注册表、推理网关都只是自愿参加的活动，而资源一旦不在你手上，任何治理动作都会失效。它比其余环节更值得投入，因为它是本节唯一一个**不建就补不回来**的环节：其余各层可以后补，唯独入口一旦缺失，组织会先长出各自采购与绕开平台的惯性，此后每补一层都要先对抗这套惯性。
+>
+> 配合 [§ 2 核心原理](01-ai-compute.md)、[§ 3 设计模式与范式](01-ai-compute-section-3-sec3.md) 与 [§ 6 落地实践](01-ai-compute-section-6-sec6.md) 阅读。

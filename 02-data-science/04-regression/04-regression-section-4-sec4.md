@@ -1,463 +1,359 @@
-> 本文件是 **04-regression.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](04-regression.md)。
+> 本文件是 **04-regression.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](04-regression-section-3-sec3.md) 选定的回归模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](04-regression.md)。
 
 ## 4. 工程实现
 
+本节的组织方式与模式手册不同：模式手册回答「哪几个解还没被约束否掉」，本节回答「选定之后，按什么顺序做、每一步怎么知道做对了、已经在跑的模型怎么处理」。
+
+本文件覆盖**两种读者**，但两者的第一步不同。**从零建模**的人按 §4.1 的 8 个步骤顺序走，每一步给产物与判据，§4.2 与 §4.3 供在其中做技术取舍，§4.5 给可直接套用的模板。**已有模型在线上跑、要改造**的人先读 §4.4——在存量上，正确顺序不是「按 Step 1 到 8 重来」，而是「先做三件不需要重训的事，再决定要不要返工」。§4.6 与 §4.7 对两种读者共用。
+
+模式本身的原理、代价与失效点不在本节重复，见 [§ 3](04-regression-section-3-sec3.md)。
+
 ### 4.1 落地步骤
 
-**Step 1：业务问题抽象**
+**Step 1：业务问题抽象（1 周【经验：随指标口径对齐的会议轮次变，跨部门口径越多越久】）**
 
-- 把业务问题转化为"输入 → 连续输出"的回归问题。
-- 明确输出含义（数值 / 概率 / 时间）、业务可接受误差范围、评估指标。
-- 输出：**问题定义文档**。
+- 把业务问题写成「输入 → 连续输出」，明确输出的业务含义与量纲（元 / 件 / 分钟 / 概率）。
+- 写清两件比模型更重要的事：业务可接受的误差范围，以及**这个预测值将被用来做什么动作**（订货 / 定价 / 授信 / 触达）。
+- 确认标签是否可观测：若输出里含大量 0（金额类标签常见），先判定是否需要「先判是否发生、再预测金额」的两段式。
+- 记录标签回流延迟——从决策发生到真实标签可用需要多久。它决定了 Step 8 的监控能有多快看到问题。
+- **产物**：问题定义文档（输出含义、量纲、误差口径、下游动作、标签来源与回流延迟）。
+- **判据**：把「下游动作」一栏拿去与下游 Owner 逐条确认；若下游按分位决策而你只提供均值，这份文档就是没写完（判据见 [§ 3.3 决策表](04-regression-section-3-sec3.md) 的「需要不确定性估计」一行，模式机制见该文件 §3.2.5）。
+- **为什么必须这一步 / 为什么在这个位置**：输出含义与下游动作共同决定损失函数与评估指标；损失函数定错之后，Step 5 的调优与 Step 6 的评估都在优化错的目标，返工要从 Step 5 一路退回 Step 1。
 
-**Step 2：数据准备与样本构建**
+**Step 2：数据准备与样本构建（1–3 周【经验：随缺失与异常的严重程度变】）**
 
-- 收集历史数据（时序：足够长的历史；非时序：足够多样本）。
-- 处理缺失值（删除 / 填充 / 插值）。
-- 处理异常值（Winsorize / 删除 / 用 Huber Loss）。
-- 输出：**训练集 / 验证集 / 测试集**。
+- 收集历史数据。时序任务的历史长度至少要覆盖一个完整业务周期（含促销与节假日），否则季节性无法被估计。
+- 处理缺失值：删除 / 均值或中位数填充 / 时序前向填充 / 模型预测填充。
+- 处理异常值：Winsorize（缩尾）/ 删除 / IQR 检测 / Z-Score / Isolation Forest，或者干脆换 Huber 损失（两者选一，不要都做）。
+- **切分样本**：时序任务按时间前向切分（滚动窗口），只有横截面任务才用 K-Fold。
+- **产物**：训练 / 验证 / 测试集 + 一份「切分方式与切分理由」的记录。
+- **判据**：逐列检查训练集里所有滚动与滞后类特征，确认它们在时刻 t 只使用了 t 之前的数据；再抽 3 行【经验：随特征列数与手工复算成本变】，按时间顺序手工复算特征值，与管线算出的值一致。
+- **为什么必须这一步 / 为什么在这个位置**：切分方式同时决定早停点、调参结论与验收口径。切分错了，Step 5 与 Step 6 的全部结论都无效，而且它们看起来完全正常。
 
-**Step 3：特征工程**
+**Step 3：特征工程（2–6 周【经验：随业务假设数量变，需要显式写入的非线性与交互越多越长】）**
 
-- 数值特征：标准化 / 分箱 / 缺失值填充。
-- 时序特征：滞后值、滑动窗口、差分、季节性分解。
+- 数值特征：标准化、分箱、缺失指示列。
+- 时序特征：滞后值（lag）、滑动窗口（rolling）、差分（diff）、STL 分解、傅里叶特征。
 - 类别特征：One-Hot / Target Encoding / 嵌入。
-- 交叉特征：手动交叉或用 FM / DeepFM 自动学习。
-- 输出：**特征 pipeline + Feature Store**。
+- 交叉特征：手工构造，或用 FM / DeepFM 自动学习。
+- **把统计量与模型一起版本化**：标准化均值方差、分箱边界、Target Encoding 的编码表都必须在训练集上算出、随模型导出，推理侧只允许使用这份导出值。
+- **产物**：特征 pipeline + Feature Store。
+- **判据**：抽 20 行样本【经验：随特征列数与在线入口数量变】，把离线批算出的特征与在线点查的特征逐列对拍，差异必须为零；有差异即说明存在两个入口，而这在离线评估里永远看不出来。
+- **为什么必须这一步 / 为什么在这个位置**：离线与在线特征口径分化的成本随特征数线性增长。等到 Step 7 上线才发现，返工要动的是整条特征管线，而不是某个模型。
 
-**Step 4：模型选型与基线**
+**Step 4：模型选型与基线（1–2 周【经验：随候选模型数与是否需要建基座变】）**
 
-- 用 §3.2 决策表选 1-3 个候选模型。
-- 跑基线（OLS / LightGBM），建立性能下限。
-- 输出：**基线报告**（MAE / RMSE / R²）。
+- 用 [§ 3.3 决策表](04-regression-section-3-sec3.md) 圈定 1–3 个候选模型【经验：随候选族数量与单次训练时长变】。
+- 跑一个便宜基线（OLS 或 LightGBM 默认参数），并**同时跑一条朴素预测**作为业务下限——例如「按上周同日」或「按移动平均」。
+- 基线报告要按时序或分组拆分，而不只给一个总数。
+- **产物**：基线报告（MAE / RMSE / R²，含与朴素预测的对照）。
+- **判据**：报告里必须能回答「模型比朴素预测好多少」。若好得很少甚至更差，问题在特征或指标口径，不在模型，此时不该继续换模型。
+- **为什么必须这一步 / 为什么在这个位置**：朴素基线是唯一能回答「这套模型值不值得上线」的参照物。没有它，之后每一次「优化」都没有起点，团队只能靠离线指标的绝对值自我说服。
 
-**Step 5：模型调优**
+**Step 5：模型调优（1–4 周【经验：随搜索空间大小与单次训练时长变】）**
 
 - 超参调优（Grid / Random / Bayesian）。
-- 损失函数选择（MSE / MAE / Huber / 分位数）。
-- 正则化强度（L1 / L2）。
-- 输出：**调优报告**。
+- 损失函数选择（MSE / MAE / Huber / 分位数 Loss），并与 Step 1 的业务成本函数对齐。
+- 正则化强度（L1 / L2 / ElasticNet，深度学习侧还有 Dropout）。
+- 时序任务还要额外选多步预测策略（Recursive / Direct / Multi-Output）。
+- 记录「有效 batch size」以及它与学习率的关系——它会被梯度累积与分布式训练改变。
+- **产物**：调优报告（搜索空间、每次试验的验证指标、被否决的配置及理由）。
+- **判据**：报告里每一组超参都要对应一次可复现的实验（固定种子、固定切分、固定验证集）；只给最终最优值不给过程，等于没做调优，因为线上出问题时无从比对。
+- **为什么必须这一步 / 为什么在这个位置**：不记录过程就无法归因。Step 6 的评估数字必须能追溯到某个具体配置，否则「线上效果不如离线」这句话无法拆解。
 
-**Step 6：模型评估**
+**Step 6：模型评估（1 周【经验：随错误分析的分组维度数变】）**
 
-- 离线评估：MAE / RMSE / R² / MAPE / 业务指标。
-- 时序评估：滚动预测 / 跨期评估。
-- 错误分析：分业务场景看预测误差。
-- 输出：**评估报告 + 错误分析**。
+- 离线评估：MAE / RMSE / R² / MAPE，以及业务指标（库存成本、毛利误差一类）。
+- 时序评估：滚动预测、跨期评估。
+- 错误分析：**按量级与场景分桶**看误差（大单 / 小单、新客 / 老客、头部 / 长尾），而不只看总体均值。
+- 不确定性评估：若下游按分位决策，必须测区间覆盖率与分位损失，而不是只报点估计误差。
+- **产物**：评估报告 + 错误分析（含「哪一类样本被系统性高估或低估」）。
+- **判据**：错误分析必须给出按量级分桶的误差表。只看总体 MAE，会掩盖「大单被系统性低估」这类直接造成业务损失的问题。
+- **为什么必须这一步 / 为什么在这个位置**：回归的误差分布比总体均值重要，因为受影响的下游动作往往只发生在特定分桶里。分桶表是选择是否上线的依据，不是附加材料。
 
-**Step 7：模型上线**
+**Step 7：模型上线（2–4 周【经验：随在线特征服务是否需要新建变】）**
 
-- 模型序列化（Pickle / PMML / ONNX）。
-- 在线服务（TF Serving / Triton / 自研）。
-- 性能压测（QPS / 延迟）。
-- 灰度发布 / A/B 测试。
-- 输出：**上线报告 + A/B 实验报告**。
+- 模型序列化（Pickle / PMML / ONNX）；在线服务（TF Serving / Triton / 自研）。
+- 性能压测（QPS / 延迟），压测输入必须取线上真实特征分布，含缺失与极端值。
+- 灰度发布与 A/B 实验。
+- **输出层加物理约束与兜底**：非负、容量上限、超出置信范围时回退到基线规则或进入人工复核队列。
+- **产物**：上线报告 + A/B 实验报告 + 一份兜底策略说明（谁有权切回基线）。
+- **判据**：压测时额外实测一次「特征服务不可用」：接口是返回错误，还是回退基线？返回值必须与事先设计的一致——返回什么不是运维细节，而是业务决定。
+- **为什么必须这一步 / 为什么在这个位置**：外推失效与特征服务故障都不是「如果」而是「何时」。兜底决定它是「预测难看」还是「业务事故」，而它必须在第一次故障之前就位。
 
-**Step 8：监控与闭环**
+**Step 8：监控与闭环（持续，首版 2–3 周【经验：随标签回流链路的打通难度变】）**
 
-- 模型监控：输入分布、输出分布、预测误差实时。
-- 漂移检测：Data Drift / Concept Drift。
-- 反馈回流：真实值回流，模型定期重训。
-- 输出：**监控 dashboard + 重训 pipeline**。
+- 模型监控：输入分布、输出分布、预测误差——注意**误差指标的可见时刻等于标签回流时刻**，在此之前只有输入输出分布可用。
+- 漂移检测：Data Drift 与 Concept Drift。
+- 反馈回流：真实值回流、定期重训。
+- **把重训触发条件写成可执行规则**（例如「误差监控连续 N 个周期超过阈值」或「输入分布漂移指标超过阈值」），并指定重训后由谁验收。
+- **产物**：监控 dashboard + 重训 pipeline + 触发规则与负责人。
+- **判据**：演练一次——人工把触发条件打成满足状态，确认重训 pipeline 真的被唤起、产出模型、并有人验收。演练不通，说明规则只写在文档里。
+- **为什么必须这一步 / 为什么在这个位置**：回归的线上成本主要在特征管线与监控，不在训练代码（[§ 3.1](04-regression-section-3-sec3.md) 第 6 条约束）。监控不闭环时，模型只能靠用户投诉来发现退化。
+
+整条路径上**最常被跳过的是 Step 8 的触发规则与 Step 2 的切分检查**，通常表现为「模型上线了，重训靠人记得」。第一个出问题的时点不是上线当天，而是**第一次该重训而没人重训的时候**：误差监控本身受标签回流延迟约束，等到有人注意到，系统已经按旧模型做完了好几个决策周期。此时的症状是「业务指标在某个时间点之后整体偏移」，而模型侧所有监控都是绿的——因为绿的那些指标（输入分布、服务健康度）确实没有异常。
 
 ### 4.2 关键技术点
 
-**特征工程关键技术**：
+**1. 特征工程层（缺失值 / 异常值 / 标准化 / 分箱 / 交叉特征 / 时序特征 / 特征选择）**
 
-1. **缺失值处理**：删除 / 均值填充 / 中位数填充 / 前向填充（时序）/ 模型预测填充。
-2. **异常值处理**：Winsorize（缩尾）、IQR 检测、Z-Score、Isolation Forest。
-3. **标准化**：StandardScaler、MinMaxScaler、RobustScaler、Log 变换（偏态分布）。
-4. **分箱**：等频分箱、等距分箱、卡方分箱、决策树分箱。
-5. **交叉特征**：手动构造（如 AND(x1, x2)）、FM / DeepFM 自动。
-6. **时序特征**：滞后值（lag）、滑动窗口（rolling）、差分（diff）、季节性分解（STL）、傅里叶特征。
-7. **特征选择**：方差过滤、相关系数、L1 正则、树模型 importance、SHAP、递归特征消除（RFE）。
+- **做法**：缺失值处理（删除 / 均值 / 中位数 / 时序前向填充 / 模型预测填充）；异常值处理（Winsorize 缩尾 / IQR / Z-Score / Isolation Forest）；标准化（StandardScaler / MinMaxScaler / RobustScaler / 对数变换）；分箱（等频 / 等距 / 卡方 / 决策树分箱）；交叉特征（手工构造或用 FM / DeepFM 自动学习）；时序特征（lag / rolling / diff / STL / 傅里叶）；特征选择（方差过滤 / 相关系数 / L1 正则 / 树模型 importance / SHAP / 递归特征消除 RFE）。
+- **机制**：标准化参数、分箱边界与 Target Encoding 编码表都是**在训练集上算出来的统计量**，它们必须与模型文件一起版本化、推理时用同一份。实施层后果是：离线批与在线点查各自算一次统计量时，两者不报错，只让预测整体偏移——而离线评估用的是同一套离线统计量，所以永远看不到这个偏移。
+- **失效条件**：**当特征管线出现两个入口（离线批量打分与在线点查询）时，这条会静默失效**。症状：同一行原始数据，离线打分与在线打分给出不同结果；发现方式是抽样对拍（§4.6 第 4 条），而不是看模型指标。
+- **档位**：方法清单为通用工程做法；缩尾比例、分箱数这类参数标【经验：随分布形态与业务可解释性要求变】。
 
-**训练关键技术**：
+**2. 目标函数层（正则化 / 损失函数 / Early Stopping）**
 
-8. **正则化**：L1 / L2 / ElasticNet / Dropout / Label Smoothing。
-9. **损失函数**：MSE / MAE / Huber / 分位数 Loss / 自定义 Loss。
-10. **优化器**：SGD / Adam / AdamW / Lookahead。
-11. **学习率调度**：Warmup + Cosine / Linear / ReduceLROnPlateau。
-12. **Early Stopping**：验证集 loss 不再下降时停止。
-13. **梯度累积**：小显存模拟大 batch。
-14. **分布式训练**：PS 架构 / AllReduce（PyTorch DDP / Horovod）。
-15. **混合精度**：FP16 + FP32，训练速度提升 2-3 倍。
+- **做法**：正则化（L1 / L2 / ElasticNet / Dropout / Label Smoothing）；损失函数按业务成本函数选（MSE / MAE / Huber / 分位数 Loss / 自定义 Loss）；Early Stopping 按验证集 loss，并显式记录「用的是哪个验证集、切分方式是什么」。
+- **机制**：早停点由验证集决定，而验证集里有没有未来信息由切分方式决定，所以**损失函数与切分方式是一组绑定的决策**，不能分开评审。实施层后果是：时序任务上用了随机切分，早停会停在由泄漏撑起的峰值上，离线报告因此比线上乐观一档。
+- **失效条件**：**当业务成本函数是非对称的时候（缺货成本 ≠ 积压成本），用 MSE 或 Huber 训练出的点估计会失效**——模型的输出在它自己的定义下仍然最优，只是「最优」被定义了两次且不一致。症状不出现在模型侧，出现在下游：补货系统只拿到一个点估计、只能按均值补货，于是同一周里门店报缺货工单、仓库同时报滞销积压，而模型指标全绿。观测信号：按分位统计实际需求与预测值的偏差方向，并把分位覆盖率与两类工单量放进同一张看板。
+- **档位**：损失函数形式属产品能力项，不标档位——可按库官方文档中 objective 的可选值核验，以当前版本为准；分位取值要按本业务缺货与积压两笔成本的实际金额算一次并把算式留档，本节不给默认值【经验：随两项成本的比值变，比值越极端，最优分位离中位数越远】。
 
-**推理关键技术**：
+**3. 训练工程层（优化器 / 学习率调度 / 梯度累积 / 分布式训练 / 混合精度）**
 
-16. **模型压缩**：量化（INT8 / INT4）、剪枝、蒸馏（如 DistilBERT → 小模型）。
-17. **推理加速**：ONNX Runtime、TensorRT、TVM。
-18. **批处理**：多个请求合并推理，提升吞吐。
-19. **缓存**：高频查询结果缓存。
+- **做法**：优化器（SGD / Adam / AdamW / Lookahead）；学习率调度（Warmup + Cosine / Linear / ReduceLROnPlateau）；梯度累积（小显存模拟大 batch）；分布式训练（PS 架构 / AllReduce，PyTorch DDP / Horovod）；混合精度（FP16 + FP32）。
+- **机制**：这五项改变的其实都是**有效 batch size 与梯度尺度**，所以它们与学习率构成一个耦合组，不是五个独立开关。实施层后果是：单机调好的学习率，换成多卡 DDP 或加上梯度累积后不报错，只让收敛变差或震荡，而团队通常会把原因归到「数据变了」。
+- **失效条件**：**当并行度、梯度累积步数或精度模式任一改变时，原有学习率结论失效**。症状：loss 曲线形状变了（前若干 epoch 明显更抖或更慢），但没有任何报错。观测信号：把有效 batch size 与学习率之比记进实验日志，改并行度时按比例重扫再定稿。
+- **档位**：组件名与用法属产品能力项，不标档位——可按各框架官方文档核验，以当前版本为准；「改并行度须重扫学习率」为通用工程做法【经验】。
 
-**时序预测关键技术**：
+**4. 推理层（模型压缩 / 推理加速 / 批处理 / 缓存）**
 
-20. **季节性分解**：STL（Seasonal-Trend-Loess）。
-21. **差分**：一阶 / 季节性差分，让序列平稳。
-22. **滞后值特征**：lag-1, lag-7, lag-30（根据业务周期）。
-23. **滚动特征**：rolling mean / std / min / max。
-24. **节假日特征**：业务日历（中国春节、618、双 11）。
-25. **多步预测策略**：Recursive / Direct / Multi-Output。
+- **做法**：模型压缩（量化 INT8 / INT4、剪枝、蒸馏（如 DistilBERT → 小模型））；推理加速（ONNX Runtime / TensorRT / TVM）；批处理（多请求合并推理提升吞吐）；缓存（高频查询结果缓存，**key 必须含特征版本与模型版本**）。
+- **机制**：量化与蒸馏改变的是输出分布，不只是速度，所以**压缩后的模型是一个新模型，不是同一个模型跑得快一点**。实施层后果：它必须重新过一遍 Step 6 的评估，且要在与线上相同的输入分布上评估——用离线测试集验收量化模型，会把量化误差藏在对量化最不敏感的样本分布里。
+- **失效条件**：**当模型进入按天或按周重训的节奏、而缓存 key 里只有特征哈希时，这条会失效**。症状：新模型上线后，离线评估显示指标提升而线上指标不动。观测信号是「模型版本变了但缓存命中率没掉」——命中率不掉，就意味着旧预测还在被返回。
+- **档位**：压缩与加速技术属产品能力项，不标档位——可按各库官方文档核验，以当前版本为准；缓存 TTL 由业务可接受的预测陈旧度决定【经验】。
 
-**因果推断关键技术**：
+**5. 时序层（季节性分解 / 差分 / 滞后值特征 / 滚动特征 / 节假日特征 / 多步预测策略）**
 
-26. **倾向得分（Propensity Score）**：PSM 匹配 / 加权。
-27. **DML（Double ML）**：部分线性回归 + ML 残差化。
-28. **工具变量（IV）**：2SLS / GMM。
-29. **Synthetic Control**：合成对照组。
-30. **RCT 数据**：随机实验的金标准。
+- **做法**：季节性分解（STL）；差分（一阶 / 季节性差分，让序列平稳）；滞后值特征（lag-1、lag-7、lag-30 一类，按业务周期选）；滚动特征（rolling mean / std / min / max）；节假日特征（按业务日历，中国场景要含春节、618、双 11 这类移动节点）；多步预测策略（Recursive / Direct / Multi-Output）。
+- **机制**：滞后与滚动特征的正确性，取决于「计算那一刻能看到什么」，所以这条里最危险的动作是**历史回填（backfill）**：全量重算历史特征时，滚动窗口会用上当时还看不到的数据。实施层后果是训练集里的特征比线上「更干净」，离线指标天然更好，而这个优势在上线后不会出现。
+- **失效条件**：**当发生一次历史回填或数据重跑时，这条会失效**。症状：回填之后离线指标突然变好一档，上线却没有对应改善。观测信号：对比回填前后的特征快照，差异行应当只出现在被修正的时间点附近——若差异是全局的，说明滚动窗口用了未来数据。
+- **档位**：特征构造方法为通用做法；滞后阶数与滚动窗口长度【经验：随业务周期长度变，周期越长阶数与窗口越大】。
 
-**LLM 辅助关键技术**：
+**6. 因果层（倾向得分 / DML / 工具变量 / Synthetic Control / RCT 数据）**
 
-31. **特征生成**：LLM 从文本提取结构化数值（如评论情感 1-10）。
-32. **Embedding + 回归**：Sentence-BERT 提 embedding + MLP 回归。
-33. **Chronos / TimeGPT**：LLM 风格的时序基础模型。
+- **做法**：倾向得分（Propensity Score，PSM 匹配或加权）；DML（Double ML，部分线性回归 + ML 残差化）；工具变量（IV，2SLS / GMM）；Synthetic Control（合成对照组）；把 RCT 数据作为金标准，用于校准观测估计。
+- **机制**：这一族方法的结论依赖识别假设（重叠、排除性约束、平行趋势），所以**它的验收标准与预测模型不是一回事**：预测模型用误差验收，因果模型只能用「假设是否成立 + 能否被反驳」验收。实施层后果是它必须在流程里落到「谁签字确认假设」这一步，否则它会被以「模型精度不错」为由当成预测模型使用。
+- **失效条件**：**当处理组与对照组的协变量分布不重叠时，这条会失效**。症状：估出的高效应人群在业务上不可解释（高 CATE 集中在明显不该有增量的分组），而统计上不会触发任何告警。观测信号：倾向得分分布图里落在 0 或 1 附近的样本占比。
+- **档位**：这一族方法的奠基文献见 [§ 3](04-regression-section-3-sec3.md) §3.2.6，可按刊名与作者检索核验【公开】；「上线前先用一次随机实验做方向校准」为工程建议【经验：随效应量变小，校准所需的实验样本量上升得很快，小效应在短周期实验里判不出方向】。
+
+**7. LLM 辅助层（特征生成 / Embedding + 回归 / Chronos / TimeGPT）**
+
+- **做法**：用 LLM 从文本提取结构化数值（如从评论抽情感分），作为特征列；或用文本 Embedding（如 Sentence-BERT 一类）加 MLP 回归头；或直接采用 LLM 风格的时序基础模型（Chronos / TimeGPT）做零样本预测。文本侧一律离线批处理，在线只跑回归器。
+- **机制**：LLM 侧（模型版本、提示词、向量维度）的任何变更都会让整列特征的分布整体平移，所以这条把「特征漂移」从数据问题变成了**发布问题**：一次提示词改动等于一次特征口径变更，却不会走数据侧的任何评审流程。实施层后果是发布清单里必须加一行「LLM 侧变更 → 回归器需重训或至少需重新评估」。
+- **失效条件**：**当 LLM 侧的模型版本或提示词在回归器不知情的情况下升级时，这条会静默失效**——特征列整体换了分布，而这次升级没有走数据侧的评审：发布单上写的是「模型升级」，回归器没有跟着重训。症状：特征侧看板全绿——文本长度、非空率、取值域逐项都在阈值内，值班的人在输入侧查不出任何异常；唯一可见的变化是预测值的分布整体平移——它不会自己变成告警，通常要靠下游对账或人工巡看预测曲线才发现。观测信号是把预测分布本身列为监控项并设越限告警，而不是等标签回流。
+- **档位**：模型与产品名属产品存在性判断，不标档位——可按各模型官方仓库与论文核验，以当前版本为准；文本侧离线批处理的成本结构随调用量与语料量变【经验】。
+
+**8. 上线后的监控与重训触发**
+
+- **做法**：把四类信号配置成看板——输入分布、输出分布、误差（受标签回流延迟约束）、双轨期的新旧模型分差；漂移检测（Data Drift / Concept Drift）；重训触发规则写成可执行条件并绑定负责人；下游动作侧加兜底（上下限截断、回退基线规则、人工复核队列）。
+- **机制**：误差指标的可见时刻等于标签回流时刻，所以**误差监控的延迟由业务节奏决定，而不是由工程决定**——如果标签要一周才齐，那么「模型什么时候变差」这件事本身就要一周后才知道。实施层后果是：在标签回流之前，唯一可用的是输入与输出分布，而它们能提示异常、不能判断严重程度。
+- **失效条件**：**当决策周期短于标签回流延迟时，这条失效**——模型已经按错误预测做完了一个完整周期的决策，误差监控才刚看到数据。症状：业务指标在某时间点之后整体偏移，而模型侧所有监控都是绿的。观测信号是「输出分布偏移」与「下游指标偏离」在时间轴上对齐。
+- **档位**：信号清单为方法论；漂移阈值与触发周期数【经验：随业务稳定性变，业务越平稳阈值可设得越紧】。
 
 ### 4.3 工具链与平台
 
-**线性回归库**：
+品牌列只列候选，**选型判据另开一列**——同一类别里选哪个，取决于你的约束而不是生态热度。
 
-- **scikit-learn**（Python / 开源）——LinearRegression / Ridge / Lasso / ElasticNet。
-- **Statsmodels**（Python / 开源）——统计推断导向，含 OLS / WLS / GLS / ARIMA。
-- **scipy.stats**——基础统计。
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 线性回归 / 统计推断库 | scikit-learn；Statsmodels；scipy.stats | 判据是「要不要推断」：要系数显著性、置信区间、异方差检验、WLS / GLS → Statsmodels（含 OLS / WLS / GLS / ARIMA）；只要预测与管线 → scikit-learn；零散统计量 → scipy.stats | 拿只有预测接口的库去做「系数能不能写进决策文件」的活，最后要用别的手段补显著性 |
+| GBDT 库 | XGBoost；LightGBM；CatBoost（详见 Ch2-02 分类章节） | 判据是类别特征占比与训练速度：高基数类别多 → CatBoost；数据量大要快 → LightGBM；要成熟生态与既有调参经验 → XGBoost | 高基数类别做独热后喂给其他 GBDT，维度爆炸，训练时间与内存超预算 |
+| 深度学习框架 | PyTorch；TensorFlow；PaddlePaddle；MindSpore | 判据是团队既有栈与是否要求国产化适配：研究型迭代 → PyTorch；国产化或特定硬件栈 → PaddlePaddle / MindSpore（支持情况可按各框架官方文档当前版本核验） | 为一次实验引入第二套框架，训练与服务两套代码要长期同时维护 |
+| 时序预测库 | Prophet；statsmodels（ARIMA / SARIMAX）；pmdarima（Auto-ARIMA）；Darts；sktime；NeuralForecast；TimeSeriesForecast（Nixtla） | 判据是「要一条可解释基线，还是要统一多模型接口」：只需基线 → Prophet / statsmodels / pmdarima；要在一套接口下横向比多类模型 → Darts / sktime / NeuralForecast / TimeSeriesForecast | 把基线也塞进自研框架，评估口径与上层实验无法对齐，基线失去参照意义 |
+| 时序深度学习模型 | Informer；Autoformer；PatchTST；TimesNet；iTransformer；Chronos；Lag-Llama；TimeGPT-1 | 判据是历史长度与是否要零样本：长序列 → Informer / Autoformer / PatchTST / TimesNet / iTransformer；样本极少或要免训练起步 → 时序基础模型（Chronos / Lag-Llama / TimeGPT-1） | 样本量不足时训练长序列 Transformer，等于用参数量去拟合噪声；反过来，样本充足却只用零样本模型，等于放弃用自有数据提升的机会 |
+| 贝叶斯 / 不确定性库 | PyMC；Stan；GPyTorch；BoTorch；MAPIE | 判据是「要参数后验，还是只要黑箱模型的区间」：要后验 → PyMC / Stan；要高斯过程 → GPyTorch；要采样类优化 → BoTorch；要分布无关的区间 → MAPIE（Conformal Prediction） | 用 MCMC 去回答一个 Conformal 就能回答的问题，把算力花在不需要的假设上；反向错配更贵——用 Conformal 区间去讲因果式结论 |
+| 因果推断库 | DoWhy；EconML；CausalML；CausalForest；PyWhy；因果基础模型（Foundation Models for Causal Inference，2024 年起的研究方向，还不是可安装的库） | 判据是「要识别还是要增量」：要显式写出假设并做反驳检验 → DoWhy / PyWhy；要 CATE / Uplift 打分 → EconML / CausalML / CausalForest；因果基础模型这一类尚无稳定接口，判据是「它能否把识别假设写出来并接受反驳检验」，而不是它宣称的免训练能力 | 直接上手 Uplift 模型、跳过识别假设与反驳检验，会把混淆结构原样学进效应里 |
+| LLM / Embedding 库 | HuggingFace Transformers；Sentence Transformers；OpenAI Embedding API；LangChain / LlamaIndex；DSPy | 判据是文本侧能否出网、要不要自训、要不要在提示词层面做优化：可出网且要快速起步 → OpenAI Embedding API；不出网或要自训 → Transformers / Sentence Transformers；要程序化优化提示词 → DSPy（用法可按各库官方文档核验） | 把在线逐次调用当成特征生成手段，文本侧成本直接进单请求延迟预算 |
+| AutoML 平台 | AutoGluon；FLAML；H2O.ai；PyCaret | 判据是「要一条能跑通的全自动基线，还是要可控的调参过程」：结构化数据全自动基线 → AutoGluon / FLAML；低代码交互 → PyCaret / H2O.ai | 用 AutoML 替代 Step 4 的基线设计，拿到一个好分数却说不清它比朴素预测好多少 |
+| 序列化与服务化 | Pickle；PMML；ONNX；TF Serving；Triton；自研服务；ONNX Runtime / TensorRT / TVM | 判据是跨语言部署与硬件加速：只有 Python 服务且无加速需求 → Pickle 即可；要跨语言 / 跨框架 → ONNX 或 PMML；要 GPU 上的低延迟 → ONNX Runtime / TensorRT / TVM；要统一服务框架 → TF Serving / Triton | 用 Pickle 绑死运行环境，模型发布流程与训练环境永久耦合，换一个推理栈就要重做一遍上线 |
 
-**GBDT 库**：
+表里**最容易被误选的是时序深度学习模型与 2024–2025 出现的时序基础模型**（Chronos / TimeGPT / Lag-Llama / TimesFM / MOIRAI / UniTime 一类）：这类模型的对外卖点是零样本或免训练即可用，于是团队容易跳过 Step 4 的朴素基线与 Step 2 的切分检查，直接把它当成现有方案的替代。后果有两层——没有基线就无法回答「它比现在好还是差」；它的输出分布与内部模型不同（分位口径、外推行为都可能不一样），无法直接嵌进既有决策链路。判定方法很简单：先跑一段朴素基线，再让新模型与它同期对比——基线长度按业务周期取，不要拍一个固定天数【经验：随业务周期长度与波动幅度变，周期越长、波动越大，需要覆盖的区间越长】。
 
-- **XGBoost / LightGBM / CatBoost**——见 Ch2-02 分类章节。
+### 4.4 存量迁移
 
-**深度学习框架**：
+这一节只面向**已经有模型在线上跑**的人。存量改造的正确顺序不是从 Step 1 重来，而是先把「需要重训的动作」往后推。
 
-- **PyTorch / TensorFlow**——见 Ch2-02 章节。
-- **PaddlePaddle / MindSpore**——国产化。
+**① 先做三件不需要重训、且可回退的事**
 
-**时序预测库**：
+- **把评估切分换成按时间前向**：只改评估代码，不动模型。它立刻能回答一个重要问题——历史指标里有多少是靠泄漏撑起来的。
+- **在预测输出层加物理约束与兜底**：非负、容量上限、超出置信范围回退基线规则。输出层包一层即可，可随时撤下。
+- **把「业务成本 → 损失或样本权重」写成一页对照表**：纯文档工作，它决定下一步到底该不该重训，以及重训时该优化什么。
 
-- **Prophet**（Facebook / 开源）——时序预测事实标准之一。
-- **statsmodels**（Python / 开源）——ARIMA / SARIMAX。
-- **pmdarima**（Python / 开源）——Auto-ARIMA。
-- **Darts**（Python / 开源）——时序预测统一库（含 ARIMA / Prophet / Transformer）。
-- **sktime**（Python / 开源）——时序预测 / 分类统一库。
-- **NeuralForecast**（Nixtla / 开源）——时序深度学习库。
-- **TimeSeriesForecast**（Nixtla / 开源）——AutoML 时序预测。
+**判据**：这三件做完之后，你必须能回答两个问题——「现在的模型比朴素预测好多少」、「外推失效时系统会表现成什么」。存量改造要从这两问开始。
 
-**深度学习时序模型**：
+**② 历史资产按三类处理，逐条判定**
 
-- **Informer / Autoformer**（开源）——长序列 Transformer。
-- **PatchTST**（ICLR 2023）——Patch 化 Transformer。
-- **TimesNet**（2023）——时序 SOTA。
-- **iTransformer**（2024）——反转 Transformer。
-- **Chronos**（Amazon 2024）——LLM 风格时序基础模型。
-- **Lag-Llama**（2024）——开源时序基础模型。
-- **TimeGPT-1**（Nixtla 2024）——商业时序基础模型。
+- **全部返工**：特征口径变更、标签定义变更（例如收入含不含退款）。该特征表的所有下游模型必须重训，重训窗口可按血缘估算：【推算】先按血缘列出受影响的下游模型清单，再乘以单次训练时长，得总重训窗口（尚未计入标签回流等待时间）。
+- **只改动的部分**：新模型走新口径，旧模型冻结不动。但必须在输出层加一致性监控——同一批样本上两个模型的分差。不做这件事，两条口径会长期并行而无人知道它们不同，直到某次对账才发现两边的数字对不上。
+- **打标挂账**：口径无法追溯的历史特征列，标记「口径未知」并禁止进入新模型；没有重训触发条件的在线模型，登记进清单并标注「无触发条件」。这类资产的危险不在于脏，而在于**它看起来和正常资产一模一样**。
 
-**贝叶斯 / 不确定性库**：
+**判据**：抽 20 个线上模型【经验：随在线模型总数变，模型少时全量盘】，逐个确认它的特征口径定义在哪、谁负责。答不出来的即挂账项。
 
-- **PyMC**（Python / 开源）——贝叶斯建模。
-- **Stan**（C++/Python / 开源）——贝叶斯推断。
-- **GPyTorch**（Python / 开源）——高斯过程。
-- **BoTorch**（PyTorch / 开源）——贝叶斯优化。
-- **MAPIE**（Python / 开源）——Conformal Prediction。
+**③ 双轨怎么维持、维持多久**
 
-**因果推断库**：
+- **双轨用影子打分（shadow）**：新模型只打分、不改决策，与旧模型在同一批线上流量上并行跑。这样双轨期的风险面只有资源消耗，不包含业务风险。
+- **双轨期只看两件事**：新旧模型的分差分布，以及影子模型在真实标签回流后的误差。前者立刻可见，后者要等一个标签周期。
+- **维持多久**：按「覆盖一个完整业务周期（含促销与节假日）」而不是固定周数【经验：常见一到两个完整周期，随业务周期性强度变】。注意标签回流延迟会直接推迟可判定时刻——标签若需一个完整周期才齐，双轨就至少要再覆盖同样的长度【经验：随标签回流延迟变，延迟越长，双轨期成比例变长】。
 
-- **DoWhy**（Microsoft / 开源）——因果推断端到端框架。
-- **EconML**（Microsoft / 开源）——CATE / Uplift 建模。
-- **CausalML**（Uber / 开源）——Uplift 建模工业库。
-- **CausalForest**（开源）——Causal Forest 实现。
-- **PyWhy**（开源）——因果推断统一平台。
+**④ 退出信号**
 
-**LLM / Embedding 库**：
+四个信号齐了才切主：
 
-- **HuggingFace Transformers**——LLM / Embedding 首选。
-- **Sentence Transformers**——文本 Embedding。
-- **OpenAI Embedding API**——商业 Embedding。
-- **LangChain / LlamaIndex**——LLM 应用框架。
-- **DSPy**——LLM 程序化优化。
+1. 影子期覆盖了一个完整业务周期，包括最强的那次波动；
+2. 在**不含泄漏**的评估口径下，新模型不劣于旧模型；
+3. 回退路径演练过一次——切回旧模型需要多久、谁有权按这个开关；
+4. 重训触发规则已配置且有负责人（否则新模型上线即开始重蹈旧模型的老路）。
 
-**AutoML 平台**：
+**反向信号**：如果双轨跑了几个周期而分差分布不收敛，说明新旧模型实际看到的特征口径不同。此时应先去查特征管线的两个入口（§4.2 第 1 条），而不是延长双轨——延长只会让两份口径继续并行。
 
-- **AutoGluon**（Amazon / 开源）——结构化数据 AutoML。
-- **FLAML**（Microsoft / 开源）——AutoML 库。
-- **H2O.ai**（商业）——AutoML 平台。
-- **PyCaret**（Python / 开源）——低代码 ML。
+### 4.5 模板 / 示例
 
-**2024-2025 新工具**：
+**模板 1：问题定义文档（Step 1 产物）**
 
-- **Chronos**（Amazon 2024）——LLM 风格时序基础模型。
-- **TimeGPT**（Nixtla 2024）——商业时序基础模型服务。
-- **Lag-Llama**（2024）——开源时序基础模型。
-- **TimesFM**（Google 2024）——Google 时序基础模型。
-- **MOIRAI**（Salesforce 2024）——通用时序基础模型。
-- **UniTime**（2024）——统一时序基础模型。
-- **Foundation Models for Causal Inference**（2024）——因果基础模型。
+```text
+回归问题定义 —— 只填这几格，其余不要照抄
+ 输出含义 / 量纲  ：<预测什么，单位是什么，业务上怎么读>
+ 下游动作         ：<按均值订货 / 按分位订货 / 定价 / 授信 / 触达>（决定损失函数）
+ 误差口径         ：<业务可接受的误差范围；用哪个指标量>
+ 标签来源         ：<从哪张表来，定义是什么（含不含退款之类）>
+ 标签回流延迟     ：<决策发生后 ____ 小时可拿到真实值>（决定监控的可见时刻）
+ 切分方式         ：<按时间前向 / 随机>（时序任务必须是前者）
+ 朴素基线         ：<按上周同日 / 移动平均>（必须有一条）
+```
 
-### 4.4 代码 / 示例
+**怎么用**：「下游动作」与「标签回流延迟」两格最不能省——第一格决定损失函数，第二格决定监控能有多快发现问题；「误差口径」要写成可量的，写不出来就先按 §4.1 Step 4 跑一条朴素基线出来再填。
 
 **示例 1：LightGBM 回归（销量预测）**
 
 ```python
 import lightgbm as lgb
-from sklearn.model_selection import TimeSeriesSplit
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-import numpy as np
+from sklearn.model_selection import TimeSeriesSplit          # 时序切分，不用随机 K-Fold
 
-# 时序切分（不能用随机 K-Fold，会泄露未来信息）
-tscv = TimeSeriesSplit(n_splits=5)
-
-# 训练
-params = {
-    'objective': 'regression',
-    'metric': 'mae',
-    'learning_rate': 0.05,
-    'num_leaves': 31,
-    'feature_fraction': 0.8,
-    'bagging_fraction': 0.8,
-    'bagging_freq': 5,
-    'min_child_samples': 20,
-    'lambda_l1': 0.1,
-    'lambda_l2': 0.1,
-    'verbose': -1
-}
-
-train_data = lgb.Dataset(X_train, label=y_train)
-valid_data = lgb.Dataset(X_valid, label=y_valid, reference=train_data)
-
-bst = lgb.train(
-    params,
-    train_data,
-    num_boost_round=2000,
-    valid_sets=[valid_data],
-    callbacks=[lgb.early_stopping(100), lgb.log_evaluation(100)]
-)
-
-# 预测
-y_pred = bst.predict(X_test, num_iteration=bst.best_iteration)
-
-# 评估
-print(f"MAE: {mean_absolute_error(y_test, y_pred):.2f}")
-print(f"RMSE: {np.sqrt(mean_squared_error(y_test, y_pred)):.2f}")
-print(f"R²: {r2_score(y_test, y_pred):.4f}")
-
-# 特征重要性
-import matplotlib.pyplot as plt
-lgb.plot_importance(bst, max_num_features=20)
-plt.show()
+params = {"objective": "regression", "metric": "mae", "learning_rate": 0.05,
+          "num_leaves": 31, "feature_fraction": 0.8, "bagging_fraction": 0.8,
+          "bagging_freq": 5, "min_child_samples": 20, "lambda_l1": 0.1, "lambda_l2": 0.1}
+bst = lgb.train(params, lgb.Dataset(X_tr, y_tr), num_boost_round=2000,
+                valid_sets=[lgb.Dataset(X_va, y_va)],
+                callbacks=[lgb.early_stopping(100), lgb.log_evaluation(100)])
+y_pred = bst.predict(X_te, num_iteration=bst.best_iteration)
+# 评估：MAE / RMSE / R² / MAPE；再与朴素基线（上周同日）对照
 ```
+
+**怎么用**：`TimeSeriesSplit` 是这条示例里最不能省的一行；表里的超参只当起点，用它跑出基线后再调；预测出来后必须与朴素基线对照，只报 MAE 不报对照等于没有结论。
 
 **示例 2：分位数回归（LightGBM）**
 
 ```python
-import lightgbm as lgb
-
-# 训练 P50（中位数）和 P90（90 分位数）
-quantiles = [0.5, 0.9]
-models = {}
-
-for q in quantiles:
-    params = {
-        'objective': 'quantile',
-        'alpha': q,
-        'metric': 'quantile',
-        'learning_rate': 0.05,
-        'num_leaves': 31,
-        'verbose': -1
-    }
-    train_data = lgb.Dataset(X_train, label=y_train)
-    valid_data = lgb.Dataset(X_valid, label=y_valid, reference=train_data)
-    models[q] = lgb.train(
-        params, train_data, num_boost_round=1000,
-        valid_sets=[valid_data],
-        callbacks=[lgb.early_stopping(50)]
-    )
-
-# 预测
-y_p50 = models[0.5].predict(X_test)
-y_p90 = models[0.9].predict(X_test)
-
-# 90 分位回归：90% 概率实际值 < y_p90（用于风险预警、备货决策）
+preds = {}
+for q in [0.5, 0.9]:
+    bst_q = lgb.train({"objective": "quantile", "alpha": q, "metric": "quantile",
+                       "learning_rate": 0.05, "num_leaves": 31},
+                      lgb.Dataset(X_tr, y_tr), num_boost_round=1000,
+                      valid_sets=[lgb.Dataset(X_va, y_va)], callbacks=[lgb.early_stopping(50)])
+    preds[q] = bst_q.predict(X_te)
+# 分位预测：用于风险预警与备货决策；上线前须检查是否出现分位交叉
 ```
+
+**怎么用**：`alpha` 不要照抄 0.9——按本业务缺货与积压两笔成本的金额比算一次，把算式写进评估报告；多分位要按 [§ 3.2.5](04-regression-section-3-sec3.md) 的失效条件检查分位交叉，出现交叉说明需要加单调性约束或改成多目标训练。
 
 **示例 3：Prophet 时序预测**
 
 ```python
 from prophet import Prophet
-import pandas as pd
-
-# 数据准备：ds (date), y (value)
-df = pd.read_csv('sales.csv')
-df.columns = ['ds', 'y']
-
-# 训练
-model = Prophet(
-    yearly_seasonality=True,
-    weekly_seasonality=True,
-    daily_seasonality=False,
-    seasonality_mode='additive',
-    changepoint_prior_scale=0.05  # 趋势变化灵活度
-)
-model.add_country_holidays(country_name='CN')  # 中国节假日
-
-# 业务事件（可选）
-# model = model.add_seasonality(name='monthly', period=30.5, fourier_order=5)
-
-model.fit(df)
-
-# 预测未来 30 天
-future = model.make_future_dataframe(periods=30)
-forecast = model.predict(future)
-
-# 可视化
-model.plot(forecast)
-model.plot_components(forecast)  # 趋势 / 季节性 / 节假日分解
+m = Prophet(yearly_seasonality=True, weekly_seasonality=True,
+            daily_seasonality=False, seasonality_mode="additive",
+            changepoint_prior_scale=0.05)          # 趋势灵活度，最需按业务调
+m.add_country_holidays(country_name="CN")          # 日历表随年份维护
+m.fit(df)                                          # df 需为 ds / y 两列
+fc = m.predict(m.make_future_dataframe(periods=30))
 ```
 
-**示例 4：贝叶斯线性回归（不确定性区间）**
+**怎么用**：`changepoint_prior_scale` 决定趋势跟随速度，调大跟得快也更易过拟合，须用滚动评估定；`add_country_holidays` 的日历表随年份更新，日历过期即静默出错——把它纳入日常维护清单。
+
+**示例 4：贝叶斯线性回归（PyMC，不确定性区间）**
 
 ```python
 import pymc as pm
-import numpy as np
-
-with pm.Model() as model:
-    # 先验
-    w = pm.Normal('w', mu=0, sigma=1, shape=X_train.shape[1])
-    sigma = pm.HalfNormal('sigma', sigma=1)
-
-    # 似然
-    mu = pm.math.dot(X_train, w)
-    y_obs = pm.Normal('y_obs', mu=mu, sigma=sigma, observed=y_train)
-
-    # 采样
+with pm.Model() as m:
+    w = pm.Normal("w", mu=0, sigma=1, shape=X_tr.shape[1])   # 先验是假设，不是默认值
+    sigma = pm.HalfNormal("sigma", sigma=1)
+    pm.Normal("y_obs", mu=pm.math.dot(X_tr, w), sigma=sigma, observed=y_tr)
     trace = pm.sample(2000, tune=1000, return_inferencedata=True)
-
-# 后验预测
-with model:
-    pm.set_data({"X_train": X_test})  # 切换到测试集
-    posterior_predictive = pm.sample_posterior_predictive(trace)
-
-# 后验预测均值 + 置信区间
-y_pred = posterior_predictive.posterior_predictive['y_obs'].mean(dim=['chain', 'draw']).values
-y_lower = np.percentile(posterior_predictive.posterior_predictive['y_obs'].values, 2.5, axis=(0,1))
-y_upper = np.percentile(posterior_predictive.posterior_predictive['y_obs'].values, 97.5, axis=(0,1))
 ```
 
-**示例 5：因果 Forest（CATE 估计）**
+**怎么用**：先验写下来并做敏感性检查，先验选错时小样本下的结论会带看不见的偏；验收口径要换成区间覆盖率与分位损失，而不是只看后验预测均值。
+
+**示例 5：因果 Forest（CATE 估计，EconML）**
 
 ```python
 from econml.dml import CausalForestDML
-from sklearn.ensemble import RandomForestRegressor
-
-# Causal Forest DML（CATE 估计 + 置信区间）
-est = CausalForestDML(
-    model_y=RandomForestRegressor(n_estimators=100, random_state=0),
-    model_t=RandomForestRegressor(n_estimators=100, random_state=0),
-    discrete_treatment=False,
-    cv=5,
-    random_state=0
-)
-
-# X: 协变量, T: 处理变量 (treatment), y: 结果变量
-est.fit(y_train, T_train, X=X_train, W=None)
-
-# CATE 估计（个体处理效应）
-cate = est.effect(X_test)
-
-# 置信区间
-cate_interval = est.effect_interval(X_test, alpha=0.05)
-
-# 特征重要性
-print(est.feature_importances_)
-
-# 异质性分析
-# 将 X_test 分为高 CATE / 低 CATE 两组，对比业务效果
+from sklearn.ensemble import RandomForestRegressor as RF
+est = CausalForestDML(model_y=RF(n_estimators=100), model_t=RF(n_estimators=100),
+                      discrete_treatment=False, cv=5, random_state=0)
+est.fit(y_tr, T_tr, X=X_tr)                       # T = 处理变量，必须有干预记录
+cate = est.effect(X_te)
+lo, hi = est.effect_interval(X_te, alpha=0.05)     # 区间比点估计更重要
 ```
 
-**示例 6：T-Learner Uplift 建模**
+**怎么用**：跑之前先确认有处理变量与干预记录；置信区间跨 0 的分组不能作为「对这些人投放有效」的依据；输出要配套倾向得分分布检查（§4.2 第 6 条）。
+
+**示例 6：T-Learner Uplift 建模（causalml）**
 
 ```python
 from causalml.inference.tree import UpliftRandomForestClassifier
-import numpy as np
-
-# 数据：X (特征), treatment (处理组标签), y (结果)
-uplift_model = UpliftRandomForestClassifier(
-    n_estimators=100,
-    max_depth=10,
-    min_samples_leaf=20,
-    evaluationFunction='KL'  # KL 散度作为 uplift 评估
-)
-uplift_model.fit(X_train, treatment=T_train, y=y_train)
-
-# 预测每个用户的 uplift（处理组 vs 对照组期望差）
-uplift_scores = uplift_model.predict(X_test)
-
-# 业务应用：选 uplift 高的用户群投放营销
-high_uplift_threshold = np.percentile(uplift_scores, 80)
-target_users = np.where(uplift_scores >= high_uplift_threshold)[0]
+m = UpliftRandomForestClassifier(n_estimators=100, max_depth=10,
+                                 min_samples_leaf=20, evaluationFunction="KL")
+m.fit(X_tr, treatment=T_tr, y=y_tr)
+uplift = m.predict(X_te)                          # 处理组与对照组的期望差
+target = np.where(uplift >= np.percentile(uplift, 80))[0]   # 取高增量人群
 ```
 
-**示例 7：Chronos 时序基础模型（2024 新工具）**
+**怎么用**：`evaluationFunction` 决定树怎么切分，换它结果会变，必须固定并记录；`np.percentile(..., 80)` 里的 80 只用于圈定投放范围，属可调参数【经验：随预算与人群规模变】；上线前要用一次随机实验校准方向，否则 uplift 分只能用于排序，不能用于「值多少」。
+
+**示例 7：Chronos 时序基础模型（零样本）**
 
 ```python
 import torch
 from chronos import ChronosBoltPipeline
-
-# 加载预训练时序基础模型
-pipeline = ChronosBoltPipeline.from_pretrained(
-    "amazon/chronos-bolt-small",
-    device_map="cuda",
-    torch_dtype=torch.bfloat16,
-)
-
-# 时序预测（无需训练！）
-context = torch.tensor(y_train[-100:])  # 用最后 100 个时间步
-quantile_levels = [0.1, 0.5, 0.9]
-forecast = pipeline.predict(
-    context=context,
-    prediction_length=30,  # 预测未来 30 个时间步
-    quantile_levels=quantile_levels
-)
-
-# 输出分位数预测
-low, median, high = forecast[0][..., 0], forecast[0][..., 1], forecast[0][..., 2]
+pipe = ChronosBoltPipeline.from_pretrained("amazon/chronos-bolt-small", device_map="cuda")
+fc = pipe.predict(context=torch.tensor(y_tr[-100:]), prediction_length=30,
+                  quantile_levels=[0.1, 0.5, 0.9])          # 输出分位数预测
 ```
+
+**怎么用**：它的卖点是零样本可用，因此最容易跳过基线——上线前必须与朴素基线同期对比；回看长度（示例取最后 100 步）与预测步长都要按业务周期选，不要照抄。
 
 **示例 8：MLP 深度学习回归 + 自定义 Loss**
 
 ```python
-import torch
-import torch.nn as nn
-
-class HuberRegression(nn.Module):
-    """深度学习回归 + Huber Loss"""
-    def __init__(self, input_dim, hidden_dims=[128, 64, 32]):
-        super().__init__()
-        layers = []
-        prev_dim = input_dim
-        for hidden_dim in hidden_dims:
-            layers += [
-                nn.Linear(prev_dim, hidden_dim),
-                nn.ReLU(),
-                nn.BatchNorm1d(hidden_dim),
-                nn.Dropout(0.2)
-            ]
-            prev_dim = hidden_dim
-        layers.append(nn.Linear(prev_dim, 1))
-        self.net = nn.Sequential(*layers)
-
-    def forward(self, x):
-        return self.net(x).squeeze(-1)
-
-# 训练
-model = HuberRegression(input_dim=X_train.shape[1])
-optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
-criterion = nn.HuberLoss(delta=1.0)  # Huber Loss，对异常值鲁棒
-
-for epoch in range(100):
-    model.train()
-    optimizer.zero_grad()
-    y_pred = model(X_train_tensor)
-    loss = criterion(y_pred, y_train_tensor)
-    loss.backward()
-    optimizer.step()
+model = nn.Sequential(nn.Linear(d, 128), nn.ReLU(), nn.BatchNorm1d(128), nn.Dropout(0.2),
+                      nn.Linear(128, 64), nn.ReLU(), nn.Linear(64, 1))
+opt  = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
+crit = nn.HuberLoss(delta=1.0)      # 对异常值鲁棒；delta 须按标签尺度标定
+# 训练循环：mini-batch + 按验证集早停；上线前与 GBDT 基线对照
 ```
 
----
+**怎么用**：`delta` 是 Huber 的分界点，必须按标签量纲标定而不是照抄；上深度模型前先确认样本量能支撑参数量，并用 GBDT 基线做对照（[§ 3.3 决策表](04-regression-section-3-sec3.md)）。
+
+### 4.6 自检清单
+
+以下每条都必须**动了系统才有答案**；「坐下来想一想就能回答」的建模类问题（目标变量是否该做两段式、损失函数与业务成本是否同向、模式选得对不对）见 [§ 3](04-regression-section-3-sec3.md) §3.7，本节不重复。
+
+1. 影子打分演练：新模型与旧模型在同一批线上流量上并行打分，两模型的分差分布是否已经产出？
+2. 标签回流实测：从决策发生到真实标签可用，实际延迟是多少小时？误差监控的可见时刻是否按这个数字设计？
+3. 重训触发演练：人工把触发条件打成满足状态，重训 pipeline 是否真的被唤起、产出模型、并由人验收？
+4. 特征对拍：抽 20 行【经验：随特征列数与在线入口数量变】，离线批算出的特征与在线点查的特征逐列是否完全一致？
+5. 回填对照：取一次历史回填前后的特征快照，差异行是否只出现在被修正的时间点附近（全局差异即等于滚动窗口用了未来数据）？
+6. 成本函数对照：把缺货与积压成本的比值代进分位选择，当前分位取值是否与这个比值一致？
+7. 兜底演练：拔掉特征服务、或灌入超量纲输入，接口是返回错误还是回退基线规则？实测结果是否与设计一致？
+8. 压测实测：用线上真实特征分布（含缺失与极端值）跑一遍，P99 延迟与 QPS 是否在预算内？
+9. 预测域实测：喂入超出训练标签取值域的数据，输出是被兜底约束住了，还是原样透出？
+10. 分位交叉检查：跑一遍线上的分位预测，是否出现低分位预测值高于高分位？
+11. 分桶误差对账：按量级分桶的实际误差表是否已生成？大单与小单的偏差方向是否已知？
+12. 版本维度看板：误差与分差看板能否按「模型版本 × 特征版本」切分？切不了就无法归因。
+
+### 4.7 小结
+
+> 本节小结：这条路径上唯一决定成败的环节，是**把「预测值将被用来做什么动作」翻译成可实测的验收口径**（Step 1 的输出含义与下游动作、Step 4 的朴素基线、Step 8 的触发规则）。因为它同时决定了损失函数、评估指标与重训时机——口径错了，模型在离线指标上可以一直变好，而业务侧看不到任何改善；口径对了，每一次改动无论成败都能被判对错。它比调参更值得投入的原因在于：调参只决定这一次，验收口径决定之后每一次。
+>
+> 配合 [§ 2 核心原理](04-regression.md)、[§ 3 设计模式与范式](04-regression-section-3-sec3.md) 与 [§ 6 落地实践](04-regression-section-6-sec6.md) 阅读。

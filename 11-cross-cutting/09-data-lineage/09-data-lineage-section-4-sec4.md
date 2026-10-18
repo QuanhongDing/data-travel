@@ -1,125 +1,178 @@
-> 本文件是 **09-data-lineage.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](09-data-lineage.md)。
+> 本文件是 **09-data-lineage.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](09-data-lineage-section-3-sec3.md) 里的模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](09-data-lineage.md)。
 
 ## 4. 工程实现
 
-### 4.1 落地步骤
+本节按「落地步骤 → 关键技术点 → 工具链 → 存量迁移 → 模板 → 自检」组织。术语与主文件 [§ 2 核心原理](09-data-lineage.md) 逐字一致：**URN**、**血缘边（edge）**、**联邦血缘**、**桥接边 `bridge(u,v)`**、**血缘 API 网关**、**血缘版本 / 血缘时序**、**采集器类型（parser / hook / runtime / manual）**，在本节里指的就是主文件 §2.1 与 [§3](09-data-lineage-section-3-sec3.md) 里那几个结构，不另立口径。模式被什么约束逼出来、边界在哪，见 §3，本节不重复。
 
-**Step 1：盘点血缘系统（4-8 周）**
+读者分两类，本节以第二类为主。**从零搭建**（还没有任何血缘系统）按 4.1 走一遍即可，4.4 可略读。**在存量上改造**才是这个题目的常态：组织里通常已经有 2–4 个血缘来源 —— 调度系统里的作业依赖、数仓的 SQL 解析、BI 工具里的报表血缘，可能还有一个自研工具。这类读者请先读 4.4：这几个来源并成一张图的关键不是采集，而是先决定「谁的标识算数」，以及两个系统给的答案不一致时以谁为准（来源数 2–4 个是【经验：随组织规模与工具栈数量变】）。
 
-1. 列出所有血缘系统（DataHub、Atlas、自研等）。
-2. 识别跨域血缘需求。
-3. 评估联邦化可行性。
-4. 优先级排序。
+### 4.1 落地步骤（六步，顺序不能换）
 
-**Step 2：统一 ID 规范（4-8 周）**
+**Step 1：盘点血缘系统（4–8 周【经验：随血缘系统数量与跨部门协调成本变】）**
 
-1. 设计 URN 规范（兼容 OpenLineage）。
-2. 各系统接入统一 ID。
-3. 桥接服务（ID mapping）。
-4. 数据校验。
+1. 列出所有能产出血缘的对象：平台自带的元数据 / 血缘服务（Apache Atlas、DataHub、Unity Catalog 一类）、调度系统（作业依赖）、数仓（SQL 解析）、BI（报表 → 数据集）、采集与同步工具、自研血缘工具。逐个记录四件事：采集粒度（表级 / 字段级）、覆盖哪些引擎、谁在消费、数据存在哪。
+2. 识别跨域需求：哪些链路必须跨两个以上系统才能说全 —— 典型形态是「MySQL → Flink → 数仓 → 看板」这类跨引擎链路。
+3. 评估联邦化可行性：各域是否愿意保留自己的采集与命名（§3.2.1「被什么约束逼出来」与 §3.3 决策表首行），还是存在统一采集的授权。
+4. 排优先级：先做「跨域查询请求最多」的那几条链路，而不是覆盖面最广的那个系统。
 
-**Step 3：联邦血缘采集（4-8 周）**
+- **产物**：一张血缘系统清单（系统 / 粒度 / 引擎 / 消费方 / 存储 / 归属团队）+ 一份跨域链路优先级列表。
+- **判据**：清单里每个系统都要能填出「谁在消费」一栏，填不出来的先不纳入（它连消费方都没有，接进来只会增加对齐工作量）；再逐条核跨域链路列表，每条链路都要能指出它中途断在哪一跳。
+- **为什么必须第一步**：Step 2 的对齐对象是「同一实体在几个系统里各叫什么」，这份清单是唯一能回答「有几个」的输入。跳过它直接接采集，会出现接了三个月才发现某个域根本没有采集器的情况。
 
-1. 各系统 OpenLineage 集成。
-2. 跨系统桥接采集。
-3. 联邦存储。
-4. 数据校验。
+**Step 2：统一 ID 规范（4–8 周【经验：随域数与未对齐存量规模变，域越多、历史映射越乱越靠上限】）**
 
-**Step 4：血缘 API 网关（4-8 周）**
+1. 设计 URN 规范，兼容 OpenLineage 的 namespace + name 形态（主文件 §2.2 给出的形式是 `urn:li:dataset:(platform,name,env)`）。
+2. 各系统接入统一 ID：能改生成逻辑的直接改，不能改的（第三方产品内建命名）做映射表。
+3. 桥接服务（ID mapping）：维护「域内 ID ↔ 全局 URN」，并逐条记录这条映射是规则判定还是人工判定（§3.2.1 的 `confidence` / `decided_by` 两列）。
+4. 数据校验：跑一致性检查，同时找两类问题 —— 同一实体有两条 URN，以及两条 URN 指向同一实体。
 
-1. GraphQL Federation 设计。
-2. API 网关实现。
-3. 缓存、限流、鉴权。
-4. API 文档 + SDK。
+- **产物**：URN 规范文档 + 映射表 + 一个周期性跑的一致性检查任务。
+- **判据**：抽 3 个跨域实体、3 条映射（抽样量 3 是【经验：随域数与未对齐存量变，域越多越要按域分层抽，别只抽顺手的两个域】），看这些实体在各系统里的标识能否落到同一条 URN、这些映射的 `decided_by` 是否写出了裁决人或规则。全部映射都是 `inferred` 且没人认领，等于没有对齐。
+- **为什么必须排在采集之前**：跨域边的两端是 URN。URN 不对齐时先做采集，采回来的是一批两端身份各不相同的边 —— 图看起来建成了，跨域路径查询恒为空，而且不报错（暴露方式见 §3.5）。
 
-**Step 5：可视化与集成（4-8 周）**
+**Step 3：联邦血缘采集（4–8 周【经验：随要接入的引擎数与事件流改造范围变，每多接一个引擎就多一个解析器】）**
 
-1. 血缘可视化（自研 / 开源）。
-2. 嵌入数据申请流程。
-3. 嵌入变更管理。
-4. 嵌入 oncall。
+1. 各系统做 OpenLineage 集成，或把已有事件流转换成 OpenLineage 规范事件。
+2. 跨系统桥接采集：把 Step 2 的桥接边灌进来，每条边打上采集器类型。
+3. 联邦存储：域内明细留本地，联邦层只存三样东西 —— 路由、ID 对齐、桥接边（结构见 §3.2.1）。
+4. 数据校验：把「解析失败率」与「`manual` 边占比」做成两个长期指标，而不是一次性报告。
+
+- **产物**：可查询的血缘图 + 两个覆盖率指标 + 一份已知盲区清单。
+- **判据**：随手挑一个解析失败的作业，看它是否出现在盲区清单里。如果它只躺在采集日志里、不在清单上，说明缺口没有被度量，后续所有「覆盖率是多少」的讨论都没有分母。
+- **为什么必须排在 URN 之后、网关之前**：Step 4 的网关对外承诺「任何一条血缘都带得出处与新鲜度」，而 `collector` 与 `lastUpdated` 只有在采集阶段才产生。先建网关再补这两个字段，等于把一份已经发出去的接口契约改一次。
+
+**Step 4：血缘 API 网关（4–8 周【经验：随消费方数量与鉴权粒度变，接口一旦对外，每加一个消费方都要重走一次契约评审】）**
+
+1. GraphQL Federation 设计：把「上游 / 下游 / 影响面 / 根因」做成同一张 schema 上的字段，而不是拆成四个 REST 端点。
+2. 网关实现：查询改写（下发联邦或直查图存储）、缓存、限流、鉴权（谁能看哪个域的血缘）。
+3. 缓存与新鲜度：返回结果必须带 `lastUpdated` 与采集器类型，缓存 TTL 必须小于血缘采集周期。
+4. API 文档 + SDK，并附一组典型查询示例。
+
+- **产物**：网关 + 接口文档 + SDK + 一份消费方接入清单。
+- **判据**：把一个 3 跳以上的深链路查询（3 跳是【经验：随业务链路实际深度变，取排障时最常回看的那个深度】）打到网关上，看它是否被限流与分页保护住；再核返回值里有没有 `lastUpdated`。缺这一列，消费方无法判断自己拿到的是不是旧图。
+- **为什么必须排在可视化之前**：可视化是消费形态之一，网关是服务能力。先做界面的话，血缘只能被人工查阅 —— 它进不了 CI、进不了数据申请流程，也就产生不了任何约束力（§3.3 的误配第二对）。
+
+**Step 5：可视化与集成（界面 2–4 周【经验：随要覆盖的查询动作数与需要嵌入的流程数变，嵌入面越宽越靠上限】，嵌入流程是持续投入）**
+
+1. 血缘可视化：先做「按实体反查」与「按时间过滤」这两个高频动作，而不是先把整张图渲染出来。
+2. 嵌入数据申请流程：申请一张表时自动显示它的上游与新鲜度。
+3. 嵌入变更管理：变更提交时自动跑影响面，把结果附在变更单上。
+4. 嵌入 oncall：告警触发时给出该实体的候选根因链路。
+
+- **产物**：可视化入口 + 三处流程嵌入 + 至少一个「不用它就走不下去」的强制点。
+- **判据**：数过去一个月有多少次血缘查询是从这三处流程内部发起的（而不是从血缘界面直接进来的）。这个数为零，说明血缘还只是参考资料。
+- **为什么必须排在网关之后**：三处嵌入都需要程序化查询（自动跑影响面、自动带出上游、告警时自动查链路），界面上有的功能在流程里用不到；先做界面，嵌入时还要再补一层接口。
 
 **Step 6：AI 升级（持续）**
 
-1. LLM 辅助血缘补全。
-2. 自然语言查询血缘。
-3. 智能问询。
+1. LLM 辅助血缘补全：让模型从脚本正文、变更工单、指标文档里生成候选边，按 §3.2.5 的证据绑定与分级入库。
+2. 自然语言查询血缘：把自然语言翻译成图查询（模板见 4.5），返回结果必须带出处与置信等级。
+3. 智能问询：把「这条链路为什么断」「这个字段的下游为什么比预期少」这类问法交给模型组装查询，而不是让模型直接回答。
+
+- **产物**：候选边表（带 `origin` / `evidence` / `confidence`）+ 一个自然语言入口 + 一条写死的规则「AI 边不得参与门禁判定」。
+- **判据**：查两件事 —— ① 门禁读取的边集合里有没有 `origin = llm_inferred` 的边（有，说明是接线错误而不是模型问题，改配置即可）；② `verified_by` 非空的边占比最近一个月是否在上升（窗口取一个月是【经验：随采集周期与确认流程的节奏变，采集越频繁窗口可以越短】；不上升，说明确认流程没有人真正在跑）。单条边的证据抽查属于 §3.2.5 的自验方法，本步要查的是它在流程里有没有被接错。
+- **为什么必须最后做**：补全的产量远高于人工登记。在采集与对齐（Step 2–3）没稳定之前引入它，等于往一张还在变形的图上加速灌入无法验证的边，而假边比缺边更难发现。
+
+六步里最常被跳过的是 **Step 5 的后半段（嵌入流程）**：界面做出来了，但没有任何一条流程依赖它。第一个出问题的时点是下一次变更事故 —— 下游失败之后，团队仍然靠人肉从上游一张张表往回查；识别信号是血缘界面的访问量在建设期之后趋平，且没有任何流程文档引用它（§3.5「血缘 API 没人用」）。
 
 ### 4.2 关键技术点
 
-**1. OpenLineage 联邦采集**：
+**OpenLineage 联邦采集**
+
+- **做法**：每个引擎一个采集器 → 统一转成 OpenLineage 规范事件 → 写入统一事件流 → 索引构建；跨系统时域内明细留本地，只在联邦层登记路由与桥接。
+- **机制**：因为血缘在**事件流上采集、而不是在查询时采集**，写侧的代价（解析 + 事件）在装载期一次付清，读侧只剩下索引与图遍历 —— 这是「改表前先查影响面」能成为日常动作而不是一次性大作业的根本原因（主文件 §1.4 把 OpenLineage 1.0 记于 2020–2023 年条目【公开】）。
+- **失效条件**：**当解析失败的作业不被计成一个比率、只被逐条当成个别问题处理时，这条会坏在变更单上**：变更评审时贴出来的影响面清单比实际受影响的下游少一段，而评审人手上没有第二个来源可以反驳它，于是变更照常放行。症状不落在解析器的日志里，而是落在两三天后的一次对账差异或一次下游投诉上 —— 那时已经没人能指出缺的那一段是谁采的。观测信号：值班的人能不能在采集监控面板上直接读出 `collector = manual` 边占比与解析失败率这两个分母，还是只能翻采集日志逐条数（要靠人数，就说明缺口没有被度量）。
+- **档位**：【经验】（`collector = manual` 边占比与解析失败率要按「域 × 引擎」分层统计，分层数随域数与接入引擎数变；判断这条路当前能支撑什么，看的是这两个数随月份的趋势，而不是单次快照。登记类边为什么会随时间过期，机制见 §3.2.5，本节不重述）。
+
+**联邦血缘查询（GraphQL Federation）**
+
+- **做法**：以 URN 作为联邦键（`@key(fields: "urn")`），各域实现 `upstream` / `downstream` / `impactAnalysis` 三个解析器；跨域查询由联邦层按路由拆成多次域内查询，再合并返回。
+- **机制**：因为每次跨域查询都落在各域自己的服务上，域边界同时就是**值班表与工单的边界** —— 一条跨域链路的结果不对时，工单能直接开到某个域的值班人头上，不必先花一轮争论「这段明细该谁维护」；维护量因此按域摊开，而不是全压在一个中央团队身上。
+- **失效条件**：**当这条链路被接进一个有 SLO 的流程（发布门禁、数据申请审批），而域间依赖又在变密时，它会坏在 SLO 破线上，而不是坏在血缘自己的技术指标上**：一次完整路径查询要被拆成多次域内调用，延迟由最慢的那个域决定，任何一个域做一次例行维护、或某条跨域路径多绕一跳，门禁就会卡住。第一次卡住之后，值班人会加一个「超时即放行」的分支；这个分支半年后还在，门禁的实际拦截率悄悄降到零，而没有任何告警响过。观测信号：门禁侧 P99 与「超时即放行」分支的命中次数 —— 这两个数要挂在门禁自己的监控面板上，挂在血缘服务的面板上时，破线了没有人看得到。修法：给跨域查询定一条对流程可见的延迟预算，超预算就返回「部分结果 + 缺哪一跳」，让调用方自己决定是等还是放行。
+- **档位**：【经验】。
+
+**血缘 API 网关（FastAPI + GraphQL）**
+
+- **做法**：用 FastAPI + Strawberry 之类把 GraphQL 挂在 `/graphql`，暴露 `get_upstream` / `get_downstream` / `get_impact` / `find_root_cause` 四个字段；网关层做鉴权、限流、缓存与结果标注。代码见 4.5 模板 1。
+- **机制**：因为所有消费方共用同一个进程，**限流阈值与缓存 TTL 变成了两个可以各自调整、也各自背锅的配置项** —— 一次事故复盘里，「存储被深链路拖垮」看的是限流那一栏，「返回了旧图」看的是 TTL 那一栏，两个原因不会互相顶替。代价是这两项配置进了变更评审：调 TTL 要通知所有吃缓存的消费方，改限流要确认门禁那条路径还留得下额度。
+- **失效条件**：**当某条发布门禁开始依赖网关、而网关的答案偶发不新鲜时，这条会坏在审批流上，而不是在技术上**：第一次误拦截之后，团队提一张豁免单就过去了；如果这张单没写上到期日与责任人，第二个月它就会变成标准动作 —— 门禁还在跑，但被它拦下的人只要提单就能放行，约束力实际上从图转移到了审批人身上，而审批人看的还是同一张旧图。观测信号是豁免单的数量与通过率，以及「被拦截后人工放行」的比例；这三个数只有运行期才有，上线前一个都拿不到。修法：门禁读路径与展示读路径拆成两组配置（不同 TTL、不同限流额度），门禁那组的 TTL 变更单独走值班审批。
+- **档位**：【经验】。
+
+**跨云血缘（Atlan + Databricks）**
+
+- **做法**：各云内建完整血缘服务，跨云只交换一份**合规白名单**里的骨架字段（实体身份、边、采集时间、采集器类型、地域），明细留在原云按需回源 —— 白名单由合规评审逐列审定，新增一列要走一次评审，不由研发随手加。上线前让 DBA 用自己的语言逐列标注「这一列会不会带出数据内容」，标不出来的一律先不纳入。产品侧候选（Atlan 的跨云血缘、Databricks Lakehouse Federation 等）的能力边界请以其官方文档当前版本为准自行核验。
+- **机制**：因为跨境传输的只有白名单字段，**合规评审与血缘建设可以并行推进，而不是互相等待** —— 法务审的是那张字段表，工程做的是域内采集与回源，评审卡住时域内那半边照常往下做。代价是白名单一旦收紧，原本一条跨云路径会被切成若干条「到边界为止」的短路径，调用方要自己把几段拼起来。
+- **失效条件**：**当同一实体在两朵云里各有一条 URN、而两条 URN 的生成方都不肯改自己的命名时，这条会坏在两张互相踢的工单上**：云 A 说该对齐到我的命名，云 B 说该对齐到我的，工单在两边各挂两周后不了了之；同一张表在两条路径里显示为两个节点，跨云影响面返回空，而各云内部的查询完全正常，因此没有监控会亮、也没有人报故障。观测信号：跨云查询返回空结果的比例，以及同一实体在注册表里挂着几条 URN —— 后者要靠巡检任务定期跑，不会自己浮出来。修法：给每个未裁决实体指定唯一一个仲裁岗位与到期日（默认归跨云平台团队），到期未裁决就不允许它进入跨云影响面的计算，让它以「未对齐」显式掉出去，而不是让两条命名静默并存。
+- **档位**：【经验】（选型时要求当场演示：给一个跨云的下游问题，它返回的是路径，还是两朵云上资产的并列清单 —— 能同时列出两朵云上的资产，不等于能算跨云的路径）。
+
+**血缘图的存储：图数据库 vs 关系表**
+
+- **做法**：两类落法。① 图库（Neo4j、JanusGraph）+ Cypher / Gremlin 做变长路径；② 边存关系表，用递归 CTE 或物化的可达性表做多跳。选之前先量两个数：**反向查询（某实体的上游）的 QPS** 与 **深链路的最大跳数与分页需求**。
+- **机制**：因为血缘的读形态是「按实体反查 + 沿边递归」，图库把邻接关系做成物理指针，多跳遍历不必每跳都回边表；关系表方案的优势在写侧与运维 —— 边表就是一张普通表，可复用现有的备份、审计与权限体系。按 10 万级实体、平均出度 3–5 条估算，边数在 30 万–50 万量级【推算：实体数 × 平均出度 = 10 万 × 3–5；实体数量级取自 [§6 落地实践](09-data-lineage-section-6-sec6.md) 案例中的「十万级数据集」，平均出度按【经验】假定】。
+- **失效条件**：**当边数到十万级、且查询允许 5 跳以上时，关系表 + 递归 CTE 会坏在中间结果集上**：每多一跳，中间集合按平均出度放大，临时表写满、查询超时。症状是 1–2 跳毫秒级、3 跳以上显著变慢，而且慢的总是那几条固定链路。修法：给深链路设深度上限与分页，并对高频子图物化。
+- **档位**：【推算】+【经验】。
+
+**URN 对齐的运营（接入与对账）**
+
+- **做法**：接入新域时提交映射清单 → 注册表登记（`confidence` 与 `decided_by` 必填）→ 跑一致性检查（同名不同实体、同实体不同名两类）→ 输出未对齐清单并指定裁决人；门禁只信 `exact` 的边。
+- **机制**：因为对齐是整条链路上**唯一需要人裁决的环节**，只有把它变成一个「有输入、有输出、有责任人」的例行任务，跨域图才能随域数增长，而不是退化成两套身份并列。
+- **失效条件**：**当域数在增长而裁决人不固定时，这条会坏在「未对齐清单越来越长」上**：跨域路径查询的成功率随时间下降，而每个域内部的查询都正常，所以没有人会报故障。观测信号：未对齐清单的长度趋势，加上跨域查询返回空结果的比例。修法：把未对齐清单放进月度治理例会的固定议题，每个域指定一个对接人。
+- **档位**：【经验】。
+
+### 4.3 工具链与平台
+
+这一类的候选名字很多，但选型会上真正需要回答的只有三个问题：**明细能不能留在域内、接口能不能给出出处与新鲜度、接入新源的成本是接适配器还是改代码。**
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 联邦血缘 / 元数据平台 | Atlan、Collibra、DataHub、Unity Catalog、阿里云 DataWorks、AWS Glue Data Catalog、Azure Purview | 先核三件：① 明细能否留域内、只上送骨架；② 有没有可编程接口，且能返回边的出处与新鲜度；③ 接新源是「接适配器」还是「改代码」。有多云或出境约束的组织优先看 ①，单主体组织 ② 更值钱 | 选了一个只能全量汇聚的平台 → 在受出境约束的场景里部署本身就违规，后期要重建 |
+| 图存储 / 查询引擎 | Neo4j、JanusGraph（主文件 §2.3 另有 DataHub + GraphQL Federation、JanusGraph 跨集群、自研图库三条路线）；关系表 + 递归 CTE | 判据是反向查询 QPS 与最大跳数（见 4.2 存储一条）。跳数常在 2–3 跳、边数在万级以下时【经验：随资产规模与查询习惯变】，关系表方案的运维成本更低 | 只按「能不能画图」选 → 深链路查询上线后超时，用户退回只查一跳 |
+| 查询接口形态 | GraphQL（DataHub 的 GraphQL 接口、Strawberry 一类实现）、REST | 判据是消费方数量与查询形态集中度：消费方 ≥2 且都要「实体 + 若干关系字段」时【经验：阈值随消费方数量此后是否会继续增加变，会增加的才值得上 GraphQL】，GraphQL 少一次接口变更；只有一个消费方时 REST 更简单 | 给单一消费方上联邦 GraphQL → 多一层 schema 维护，收益为零 |
+| 可视化 | React Flow、D3.js、DataHub UI、Marquez UI、Neo4j Browser | 判据是「要反查还是要展示」：内部工具、看血缘图本身，用开源内置 UI；要嵌进自有平台，用 React Flow / D3.js 自渲染 | 从零自研渲染 → 预算花在画图上，反查与时间过滤反而没做 |
+| AI 辅助（厂商材料） | Atlan AI、Collibra AI、阿里云 DataWorks 智能血缘、Cube Lineage | 判据只有一条：能否回答「这条边是怎么得出来的、证据在哪里」。答不出证据的输出是推荐，不是血缘 | 把推荐当血缘用 → 假边进门禁，第一次误拦截之后团队开始绕过门禁 |
+
+产品侧的 AI 辅助能力属于厂商材料，判据见上表右列，其能力边界请以各家官方文档当前版本为准自行核验。
+
+这一类里最容易被误选的是**联邦血缘平台**。误选的成因是比错了指标：选型时比较的是「能连多少个数据源」，而门槛其实在「身份对齐有没有人负责」—— 先去建联邦层，URN 对齐就变成了必须先完成的前置工作，而它是唯一需要人裁决的环节；它一拖延，联邦层只能把两套身份并列展示，于是得到的是一个「能列出多个域、问不出跨域路径」的入口 —— 而它对这类问题不报错，只返回空（成因见 §3.3 表后第一段「最常被误选的一对」）。第二容易被误选的是可视化工具，成因相同：它最好演示。
+
+### 4.4 存量迁移
+
+存量改造的起点几乎总是「每个系统各有一份血缘，没人知道哪份更全」。四件事按顺序做。
+
+**① 先做什么：只接反向查询，不做联邦、不做跨域。**
+
+做法是把现有系统里已有的上游溯源能力收口到一个网关后面，让「这张表的上游是谁」有一个统一答案，跨域与联邦先不做。这一步立刻见效（排障第一次不用问人），而且完全可回退 —— 网关只是转发，关掉它各系统照旧。反过来先做跨域，就必须先完成 URN 对齐，而对齐的进度取决于别人，整个项目会被它卡住。
+
+**② 历史资产怎么分类处理。** 四类，判据如下：
+
+| 类别 | 判据 | 处理 |
+| --- | --- | --- |
+| 回填 | 作业是静态 SQL、能被解析器覆盖 | 跑历史 SQL 重放，把边补进主图；按月份分批，一次性任务的失败可重跑 |
+| 打标挂账 | 动态 SQL、脚本任务、手工导数 | 标为 `manual` 或已知盲区，登记 Owner，用运行时采集逐步补齐；**不得参与门禁判定** |
+| 只上送骨架 | 另一套血缘系统的明细受权限或出境约束 | 只同步 URN + 边 + 时间戳，明细留在原系统按需回源 |
+| 不动 | 没有消费方、也没有上下游的孤立资产 | 不接，但在目录里记为「未纳入」，避免下次盘点时重新讨论一遍 |
+
+**③ 双轨怎么维持、维持多久。**
+
+双轨期新旧两个入口同时对外服务，两套都继续更新。同时要有一条例行任务：**逐条链路比对两边给出的答案**，把差异清单按周收敛。比对的对象不是全量，是那些「跨两个系统才能说全」的链路（【经验：先覆盖优先级列表的前 10 条，多了没人看】）。
+
+时长以**域**为单位，【经验：1–2 个季度，随消费方数量、以及有多少流程开始依赖新入口而变】。一条硬规则：**门禁只读新网关**，旧入口不参与任何判定 —— 两侧都判定，同一次变更会得到两个结论，而团队只会相信对自己有利的那个。
+
+**④ 什么信号说明可以退出双轨。**
+
+- 旧入口的查询量连续 2 周趋零【经验：窗口随旧入口的日均调用量与消费方数量变，调用越稀疏越要把窗口拉长】；
+- 比对任务的差异清单连续两轮为空；
+- 至少一次真实的变更事故复盘，结论是从新网关的图得出的，而不是从某个域自己的工具里得出的；
+- 反向演练：旧入口关停一天（或收回权限），没有消费方报障。
+
+四条里最后一条最容易被省，但它才是真正证明「没有人还在依赖旧入口」的那条证据。
+
+### 4.5 模板 / 示例
+
+**模板 1：血缘 API 网关（示例 1，FastAPI + GraphQL）**
 
 ```python
-# openlineage_federated.py
-from openlineage.client import OpenLineageClient
-from openlineage.client.event import RunEvent, RunState, Run, Job, Dataset
-
-# 多系统联邦客户端
-clients = {
-    "system_a": OpenLineageClient("http://marquez-a:5000"),
-    "system_b": OpenLineageClient("http://marquez-b:5000"),
-    "system_c": OpenLineageClient("http://marquez-c:5000"),
-}
-
-
-def emit_federated_lineage(job_name, inputs, outputs, system="system_a"):
-    """发送联邦血缘事件"""
-    client = clients[system]
-    
-    event = RunEvent(
-        eventType=RunState.COMPLETE,
-        eventTime=datetime.now().isoformat(),
-        run=Run(runId=str(uuid.uuid4())),
-        job=Job(namespace=system, name=job_name),
-        inputs=[Dataset(namespace=f"{system}", name=d) for d in inputs],
-        outputs=[Dataset(namespace=f"{system}", name=d) for d in outputs],
-    )
-    client.emit(event)
-
-
-# 跨系统血缘
-emit_federated_lineage(
-    job_name="etl_orders",
-    inputs=["ods_orders_a", "ods_users_b"],  # 跨系统输入
-    outputs=["dwd_orders_a"],
-    system="system_a",
-)
-```
-
-**2. 联邦血缘查询（GraphQL Federation）**：
-
-```graphql
-# federated_schema.graphql
-type Dataset @key(fields: "urn") {
-  urn: String!
-  name: String!
-  platform: String!
-  
-  # 联邦血缘（跨系统）
-  upstream: [Dataset!]!
-    @requires(fields: "urn")
-  
-  downstream: [Dataset!]!
-    @requires(fields: "urn")
-  
-  # 影响范围
-  impactAnalysis(maxHops: Int = 5): ImpactAnalysis
-    @requires(fields: "urn")
-}
-
-type ImpactAnalysis {
-  affectedDatasets: [Dataset!]!
-  affectedReports: [Report!]!
-  affectedDashboards: [Dashboard!]!
-  totalAffected: Int!
-}
-```
-
-**3. 血缘 API 网关（FastAPI + GraphQL）**：
-
-```python
-# lineage_gateway.py
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from strawberry.fastapi import GraphQLRouter
 import strawberry
 
@@ -129,240 +182,123 @@ class Dataset:
     urn: str
     name: str
     platform: str
-    
+
 
 @strawberry.type
 class LineageResult:
     datasets: list[Dataset]
     paths: list[list[Dataset]]
+    # 网关对外只承诺一件事：任何一条血缘都带得出处与新鲜度
+    collectors: list[str]   # parser / hook / runtime / manual
+    last_updated: str
 
 
 @strawberry.type
 class Query:
     @strawberry.field
-    async def get_upstream(self, urn: str, max_hops: int = 5) -> LineageResult:
-        """反向查询上游"""
-        return await lineage_service.get_upstream(urn, max_hops)
-    
+    async def get_upstream(self, urn: str, max_hops: int = 5) -> LineageResult: ...
+
     @strawberry.field
-    async def get_downstream(self, urn: str, max_hops: int = 5) -> LineageResult:
-        """正向查询下游"""
-        return await lineage_service.get_downstream(urn, max_hops)
-    
+    async def get_downstream(self, urn: str, max_hops: int = 5) -> LineageResult: ...
+
     @strawberry.field
-    async def get_impact(self, urn: str, max_hops: int = 10) -> LineageResult:
-        """影响分析"""
-        return await lineage_service.get_impact(urn, max_hops)
-    
+    async def get_impact(self, urn: str, max_hops: int = 10) -> LineageResult: ...
+
     @strawberry.field
-    async def find_root_cause(self, anomaly_urn: str) -> LineageResult:
-        """根因分析"""
-        return await lineage_service.find_root_cause(anomaly_urn)
+    async def find_root_cause(self, anomaly_urn: str) -> LineageResult: ...
 
 
 app = FastAPI()
-graphql_app = GraphQLRouter(Query)
-app.include_router(graphql_app, prefix="/graphql")
+app.include_router(GraphQLRouter(Query), prefix="/graphql")
 ```
 
-**4. 跨云血缘（Atlan + Databricks）**：
+**怎么用**：`max_hops` 必须给默认值并配分页 —— 不设上限的多跳遍历在十万级边上会把中间结果集打满；`last_updated` 与 `collectors` 两列不要省，它们是消费方判断「这是不是旧图、这条边是谁采的」的唯一依据。两处不要照抄：`...` 的方法体要接你真正的血缘服务；`max_hops` 的默认值按实测的最大跳数调，不要照搬 5 和 10。
+
+**模板 2：跨域血缘查询与端到端最短路径（示例 2，Cypher）**
+
+```cypher
+// 跨域血缘：跨域 = platform 不同；方向 UPSTREAM / DOWNSTREAM / BOTH
+MATCH path = (n:Asset {urn: $urn})-[:LINEAGE*1..5]-(m:Asset)
+WHERE m.platform <> n.platform
+RETURN [x IN nodes(path) | x.urn] AS path_urns,
+       length(path) AS hops
+ORDER BY hops
+LIMIT 200;
+
+// 端到端最短路径
+MATCH path = shortestPath((s:Asset {urn: $source})-[*]-(t:Asset {urn: $target}))
+RETURN [n IN nodes(path) | n.urn] AS path_urns,
+       length(path) AS path_length;
+```
+
+**怎么用**：把 `*1..5` 的 5 换成按链路实测的深度上限；`ORDER BY hops` 要写在 `LIMIT` 之前，否则截断掉的是最短路径，而最短路径恰恰是排障时最想看的那条。`shortestPath` 那条不要加 `*1..N` 限制，它自己会找最短；但要在上层加超时，它最坏情况会遍历整个连通分量。
+
+**模板 3：基于 LLM 的血缘自然语言查询（示例 3）**
 
 ```python
-# cross_cloud_lineage.py
-"""
-跨云血缘示例：AWS + Azure + 阿里云
-"""
-from atlan import AtlanClient
+# 关键：模型只负责把自然语言翻译成查询，不负责回答
+resp = client.messages.create(
+    model=MODEL_ID,              # 以所用 SDK 官方文档当前版本的模型标识为准
+    max_tokens=1024,
+    system=LINEAGE_QUERY_SYSTEM, # 可用字段清单 + 「URN 只能取自查询结果，不许拼接」
+    messages=[{"role": "user", "content": question}],
+)
+query = next(b.text for b in resp.content if b.type == "text")
 
-atlan = AtlanClient(api_key=os.environ["ATLAN_API_KEY"])
-
-# 跨云血缘查询
-def query_cross_cloud_lineage(urn: str, max_hops: int = 5):
-    """查询跨云血缘"""
-    lineage = atlan.lineage.get(
-        urn=urn,
-        max_hops=max_hops,
-        include_cross_cloud=True,
-    )
-    
-    return {
-        "urn": urn,
-        "upstream": lineage.upstream,
-        "downstream": lineage.downstream,
-        "cross_cloud_paths": [
-            path for path in lineage.paths
-            if "aws" in str(path) and "azure" in str(path)
-        ],
-    }
+validate_fields(query)           # 字段白名单：不在清单里就直接拒绝，不要送进执行
+return execute_lineage_query(query)
 ```
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+**怎么用**：`system` 里要写清可用字段（`get_upstream` / `get_downstream` / `get_impact` / `find_root_cause` / `get_end_to_end_path` / `get_cross_domain_lineage`）并写死一条约束 —— URN 只能取自查询结果，不许模型自己拼。`validate_fields` 这一步不能省：模型生成的字段名不在白名单里时应当直接拒绝，而不是让存储层去报错。模型标识与可用的请求参数请以所用 SDK 官方文档的当前版本为准。
 
-**联邦血缘工具**：
-
-| 工具 | 定位 |
-| --- | --- |
-| **Atlan** | 跨云联邦血缘 + AI |
-| **Collibra** | 企业级治理 + 联邦 |
-| **DataHub** | 开源 + GraphQL Federation |
-| **Unity Catalog** | Databricks Lakehouse 联邦 |
-| **阿里云 DataWorks** | 中国本土 + 跨云 |
-| **AWS Glue Data Catalog** | AWS 跨账户 |
-| **Azure Purview** | Azure 多云 |
-
-**可视化工具**：
-
-| 工具 | 定位 |
-| --- | --- |
-| **React Flow** | 前端血缘可视化 |
-| **D3.js** | 自研可视化 |
-| **DataHub UI** | DataHub 内置 |
-| **Marquez UI** | Marquez 内置 |
-| **Neo4j Browser** | 图数据库可视化 |
-
-**AI 时代新工具（2024-2025）**：
-
-- **Atlan AI**：自然语言查询血缘。
-- **Collibra AI**：AI 辅助血缘补全。
-- **阿里云 DataWorks 智能血缘**：基于通义千问。
-- **Cube Lineage**：Cube.js 字段血缘。
-
-### 4.4 代码 / 示例
-
-**示例 1：联邦血缘查询 API（GraphQL + Neo4j）**
+**模板 4：网关 + 缓存（示例 4）**
 
 ```python
-# lineage_federated_api.py
-"""
-联邦血缘查询 API：基于 Neo4j + GraphQL Federation
-"""
-from neo4j import GraphDatabase
-from typing import List, Optional
-
-driver = GraphDatabase.driver("bolt://neo4j:7687")
-
-
-def get_cross_domain_lineage(urn: str, direction: str = "BOTH", max_hops: int = 5):
-    """跨域血缘查询"""
-    
-    with driver.session() as session:
-        if direction == "UPSTREAM":
-            cypher = """
-            MATCH path = (n:Asset {urn: $urn})<-[*1..{max_hops}]-(m:Asset)
-            WHERE m.platform <> n.platform  // 跨域
-            RETURN path, m
-            """
-        elif direction == "DOWNSTREAM":
-            cypher = """
-            MATCH path = (n:Asset {urn: $urn})-[*1..{max_hops}]->(m:Asset)
-            WHERE m.platform <> n.platform  // 跨域
-            RETURN path, m
-            """
-        else:  # BOTH
-            cypher = """
-            MATCH path = (n:Asset {urn: $urn})-[*1..{max_hops}]-(m:Asset)
-            WHERE m.platform <> n.platform
-            RETURN path, m
-            """
-        
-        result = session.run(cypher.format(max_hops=max_hops), urn=urn)
-        return [dict(record) for record in result]
-
-
-def get_end_to_end_path(source_urn: str, target_urn: str):
-    """端到端路径查询"""
-    
-    with driver.session() as session:
-        cypher = """
-        MATCH path = shortestPath((s:Asset {urn: $source})-[*]-(t:Asset {urn: $target}))
-        RETURN path,
-               [n IN nodes(path) | n.urn] AS path_urns,
-               length(path) AS path_length
-        """
-        
-        result = session.run(cypher, source=source_urn, target=target_urn)
-        return [dict(record) for record in result]
-```
-
-**示例 2：基于 LLM 的血缘自然语言查询**
-
-```python
-# llm_lineage_query.py
-import os
-from anthropic import Anthropic
-
-client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-
-
-def natural_language_lineage_query(question: str):
-    """用自然语言查询血缘"""
-    
-    prompt = f"""
-你是一个数据血缘专家。用户提问：{question}
-
-请输出 GraphQL 查询语句来回答用户的问题。
-
-可用字段：
-- getUpstream(urn, maxHops): 上游血缘
-- getDownstream(urn, maxHops): 下游血缘
-- getImpact(urn, maxHops): 影响分析
-- findRootCause(anomalyUrn): 根因分析
-- getEndToEndPath(sourceUrn, targetUrn): 端到端路径
-- getCrossDomainLineage(urn, direction): 跨域血缘
-
-输出格式：
-```graphql
-query {{
-    ...
-}}
-```
-"""
-    
-    response = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=1000,
-        messages=[{"role": "user", "content": prompt}]
-    )
-    
-    # 提取 GraphQL
-    graphql = extract_graphql(response.content[0].text)
-    
-    # 执行查询
-    return execute_lineage_query(graphql)
-```
-
-**示例 3：血缘 API 网关 + 缓存**
-
-```python
-# lineage_api_with_cache.py
-"""
-血缘 API 网关 + Redis 缓存
-"""
-import redis
 import hashlib
+import json
+import redis
 
 cache = redis.Redis(host="redis", port=6379)
+TTL_SECONDS = 300          # 【经验：随采集周期变，必须小于采集周期】
 
 
 async def lineage_query_with_cache(query: str, params: dict):
-    """带缓存的血缘查询"""
-    # 1. 计算缓存 key
-    cache_key = hashlib.md5(
+    key = hashlib.md5(
         f"{query}:{json.dumps(params, sort_keys=True)}".encode()
     ).hexdigest()
-    
-    # 2. 查缓存
-    cached = cache.get(cache_key)
-    if cached:
-        return json.loads(cached)
-    
-    # 3. 查血缘
+
+    if (hit := cache.get(key)):
+        return json.loads(hit)
+
     result = await execute_lineage_query(query, params)
-    
-    # 4. 写缓存（5 分钟）
-    cache.setex(cache_key, 300, json.dumps(result))
-    
+    cache.setex(key, TTL_SECONDS, json.dumps(result))
     return result
 ```
 
----
+**怎么用**：`TTL_SECONDS` 与「门禁不吃缓存」是同一个决策的两半 —— 展示路径可以吃 5 分钟缓存，门禁路径必须直查；`sort_keys=True` 不能省，参数顺序不同会让同一个查询变成两个缓存键，缓存命中率会无解释地掉一半。
+
+### 4.6 自检清单
+
+以下 11 条都是**动过系统才有答案**的动作，坐下来想是答不出来的。任意一条答「否」，记入待处理项。清单里的抽样量（3 条链路 / 3 个跨域实体 / 3 个实体）与观察窗口（2 周 / 一个月）都是【经验】参数，随资产规模与人力调整；要紧的不是抽多少，而是**每次抽同样多**，这样两次检查才能横向比较。
+
+**可以坐下来想清楚的，不在这里**：覆盖率有没有一个可查的分母、URN 该由谁生成、有没有对齐仲裁者、返回值该不该带 `lastUpdated` 与采集器类型、深链路该不该设深度上限 —— 这些是设计与口径问题，见 [§3.7 自检清单](09-data-lineage-section-3-sec3.md)。本清单只留必须动过系统、或在运行期才拿得到数的那几条。
+
+1. 抽 3 条链路逐跳核对：每一跳是否都有采集器？缺采集器的那一跳，是否出现在已知盲区清单上？
+2. `collector = manual` 的边占比当前是多少？最近三次统计是在收敛还是发散？
+3. 统计图谱里 `origin` 为模型推断的边有多少条、其中 `verified_by` 被填上的有多少条 —— 后一个数长期为零，说明确认流程没有人在跑。
+4. 抽 3 个跨域实体，它们在不同系统里的标识能否落到同一条 URN？未对齐清单当前有多长？
+5. 同一实体的下游，从新网关查一次、再从原系统查一次，两份答案的差异清单是否为空？
+6. 对最坏的一条链路跑一次无上限查询，记下返回条数与耗时；再看接口是否会在超时前自己截断，并把「已截断」明确告诉调用方。
+7. 挑一个热点实体，在两次采集周期之间各查一次，比较返回的 `lastUpdated`：不变，说明缓存把它冻住了，此时门禁读到的是旧图（这一列该不该有、TTL 该不该小于采集周期，见 §3.7）。
+8. 数过去一个月三处流程嵌入（数据申请 / 变更评审 / oncall 告警）各自触发血缘查询多少次，其中多少次是「不查就走不下去」—— 哪一处已经从参考资料变成硬依赖？（「有没有流程依赖血缘」这个判断题见 §3.7。）
+9. 关停旧入口一天的演练做过没有？有没有消费方报障？
+10. 取最近一次变更事故的时间线，把「影响面查询被调用」的时刻与「下游首个失败告警」的时刻放在一起：影响面是在告警之前被调用的，还是事后补查的？
+11. 停掉某一个域的血缘服务一天做演练，再看这一天的跨域影响面请求在**调用方那侧**留下了什么：是自动降级成「部分结果」并在工单里被记了一笔，还是仍然安静地返回「无下游」而没有人发现？（接口该不该在两者之间做区分，见 §3.7。）
+
+第 4、5、9 三条最常被跳过，因为它们要跨系统对账、要动生产入口；但跨域血缘的失败几乎都发生在这三条覆盖的地方。
+
+### 4.7 小结
+
+> 本节小结：整个工程里唯一那个决定成败的环节是 **URN 身份对齐**（Step 2 以及 4.2 最后一条）。跨域血缘的全部价值都建立在「A 系统里的 `orders` 和 B 系统里的 `orders` 是同一个东西」这个判断上，而它是整条链路上唯一无法自动化、必须有人负责的部分。采集、存储、网关、可视化投入再多，对齐没做出来时，得到的只是一个能列出多个域、但跨域查询恒为空的入口 —— 而且它不报错。
+>
+> 配合 [§ 2 核心原理](09-data-lineage.md)、[§ 3 设计模式与范式](09-data-lineage-section-3-sec3.md) 与 [§ 6 落地实践](09-data-lineage-section-6-sec6.md) 阅读。

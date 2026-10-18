@@ -1,234 +1,241 @@
-> 本文件是 **05-recommendation.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](05-recommendation.md)。
+> 本文件是 **05-recommendation.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](05-recommendation-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](05-recommendation.md)。
 
 ## 4. 工程实现
 
+本节把推荐系统从「选一组模型」推进到「在一个真实组织里把它跑住」。模式与约束的对应关系已在 [§ 3](05-recommendation-section-3-sec3.md) 讲完，本节不复述任何模式本身；这里只回答四个问题：按什么顺序建、每一步怎么知道自己做对了、用什么工具、已经在跑的召回与排序链路怎么改造。
+
+本文件同时面向两类读者。**从零搭建**的读者按 4.1 的顺序走，用 4.5 的模板起步；**存量改造**的读者直接从 4.4 读起 —— 推荐系统极少有从零搭建的机会，多数场景是给一条已经在跑的链路补日志、补口径、补对账。4.2 与 4.3 对两类读者同样适用。
+
 ### 4.1 落地步骤
 
-**Step 1：业务理解与目标定义**
+八步的顺序由一条关系决定：**后一步的评估依赖前一步留下的记录**。推荐系统的训练数据由系统自己的曝光产生，所以「当时用了什么策略」这个记录必须早于模型存在，否则后面所有结论都无法归因。
 
-- 明确业务目标（CTR / GMV / 时长 / 满意度）。
-- 评估指标对齐（离线 AUC + 在线 A/B 测试）。
-- 输出：**目标定义文档**。
+**Step 1：业务理解与目标定义（1–2 周【经验：随目标数量与签字层级变】）**
 
-**Step 2：数据准备**
+- 明确业务目标：CTR / GMV / 时长 / 满意度，并写清每个目标的在线验收指标与观测周期。
+- 评估指标对齐：离线指标（AUC / GAUC / NDCG）与在线指标之间写明对应关系，写不出对应关系的就要说明为什么暂时没有。
+- **产物**：目标定义文档（每个目标的在线指标、观测周期、变差时的责任人）。
+- **判据**：文档里的每个目标都能回答「它变差时，哪个角色会在第几天看到」；答不上来的目标先标为「不可验收」，不要写进上线判据。
+- **为什么必须这一步、为什么在最前**：多任务的损失权重、重排规则的优先级、A/B 的胜负判定三者都要引用这份文档。目标没定清时，Step 5 的损失权重会随业务口头意见反复漂移，而每一次漂移都没有记录可查。
 
-- 收集用户行为日志（曝光 / 点击 / 转化）。
-- 用户画像 / Item 画像。
-- 上下文特征（时间 / 地点 / 设备）。
-- 输出：**样本库 + 特征工程**。
+**Step 2：数据准备（2–6 周【经验：随日志完整度与画像建设程度变】）**
 
-**Step 3：架构设计**
+- 收集用户行为日志：曝光 / 点击 / 转化；建用户画像与 Item 画像；补上下文特征（时间 / 地点 / 设备）。
+- **在曝光日志里加策略版本字段** —— 每条曝光记录当时生效的排序策略版本。
+- **产物**：样本库 + 画像与特征基础表 + 曝光日志（含策略版本字段）。
+- **判据**：抽一天的曝光日志【经验：天数随流量规模与时段覆盖要求变】，能逐条回答「这条曝光由哪个策略版本产生」；能报出训练样本的正样本率与线上真实点击率的差值（两者不一致说明采样口径与线上不同）。
+- **为什么必须这一步、为什么在架构设计之前**：曝光日志是全流程里唯一「不做就永久损失」的一步 —— 历史流量无法回填，缺字段的那段时间的反事实评估永远做不出来。所以它必须排在 Step 3 之前，哪怕当时的架构还没定。
 
-- 分层架构（召回 → 粗排 → 精排 → 重排）。
-- 每层的候选数量、模型选择、延迟目标。
-- 输出：**架构图 + SLA**。
+**Step 3：架构设计（2–4 周【经验：随层数与团队划分变】）**
 
-**Step 4：召回层搭建**
+- 定分层架构：召回 → 粗排 → 精排 → 重排，写明每层的候选数量、模型选择、延迟目标。
+- 为每层写明**交接物**：进出的数据形态、是否带版本（编码器版本、特征口径版本、策略版本）。
+- **产物**：架构图 + SLA + 各层交接物定义。
+- **判据**：把四层的延迟预算相加，总和是否小于端到端预算并给特征拼装留出额度；每层的交接物能否只靠字段就回答「这批候选是谁产的、什么时候产的」。
+- **为什么必须这一步、为什么在召回之前**：层数是外部契约 —— 一旦定了四层，Step 4 / 5 / 6 的排期与责任人随之分开。事后改层数的代价是整条链路重排，而不只是换一个模型。
 
-- 双塔 / 协同过滤 / YouTube DNN。
+**Step 4：召回层搭建（4–10 周【经验：随通道数量与检索栈既有程度变】）**
+
+- 建候选生成通道：双塔 / 协同过滤 / YouTube DNN（通道数按长尾覆盖需求定）。
 - 离线训练 + 在线 Embedding 检索（Faiss / Milvus）。
-- 输出：**召回模型 + 检索服务**。
+- 记录召回埋点：Top-K 的 item 主键、分数、编码器版本。
+- **产物**：召回模型 + 检索服务 + 召回率监控 + 埋点日志。
+- **判据**：抽一个用户，核对其召回 Top-K 里是否包含其近期真实交互过的 Item，并报出这批召回的条数；能指出当前召回方式放弃了哪些交叉能力、由哪一层补偿。
+- **为什么必须这一步、为什么在精排之前**：精排的每一次离线评估都跑在召回给出的候选集上，召回层先落地（埋点、编码器版本、交接物）之后，这份候选集才是可复用的对照基准；召回通道一换，精排的历史离线指标就整段不可比。先建精排再补召回，会把精排的容量花在一个被污染的候选集上，而这个问题在离线指标里表现为「精排怎么调都上不去」。
 
-**Step 5：粗排 / 精排层搭建**
+**Step 5：粗排 / 精排层搭建（6–12 周【经验：随模型复杂度与特征数量变】）**
 
-- LR / FM / DeepFM / DIN。
-- 多任务学习（MMoE / PLE）。
-- 输出：**精排模型**。
+- 精排模型：LR / FM / DeepFM / DIN；多任务：MMoE / PLE。
+- 粗排先用轻模型 + 少特征，把候选从千级压到百级【经验：量级随层数与端到端延迟预算变，层数越多、预算越紧，每层压得越狠】。
+- 记录损失权重版本（多任务）与特征口径版本。
+- **产物**：粗排 / 精排模型 + 特征口径登记 + 损失权重的版本记录。
+- **判据**：精排面对的是被上游明确限制的候选集（不是全量）；离线排序 Top-K 与召回 Top-K 的重合度被记录下来 —— 两者系统性错位通常是负采样口径不一致的信号。
+- **为什么必须这一步、为什么在重排之前**：精排的一切评估都要在固定候选集上做，否则上游召回一变，历史离线指标就不可比。重排要在有稳定精排分数之后才能定义「集合级」的目标。
 
-**Step 6：重排层搭建**
+**Step 6：重排层搭建（3–6 周【经验：随规则条数与协商范围变】）**
 
-- 多样性约束（MMR / DPP）。
-- 业务规则（新客优惠 / 库存 / 比例）。
-- 输出：**重排服务**。
+- 多样性约束：MMR / DPP；业务规则：新客优惠 / 库存 / 类目比例；上下文：时间 / 地点 / 设备。
+- 每条规则给出独立的版本号与开关。
+- **产物**：重排服务 + 规则清单（含版本、生效范围、责任人）。
+- **判据**：抽一次真实请求，报出重排前后的去重率与类目熵变化；能否单独关掉一条规则并观察其影响。
+- **为什么必须这一步、为什么不并入精排**：重排是集合级优化，精排是单条打分。混在一起后多样性约束会被逐条打分的损失抵消，且规则改动无法单独灰度 —— 出问题时不知道是模型还是规则引起的。
 
-**Step 7：评估 + A/B 测试**
+**Step 7：评估 + A/B 测试（3–6 周【经验：随实验流量与观测周期变】）**
 
-- 离线评估（AUC / GAUC / NDCG）。
-- 在线 A/B 测试（CTR / GMV / 时长）。
-- 输出：**评估报告 + A/B 实验报告**。
+- 离线评估：AUC / GAUC / NDCG；在线 A/B：CTR / GMV / 时长。
+- 实验前做样本比（SRM）检查；结论必须能追到策略版本。
+- **产物**：评估报告 + A/B 实验报告 + 「结论 ↔ 策略版本」对应表。
+- **判据**：SRM 检查通过；实验组与对照组的曝光日志里的策略版本可区分；离线结论能追到唯一一个策略版本。
+- **为什么必须这一步、为什么在监控之前**：没有「结论 ↔ 版本」的对应表，Step 8 的监控只能看整体大盘，无法回答「上周那个改动带来多少增量」。
 
-**Step 8：监控 + 反馈闭环**
+**Step 8：监控 + 反馈闭环（持续）**
 
-- 模型监控（输入 / 输出分布、漂移）。
-- 业务监控（CTR / CVR / GMV）。
-- 反馈回流（曝光 / 点击 / 转化 → 训练数据）。
-- 输出：**监控 dashboard + 闭环 pipeline**。
+- 模型监控：输入 / 输出分布、漂移；业务监控：CTR / CVR / GMV。
+- 反馈回流：曝光 / 点击 / 转化回流到训练数据；回流样本保留策略版本。
+- 重训与增量更新按漂移周期排期（见 4.2 的实时特征与在线学习）。
+- **产物**：监控 dashboard + 闭环 pipeline + 回流样本的版本标尺。
+- **判据**：能从监控上读出「模型的训练数据时间戳」与「回流样本里带策略版本的比例」；新 Item / 新用户的曝光量能单独查（整体指标会掩盖它们的塌陷）。
+- **为什么必须这一步**：它是 Step 2 样本库的唯一来源，而样本又由模型自己的输出产生。这条闭环断了不会报警，只会让样本库静默停止更新，几个月后的表现是「模型越训越不准」。
+
+**最常被跳过的一步**是 Step 2 里给曝光日志加**策略版本字段**。它看起来只是一个字段，跳过后的第一个出问题的时点不是上线当天，而是**第一次有人问「上周那个改动到底带来多少增量」的那次评审**：症状是团队只能拿整体大盘曲线说话，做不出反事实评估，每一次迭代的结论都退化成「看起来是涨的」；再往后，没人再相信离线结论，迭代速度归零。而在此之前产生的流量无法补录。
 
 ### 4.2 关键技术点
 
-**召回关键技术**：
+每条给四件：做法、机制（为什么这么做有效）、失效条件（**什么条件下它会坏、坏的时候怎么发现**）、档位。失效条件一律写成运行期可观测的信号。
 
-1. **双塔模型 + 向量检索**：用户塔 + 物品塔 + Faiss / Milvus 检索。
-2. **多兴趣召回（MIND）**：用户多个兴趣向量。
-3. **协同过滤召回**：ItemCF / Swing（阿里）。
-4. **YouTube DNN**：经典召回 DNN。
-5. **图召回**：GraphSAGE / LightGCN。
+**双塔模型 + 向量检索**
 
-**精排关键技术**：
+- **做法**：用户塔与物品塔离线各自编码，物品向量预计算并建 ANN 索引（Faiss / Milvus），在线只编码用户侧一次再检索。
+- **机制**：物品向量在离线预计算后不再随请求变化，在线成本从「候选数 × 单条推理」降为「一次用户侧编码 + 一次近邻检索」，成本与候选全集规模解耦 —— 这是千万级候选仍能满足延迟预算的前提。
+- **失效条件**：当物品侧特征含强时效项（价格、库存、实时热度）时，预计算的向量会在小时级到一天内过期【经验：时距随时效特征的变化频率变 —— 价格与库存按分钟变时更短，仅按日更新时长得多】；症状是新品与调价商品的召回长期缺席，而离线召回率指标看不到（离线评的是历史快照）。观测信号是物品向量的回刷周期与物品特征更新周期之比。
+- **档位**：索引规模与向量维度共同决定内存，按平台实测【经验】。
 
-6. **特征交叉**：FM / DeepFM / xDeepFM / DCN。
-7. **注意力机制**：DIN / DIEN / SIM。
-8. **Transformer**：BERT4Rec / SASRec。
-9. **多任务**：MMoE / PLE / ESSM / AITM。
-10. **长序列建模**：SIM / LONGER。
+**多兴趣召回与协同过滤召回**
 
-**重排关键技术**：
+- **做法**：MIND 用多个兴趣向量；协同过滤召回用 ItemCF / Swing；YouTube DNN 做浅层 DNN 召回；图召回用 GraphSAGE / LightGCN 做多跳聚合。
+- **机制**：这四条通道的在线成本不在一个档位上，选型时必须分开算。协同过滤（ItemCF / Swing）与图召回（GraphSAGE / LightGCN）不依赖在线模型推理 —— 共现统计可离线批量算、多跳聚合可离线预计算，服务期只做查表与检索，所以它们是用离线算力换在线延迟，能在不占推理算力的前提下贡献互补候选。MIND 与 YouTube DNN 则与双塔同族：服务期仍要按请求跑一次用户侧编码（MIND 出多个兴趣向量、YouTube DNN 的用户塔，编码器版本同样要进召回埋点），它们补的是兴趣表达的角度（多兴趣、浅层 DNN 的泛化），不是省掉在线算力。把后两条按「离线通道」估延迟预算，会在上线后凭空多出两路编码的 P99 —— 长尾覆盖与兴趣多样性是四条通道合起来带来的，但只有前两条可以按零推理成本排容量。
+- **失效条件**：当行为数据集中在头部（长尾用户几乎无行为）时，协同过滤给不出有区分度的相似度，召回退化为热门榜；症状是全站召回结果重复率上升，不同用户拿到的候选高度重合。观测信号是召回集合的用户间重合度。
+- **档位**：【经验】
 
-11. **多样性**：MMR（Maximal Marginal Relevance）/ DPP（Determinantal Point Process）。
-12. **业务规则**：库存 / 价格区间 / 类目比例 / 新品扶持。
-13. **上下文**：时间 / 地点 / 设备。
-14. **Listwise 排序**：ListMLE / ListNet。
+**特征交叉与注意力机制**
 
-**冷启动关键技术**：
+- **做法**：FM / DeepFM / xDeepFM / DCN 学二阶到高阶交叉；DIN / DIEN / SIM 用注意力对历史行为加权。
+- **机制**：注意力权重由「目标物品」参与计算，所以同一用户对不同候选算出的兴趣向量不同 —— 这把用户表示从静态画像变成针对当前候选的动态量，也正是它比静态 embedding 贵的原因。
+- **失效条件**：当历史序列增长到数百条时，逐条算注意力使单次推理成本随序列长度线性上升；症状是 P99 随序列长度破线，团队被迫截断序列，而截断把旧行为丢掉、长周期兴趣随之消失。观测信号是 P99 与序列长度的实测关系曲线。
+- **档位**：序列长度超过百级就需要在「算得完」与「看得远」之间取舍【经验】。
 
-15. **内容 Embedding**：BERT / CLIP / ViT。
-16. **Bandit**：探索新 Item。
-17. **Side Information**：人口学 / 社交关系 / 设备。
-18. **迁移学习**：从类似 Item / 用户迁移。
+**序列模型与长序列建模**
 
-**实时推荐关键技术**：
+- **做法**：BERT4Rec / SASRec 做自注意力序列建模；SIM / LONGER 用两阶段检索把长序列先粗筛再精算。
+- **机制**：两阶段把「全序列精算」拆成「按目标物品检索出相关子序列 + 只在子序列上精算」，使在线成本与序列长度近似解耦 —— 这是超长行为序列能进线上模型的关键一步。
+- **失效条件**：当序列中的关键行为时间久远且与当前候选无表层相关（跨品类的长期兴趣）时，检索阶段会把它筛掉，模型从此看不到它；症状是长期兴趣类目的曝光量持续下滑，而短期点击指标不变。观测信号是子序列检索的召回率（被筛掉的行为里有多少事后被证明相关）。
+- **档位**：【经验】
 
-19. **实时特征**：Flink + Redis。
-20. **在线学习**：FTRL / 在线 GBDT。
-21. **模型更新**：分钟 / 小时级增量更新。
+**多任务学习**
 
-**LLM 推荐关键技术**：
+- **做法**：MMoE / PLE / AITM 用专家加门控；ESSM 在曝光全空间上用 pCTCVR = pCTR × pCVR 做监督 —— 每个任务的标签落在哪个样本空间（曝光空间还是点击空间）要在配置里显式写明，否则损失会被算在错误的样本集上。
+- **机制**：落地层的要害不是结构而是**损失权重的量级校准** —— 各任务的标签空间与取值范围不同，未校准的权重等价于对某个任务单方面放大学习率，梯度会被它主导。
+- **失效条件**：当权重变更没有版本记录时，一次不经意的调权重会同时改变所有任务的优化强度；症状是某个任务指标掉而没人能指出是哪次改动。观测信号能否重建「权重变更 ↔ 本季各任务指标变动」的对应表。
+- **档位**：权重随各任务量级与共现密度变，无通用值【经验】。
 
-22. **Prompt 工程**：清晰指令 + Few-shot。
-23. **LLM Embedding + 双塔**：Sentence-BERT / BGE 提 Embedding + 检索。
-24. **生成式推荐**：TIGER / LC-Rec 生成候选 ID。
-25. **对话式推荐**：ChatRec + Memory。
+**重排：多样性与 Listwise 排序**
+
+- **做法**：多样性用 MMR / DPP；业务规则覆盖库存、价格区间、类目比例、新品扶持；上下文用时间 / 地点 / 设备；Listwise 排序用 ListMLE / ListNet。
+- **机制**：MMR / DPP 在「已选集合」上做边际增益最大化，所以能表达「两条都不错但放在一起不好」这类约束 —— 逐条打分的精排表达不了集合级目标，这是重排必须独立存在的理由。
+- **失效条件**：当业务规则以硬编码散落在服务各处时，规则之间的冲突无法被枚举；症状是同一用户连续两次刷新拿到的列表差别很大（结果对请求顺序敏感）。观测信号是同一用户重复请求的 Top-K 重合度。
+- **档位**：【经验】
+
+**冷启动处理**
+
+- **做法**：内容 Embedding（BERT / CLIP / ViT）做近邻召回；Bandit 探索新 Item；Side Information（人口学 / 社交关系 / 设备）做人群体先验；迁移学习从相似 Item / 用户迁移。
+- **机制**（实施层）：冷启动通道落地时是一条单独部署、单独监控的支路，它承载的流量占比低，所以它在主推荐大盘上的破线会被平均掉 —— 这条支路能不能活下来，取决于上线时有没有为它单列一个监控面板与一条值班项，而不是取决于探索算法选得对不对。内容 / 群体 / 探索三路各自成立的条件见 [§3.2.8](05-recommendation-section-3-sec3.md)。
+- **失效条件**：当探索配额没有写入排期与考核时，它会在第一次指标下滑时被关掉；症状是新 Item 曝光量在一个到几个考核周期内回落到接近零【经验：回落时距随考核周期长短与探索配额占比变，周期越短、配额越小，回落越快】，而整体指标看不出异常。观测信号是新 Item 首周曝光量的分布，以及低于下限的新 Item 占比。
+- **档位**：【经验】
+
+**实时特征与在线学习**
+
+- **做法**：实时特征走 Flink + Redis；在线学习用 FTRL / 在线 GBDT；模型按分钟 / 小时级做增量更新。
+- **机制**：增量更新把「全量重训」换成「在上一版参数上继续走几步」，所以能跟上分钟级漂移；代价是参数会沿线上曝光分布的偏置漂移，必须定期用全量重训把锚点拉回。
+- **失效条件**：当在线学习长期不做全量回锚时，漂移会累积；症状是模型对头部内容越来越敏感、对长尾越来越钝（闭环把头部越推越热），而 AUC 并不下降。观测信号是推荐的类目熵随时间的变化曲线。
+- **档位**：全量回锚周期随漂移速度定【经验】。
+
+**LLM 推荐**
+
+- **做法**：Prompt 工程（清晰指令 + Few-shot）；LLM Embedding + 双塔（Sentence-BERT / BGE 提向量再检索）；生成式推荐（TIGER / LC-Rec 生成候选 ID）；对话式推荐（ChatRec + Memory）。
+- **机制**（实施层）：码本重建与受限解码的配套都落在模型代码之外 —— 一次离线量化作业，加一条把解码约束服务化的实现；正因为它们不在训练脚本里，这套东西的退化不会以训练报错的形式出现，而是以「新 Item 从上线到可被召回」的时延持续变长出现，最先发现它的人通常不是算法而是运营（新上商品几天没进推荐位的工单）。共享前缀与受限解码本身的原理见 [§3.2.7](05-recommendation-section-3-sec3.md)。
+- **失效条件**：当目录高频上新时，语义 ID 的码本重建跟不上；症状是新上 Item 要么进不了召回、要么被生成到错误前缀下（与不相关类目一起出现），而老 Item 召回一切正常。观测信号是上新 Item 的召回覆盖率与码本重建周期之比。
+- **档位**：【经验】
 
 ### 4.3 工具链与平台
 
-**深度学习框架**：
+每一行给三件：候选、选型判据（在什么约束下选哪个）、不选它的代价。候选一列尽量带上出品方、开源 / 商业形态与年份，作为可自行检索核验的锚点；产品能力与维护状态以各自官方文档、官方仓库的当前版本为准。
 
-- **PyTorch / TensorFlow / PaddlePaddle**——基础 DL 框架。
-- **DeepCTR**（开源）——推荐算法库（FM / DeepFM / DIN / DIEN / DCN）。
-- **RecBole**（开源）——推荐算法统一库（80+ 算法）。
-- **TorchRec**（Meta / 开源）——PyTorch 推荐系统库。
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 深度学习框架 | PyTorch / TensorFlow / PaddlePaddle | 与训练与在线服务栈一致优先；有国产化要求时选 PaddlePaddle | 训练与在线各写一套推理路径，两侧数值不一致的排查成本长期存在 |
+| 推荐算法库 | DeepCTR（开源）/ RecBole（开源，80+ 算法）/ TorchRec（Meta 开源）/ EasyRec（阿里开源）/ LightFM / Surprise / Implicit | 做复现与基线选 DeepCTR / RecBole；要撑起大规模稀疏 embedding 选 TorchRec 或 EasyRec；显式评分数据选 Surprise，隐式反馈选 Implicit，混合推荐选 LightFM | 自己实现 FM / DIN 一类结构，模型代码成为没人敢改的部分 |
+| 向量检索 | Faiss（Meta 开源）/ Milvus（国产开源）/ Pinecone（商业托管）/ Annoy（Spotify 开源）/ HNSWlib（开源） | 只要检索能力、索引可离线重建选 Faiss；要在线上增删并有持久化与多租户选 Milvus 或托管服务 Pinecone；内存受限的小规模场景选 Annoy 或 HNSWlib | 把检索库当服务用，索引重建期间的可用性与并发写入要自研补齐 |
+| 实时计算与在线特征 | Flink / Kafka / Redis / Apache Beam | 有状态流计算选 Flink；行为日志缓冲选 Kafka；在线特征点查选 Redis；批流一套代码是硬需求时才引入 Beam | 缺 Kafka 时行为日志直连流作业，上游峰值会把流作业打挂且无法回放 |
+| LLM 与 Embedding 工具 | LangChain / LlamaIndex / OpenAI Embedding API / Sentence Transformers / BGE / M3E | 编排与原型选 LangChain / LlamaIndex；要可控成本与私有化选 Sentence Transformers + BGE / M3E 自托管；只想快速验证语义召回选托管 Embedding API | 用托管 API 承接线上召回，调用成本随 QPS 线性增长且编码器版本不可自控 |
+| 评估与实验 | MLflow（开源）/ RecMetrics（开源）/ Rexmetric（开源）/ Weights & Biases（商业） | 模型与实验登记选 MLflow；A/B 与指标口径选 W&B 或自建实验平台；推荐专用指标（NDCG、覆盖率、多样性）选专项库 —— 选用前先确认项目的维护活跃度，RecMetrics 与 Rexmetric 这类小众项目名以仓库当前状态为准 | 用通用指标库硬凑推荐指标，覆盖率 / 多样性 / 类目熵这些指标会长期缺位 |
+| 工业级推荐平台 | Alibaba PAI / 阿里云推荐引擎 / 字节 ByteRec / 腾讯推荐平台 / 美团推荐平台 / 京东 JDRec / 百度推荐平台 | 判据是「你能否拿到它当前版本的公开产品文档与商务入口」：拿得到的（如 PAI / 阿里云推荐引擎，以各自官网当前的产品列表为准）可作为候选；拿不到的多为各公司内部平台，只在参考其公开技术分享时才有意义 | 把内部平台当成可选型方案写进方案文档，评审时无法落地，排期空转 |
+| 生成式与 LLM 推荐方向的开源实现 | TIGER（Google 2023）/ LC-Rec（2024）/ MoCa（2024）/ InstructRec（2023）/ P5（2022）/ AgentRec（2024）/ CLIP4Rec（2024）/ EasyRec 2.0（阿里 2024） | 只在与现有目录规模和码本维护能力匹配时引入；同为开源框架时，先按官方仓库的最近提交与最近一次发版核验维护状态，仍在维护的那条升级路径优先于自行复现论文 | 直接照论文实现上线，缺码本重建与受限解码的工程配套 |
 
-**向量检索**：
+这张表里**最容易被误选的是「向量检索」那一行**：团队把 Faiss 当完整向量库来规划，而它是库不是服务 —— 没有持久化、没有多租户、没有在线增删的事务语义。误选的后果不是慢，而是**在索引重建的那段时间里没有人对可用性负责**，于是每次全量重刷都变成一次停机风险。判据很硬：找一个具体的名字回答「谁负责索引重建期间的降级策略」，答不上来就选 Milvus 或托管服务。
 
-- **Faiss**（Meta / 开源）——向量检索事实标准。
-- **Milvus**（国产 / 开源）——向量数据库。
-- **Pinecone**（商业）——托管向量数据库。
-- **Annoy**（Spotify / 开源）——轻量 ANN。
-- **HNSWlib**（开源）——HNSW 实现。
+### 4.4 存量迁移
 
-**工业级推荐平台**：
+推荐系统极少从零搭建。已有召回与排序链路时，落地顺序与新建相反：**先做不改排序的事**。下面四步按「可回退程度」从高到低排。
 
-- **Alibaba PAI / 阿里云推荐引擎**——电商推荐。
-- **字节 ByteRec**——字节内部推荐平台。
-- **腾讯推荐平台**——腾讯内部。
-- **美团推荐平台**——美团到店 / 外卖 / 酒旅。
-- **京东 JDRec**——电商推荐。
-- **百度推荐平台**——百度搜索 + 信息流。
+**① 先做立刻见效且可回退的三件事**。三件都在排序链路之外：(a) **曝光日志补策略版本字段** —— 只加字段、不改排序，回退方式是停写字段；(b) **特征口径登记**，先只登记头部关键特征，不做返工；(c) **召回层埋点** —— 记录 Top-K 的 item 主键、分数与编码器版本。三件做完后的当周就能回答两个此前回答不了的问题【经验：时距随日志回流的批处理周期变 —— 回流按日跑则当周可见，按周跑则要等下一个对账窗口】：上周的改动带来了什么，以及某个候选是哪个编码器版本产生的。
 
-**开源推荐框架**：
+**② 历史资产分三类处理，不要一律返工**。
 
-- **EasyRec**（阿里 / 开源）——工业级推荐框架。
-- **DeepCTR**（开源）——CTR 预估算法库。
-- **RecBole**（开源）——推荐算法统一库。
-- **LightFM**（开源）——混合推荐。
-- **Surprise**（开源）——经典推荐库。
-- **Implicit**（开源）——隐式反馈推荐。
+| 资产 | 处理方式 | 判据 |
+| --- | --- | --- |
+| 曝光与点击日志 | **全部返工，且从今天起** —— 历史流量不可回填，只能把缺字段的时段登记为「不可做反事实评估」 | 本季的曝光记录里带策略版本的比例 |
+| 存量特征（存量大头） | 只改动的部分：下次被改到时补定义与 Owner，不主动返工 | 本季新增 / 改动特征里有定义的比例 |
+| 存量排序模型、历史离线样本、旧语义 ID 码本 | 打标挂账：登记「由旧策略产生 / 旧编码器产生，不能与新链路混用」，写明计划处理时间 | 登记表里每条有偏差描述与责任人 |
 
-**LLM 推荐工具**：
+第二行是迁移成本的主要来源，也是唯一可以放心延后的部分 —— 特征定义的价值在「改动时」才兑现，而不改动的特征本来也不会出问题。第三行里的旧编码器向量特别容易被误用：升级前后的向量不在同一空间，混索引会让召回结果出现谁也解释不了的偏差。
 
-- **LangChain / LlamaIndex**——LLM 应用框架。
-- **OpenAI Embedding API**——商业 Embedding。
-- **Sentence Transformers**——文本 Embedding。
-- **BGE / M3E**（开源）——中文 Embedding。
+**③ 双轨要维持多久、怎么维持**。旧策略（champion）继续服务全量流量，新策略（challenger）走影子打分不参与展示，两侧同时记录。新建的召回通道与旧通道并行，两侧都算但不合并展示；批流两套同名特征做双写对账。维持期不短于兴趣漂移周期的若干倍【经验：随漂移速度变，漂移以分钟计则双轨以周计，以天计则以月计】。期间每月对账四件事【经验：对账频率随漂移速度与团队值班节奏变 —— 漂移以天计、或差异率连续多个窗口超阈值时要收到按周，两侧长期稳定后才放宽到按季】：新老链路 Top-K 的重合度、批流同名特征的差异率、新策略在影子期的指标差值与置信区间、以及口径分歧工单数。
 
-**实时计算**：
+**④ 什么信号说明可以退出双轨**。四条同时成立才拆旧链路：批流同名特征对账差异率降到阈值以下；影子期新老链路 Top-K 重合度稳定（不是某一周偶然稳定）；召回埋点能算出 recall@K 且数值达标；曝光日志的策略版本可区分，反事实评估跑得通。任一条不成立就续期 —— 最常见卡住的是第一条，因为批流口径分叉往往不是一次对齐就能修完，而是会随着新特征不断重新出现。
 
-- **Flink**（开源）——实时特征计算。
-- **Kafka**（开源）——消息队列。
-- **Redis**（开源 / 商业）——在线特征 / KV。
-- **Apache Beam**——统一批流。
+### 4.5 模板 / 示例
 
-**评估工具**：
+模板 0 是 Step 3 的产物，先于任何模型代码；模板 1–5 是链路各层的最小可用集。
 
-- **MLflow**（开源）——实验管理。
-- **RecMetrics**（开源）——推荐系统评估。
-- **Rexmetric**（开源）——A/B 测试评估。
-- **Weights & Biases**（商业）——实验管理。
+**模板 0：分层漏斗的 SLA 与交接物表**
 
-**2024-2025 新工具**：
+| 层 | 候选数 | 延迟预算 | 模型 | 交接物 | 失败时谁负责 |
+| --- | --- | --- | --- | --- | --- |
+| 召回 | {1000–10000} | {预算} | {双塔 / 协同 / 图} | {Top-K 主键 + 分数 + 编码器版本} | {角色} |
+| 粗排 | {100–500} | {预算} | {轻模型} | {Top-K 主键 + 分数 + 特征口径版本} | {角色} |
+| 精排 | {10–50} | {预算} | {DeepFM / DIN / 多任务} | {Top-K 主键 + 分数 + 策略版本} | {角色} |
+| 重排 | {最终 N 条} | {预算} | {MMR / DPP + 规则} | {展示列表 + 规则版本} | {角色} |
 
-- **TIGER**（Google 2023）——生成式检索推荐。
-- **LC-Rec**（2024）——LLM 协同过滤。
-- **MoCa**（2024）——LLM + 协同过滤。
-- **InstructRec**（2023）——指令推荐。
-- **P5**（2022）——推荐基础模型。
-- **AgentRec**（2024）——Agent 推荐。
-- **CLIP4Rec**（2024）——CLIP 推荐。
-- **EasyRec 2.0**（阿里 2024）——支持 LLM 推荐。
+**怎么用**：只填「交接物」与「失败时谁负责」两列，不要写「优化性能」这类词。延迟预算列的和必须小于端到端预算，剩下的留给特征拼装 —— 这一格是上线后最容易超支的地方。
 
-### 4.4 代码 / 示例
-
-**示例 1：双塔召回模型**
+**模板 1：双塔召回模型**
 
 ```python
 import torch
 import torch.nn as nn
 
 class TwoTowerModel(nn.Module):
-    """用户塔 + 物品塔的双塔模型"""
-    def __init__(self, user_feature_dim, item_feature_dim, embedding_dim=64):
+    def __init__(self, user_dim, item_dim, emb_dim=64):
         super().__init__()
-        # 用户塔
-        self.user_tower = nn.Sequential(
-            nn.Linear(user_feature_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, embedding_dim)
-        )
-        # 物品塔
-        self.item_tower = nn.Sequential(
-            nn.Linear(item_feature_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, embedding_dim)
-        )
+        self.user_tower = nn.Sequential(nn.Linear(user_dim, 128), nn.ReLU(),
+                                        nn.Linear(128, emb_dim))
+        self.item_tower = nn.Sequential(nn.Linear(item_dim, 128), nn.ReLU(),
+                                        nn.Linear(128, emb_dim))
 
     def forward(self, user_features, item_features):
-        user_emb = self.user_tower(user_features)
-        item_emb = self.item_tower(item_features)
-        # 余弦相似度
-        similarity = torch.cosine_similarity(user_emb, item_emb)
-        return user_emb, item_emb, similarity
+        return self.user_tower(user_features), self.item_tower(item_features)
 
-# 训练
-model = TwoTowerModel(user_feature_dim=100, item_feature_dim=50)
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-
-for batch in dataloader:
-    user_features, item_features_pos, item_features_neg = batch
-    user_emb, item_emb_pos, sim_pos = model(user_features, item_features_pos)
-    _, item_emb_neg, sim_neg = model(user_features, item_features_neg)
-
-    # 排序损失（softmax over negatives）
-    logits = torch.cat([sim_pos.unsqueeze(1), sim_neg], dim=1)
-    labels = torch.zeros(logits.size(0), dtype=torch.long)
-    loss = nn.CrossEntropyLoss()(logits, labels)
-
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+# 训练：softmax over negatives（正样本置第 0 位）
+u, v_pos = model(user_features, item_features_pos)
+_, v_neg = model(user_features, item_features_neg)          # [B, N, D]
+logits = torch.cat([(u * v_pos).sum(-1, keepdim=True),
+                    torch.einsum("bd,bnd->bn", u, v_neg)], dim=1)
+loss = nn.CrossEntropyLoss()(logits, torch.zeros(logits.size(0), dtype=torch.long))
 ```
 
-**示例 2：DIN 模型（精排）**
+**怎么用**：`item_features` 里只放可离线预计算的稳定特征 —— 价格、库存这类时效项放进来，索引很快会过期（时距与档位见 4.2 双塔模型的失效条件）。负采样口径要与精排的一侧对齐，否则召回的 Top-K 与精排的 Top-K 会系统性错位。
+
+**模板 2：DIN 模型（精排）**
 
 ```python
 import torch
 import torch.nn as nn
 
 class LocalActivationUnit(nn.Module):
-    """DIN 的注意力激活单元"""
-    def __init__(self, embedding_dim, hidden_dims=[80, 40]):
+    """DIN 的注意力激活单元：输入是 [hist, target, hist-target, hist*target] 四路拼接"""
+    def __init__(self, embedding_dim, hidden_dims=(80, 40)):
         super().__init__()
-        layers = []
-        prev_dim = embedding_dim * 4  # concat: [hist, target, hist-target, hist*target]
+        layers, prev_dim = [], embedding_dim * 4
         for hidden_dim in hidden_dims:
             layers += [nn.Linear(prev_dim, hidden_dim), nn.PReLU()]
             prev_dim = hidden_dim
@@ -236,179 +243,115 @@ class LocalActivationUnit(nn.Module):
         self.net = nn.Sequential(*layers)
 
     def forward(self, hist_emb, target_emb):
-        # hist_emb: [batch, hist_len, embed_dim]
-        # target_emb: [batch, embed_dim]
-        target_emb = target_emb.unsqueeze(1).expand_as(hist_emb)
-        din_input = torch.cat([
-            hist_emb, target_emb,
-            hist_emb - target_emb,
-            hist_emb * target_emb
-        ], dim=-1)
-        att_weight = self.net(din_input).squeeze(-1)  # [batch, hist_len]
-        return att_weight
+        target_emb = target_emb.unsqueeze(1).expand_as(hist_emb)   # [B, L, D]
+        din_input = torch.cat([hist_emb, target_emb,
+                               hist_emb - target_emb,
+                               hist_emb * target_emb], dim=-1)
+        return self.net(din_input).squeeze(-1)                     # [B, L]
 
 class DIN(nn.Module):
-    def __init__(self, feature_dims, embedding_dim=8, hist_len=50):
+    def __init__(self, feature_dims, emb_dim=8, hist_len=50):
         super().__init__()
-        self.embeddings = nn.ModuleDict({
-            name: nn.Embedding(dim, embedding_dim)
-            for name, dim in feature_dims.items()
-        })
-        self.attention = LocalActivationUnit(embedding_dim)
-        self.hist_len = hist_len
-        self.mlp = nn.Sequential(
-            nn.Linear(embedding_dim * (len(feature_dims) + 1), 200),
-            nn.PReLU(),
-            nn.Linear(200, 80),
-            nn.PReLU(),
-            nn.Linear(80, 1)
-        )
+        self.embeddings = nn.ModuleDict({n: nn.Embedding(d, emb_dim) for n, d in feature_dims.items()})
+        self.attention = LocalActivationUnit(emb_dim)      # 输入 [hist, target, hist-target, hist*target]
+        self.mlp = nn.Sequential(nn.Linear(emb_dim * (len(feature_dims) + 1), 200), nn.PReLU(),
+                                 nn.Linear(200, 80), nn.PReLU(), nn.Linear(80, 1))
 
     def forward(self, user_features, hist_items, target_item):
-        # 用户特征 Embedding
-        user_emb = torch.cat([
-            self.embeddings[name](feat)
-            for name, feat in user_features.items()
-        ], dim=-1)
-
-        # 历史行为 Embedding
-        hist_emb = self.embeddings['item_id'](hist_items)  # [batch, hist_len, embed_dim]
-
-        # 目标 Item Embedding
-        target_emb = self.embeddings['item_id'](target_item)  # [batch, embed_dim]
-
-        # 注意力权重
-        att_weight = self.attention(hist_emb, target_emb)  # [batch, hist_len]
-        att_weight = torch.softmax(att_weight, dim=-1)
-
-        # 加权求和（用户兴趣）
-        interest = torch.sum(att_weight.unsqueeze(-1) * hist_emb, dim=1)  # [batch, embed_dim]
-
-        # 拼接 + MLP
-        mlp_input = torch.cat([user_emb, interest], dim=-1)
-        ctr_pred = torch.sigmoid(self.mlp(mlp_input))
-        return ctr_pred
+        user_emb = torch.cat([self.embeddings[n](f) for n, f in user_features.items()], dim=-1)
+        hist_emb = self.embeddings["item_id"](hist_items)           # [B, L, D]
+        target_emb = self.embeddings["item_id"](target_item)        # [B, D]
+        att = torch.softmax(self.attention(hist_emb, target_emb), dim=-1)
+        interest = (att.unsqueeze(-1) * hist_emb).sum(dim=1)
+        return torch.sigmoid(self.mlp(torch.cat([user_emb, interest], dim=-1)))
 ```
 
-**示例 3：MMoE 多任务学习**
+**怎么用**：`hist_len` 是与 P99 直接挂钩的参数，改动它必须重跑压测；注意力输出用 softmax 归一化后，序列长度变化会改变每条行为的权重尺度，所以截断序列与不截断的离线指标不可直接比较。
+
+**模板 3：MMoE 多任务学习**
 
 ```python
 import torch
 import torch.nn as nn
 
 class MMoE(nn.Module):
-    """Multi-gate Mixture-of-Experts"""
     def __init__(self, input_dim, num_experts=4, num_tasks=3, expert_dim=32):
         super().__init__()
-        # 专家网络
-        self.experts = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(input_dim, expert_dim),
-                nn.ReLU(),
-                nn.Linear(expert_dim, expert_dim)
-            )
-            for _ in range(num_experts)
-        ])
-        # 门控网络（每个任务一个）
-        self.gates = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(input_dim, num_experts),
-                nn.Softmax(dim=-1)
-            )
-            for _ in range(num_tasks)
-        ])
-        # 任务塔（每个任务一个）
-        self.task_towers = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(expert_dim, 16),
-                nn.ReLU(),
-                nn.Linear(16, 1)
-            )
-            for _ in range(num_tasks)
-        ])
+        self.experts = nn.ModuleList([nn.Sequential(nn.Linear(input_dim, expert_dim), nn.ReLU(),
+                                                    nn.Linear(expert_dim, expert_dim))
+                                      for _ in range(num_experts)])
+        self.gates = nn.ModuleList([nn.Sequential(nn.Linear(input_dim, num_experts), nn.Softmax(-1))
+                                    for _ in range(num_tasks)])
+        self.towers = nn.ModuleList([nn.Sequential(nn.Linear(expert_dim, 16), nn.ReLU(),
+                                                   nn.Linear(16, 1)) for _ in range(num_tasks)])
 
     def forward(self, x):
-        # x: [batch, input_dim]
-        # 专家输出
-        expert_outputs = torch.stack(
-            [expert(x) for expert in self.experts], dim=1
-        )  # [batch, num_experts, expert_dim]
-
-        # 每个任务的门控加权
-        task_outputs = []
-        for i in range(len(self.task_towers)):
-            gate_weight = self.gates[i](x).unsqueeze(-1)  # [batch, num_experts, 1]
-            weighted = (expert_outputs * gate_weight).sum(dim=1)  # [batch, expert_dim]
-            output = self.task_towers[i](weighted)  # [batch, 1]
-            task_outputs.append(output)
-
-        return task_outputs  # [ctr_pred, cvr_pred, gmv_pred]
+        exp = torch.stack([e(x) for e in self.experts], dim=1)      # [B, E, D]
+        out = []
+        for i, tower in enumerate(self.towers):
+            w = self.gates[i](x).unsqueeze(-1)                      # [B, E, 1]
+            out.append(tower((exp * w).sum(dim=1)))
+        return out                                                  # [ctr, cvr, gmv]
 ```
 
-**示例 4：LLM 推荐（Embedding 召回）**
+**怎么用**：`forward` 返回多个头，损失权重在训练脚本里单独一层配置，并把它作为一个版本化的配置项登记 —— 改权重的提交必须与指标记录同批入库，否则改完无法归因。各任务的 loss 量级先归一化再乘权重。
+
+**模板 4：LLM 推荐（Embedding 召回）**
 
 ```python
 from sentence_transformers import SentenceTransformer
-import numpy as np
-import faiss
+import faiss, numpy as np
 
-# 1. 用 LLM 提 Item Embedding
-model = SentenceTransformer('BAAI/bge-large-zh-v1.5')
-item_texts = [
-    "运动鞋 / 跑步鞋 / 透气 / 减震",
-    "连衣裙 / 夏季 / 碎花 / 显瘦",
-    "...",
-]
-item_embeddings = model.encode(item_texts)
-
-# 2. 索引到 Faiss
-dimension = item_embeddings.shape[1]
-index = faiss.IndexFlatIP(dimension)  # 内积（cosine similarity）
-index.add(np.array(item_embeddings).astype('float32'))
-
-# 3. 用户检索
-user_query = "我最近想买运动鞋，跑步用"
-user_emb = model.encode([user_query])
-
-scores, indices = index.search(np.array(user_emb).astype('float32'), k=10)
-print(f"Top 10 推荐：{[item_texts[i] for i in indices[0]]}")
+model = SentenceTransformer("BAAI/bge-large-zh-v1.5")   # 编码器版本要登记
+item_emb = model.encode(item_texts).astype("float32")
+index = faiss.IndexFlatIP(item_emb.shape[1])            # 内积近似余弦（需先归一化）
+index.add(item_emb)
+scores, ids = index.search(model.encode([user_query]).astype("float32"), k=10)
 ```
 
-**示例 5：Bandit 推荐（探索-利用）**
+**怎么用**：`k` 取多少由下游粗排容量决定，不是越大越好；编码器名与向量维度必须与召回交接物里的版本一致 —— 换编码器等于全库重编码，升级前后向量不可混索引。
+
+**模板 5：Bandit 推荐（探索-利用）**
 
 ```python
 import numpy as np
-from scipy.stats import beta
 
 class ThompsonSamplingBandit:
-    """Thompson Sampling Bandit（推荐 Item 探索-利用）"""
     def __init__(self, n_items):
-        self.n_items = n_items
-        # Beta 分布参数（成功 / 失败）
-        self.alpha = np.ones(n_items)
-        self.beta = np.ones(n_items)
+        self.alpha = np.ones(n_items)      # 成功计数
+        self.beta = np.ones(n_items)       # 失败计数
 
     def select(self):
-        """Thompson Sampling 选择 Item"""
-        samples = np.array([
-            np.random.beta(self.alpha[i], self.beta[i])
-            for i in range(self.n_items)
-        ])
-        return np.argmax(samples)
+        return int(np.argmax(np.random.beta(self.alpha, self.beta)))
 
     def update(self, item_id, reward):
-        """更新参数（reward=1: 点击，reward=0: 未点击）"""
-        if reward == 1:
-            self.alpha[item_id] += 1
-        else:
-            self.beta[item_id] += 1
-
-# 使用
-bandit = ThompsonSamplingBandit(n_items=1000)
-for user in users:
-    recommended_item = bandit.select()
-    user_click = simulate_click(user, recommended_item)  # 模拟用户行为
-    bandit.update(recommended_item, user_click)
+        self.alpha[item_id] += 1 if reward == 1 else 0
+        self.beta[item_id] += 1 if reward == 0 else 0
 ```
 
----
+**怎么用**：`alpha` / `beta` 的初值决定冷启动期的探索强度，初值越大探索越保守；这个只适合作为新 Item 的探索配额通道，不要拿它替主排序 —— 它的收益依赖「回报即点击」这个假设，而点击不等于业务价值。
+
+### 4.6 自检清单
+
+以下每一条都要动了系统才有答案；凡是坐下来想一想就能回答的（漏斗是否分层、模式是否选对、损失权重是否合理），见 [§3.7](05-recommendation-section-3-sec3.md)。
+
+- [ ] 从曝光日志里抽 100 条【经验：条数随流量规模变】，能逐条回答「这条曝光由哪个策略版本产生」吗？
+- [ ] 精排近一周实际面对的候选数分布是什么？它是否由上游明确限制，还是会在某些路径上退化成全量？
+- [ ] 召回埋点能否算出 recall@K？抽一个用户，核对召回的 Top-K 里是否包含其近期真实交互的 Item。
+- [ ] 同一用户连续刷新两次首页，Top-K 的重合度是多少？过低说明重排规则对请求顺序敏感。
+- [ ] 批流两套同名特征做一次双写对账，差异率是多少？
+- [ ] 从监控上读出模型的训练数据时间戳，与当前日期相差几天？
+- [ ] 新 Item 首周曝光量的分布是什么？有多少比例低于下限【经验：下限随品类与流量规模定】？
+- [ ] 推荐的类目熵与上周相比变化多少？持续下降是探索通道被压掉的信号。
+- [ ] 在线学习路径：距上次全量重训过去了多久？
+- [ ] 重排规则清单能否给出每条规则当前的版本号与开关状态，并单独关掉一条观察影响？
+- [ ] 生成式召回：抽 100 次生成结果【经验：次数随流量规模与生成延迟预算变】，落在合法 ID 集合内且能被展示层解析的比例是多少？
+- [ ] 取上周的一次指标波动，能否回滚到具体的策略版本并复现？
+
+### 4.7 小结
+
+> 本节小结：整条链路上唯一决定成败的环节，是**反馈闭环的可追溯性** —— 曝光日志里的策略版本、候选集交接物里的编码器版本、以及「结论 ↔ 版本」的对应表。推荐系统的训练数据由系统自己的输出产生，所以除了这些记录，没有任何东西能回答「这个改动带来多少增量」。
+>
+> 其余环节都可以在几个月内重做一遍；这份记录缺失时，重做多少遍都得不到一个可信的结论 —— 而且丢失的时段无法回填，只能从当下开始记。
+>
+> 配合 [§ 2 核心原理](05-recommendation.md)、[§ 3 设计模式与范式](05-recommendation-section-3-sec3.md) 与 [§ 6 落地实践](05-recommendation-section-6-sec6.md) 阅读。

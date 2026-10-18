@@ -292,8 +292,11 @@ TeamOutput = TalentDensity × RetentionRate × PerCapitaProductivity
 
 ---
 
-- [§3. 设计模式与范式](02-talent-ladder-section-3-sec3.md)
-- [§4. 工程实现](02-talent-ladder-section-4-sec4.md)
+## 附：IDP 自述表模板
+
+```markdown
+# IDP 自述表 - {姓名}
+
 ## 1. 当前职级与目标职级
 - 当前：P6（高级数据工程师）
 - 目标：P7（数据架构师）- 12 个月
@@ -307,8 +310,13 @@ TeamOutput = TalentDensity × RetentionRate × PerCapitaProductivity
 | 业务理解 | 3 | 3 | 4 |
 | 协作 | 4 | 4 | 4 |
 | 领导力 | 2 | 2 | 3 |
+```
 
-- [§10. 资源](02-talent-ladder-section-10-sec10.md)
+## 附：晋升答辩陈述骨架
+
+```markdown
+# 晋升答辩陈述 - {姓名}
+
 ## 1. 自我介绍（2 分钟）
 - 工作年限 / 当前职级 / 团队角色
 
@@ -335,12 +343,7 @@ TeamOutput = TalentDensity × RetentionRate × PerCapitaProductivity
 ### 项目 3：团队培养
 - 带 2 个 P5 新人
 - 1 人 6 个月内通过试用期
-
-- [§9. Q&A（30 分钟）](02-talent-ladder-section-9-sec9.md)
-- [§5. 前沿演进（AI 时代）](02-talent-ladder-section-5-ai.md)
-- [§6. 落地实践](02-talent-ladder-section-6-sec6.md)
-- [§7. 与其他方法对比](02-talent-ladder-section-7-sec7.md)
-- [§8. 面试真题集](02-talent-ladder-section-8-sec8.md)
+```
 
 ---
 
@@ -348,5 +351,13 @@ TeamOutput = TalentDensity × RetentionRate × PerCapitaProductivity
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
+- [§3. 设计模式与范式](02-talent-ladder-section-3-sec3.md)
+- [§4. 工程实现](02-talent-ladder-section-4-sec4.md)
+- [§5. 前沿演进（AI 时代）](02-talent-ladder-section-5-ai.md)
+- [§6. 落地实践](02-talent-ladder-section-6-sec6.md)
+- [§7. 与其他方法对比](02-talent-ladder-section-7-sec7.md)
+- [§8. 面试真题集](02-talent-ladder-section-8-sec8.md)
+- [§9. Q&A（30 分钟）](02-talent-ladder-section-9-sec9.md)
+- [§10. 资源](02-talent-ladder-section-10-sec10.md)
 
 ---

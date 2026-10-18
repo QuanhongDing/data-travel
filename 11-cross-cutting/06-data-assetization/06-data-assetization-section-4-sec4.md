@@ -1,493 +1,359 @@
-> 本文件是 **06-data-assetization.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](06-data-assetization.md)。
+> 本文件是 **06-data-assetization.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](06-data-assetization-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](06-data-assetization.md)。
 
 ## 4. 工程实现
 
+资产化在纸面上是一条流水线（盘点 → 分级 → 估值 → 产品化 → 运营），在真实组织里则是一次**给已有资产补账**的工程：动手时表往往已经几千张，目录可能已经买过一轮，估值报告也许写过一份。所以本文件的主体写给**存量改造者**：4.1 的五步按「先补哪一列、后补哪一列」排序，4.4 专门讲历史资产怎么办。从零搭建的读者可以照 4.1 从头走，只是会更省事——没有历史欠账时，Step 1 与 Step 2 可以合成一次做。
+
+模式本身（为什么目录要强制登记、中台与数据网格怎么选、估值三法各自的成立条件）在 [§ 3](06-data-assetization-section-3-sec3.md) 里；本节只回答装进组织时「先做哪一步、怎么知道做对了、存量怎么处理」。
+
 ### 4.1 落地步骤
 
-**Step 1：盘点（4-8 周）**
+每一步给三件事：**产物**（手上多出来的、可被检查的东西）、**判据**（可执行动作，不是"达成共识"）、**为什么必须在这一步**。
 
-1. 扫描所有数据源（Hive / Snowflake / S3 / Kafka）。
-2. 自动生成元数据清单。
-3. 业务方调研（关键 50 个数据资产）。
-4. 数据资产 1.0 清单（Name / Owner / Description）。
+**Step 1：盘点与登记（4–8 周【经验：随数据源数量与是否已有采集器变，每多一类数据源、每多一个需自研采集的系统，周期相应拉长】）**
 
-**Step 2：分级与分类（4-8 周）**
+1. 扫描所有数据源（Hive / Snowflake / S3 / Kafka），自动生成元数据清单；采集器覆盖不到的来源单独列出来，不要合并进"已完成"。
+2. 业务方调研，先只做关键 50 个资产【经验：随业务域数量与资产总量变，域越多越要先压到最小集】，产出数据资产 1.0 清单，至少三列：Name / Owner / Description。
 
-1. 按业务价值分 4 级（L1 战略 / L2 重要 / L3 一般 / L4 备份）。
-2. 按数据敏感度分 4 类（公开 / 内部 / 机密 / 绝密）。
-3. 按数据状态分 3 类（活跃 / 半活跃 / 归档）。
-4. 输出《数据资产清单 v2》。
+- **产物**：资产 1.0 清单 + 采集覆盖率报表（分子＝采集到的资产数，分母＝各数据源自报的对象数，两个数都要写在报表上）。
+- **判据**：随机抽 3 张表，把 Owner 叫来问"这张表回答什么业务问题"——答不出说明 Description 是空的或抄的；再抽 3 行看 Owner 是**人名还是团队名**，团队名一律按无主处理。
+- **为什么必须这一步**：它同时建立分母与 [§ 3.2.1](06-data-assetization-section-3-sec3.md) 那个"缺项不能发布"开关的前提。省掉它直接做估值（Step 3），成本会因为没有资产粒度而只能按部门拍——成本归集表填不出来，后面所有 ROI 都是无源之水。
 
-**Step 3：估值（4-8 周）**
+**Step 2：分级与分类（4–8 周【经验：随资产数量与是否已有密级标注变】）**
 
-1. 选 10 个核心资产做估值试点。
-2. 用 3 种方法（成本法 + 收益法 + 市场法）交叉验证。
-3. 输出《数据估值模型》。
-4. 与财务团队对齐估值方法。
+1. 按业务价值分 4 级：L1 战略 / L2 重要 / L3 一般 / L4 备份；按数据敏感度分 4 类：公开 / 内部 / 机密 / 绝密；按数据状态分 3 类：活跃 / 半活跃 / 归档。
+2. 输出《数据资产清单 v2》，每行带这三组标签。
 
-**Step 4：治理与产品化（8-12 周）**
+- **产物**：清单 v2 + 分级口径文档（每一级一句可判定的定义，例如"L1＝停用会直接中断一条对外业务线"）。
+- **判据**：抽 3 份分级结果交给没参与打标的人，让他只看标签推出"谁能访问"的结论——推不出来说明分级只写成了形容词、没写成规则；再拿"近 90 天无查询且无下游血缘"的资产对一遍【经验：这个窗口随业务周期变，有季末 / 年末才跑一次的资产时要把窗口放长，否则会把它误判成"不活跃"】，看有没有被标成"活跃"（这是最常见的一类错标，它同时污染成本与权限两个下游）。
+- **为什么必须这一步**：敏感度分级是权限与产品化定价的共同输入。若先做产品化（Step 4）再回头分级，已发出的授权与已上架的接口收不回来，只能事后补一条限制条件——而事后补的条件从来不会执行到位。
 
-1. 高价值资产优先治理（质量 / 安全 / 元数据）。
-2. 把高价值资产封装为数据产品（API / 报表 / 模型）。
-3. 数据目录接入产品信息。
-4. 上线数据市场（内部）。
+**Step 3：估值试点（4–8 周【经验：随核心资产数量与财务配合度变】）**
+
+1. 选 10 个核心资产做估值试点【经验：随资产总量变，总量越大越要压小试点集，否则第一轮就卡在填表】。
+2. 用三种方法（成本法 + 收益法 + 市场法）交叉验证，每个数字都记下用的是哪种方法与什么假设，输出《数据估值模型》。
+3. 与财务团队对齐估值方法，重点是成本归集口径：哪些算存储、哪些算计算、人力怎么分摊。
+
+- **产物**：估值表（含 method 与 assumption 两列）+ 成本归集表 + 一份写清"这次估值要回答什么决策问题"的说明。
+- **判据**：抽 3 个数字问产出它的人"这是成本法还是收益法、假设是什么"——答不出说明方法与假设没落库，不同量级的两个数会被放进同一张表比较；再抽 3 行看收益列有没有归因依据（基线期 / 对照 / 显式写"未归因"），三者都没有的收益数字退回成本法。
+- **为什么必须这一步**：成本归集必须先于估值。反过来做（先给估值再找财务对成本）会得到一套没人认账的数字，而且此后每次组织调整都要重算——人力分摊口径是这里最贵、也最常被漏掉的一项。
+
+**Step 4：治理与产品化（8–12 周【经验：随上架项数量与对应资产的质量缺口变】）**
+
+1. 高价值资产优先治理（质量 / 安全 / 元数据），再封装为数据产品（API / 报表 / 模型）。
+2. 数据目录接入产品信息，上架项与资产共用同一套标识，然后上线内部数据市场。
+
+- **产物**：治理记录 + 上架项 + 订阅记录 + 计量记录。
+- **判据**：抽 3 个上架项，查有没有能签 SLA 的供给主体（写数据团队但产出方是业务域的不算）；再查计量是否进入了某个决策（配额 / 预算 / 优先级）——只展示不决策的计量会被绕过。
+- **为什么必须这一步**：产品化会把资产的质量问题一起固化进接口。契约一旦被下游消费，改口径就要走版本，所以治理必须在封装之前，而不是"边封装边治理"。
 
 **Step 5：ROI 与运营（持续）**
 
-1. 月度 ROI 评估。
-2. 数据产品定价 / 计费。
-3. 数据消费方反馈。
-4. 数据资产入表（财务）。
+1. 月度 ROI 评估，成本侧按资产粒度出数；数据产品定价 / 计费（先 showback，再 chargeback）。
+2. 收集数据消费方反馈；数据资产入表，财务口径按《企业数据资源相关会计处理暂行规定》执行，该规定自 2024 年 1 月 1 日起施行【公开】（财政部规定；条文、适用条件与后续修订以原文为准）。
+
+- **产物**：月度 ROI 报表 + 用量账本 + 反馈清单 + 入表资料。
+- **判据**：调出最近一次"因为 ROI 低而下线、降配或合并"的决策记录，看它引用了哪一个估值数字——一次都没有，说明估值没有进入决策；再算一次绕过率（拿到数据靠问人 vs 走市场）。
+- **为什么必须这一步**：ROI 至少需要一个完整计量周期才有数，是唯一无法提前的动作；但它的前提（成本归集、用量账本）必须在前四步就位，晚一步都会让第一周期的数字不可信。
+
+**这五步里最常被跳过的是 Step 3 里"成本归集到资产粒度"这一小步**——估值表往往先有收益列、后补成本列，补不出来就退化成百分比估算。跳过它不会立刻报错，第一个暴露时点是第一次预算收紧评审：没有任何一个资产拿得出自己的成本数，于是砍谁只能按"谁的声音大"定，而这恰好是资产化本来要解决的那个问题。
 
 ### 4.2 关键技术点
 
-**1. 数据估值模型**：
+**加权估值模型（三法合成）**
+
+- **做法**：三种方法各算一个数，按权重合成综合估值；权重与折现假设写在配置里而不是散在代码里，每次出数同时记录三个分量。
+- **机制**：因为成本法在资产生命周期前段最可靠、收益法在后段最可靠，而单个资产的可靠方法无从预判，所以固定权重把"这次该信哪个方法"从临场判断变成一条**可复现的规则**——同一批资产用同一套权重，横向可比才有意义。代价是它在具体某个资产上一定不如人工挑一个方法准，且权重一旦被当成"标准答案"，分量就不再有人看。
+- **失效条件**：当三个分量差出一个数量级以上时，权重不再起平衡作用，综合值实际由最大项决定【推算：设收益法估值是成本法的 20 倍，则成本与收益两项合起来是 0.4×成本 + 0.4×收益 = 0.4×(收益 / 20) + 0.4×收益 = 0.42×收益，即成本法只把收益法的权重分量（0.4×收益）抬高了 5%（0.42 / 0.40），平衡作用已经失效；市场法项另按 0.2 的权重计入】。症状：把估值表里"综合估值"与"收益法"两列画成散点，资产几乎都挤在一条过原点的直线上——综合值只是收益法的一个常数倍，权重没有在资产之间产生区分。观测信号：每次出估值时记录三个分量两两比值，把比值 > 10 的资产单独列一张表，这张表就是"估值不可信"的名单。
+- **档位**：【经验】（0.4 / 0.4 / 0.2 与折现期都是待定参数，随资产成熟度变，越早期越该压低收益法权重）。
+
+**资产登记与目录（aspect 写入）**
+
+- **做法**：用目录平台的 API 把技术元数据与运营字段写进同一条记录——资产属性里带 tier / 估值 / 年成本，Owner 落到人（技术 Owner 类型），标签带 pii 与价值等级；采集器能自动拿到的字段（字段、分区、血缘）不由人工填。
+- **机制**：因为运营字段与技术元数据同源，所以成本归集不需要第二套台账、按 tier 筛选也不需要跨系统 join；代价是这些人工沉淀跟着目录工具走，工具一换就得能导出——因此**凡是人工填的字段，都要落在可导出的属性里，而不是工具的评论、标签状态或工作流位置里**。
+- **失效条件**：当登记不与发布流程相连时，覆盖率会在一个季度内衰减【经验：从门禁失守到覆盖率明显下滑的窗口随资产新增速度变，新增越快暴露越早，慢的时候要一到两个季度才看得出来】。症状不是"没有数据"，而是"新增资产带着空描述上线"：新资产数在涨，描述非空比例在跌。观测信号：每天对比"过去 30 天新增资产数"与"其中描述非空的比例"【经验：观察窗口随资产新增速度变，新增慢时要把窗口拉长，否则比例会被少数几条抵消】；后者连续两周下降说明门禁已失效。
+- **档位**：【经验】
+
+**数据产品接口与计量**
+
+- **做法**：每个数据产品一个接口，调用即计量（主体、次数、成本）；响应 schema 作为产品契约，改字段名走版本；计量点与鉴权点放在同一处。
+- **机制**：因为计量发生在接口内部而不是事后统计，所以"谁在用、用多少"与"能不能用"是同一份记录的两种读法——不需要消费方自觉上报，配额也能在同一个位置执行。代价是计量逻辑与接口耦合：接口拆分或重构时要一起动，否则会出现"新接口没计量"的暗账。
+- **失效条件**：退化不会在上线时报错，它在第一次季度预算评审时才显形——那一轮没有任何一张预算单、配额表或优先级规则引用过账本里的数字，此后每次申请就只剩下走一遍审批的时间成本。症状是绕过量重新抬头。观测信号有两个：用量账本的调用量与该网关的总调用量之差（差值就是绕过量）；以及上游团队的临时取数请求数是否同期上升——两个信号要一起看，只看前者会漏掉"换了个网关"的情况。
+- **档位**：【经验】
+
+**数据市场与消费合约**
+
+- **做法**：上架项绑定供给主体、SLA、计价方式、配额与用途限定；订阅产生合约；用量回流到账本，回摊成本或扣预算。
+- **机制**：合约的价值在违约那一天才兑现——有一方能被开罚单或收到投诉工单，上游才会去改产出时间；这是"市场"与"目录"在实施层的分界线（契约为什么要求存在可签主体，见 [§ 3.2.5](06-data-assetization-section-3-sec3.md)）。代价落在变更流程上：每上一个架就多一份要跟着版本走的契约元数据（SLA / 版本 / 定价 / 授权），所以上架范围必须先窄、后扩——扩的速度不取决于还有多少资产可上，而取决于上一批契约的续签与变更工时有没有回落。
+- **失效条件**：当上架项由数据团队代签而实际产出方是业务域时，SLA 无人负责。症状是"SLA 违约记录为 0，同时下游投诉不断"——记录为空不是因为没违约，而是因为没人有权判违约。观测信号：上架项的 provider 与该资产 Owner 不一致的比例，这个比例就是"合约不可执行"的比例。
+- **档位**：【经验】
+
+**LLM 辅助分级与用途推断（只产草稿）**
+
+- **做法**：把表名、schema 与前若干行样例喂给模型，让它产出用途、价值等级、敏感度、潜在使用方与置信度；结果只写进"待确认"列，人工确认后才进正式列。
+- **机制**：因为草稿列与正式列分开，所以模型的错误影响面止于复核队列，而这个队列本身可度量（确认时长、驳回率）。代价是多一道人工确认——当确认率低时，这道工序形同虚设，草稿会变成事实上的分级。
+- **失效条件**：当无人复核或复核只走形式时，错判会直接落到权限侧。症状是"'机密'类资产数量下降，而导出类告警同期上升"——前者说明分级被放松，后者说明放松已经产生了实际动作。观测信号：草稿到正式的平均确认时长与驳回率（驳回率长期接近 0，通常不是模型变准了，而是没人在看）。
+- **档位**：【经验】
+
+### 4.3 工具链与平台
+
+选型的困难不在"哪个工具更好"，而在"你家哪条约束最紧"。下表按类别给判据，产品名只列公开可查的形态。
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 数据资产目录 | DataHub / Apache Atlas / Unity Catalog / Alation / Collibra / Atlan / 阿里云 DataWorks 的数据资产目录能力 / 字节 DataFinder（归类待核，见表后澄清二） | 三个判据按顺序问：① 关键项缺项时能不能挡住发布（写入约束 > 发布门禁 > 事后审计）；② 元数据能否通过 API 全量导出；③ 采集器是否覆盖你家实际的数据源。强合规流程优先选 Collibra 一类；已集中在某个 Lakehouse 上时，Unity Catalog 让资产与授权同命名空间、少一层同步 | 选了没有导出接口的目录，换工具时业务含义与 Owner 整片丢失，等于重新登记一遍 |
+| 定义权载体（中台形态） | 阿里数据中台（OneModel / OneID / OneService，公开材料中与 Quick BI 等产品同属一套体系）/ 华为 FusionInsight 的数据中台形态 / 京东、腾讯、字节的数据中台形态 | 判据只有一条：**有没有一个有权定义口径的中心团队、以及一份被多个业务共用的模型**。没有中心团队时不要选中台形态，因为要付的是权力重排的代价，不是一个采购决定的代价。字节一侧的形态是内部自研，没有对外产品文档，只能按能力形态对照，不对其能力作断言 | 没有定义权却搭了中台 → 中心成为需求队列，业务绕行，得到双份成本与两套口径 |
+| 交付与市场 | Snowflake Marketplace / Databricks Marketplace / AWS Data Exchange / Azure Data Share / 阿里云数据市场 / 上海数据交易所 / 贵阳大数据交易所 | 先分清两类：平台市场把交付放在自家平台内、数据不搬动、按使用计量，代价是消费方须在该生态内；交易所做的是挂牌、合规审查与交易规则，**交付方式由参与方另行约定**。内部市场不必买产品，上架项 + 订阅 + 计量三张表就能起 | 把交易所当分发渠道：签完之后"数据怎么到消费方手里"答不上来 |
+| 计量与账单 | 自建（接口内埋点）/ API 网关的用量统计 / 云厂商的成本与用量报表 | 判据是计量点与鉴权点是否相邻——分离则必然有绕过；另一条判据是它能不能按**资产**而不是按部门出数（按部门出数的账单永远算不出资产级 ROI）。顺序上先 showback、后 chargeback | 直接上 chargeback 却没有申诉通道 → 消费方不申诉、直接绕过 |
+| 估值与成本归集 | 自建估值表（method 与 assumption 落库）/ 财务系统的成本分摊模块 | 判据：成本能否归集到资产粒度，且含人力分摊。不能，就退回成本法并把"未归因收益"列成清单而不是金额 | 沿用财务的组织维度分摊 → 资产级 ROI 永远算不出来，估值只能停在汇报里 |
+| AI 增强入口 | Atlan AI / Collibra AI / DataHub 的 LLM 集成 / Unity Catalog 的 AI 集成 / 阿里云侧的 AI 智能盘点类能力 | 判据不是"有没有 AI 按钮"，而是两条：元数据 API 是否公开、业务含义与 Owner 是否已被覆盖。覆盖不足时先补元数据，不要先上入口 | 元数据不完整的目录加一个 LLM，只会更快地给出更自信的错答案 |
+| 中台的其它组件 | 阿里系（Quick BI 一类）报表与自助分析组件 / 各云的口径与实体管理组件 | 判据：它是否与定义权载体同源（同一份模型、同一套实体标识）。不同源就只是又一个取数工具 | 报表工具与口径体系两张皮 → 同一指标在报表与指标库里各有一个数 |
+
+**两处名称澄清。****澄清一（不要按缩写归类）**：原清单里的「阿里云 DAS」，在阿里云产品体系中通常指**数据库自治服务**，与资产目录不是同一类能力；阿里云侧确实存在 AI 驱动的资产盘点与智能检索能力，但它挂在哪个产品名下各材料说法不一，所以表中只按能力形态列它。核验方法与厂商无关：在产品目录里按**产品全名**而不是缩写检索，看介绍里是否含"元数据 / 资产盘点"一类关键词，再决定归入目录族还是运维族。**澄清二（字节 DataFinder 的归属）**：字节侧的元数据与资产管理能力不止一个产品线，DataLeap 的数据地图一类与 DataFinder 不是同一件事，把后者放在「数据资产目录」这一行之前，请按**产品全名**检索其产品介绍，看是否含"元数据 / 资产目录"一类关键词，并确认它面向的是资产发现还是行为分析，再决定它留在本行还是移入分析类工具。
+
+**这一类里最容易被误选的是「把目录平台当成治理能力」**：目录解决"有什么、归谁管、能不能被找到"，不解决"质量不好谁修""口径不一致谁定"。误选后不会立刻暴露，而是在第一次跨部门对账时暴露——两边从同一个目录取数，却算出不同的值，此时才发现目录里躺着两套同名指标。判据很简单：**问一句"同名指标在目录里有几条定义"，答不出个数就说明目录还没有承担定义权的功能。**
+
+### 4.4 存量迁移
+
+**① 先做哪一件，可以立刻见效且可回退。** 动作是**只给活跃资产补两列**（Owner 落到人、分层与域），判定活跃的口径用"最近 90 天有查询或有下游血缘"【经验：这个窗口随业务周期变，有季末才跑一次的资产时要把窗口放长，否则会把它误判成可归档】。为什么它可回退：这两列只写在目录里，不动任何表的物理结构，回滚就是关掉发布门禁这一个开关，历史数据一行都不用改。
+
+**② 历史资产分三档处理，不要一刀切返工。**
+
+| 档 | 处理方式 | 适用条件 | 什么时候该升级处理 |
+| --- | --- | --- | --- |
+| 全部返工 | 重登记关键项 | 活跃且被多个下游依赖 | — |
+| 只改动的部分 | "碰过就补"：任何一次 Schema 变更、口径变更、权限变更触发关键项校验，校验不过不允许发布 | 活跃但依赖少 | 依赖数上升时并入第一档 |
+| 打标挂账 | 打上"未登记"标签，允许存在但**不允许新的消费方申请** | 低频、无下游、状态不明 | 有人申请时立刻并回第二档 |
+
+判据：三个月后看挂账集合是在缩小还是在扩大【经验：第一次复查的时点随存量规模与门禁覆盖面变，存量越大越要早看】——扩大说明门禁只对新资产生效，存量还在自然增长，此时要先把"碰过就补"挂到 CI 或发布流程上。
+
+**③ 双轨期怎么维持、维持多久。** 目录与老台账（Excel / 工单 / 口头问人）必然并行一段时间，规则要写死两条：**新资产只能从目录进**，老资产允许双查、不允许双写。期限上没有通用数字【经验：以"一次完整的季度结账 + 一次真实审计"都只走了新路径为界，短于此的时长会漏掉那些"一季度才用一次"的资产】。双轨最真实的成本不是维护量，而是两套数据不一致——所以必须事先指定**以目录为准**，否则每次不一致都会变成一次协商。
+
+**④ 什么信号说明可以退出双轨。** 三个一起满足才退：一是抽样调查"拿到数据的过程"，走目录 / 市场的比例在上升、问人的比例在下降；二是挂账集合连续两个月净减少【经验：窗口随挂账集合的初始规模变，集合越大越要拉长，否则会把正常波动读成净减少】；三是一次真实争议或审计中，证据是从目录取的，而不是从老台账拼的。任一条不满足就退出，得到的是"多一层"：消费方两边都要看，登记压力却只剩一边。
+
+**⑤ 顺序上的一个例外。** 存量迁移里**正式估值**必须最后做——这里说的是要进预算、进报表、进对外披露的那一版；4.1 Step 3 里那 10 个资产的**估值试点**不在此列，试点可以也应该早做，因为它的产出只是一张口径表（方法 + 成本归集口径），不对外发布，也不会变成日后要被反复解释的对外数字。理由不是"估值不重要"，而是它依赖资产粒度与成本归集，而这两件恰恰是迁移过程中才补齐的；先估值会让第一份估值报告建立在旧口径上，之后每次口径修正都要重新解释一遍历史数字，这份解释成本比晚做几个月高得多。
+
+### 4.5 模板 / 示例
+
+**模板 1：估值三法与加权合成（`data_valuation.py`）**
 
 ```python
-# data_valuation.py
 from dataclasses import dataclass
-from typing import List
 
-@dataclass
+@dataclass(frozen=True)
 class DataAssetValuation:
     name: str
-    cost_method: float  # 成本法
-    income_method: float  # 收益法
-    market_method: float  # 市场法
-    
-    def weighted_valuation(self) -> float:
-        """加权平均估值"""
-        return (
-            0.4 * self.cost_method +
-            0.4 * self.income_method +
-            0.2 * self.market_method
-        )
+    cost_method: float      # 成本法：采集 + 存储 + 治理 + 机会成本
+    income_method: float    # 收益法：未来收益折现
+    market_method: float    # 市场法：可比单价 × 数量
+
+    def weighted(self) -> float:
+        return 0.4 * self.cost_method + 0.4 * self.income_method + 0.2 * self.market_method
 
 
-def cost_method(asset_metadata) -> float:
-    """成本法：基于 TCO"""
-    return (
-        asset_metadata['collection_cost'] +
-        asset_metadata['storage_cost'] * 12 +  # 年化
-        asset_metadata['governance_cost'] * 12 +
-        asset_metadata['opportunity_cost']
-    )
+def cost_method(m) -> float:        # 存储与治理按月度成本 × 12 年化
+    return m["collection_cost"] + (m["storage_cost"] + m["governance_cost"]) * 12 + m["opportunity_cost"]
 
 
-def income_method(asset_metadata, discount_rate=0.1, years=5) -> float:
-    """收益法：DCF"""
-    future_revenue = asset_metadata.get('annual_revenue', 0)
-    if future_revenue == 0:
-        return 0
-    
-    npv = sum(
-        future_revenue / (1 + discount_rate) ** t
-        for t in range(1, years + 1)
-    )
-    return npv
+def income_method(m, discount_rate=0.10, years=5) -> float:
+    r = m.get("annual_revenue", 0)
+    return sum(r / (1 + discount_rate) ** t for t in range(1, years + 1)) if r else 0
 
 
-def market_method(asset_metadata) -> float:
-    """市场法：基于市场可比交易"""
-    market_price = asset_metadata.get('market_price_per_gb', 0)
-    size_gb = asset_metadata.get('size_gb', 0)
-    return market_price * size_gb
-
-
-# 使用
-valuation = DataAssetValuation(
-    name="用户画像资产",
-    cost_method=200_0000,  # 200 万
-    income_method=800_0000,  # 800 万
-    market_method=500_0000,  # 500 万
-)
-print(f"综合估值: {valuation.weighted_valuation():,.0f}")
+def market_method(m) -> float:
+    return m.get("market_price_per_gb", 0) * m.get("size_gb", 0)
 ```
 
-**2. 数据资产目录（基于 DataHub）**：
+**怎么用**：填 `cost_method` 的四项输入（人力分摊最常被漏，要先与财务定口径）；`discount_rate` 与 `years` 必须写进估值表的 assumption 列，不要留在函数默认值里当作"行业惯例"——这两个都是**待定参数**【经验：折现率随企业资金成本与资产的风险等级变，风险越高取值越高；折现期随资产的可替代性与更新周期变，越容易被替代、越容易过时的资产越该取短，函数里的 0.10 / 5 只是占位】；权重 0.4 / 0.4 / 0.2 是可调参数【经验：越早期的资产越该压低收益法权重】，改在配置里而不是改代码。
+
+**模板 2：资产登记三件套（`datahub_catalog.py`）**
 
 ```python
-# datahub_catalog.py
-from datahub.emitter.mce_builder import (
-    make_dataset_urn, make_user_urn, make_tag_urn
-)
+from datahub.emitter.mce_builder import make_dataset_urn, make_user_urn, make_tag_urn
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
 from datahub.emitter.rest_emitter import DatahubRestEmitter
 from datahub.metadata.schema_classes import (
-    DatasetPropertiesClass, OwnershipClass,
-    OwnerClass, OwnershipTypeClass, GlobalTagsClass,
-    TagAssociationClass
+    DatasetPropertiesClass, OwnershipClass, OwnerClass,
+    OwnershipTypeClass, GlobalTagsClass, TagAssociationClass,
 )
 
-emitter = DatahubRestEmitter("http://datahub:8080")
-
-def register_data_asset(dataset_urn, name, description, owners, tags):
-    """注册数据资产"""
-    
-    # 1. 基本属性
-    dataset_props = DatasetPropertiesClass(
-        name=name,
-        description=description,
-        customProperties={
-            "tier": "L1",  # 战略级
-            "valuation": "5000000",  # 500 万
-            "annual_cost": "200000",  # 20 万/年
-        }
-    )
-    emitter.emit(MetadataChangeProposalWrapper(entityUrn=dataset_urn, aspect=dataset_props))
-    
-    # 2. Owner
-    ownership = OwnershipClass(
-        owners=[
-            OwnerClass(
-                owner=make_user_urn(owner),
-                type=OwnershipTypeClass.TECHNICAL_OWNER,
-            ) for owner in owners
-        ]
-    )
-    emitter.emit(MetadataChangeProposalWrapper(entityUrn=dataset_urn, aspect=ownership))
-    
-    # 3. 标签
-    global_tags = GlobalTagsClass(
-        tags=[
-            TagAssociationClass(tag=make_tag_urn(tag))
-            for tag in tags
-        ]
-    )
-    emitter.emit(MetadataChangeProposalWrapper(entityUrn=dataset_urn, aspect=global_tags))
+emitter = DatahubRestEmitter("<DataHub GMS 地址>")
 
 
-# 使用
-register_data_asset(
-    dataset_urn=make_dataset_urn("hive", "prod.dwd_user_profile"),
-    name="用户画像宽表",
-    description="用户多维度画像，整合消费、兴趣、人口属性",
-    owners=["alice", "bob"],
-    tags=["pii", "L1-strategic", "high-valuation"],
+def register_asset(urn, name, description, owner_user, tags, tier, valuation, annual_cost):
+    emitter.emit(MetadataChangeProposalWrapper(entityUrn=urn, aspect=DatasetPropertiesClass(
+        name=name, description=description,
+        customProperties={"tier": tier, "valuation": str(valuation), "annual_cost": str(annual_cost)})))
+    emitter.emit(MetadataChangeProposalWrapper(entityUrn=urn, aspect=OwnershipClass(
+        owners=[OwnerClass(owner=make_user_urn(owner_user),
+                           type=OwnershipTypeClass.TECHNICAL_OWNER)])))
+    emitter.emit(MetadataChangeProposalWrapper(entityUrn=urn, aspect=GlobalTagsClass(
+        tags=[TagAssociationClass(tag=make_tag_urn(t)) for t in tags])))
+
+
+register_asset(
+    urn=make_dataset_urn("hive", "prod.dwd_user_profile"),
+    name="用户画像宽表", description="用户多维度画像：整合消费、兴趣、人口属性",
+    owner_user="alice", tags=["pii", "L1-strategic"],
+    tier="L1", valuation=5_000_000, annual_cost=200_000,
 )
 ```
 
-**3. 数据产品化（数据 API）**：
+**怎么用**：`customProperties` 里放的是运营字段（tier / 估值 / 年成本），它们是成本归集与筛选的依据，不要当注释写；`owner_user` 必须是人，写团队名等于放弃追责；aspect 类名与导入路径随 DataHub 版本变化，请以官方文档当前版本为准。
+
+**模板 3：数据产品接口与计量（`data_product_api.py`）**
 
 ```python
-# data_product_api.py
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import Optional
-import time
 
 app = FastAPI(title="Data Product API: 用户画像")
 
-# 计费（Showback）
-class UsageTracker:
-    def __init__(self):
-        self.usage = {}  # {team: {count, last_reset}}
-    
-    def track(self, team: str, query_cost: float = 1.0):
-        if team not in self.usage:
-            self.usage[team] = {"count": 0, "cost": 0.0}
-        self.usage[team]["count"] += 1
-        self.usage[team]["cost"] += query_cost
+
+class UsageLedger:                      # 计量账本：先 showback，确认价值后再 chargeback
+    def __init__(self): self.usage = {}
+
+    def track(self, team: str, calls: int = 1, cost: float = 0.0):
+        row = self.usage.setdefault(team, {"calls": 0, "cost": 0.0})
+        row["calls"] += calls
+        row["cost"] += cost
 
 
-tracker = UsageTracker()
+ledger = UsageLedger()
 
 
-class UserProfile(BaseModel):
+class UserProfile(BaseModel):           # 响应 schema 即产品契约：加字段可以，改字段名要走版本
     user_id: str
-    age: Optional[int]
-    gender: Optional[str]
-    consumption_tier: Optional[str]
-    interests: list
+    age: int | None = None
+    gender: str | None = None
+    consumption_tier: str | None = None
+    interests: list[str] = []
 
 
 @app.get("/api/v1/user-profile/{user_id}")
-def get_user_profile(user_id: str, team: str = "default"):
-    """获取用户画像（数据产品）"""
-    
-    # 计费
-    tracker.track(team, query_cost=0.01)  # 每次 0.01 元
-    
-    # 数据查询（模拟）
-    profile = fetch_user_profile(user_id)
-    
-    return profile
+def get_user_profile(user_id: str, team: str) -> UserProfile:
+    ledger.track(team, calls=1, cost=0.01)      # 单价从成本归集表推出，不要手填
+    return fetch_user_profile(user_id)
 
 
-@app.get("/api/v1/usage")
-def get_usage(team: Optional[str] = None):
-    """查看数据消费用量（Showback）"""
-    if team:
-        return {team: tracker.usage.get(team, {})}
-    return tracker.usage
-
-
-# 月度账单
-def monthly_billing():
-    """月度计费报表（Chargeback）"""
-    return {
-        team: {
-            "count": data["count"],
-            "cost": data["cost"],
-        }
-        for team, data in tracker.usage.items()
-    }
+@app.get("/api/v1/usage")               # showback：只看用量，不扣预算
+def get_usage(team: str | None = None):
+    return ledger.usage if team is None else {team: ledger.usage.get(team, {})}
 ```
 
-**4. 数据市场（数据交易）**：
+**怎么用**：`team` 是计量主体，**不要给它默认值**——默认值会把匿名调用归进同一个桶，绕过率也就查不出来了；`cost=0.01` 是占位价，必须换成从成本归集表推出来的单价。完整的资产化平台（`data_asset_platform.py`）把这些接口收在同一个服务里、读写分路由：读侧是 `/api/v1/assets`（按 tier / owner 过滤）与 `/api/v1/assets/{id}/valuation`（直接复用模板 1 的三法合成）；`/api/v1/roi/{id}` 把 `roi = (revenue - cost) / cost` 与 `payback_months = cost / revenue × 12` 两个字段一起返回，收益为 0 时留空而不是填 0——"没算出来"和"回本为零"是两件事，混进同一列之后没有一个下游分得出来；写侧是 `/api/v1/assets/{id}/subscribe`，建完合约经 `BackgroundTasks` 异步通知产出方，接口先返回合约、通知失败只能看它自己的失败信号，不要拿订阅接口的返回码当作通知已送达。
+
+**模板 4：数据市场合约（`data_marketplace.py`）**
 
 ```python
-# data_marketplace.py
-"""
-数据市场示例：内部数据产品交易所
-"""
-from typing import List
 from dataclasses import dataclass
 from enum import Enum
 
 
 class ProductTier(str, Enum):
-    FREE = "FREE"  # 免费
-    BASIC = "BASIC"  # 基础版
+    FREE = "FREE"        # 免费
+    BASIC = "BASIC"      # 基础版
     PREMIUM = "PREMIUM"  # 高级版
 
 
-@dataclass
+@dataclass(frozen=True)
 class DataProduct:
     id: str
     name: str
     description: str
-    owner: str
+    owner: str                  # 供给主体：能签 SLA 的那一方
     tier: ProductTier
-    price_per_call: float  # 元 / 次调用
-    sla: str  # "99.9%, 1h freshness"
-    classification: str  # 公开 / 内部 / 机密
+    price_per_call: float
+    sla: str                    # 例如 "99.9% availability, daily freshness"
+    classification: str         # 公开 / 内部 / 机密
+    purpose_limit: str = ""     # 用途限定：合规要求，不是可选项
 
 
 class DataMarketplace:
     def __init__(self):
-        self.products = {}
-        self.contracts = []  # 消费合约
-    
-    def list_product(self, product: DataProduct):
-        self.products[product.id] = product
-    
-    def subscribe(self, product_id: str, consumer_team: str, volume: int):
-        """订阅数据产品"""
-        product = self.products[product_id]
-        contract = {
-            "product_id": product_id,
-            "consumer": consumer_team,
-            "volume": volume,
-            "cost": product.price_per_call * volume,
-            "sla": product.sla,
-        }
+        self.products: dict[str, DataProduct] = {}
+        self.contracts: list[dict] = []
+
+    def list_product(self, p: DataProduct) -> None:
+        if not (p.owner and p.sla and p.purpose_limit):
+            raise ValueError("上架项必须有三样：能签 SLA 的主体、SLA、用途限定")
+        self.products[p.id] = p
+
+    def subscribe(self, product_id: str, consumer: str, volume: int) -> dict:
+        p = self.products[product_id]
+        contract = {"product_id": product_id, "consumer": consumer, "volume": volume,
+                    "cost": p.price_per_call * volume, "sla": p.sla,
+                    "purpose_limit": p.purpose_limit}
         self.contracts.append(contract)
         return contract
-
-
-# 上架产品
-market = DataMarketplace()
-market.list_product(DataProduct(
-    id="user-profile-v1",
-    name="用户画像 API v1",
-    description="用户多维度画像，整合消费、兴趣、人口属性",
-    owner="data-platform@example.com",
-    tier=ProductTier.BASIC,
-    price_per_call=0.01,  # 0.01 元 / 次
-    sla="99.9% availability, daily freshness",
-    classification="内部",
-))
-
-# 业务方订阅
-contract = market.subscribe(
-    product_id="user-profile-v1",
-    consumer_team="marketing-team",
-    volume=1_000_000,  # 100 万次
-)
-print(f"合约: {contract}")
-print(f"月成本: {contract['cost']} 元")
 ```
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+**怎么用**：`owner` 填能签 SLA 的供给主体，不是数据团队代签；`price_per_call` 与 `tier` 是待定参数【经验：先按 showback 一个周期定级，再定单价】；`purpose_limit` 留空上架等于放弃事后追责的依据，`list_product` 里把它设成硬校验就是为了让这一步无法省略。
 
-**数据目录工具**：
-
-| 工具 | 定位 | 优势 |
-| --- | --- | --- |
-| **DataHub** | LinkedIn 开源 | 字段血缘 + AI 集成 |
-| **Apache Atlas** | Hadoop 生态 | 强分类分级 |
-| **Unity Catalog** | Databricks | Lakehouse 原生 |
-| **Alation** | 商业数据目录 | 数据治理 |
-| **Collibra** | 企业级治理 | 合规优先 |
-| **Atlan** | 现代数据目录 | 协作 + AI |
-| **阿里云 DataWorks 资产** | 中国本土 | 中文友好 |
-| **阿里云 DAS** | 阿里云原生 | 深度集成 |
-| **字节 DataFinder** | 字节自研 | 内部强大 |
-
-**数据中台工具**：
-
-| 工具 | 定位 |
-| --- | --- |
-| **阿里数据中台** | 商业化（Quick BI + OneID） |
-| **字节数据中台** | 字节跳动内部 |
-| **华为数据中台** | 华为云 FusionInsight |
-| **京东数据中台** | 京东内部 |
-| **腾讯数据中台** | 腾讯云 + 内部 |
-
-**数据市场平台**：
-
-| 工具 | 定位 |
-| --- | --- |
-| **Snowflake Marketplace** | Snowflake 生态 |
-| **Databricks Marketplace** | Databricks 生态 |
-| **AWS Data Exchange** | AWS 生态 |
-| **Azure Data Share** | Azure 生态 |
-| **阿里云数据市场** | 中国本土 |
-| **上海数据交易所** | 中国国家级 |
-| **贵阳大数据交易所** | 中国国家级 |
-
-**AI 时代新工具（2024-2025）**：
-
-- **Atlan AI**：自然语言查询资产。
-- **Collibra AI**：AI 驱动治理。
-- **DataHub + LLM**：AI 集成。
-- **Unity Catalog + AI**：AI 模型治理。
-- **阿里云 DAS 智能盘点**：通义千问自动盘点。
-
-### 4.4 代码 / 示例
-
-**示例 1：完整的数据资产化平台（FastAPI + DataHub）**
+**模板 5：LLM 辅助盘点（`ai_asset_discovery.py`）**
 
 ```python
-# data_asset_platform.py
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from typing import Optional
-from datetime import datetime
-
-app = FastAPI(title="数据资产化平台")
-
-# 数据资产数据库
-engine = create_engine("postgresql://user:pass@db:5432/data_assets")
-Session = sessionmaker(bind=engine)
-
-
-@app.get("/api/v1/assets")
-def list_assets(tier: Optional[str] = None, owner: Optional[str] = None):
-    """列出数据资产"""
-    session = Session()
-    assets = session.execute(
-        "SELECT * FROM data_assets WHERE 1=1 AND tier = :tier OR owner = :owner",
-        {"tier": tier, "owner": owner}
-    ).fetchall()
-    session.close()
-    return assets
-
-
-@app.get("/api/v1/assets/{asset_id}/valuation")
-def get_valuation(asset_id: str):
-    """获取数据资产估值"""
-    asset = get_asset(asset_id)
-    return {
-        "asset_id": asset_id,
-        "cost_method": cost_method(asset),
-        "income_method": income_method(asset),
-        "market_method": market_method(asset),
-        "weighted": (
-            0.4 * cost_method(asset) +
-            0.4 * income_method(asset) +
-            0.2 * market_method(asset)
-        ),
-    }
-
-
-@app.post("/api/v1/assets/{asset_id}/subscribe")
-def subscribe_asset(asset_id: str, team: str, volume: int, background_tasks: BackgroundTasks):
-    """订阅数据产品"""
-    asset = get_asset(asset_id)
-    cost = asset["price_per_call"] * volume
-    
-    # 创建合约
-    contract = create_contract(asset_id, team, volume, cost)
-    
-    # 异步通知数据团队
-    background_tasks.add_task(notify_data_team, contract)
-    
-    return contract
-
-
-@app.get("/api/v1/roi/{asset_id}")
-def calculate_roi(asset_id: str):
-    """计算数据资产 ROI"""
-    asset = get_asset(asset_id)
-    cost = cost_method(asset)
-    revenue = asset.get("annual_revenue", 0)
-    
-    roi = (revenue - cost) / cost if cost > 0 else 0
-    
-    return {
-        "asset_id": asset_id,
-        "cost": cost,
-        "revenue": revenue,
-        "roi": roi,
-        "payback_months": (cost / revenue * 12) if revenue > 0 else None,
-    }
-```
-
-**示例 2：AI 驱动的数据资产自动盘点**
-
-```python
-# ai_asset_discovery.py
 import os
 from anthropic import Anthropic
 
 client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+MODEL = "<填入你所用 SDK 当前支持的模型标识>"   # 以官方模型清单的当前版本为准
+
+PROMPT = """你是数据资产管理专家。基于下列信息给出一份分级草稿。
+表名：{table_name}
+Schema：{schema_info}
+样例数据（前 10 行）：{sample_data}
+
+任务：推断业务用途；给业务价值等级（L1 战略 / L2 重要 / L3 一般 / L4 备份）；
+给敏感度（公开 / 内部 / 机密 / 绝密）；列出潜在使用方；给治理优先级（P0–P3）。
+输出 JSON：{{"purpose": "...", "tier": "...", "classification": "...",
+ "potential_consumers": ["..."], "governance_priority": "...",
+ "reasoning": "...", "confidence": "high|medium|low"}}"""
 
 
-def auto_classify_asset(table_name, sample_data, schema_info):
-    """用 LLM 自动分类数据资产"""
-    
-    prompt = f"""
-你是一个数据资产管理专家。请基于以下信息评估这个数据资产。
-
-## 表名
-{table_name}
-
-## Schema
-{schema_info}
-
-## 样例数据（前 10 行）
-{sample_data}
-
-## 你的任务
-1. 推断这张表的业务用途
-2. 评估业务价值等级（L1 战略 / L2 重要 / L3 一般 / L4 备份）
-3. 评估数据敏感度（公开 / 内部 / 机密 / 绝密）
-4. 列出潜在使用方（业务团队）
-5. 给出建议的治理优先级
-
-## 输出 JSON
-```json
-{{
-  "purpose": "...",
-  "tier": "L1/L2/L3/L4",
-  "classification": "公开/内部/机密/绝密",
-  "potential_consumers": ["...", "..."],
-  "governance_priority": "P0/P1/P2/P3",
-  "reasoning": "..."
-}}
-```
-"""
-    
-    response = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=2000,
-        messages=[{"role": "user", "content": prompt}]
+def draft_classification(table_name, sample_data, schema_info) -> str:
+    resp = client.messages.create(
+        model=MODEL, max_tokens=2000,
+        messages=[{"role": "user", "content": PROMPT.format(
+            table_name=table_name, schema_info=schema_info, sample_data=sample_data)}],
     )
-    
-    return response.content[0].text
+    return resp.content[0].text
 ```
 
----
+**怎么用**：输出写进"待确认"列，人工确认后才进正式列——分级的下游是权限，错判一次就是一次越权放行（失效条件见 4.2）；`confidence` 决定复核队列的排序，缺了它复核只能按顺序做，队列一长就被放弃；样例数据要先过一遍脱敏再喂给模型，喂进去的样例同样是一次数据外流。
+
+**模板 6：资产登记卡（给 Owner 填的一页纸）**
+
+| 格 | 填什么 | 哪几格不要照抄 |
+| --- | --- | --- |
+| 业务含义 | 一句话：这张表回答什么业务问题 | 不要写"用户表"这类同义反复 |
+| 分层 + 域 | ODS / DWD / DWS / ADS + 业务域 | 不要填多个域，多域等于无主 |
+| Owner | 具体到人 | 不要填团队名、不要填邮箱组 |
+| SLA | 更新频率 + 产出时间 + 可用性承诺 | 不要写"尽力而为" |
+| 密级 | 公开 / 内部 / 机密 / 绝密 | **默认值取最高级**，不要照抄成"公开" |
+| 上游 / 下游 | 直接依赖的对象 | 不要靠记忆填，从血缘取 |
+
+**怎么用**：这张卡只在前 50 个关键资产上人工填【经验：随资产总量与业务方配合度变】，其余用采集器自动生成 + LLM 草稿补；"密级默认取最高级"这一格是本表里唯一不能按常识改的——默认公开的误判代价不可逆。
+
+### 4.6 自检清单
+
+以下每一条都要动手查系统，而"坐下来想一想"能回答的问题（粒度对不对、模式选得对不对、口径清不清楚）见 [§ 3.7](06-data-assetization-section-3-sec3.md)，本节不重复。
+
+- [ ] 随机抽 3 张表，请 Owner 在 5 分钟内说出"回答什么业务问题、最近一次变更是什么"——答不出说明描述列虽非空但已过期。
+- [ ] 挑一个活跃资产，用目录里的申请入口**实际走一遍**授权（不是看文档），记录从申请到能读到数据的真实耗时。
+- [ ] 取最近一个月的用量账本，与网关的访问日志对账：两者条数差多少，差额能否逐条解释。
+- [ ] 调出最近一次因 ROI 低而下线、降配或合并的决策记录，看它引用了哪个估值数字、这个数字是不是在一次评审中被讨论过。
+- [ ] 把估值表最近一期与上一期的 `method` 列对比：有多少资产的估值方法被换过；调出其中任意一次更换的记录，看换方法的理由有没有落进台账。
+- [ ] 统计"未登记"挂账资产的数量，与三个月前比较是升还是降。
+- [ ] 找出上一次"下游申请被拒"的记录：拒的理由是用途不合规，还是没人负责——全是后者说明供给主体缺失。
+- [ ] 演练"某资产年成本翻倍"：从成本归集表能否定位到是存储、计算还是人力，用时多久。
+- [ ] 抽 3 条 LLM 产出的分级草稿，看它们是被人工确认过还是直接落了正式列；再看复核队列里被驳回的条目有没有留下驳回理由。
+- [ ] 统计上一次真实取数请求的路径：经过目录或市场的比例是多少（绕过率），与上个月比是升是降。
+- [ ] 用目录的导出接口导出全部资产的关键项，做一次"换工具"演练；导不出的字段就是下次迁移会丢的字段。
+- [ ] 与财务核一次：入表（如适用）引用的资产范围与目录清单能否对上，差异多少条、原因是什么。
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一那个决定成败的环节，是 **Step 1 那个"缺项不能发布"的开关键有没有被真正按下**——它比估值精度、目录功能、市场早晚都更值得投入，因为它是全流程中**唯一一个越晚做越贵**的动作：估值算错了可以重算，市场慢了可以补上，AI 入口随时能加，而**登记覆盖率一旦衰减就补不回来**——没被登记的资产不会自己冒出来，等到第一次要用目录做减法（下线、降配、合并）时，你会发现自己连减法的分母都没有。
+>
+> 配合 [§ 2 核心原理](06-data-assetization.md)、[§ 3 设计模式与范式](06-data-assetization-section-3-sec3.md) 与 [§ 6 落地实践](06-data-assetization-section-6-sec6.md) 阅读。

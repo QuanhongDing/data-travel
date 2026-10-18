@@ -1,398 +1,346 @@
-> 本文件是 **09-gray-and-rollback.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](09-gray-and-rollback.md)。
+> 本文件是 **09-gray-and-rollback.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](09-gray-and-rollback-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](09-gray-and-rollback.md)。
 
 ## 4. 工程实现
 
+本节按「**先装哪个 → 装的时候盯什么 → 选型怎么判 → 存量怎么接 → 拿什么套 → 怎么自检**」组织：4.1 给六段可独立停下的阶梯，4.2 给每条能力的实施层机制与失效信号，4.3 给选型判据，4.4 给存量改造，4.5–4.7 两者共用。
+
+**读者分两类，读法不同。** 从零搭建的团队（新系统、新团队、还没有发布流水线）从 4.1 Step 1 顺着走；**存量改造的团队直接跳到 4.4** —— 你的第一步不是买平台，而是先回答「我现有这套发布流程，回滚动作究竟是哪一条、谁执行过、多久见效」。本节不给模式的「优点」论述：每个模式被什么约束逼出来、机制为什么有效、代价是什么，在 [§ 3](09-gray-and-rollback-section-3-sec3.md) 已给，本节只回答装的时候怎么知道装对了。
+
 ### 4.1 落地步骤
 
-#### 阶段 1：基础设施
+**Step 1：基础设施（2–4 周【经验：随既有 CI/CD 成熟度变，已跑在 Kubernetes 上的团队可压到一周内；从零开始的团队通常是这一段的数倍】）**
 
-1. **CI/CD Pipeline**：Jenkins / GitLab CI / GitHub Actions / Argo CD。
-2. **镜像仓库**：Harbor / Docker Hub / 阿里云 ACR。
-3. **配置中心**：Apollo / Nacos / Spring Cloud Config。
-4. **监控告警**：Prometheus + Grafana / 阿里云 ARMS。
-5. **日志系统**：ELK / Loki / SLS。
+- CI/CD Pipeline：Jenkins / GitLab CI / GitHub Actions / Argo CD。
+- 镜像仓库：Harbor / Docker Hub / 阿里云 ACR。
+- 配置中心：Apollo / Nacos / Spring Cloud Config。
+- 监控告警：Prometheus + Grafana / 阿里云 ARMS。
+- 日志系统：ELK / Loki / SLS。
 
-#### 阶段 2：灰度发布平台
+- **产物**：一条从提交到可发布制品的流水线、一个内网可拉取的镜像仓库、一份「哪个指标在哪个系统里查」的对照表。
+- **判据**：任取一个服务，从提交到产出带版本号的镜像全程无人工点击；从镜像仓库按版本号能拉到任意历史版本（能拉旧版本，才谈得上回滚）；指标能在一次查询里被取到。
+- **为什么必须这一步**：回滚的前提是「旧版本还在且能被找到」。镜像不可按版本寻址时，后面的权重回退、蓝绿切流全部无从下手 —— 这是唯一一个「省掉它，后面所有步骤都返工」的步骤。
 
-1. **流量调度能力**：Nginx / Envoy / Istio / Ribbon。
-2. **灰度策略**：按用户 ID、地域、白名单的灰度规则。
-3. **指标观察**：实时观察新版本的 QPS、延迟、错误率。
-4. **自动回滚**：基于指标的自动回滚机制。
+**Step 2：灰度发布平台（4–8 周【经验：随服务数量与是否已有服务网格变】）**
 
-#### 阶段 3：Feature Flag 平台
+- 流量调度能力：Nginx / Envoy / Istio / Ribbon。
+- 灰度策略：按用户 ID、地域、白名单的灰度规则。
+- 指标观察：实时观察新版本的 QPS、延迟、错误率。
+- 自动回滚：基于指标的自动回滚机制。
 
-1. **Flag 管理**：Flag 的创建、修改、删除、归档。
-2. **Flag 评估**：高性能（< 10ms）、一致性（同用户始终命中同一版本）。
-3. **Flag 治理**：Owner 制度、定期清理、过期提醒。
+- **产物**：一条能按权重切流的入口、一份灰度规则清单、一张新旧版本对照的指标看板。
+- **判据**：抽 3 个服务【经验：抽样量随服务数量变】，把新版本权重设为 0 再设回 100，观察入口日志里新旧 upstream 的请求计数是否真的随之变化；对照组看板上必须能同时看到两个版本的 P95/P99，而不是只有一个合计值。
+- **为什么必须这一步**：灰度策略的实现位置（入口 / 网格 / 应用内）决定了后面所有变更能用哪些控制量。先定策略再选集流量调度，会在 Step 3 发现「按会员等级分群」这个字段在入口拿不到，只能回退到改应用代码。
 
-#### 阶段 4：A/B 测试平台
+**Step 3：Feature Flag 平台（3–6 周【经验：选配置中心承载可压到数周内，自建评估服务则随覆盖语言数增长】）**
 
-1. **实验管理**：实验的创建、配置、启动、停止。
-2. **流量分配**：哈希分流（同用户始终命中同一桶）。
-3. **指标分析**：实时统计、自动显著性检验。
-4. **结果可视化**：A/B 报表、显著性检验报告。
+- Flag 管理：Flag 的创建、修改、删除、归档。
+- Flag 评估：高性能（评估开销控制在毫秒级【经验：单次评估的耗时目标随请求路径上的评估次数变】）、一致性（同一用户始终命中同一版本）。
+- Flag 治理：Owner 制度、定期清理、过期提醒。
 
-#### 阶段 5：数据灰度 / 模型灰度
+- **产物**：一张带 `owner` 与到期时间的开关登记表、一套评估 SDK（或一个统一的评估入口）、一份季度清理动作。
+- **判据**：随机抽一个已开启的开关，问「它的 owner 是谁、什么时候过期、现在有多少代码路径依赖它」——三问里有一问答不出，说明治理机制没有真的落地；再用同一用户连续请求 20 次【经验：次数随客户端缓存刷新间隔变】，观察命中版本是否始终一致。
+- **为什么必须这一步**：Step 2 的权重只能按「流量」切，切不了「功能」。没有开关时，任何一次「先部署后开启」的诉求都会退化成一次正式发布，回滚又回到需要部署的路径上。跳过这一步的团队，最终会在数据与模型变更上被迫用更贵的手段（重建环境、回滚数据）替代一次开关翻转。
 
-1. **数据迁移工具**：双写平台、影子表工具、Online Schema Migration。
-2. **模型灰度平台**：影子模型、金丝雀、A/B 测试。
-3. **回滚预案**：数据回滚（Binlog 反向）、模型回滚（保留旧模型）。
+**Step 4：A/B 测试平台（4–8 周【经验：随指标接入数量与统计口径复杂度变】）**
 
-#### 阶段 6：组织与流程
+- 实验管理：实验的创建、配置、启动、停止。
+- 流量分配：哈希分流（同用户始终命中同一桶）。
+- 指标分析：实时统计、自动显著性检验。
+- 结果可视化：A/B 报表、显著性检验报告。
 
-1. **发布规范**：发布窗口（如周二周四）、发布审批、变更评审。
-2. **回滚演练**：定期演练回滚流程（季度/GameDay）。
-4. **监控值班**：发布期间值班人员就位。
+- **产物**：一套实验登记（假设、分群、主指标、样本量）、一份显著性检验报告模板。
+- **判据**：抽一个已结束的实验，检查它的样本量是不是在实验**开始前**算好的（不是结束后补算）；检查两组的分群键是否是稳定标识（`user_id` / `device_id`），而不是会话或请求 ID。
+- **为什么必须这一步**：这一层唯一提供的是「值不值得」的答案，而它必须在有真实流量、真实指标的前提下才有意义 —— 放在 Step 1–2 之前做，等于给一个还没有稳定版本的系统做对照实验。
+
+**Step 5：数据灰度 / 模型灰度（8–12 周【经验：随数据量与是否已有对账任务变，是六段里最长的】）**
+
+- 数据迁移工具：双写平台、影子表工具、Online Schema Migration。
+- 模型灰度平台：影子模型、金丝雀、A/B 测试。
+- 回滚预案：数据回滚（Binlog 反向）、模型回滚（保留旧模型）。
+
+- **产物**：一条双写链路 + 一个对账任务（每日、带差异率）、一只影子表、一份「单程票清单」（已不可逆的变更及其日期）。
+- **判据**：对账任务的差异率今天是多少、能不能逐条归因；抽一次改表，确认它在发布单上被标注为「可逆 / 需扩展-收缩 / 单向门」三者之一，而不是笼统的「数据库变更」。
+- **为什么必须这一步**：前面五步攒下的都是「换一个东西就能退回去」的能力；这一类变更要退回去，前提是**先有一份对得上的旧数据**和一条一直在跑的对账任务 —— 这两样都得提前建，不是事故当晚能补的（为什么它的控制量只有写与读两个开关，见 [§ 3](09-gray-and-rollback-section-3-sec3.md) §3.1 约束表）。把它留到最后统一处理，前面五步攒下的所有「秒级回滚」优势都会在一次 Schema 变更上作废。
+
+**Step 6：组织与流程（2–4 周成形，之后是持续动作【经验：随团队规模与值班排布变】）**
+
+- 发布规范：发布窗口（如周二、周四）、发布审批、变更评审。
+- 回滚演练：定期演练回滚流程（季度 / GameDay）。
+- 监控值班：发布期间值班人员就位。
+
+- **产物**：发布单模板（含三组阈值与回滚动作）、演练记录（含计时）、一张值班表。
+- **判据**：让一位**不是本次发布作者**的值班同学，在没有口头提示的情况下执行一次回滚并计时；从接到指令到指标回落，哪一步最慢、是谁在等谁，必须能被写出来。
+- **为什么必须这一步**：前五步给的是能力，这一步给的是**能力的可达性**。「支持回滚」和「今晚有人能把它回滚掉」是两件事，后者只在人被排进值班表、动作被实际跑过之后才成立。
+
+**最常被跳过的是 Step 6。** 它不产出系统、不进发布物、无法在架构图上体现，因此在排期上永远排在最末。它被跳过后的第一个出问题时点很清楚：**第一次真实事故的当晚** —— 症状不是没人知道要回滚，而是「回滚命令的参数要现填、数据库那个变更没有对应的回退动作、值班人先去找上次发布的人」。更糟的一种是回滚「执行成功」了：切流、换镜像都做完了，指标也回落了，但几天后某张下游报表出现对不上的数字 —— 那说明被回滚掉的是代码，不是数据（[§ 3](09-gray-and-rollback-section-3-sec3.md) 反模式 4 说的正是这类静默失效）。
 
 ### 4.2 关键技术点
 
-#### 1. 流量调度（Nginx）
+**流量调度的落点（Nginx `split_clients` / Istio `VirtualService`）**
 
-```nginx
-# Nginx 灰度：金丝雀 5% 流量到新版本
-upstream backend_v1 {
-    server backend-v1:8080;
-}
+- **做法**：入口层用 Nginx 的 `split_clients` 按分桶键切 upstream；服务网格里用 `VirtualService` 的 `match` + `weight` 切 subset。
 
-upstream backend_v2 {
-    server backend-v2:8080;
-}
-
-split_clients "${arg_user_id}" $backend {
-    5%     backend_v2;  
-    *      backend_v1;
-}
-
-server {
-    listen 80;
-    location / {
-        proxy_pass http://$backend;
-    }
-}
-```
-
-#### 2. 流量调度（Istio VirtualService）
-
-```yaml
-# Istio：金丝雀 10% 流量到 v2
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: order-service
-spec:
-  hosts:
-  - order-service
+  ```yaml
+  # Istio：先匹配 header（内部 / 白名单），再按权重分流 —— match 的先后顺序决定语义
   http:
-  - match:
-    - headers:
-        x-canary: exact: "true"
-    route:
-    - destination:
-        host: order-service
-        subset: v2
+  - match: [ { headers: { x-canary: { exact: "true" } } } ]
+    route: [ { destination: { host: order-service, subset: v2 } } ]
   - route:
-    - destination:
-        host: order-service
-        subset: v1
-      weight: 90
-    - destination:
-        host: order-service
-        subset: v2
-      weight: 10
+    - { destination: { host: order-service, subset: v1 }, weight: 90 }
+    - { destination: { host: order-service, subset: v2 }, weight: 10 }
+  ```
+
+- **机制**：因为分桶在入口或网格侧完成，应用进程完全不知道自己被灰度了 —— 所以**存量服务第一次接灰度不需要改代码**，这是它相对「应用内开关」的全部优势所在。代价是：凡是入口层拿不到的字段（会员等级、内部订单金额区间），就没法作为分群依据。
+- **失效条件**：**当分桶依据取自请求参数（如 `arg_user_id`）而不是服务端解析出的可信主体时**，调用方可以自行构造该参数强制命中新版本 —— 灰度的实际流量占比会持续高于配置值，而多出来的那部分恰好是最不需要验证的流量（脚本、压测、爬虫）。**症状**：入口日志里新版本 upstream 的实际占比与配置值长期偏离；来源 IP 高度集中。第二种失效：**当 `match` 规则写成「权重在前、白名单在后」时**，权重规则会先短路，内部测试流量被按比例随机分流 —— 发布者以为「内部已经验过」，实际只有约等于权重的比例验到。**症状**：按内部账号查访问日志，目标 subset 的命中率接近权重值而不是 100%。切流到网格里能缓解「谁在切」的问题，但分桶键本身仍来自请求，第一条判据不变。
+- **档位**：【公开：Nginx `split_clients` 与 Istio `VirtualService` 的流量切分能力均为各自官方文档记载的长期能力，以官方文档当前版本为准，本条不含年份主张】
+
+**分桶键与一致哈希**
+
+- **做法**：命中判定统一为 `bucket = hash(bucket_key) % 100`，命中条件为 `bucket < rollout_pct`；`bucket_key` 优先取服务端可信主体标识，其次租户标识；全链路的同一个语义必须用同一份实现。
+- **机制**：因为判定是「哈希后取模」而不是「随机抽样」，同一主体反复请求必然落在同一桶 —— 这才是「同一用户不会来回横跳」的全部来源。反过来说，分桶的稳定性不是由比例决定的，而是由**哈希函数与 salt 在所有计算方的一致性**决定的。
+- **失效条件**：**当同一分桶键在多个语言、多个服务里各自计算时**（网关是 Java、推荐是 Python、数据侧是 SQL），同一个 `user_id` 会算出不同的桶。最危险的一种是拿运行时语言内置的字符串哈希做分桶：Python 对字符串哈希默认加随机盐（`PYTHONHASHSEED`），进程重启后全量用户重新分桶，灰度分组会在你毫无察觉的情况下换一批人。**症状**：同一次会话里前端看到 A 版本、后端日志记 B 版本；或某次服务重启后，灰度组的用户构成突然变化而配置没动。修法是把摘要算法与 salt 写进配置（如 `md5(salt + key)` 取模），而不是依赖语言内置哈希。
+- **档位**：【公开：Python 官方文档对 `PYTHONHASHSEED` 与字符串哈希随机化的说明，以官方文档当前版本为准，本条不含年份主张】；salt 的取值与轮换策略随你的实验设计变【经验】
+
+**金丝雀的自动推进与自动回滚（Argo Rollouts + Prometheus）**
+
+- **做法**：把阶梯写成 Rollout 的 `steps`（`setWeight` + `pause`）；把判据**另存**为一份 `AnalysisTemplate`，由 Rollout 的 `canary.analysis.templates` 引用。判据在 `AnalysisTemplate.spec.metrics[]` 里由三样组成 —— 查询（`provider.prometheus.query`）、阈值（`successCondition` / `failureCondition`）与**分析间隔**（`interval`）。`interval` 不写就取控制器自己的默认值，于是「调了阈值、没调采样节奏」这类问题会一直藏在默认值里 —— 这也是本节把分析间隔当成判据的第三件、而不是可选项的原因。
+- **机制**：因为「切多少」（Rollout 的 `steps`）与「看什么」（`AnalysisTemplate`）是两份可独立下发的对象，所以阈值可以在不动发布流程、不重新构建制品的情况下调整；而 `pause` 的时长在机制上就是**采样窗口** —— 它决定了判据看到多少样本，而不是决定「观察了多久」。判据与阶梯分离还有一个运行期后果：改判据是一次配置下发、改阶梯是一次 Rollout 变更，两者的审批路径与回滚动作都不同，值班人必须先知道今晚这次改的是哪一份。
+- **失效条件**：**当 `pause` 短于指标系统的抓取间隔与聚合窗口之和时**，控制器读到的是尚未反映本次变更的旧数据，于是「该回不回」；**当灰度流量小到窗口内的样本不足时**，错误率的分母太小，一次偶发 5xx 就能把比例推过阈值，于是「随机回」。**症状**：发布记录里同一个版本有时顺利推到底、有时在很低的比例就被自动回滚；或分析任务状态为 inconclusive。**干预方式**：先确认窗口内能攒到足以估计概率的样本量再谈阈值【经验：错误样本的绝对数比错误率的百分比更可靠，具体门槛随你业务的基线错误率变】。
+- **档位**：【公开：Argo Rollouts 的 Rollout、AnalysisTemplate / AnalysisRun 各自承担什么、以及 Prometheus 查询如何接进判据，判定入口是该项目的官方文档「Analysis」章节与其 CRD 字段参考，以当前版本为准，本条不含年份主张】
+
+**Feature Flag 的评估链路（Apollo + Spring Boot）**
+
+- **做法**：开关存配置中心（Apollo）；客户端长轮询拉取并本地缓存；评估在应用进程内完成，白名单优先于比例。
+- **机制**：开关的**管理面**（谁改、改了什么、有没有留痕）与**评估面**（应用怎么拿到最新值）是两个系统，两类故障也不同：管理面出问题表现为「改不动、说不清」；评估面出问题表现为「改了但不生效」。要诊断回滚为什么慢，必须先分清慢在哪一面。
+- **失效条件**：**当开关的评估被放进客户端（App、前端）而不是服务端时**，「关闭」的生效时间不再由推送延迟决定，而由客户端版本覆盖率决定 —— 老版本客户端根本不认识这个开关，会一直走默认分支。**症状**：服务端已关闭该功能，但对应埋点仍有量，且量级与存量客户端的版本分布吻合。第二种失效：**当同一开关在多个服务里各评估一次时**，各服务的缓存刷新时刻不同，同一次请求里两个服务对「是否开启」给出不同判断，产生只能由「一半开一半关」解释的脏数据。
+- **档位**：推送延迟随客户端数量与轮询间隔变，量级从秒到分钟不等【经验：随你的配置中心部署形态与客户端数量变】
+
+**数据灰度（双写 + 影子表 + Binlog 反向）**
+
+- **做法**：灰度期写路径双写，读路径按比例切；影子表承接新结构；回滚预案保留旧表、旧列与 Binlog。
+- **机制**：因为双写的一致性上限由**事务边界**决定，而两套表通常不在同一个事务里，所以双写本身不产生任何一致性保障 —— 一致性全部来自**对账任务**。灰度比例控制的是「多少人看到」，对账控制的才是「数据对不对」，两者不能互相替代。
+- **失效条件**：**当写路径存在非事务性副作用时**（发消息、写缓存、调外部接口），双写无法原子，会出现「主表已回滚、消息已经发出」。此时按比例回滚读路径毫无意义，因为下游已经消费了那条消息。**症状**：对账差异率不随天数收敛；下游出现只可能来自新链路的记录。第二个失效：**Binlog 反向应用是按时间序回退的**，它会把回滚窗口内**所有**写入一起退掉，包括与本次变更无关的正确写入。**症状**：回滚之后对账出现方向相反的新错误 —— 这说明回滚动作本身制造了新的不一致。
+- **档位**：【公开：Binlog 与反向应用是 MySQL 生态的长期能力；gh-ost / pt-online-schema-change / pg_repack 只解决「变更期间不锁表」，不解决「能不能反悔」（沿革与定位见 §4.3 工具表与 [§ 3](09-gray-and-rollback-section-3-sec3.md) §3.2.7），以各自官方文档当前版本为准，本条不含年份主张】
+
+**回滚动作的分层与 RTO 归属**
+
+- **做法**：把回滚按**动作**分成四层并各自登记时限：切流量（改权重 / 切 LB）、改配置（关开关）、换制品（镜像 tag 回退或蓝绿切回）、修数据（对账后反向修正）。发布单上必须写明「本次变更的回滚落在第几层」。
+- **机制**：因为每一层的耗时由**完全不同的东西**决定 —— 切流量由配置推送与生效延迟决定，换制品由调度与冷启动决定，修数据由数据量与对账速度决定 —— 所以「我们的回滚是秒级」这句话只有在指明层之后才有意义。主线把回滚时间目标分成秒级 / 分钟级 / 需数据修复三档（见主文件 §2.2），分层的意义就是让每次发布知道自己在哪一档里。
+- **失效条件**：**当一次发布同时压上了多层变更时**（代码 + Schema + 数据迁移一起上），回滚必然落在最慢的那一层 —— 前面几层的秒级回滚能力被最后一层吞掉，团队却仍按「我们支持秒级回滚」的心态评估风险。**症状**：回滚预案里写着「切流量即可」，而事故当晚真正在做的是一次数据修复；或者发布单的「回滚动作」一栏填的是「回滚到上一版本」，没有说明数据怎么办。
+- **档位**：各层耗时的量级随你的调度速度与数据量变【经验】；判据是「把时长按最慢的一层算」，不要按最快的一层算。
+
+**回滚演练与发布窗口**
+
+- **做法**：把发布收进固定窗口（如周二、周四），发布前填发布单与会签；回滚演练按季度或随 GameDay 做一次；发布期间值班人就位。
+- **机制**：回滚在机制上是一条**动作序列**（谁下指令、谁执行、执行什么、多久后确认指标回落），不是一个能力开关。两个人各自理解的「回滚路径」是不是同一条，只有实际跑一遍才能对齐 —— 文档只能对齐文字，跑一遍才能对齐动作。
+- **失效条件**：**当变更类型增多、各类变更由不同流程承接时**（代码走流水线、Schema 走 DBA 工单、模型走 ML 平台、Agent 配置走配置中心），演练覆盖的路径会与事故实际走的那条路径分叉：你演练的是代码回滚，出事的却是数据变更。**症状**：演练记录里「回滚动作」那一栏，与最近一次事故复盘里的动作不是同一套；或者回滚演练总是由写这份文档的人自己来演。
+- **档位**：演练频次随发布频率与人员流动率变【经验】；唯一的硬判据是「值班表上任意一人都能独立跑完」而不是「有人能跑完」
+
+### 4.3 工具链与平台
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 流水线与部署 | Jenkins / GitLab CI / GitHub Actions / Argo CD | 已有代码平台的团队优先用其自带 CI，少一个要维护的系统；已跑在 Kubernetes 上优先 GitOps，因为此时「回滚」是仓库里的一次提交回退，与镜像版本天然对应 | 自建流水线的代价不是开发，而是持续维护与安全补丁；且回滚能力完全取决于自己写的脚本，脚本没写的那条路径就不存在 |
+| 渐进式交付控制器 | Spinnaker / Argo Rollouts / Flagger | 集群在 Kubernetes 上 → Argo Rollouts（与工作负载同栈，阈值即配置）；已有 Spinnaker 且覆盖多集群多云 → 保留，不为了统一而迁移；需要与网格自动协同（自动改权重）→ Flagger | 人工脚本推进阶梯的代价最终落在值班表上：每个服务一套脚本、参数与超时各不相同（机制见 [§ 3](09-gray-and-rollback-section-3-sec3.md) §3.6 跃迁表第 4 行），轮值的人不可能每周重学一遍，于是凌晨那次推进卡在哪一步，取决于写脚本的人是否在线 |
+| 制品仓库 | Harbor / Docker Hub / 阿里云 ACR | 有内网隔离与镜像扫描要求 → 自建 Harbor；纯公有云且接受托管 → ACR；Docker Hub 适合作为公开基础镜像来源，不适合承载私有制品 | 制品走公网的代价：拉镜像的失败率与耗时随镜像体积上升，而这两个指标直接进发布时长 |
+| 监控与日志 | Prometheus + Grafana / 阿里云 ARMS / ELK / Loki / SLS | 先确定「自动回滚的控制器去查哪个指标库」，再决定采集栈 —— 顺序反了就会出现「看板有图但控制器查不到」 | 指标与日志分属两套口径的代价：触发回滚的依据与事后复盘的依据对不上，无法回答「当时为什么判成异常」 |
+| 开关与配置中心 | Apollo / Nacos / Spring Cloud Config / Consul | Java / Spring Boot 生态 → Apollo（自带灰度与权限）；需要注册中心与配置中心合一 → Nacos；纯 Git 配置且接受重启生效 → Spring Cloud Config；多语言轻量 KV → Consul | 选一个没有权限与元数据的配置中心的代价：开关的 owner 与到期时间无处登记，治理只能靠约定（[§ 3](09-gray-and-rollback-section-3-sec3.md) 反模式 1 的两列正是挂在这里） |
+| Feature Flag / 实验平台 | LaunchDarkly / Unleash / Flagsmith / GrowthBook | 需要按租户精确开关、且有审计与合规要求 → 商业平台；要自托管、只用布尔与分桶 → Unleash / Flagsmith；主要目的是实验（要显著性检验）→ GrowthBook（实验与开关一体） | 拿实验平台承载长期开关的代价：计费与设计都面向实验，于是团队倾向于少建开关，功能开关退化回「部署即发布」 |
+| 流量入口与服务网格 | Nginx / Envoy / Istio / Linkerd / Ribbon | 需要按权重与请求头路由、服务数多 → 服务网格（Istio 功能全，Linkerd 更轻，Envoy 常作为数据面）；变更只发生在入口 → Nginx 足够；Ribbon 属于客户端负载均衡时代的组件，通常只作为存量系统里的遗留项出现 | 不选网格而让每个服务自写权重逻辑的代价：每新增一种分群条件都要走一轮各服务的发版，回滚时要逐个服务确认版本（机制见 [§ 3](09-gray-and-rollback-section-3-sec3.md) §3.6 跃迁表第 4 行），时间一长，没人说得清线上跑的到底是哪一版 |
+| 数据变更与迁移 | gh-ost / pt-online-schema-change / pg_repack / Apache SeaTunnel / DataX / Debezium | MySQL 无锁改表 → gh-ost（走 Binlog 增量、不建触发器）或 pt-online-schema-change（触发器路线，生态成熟）；PostgreSQL 表重写 → pg_repack；批量同步 → Apache SeaTunnel / DataX；需要低延迟变更捕获 → Debezium（基于数据库日志） | 不做在线改表的代价：变更只能在停机窗口做，而窗口密度由业务形态决定 —— 对客交易类系统可能一年只有寥寥几次，内部系统可以做到每月一次【经验：随你的可用性要求、合同 SLA 与是否有多活容灾变，要求越高窗口越稀】，于是数据变更被攒成大变更 —— 恰恰是回滚成本最高的形态 |
+| 模型服务与实验 | MLflow / KServe / Seldon Core / BentoML / TFX | 判据的第一条是「多版本并存 + 按比例切流」是不是该平台的正式功能条目；只需要实验记录与模型注册 → MLflow；需要在线多版本路由 → KServe / Seldon Core；模型打包与部署自持 → BentoML；端到端 TensorFlow 流水线 → TFX | 把模型当普通服务发布的代价：影子与 A/B 都要自己搭，而且「模型版本的权重」与「服务副本的权重」是两套东西，混在一起后回滚要同时改两处 |
+| A/B 实验 | GrowthBook / Optimizely / AB Tasty / 自研 | 需要成熟实验管理与统计报告 → Optimizely / AB Tasty；要开源自托管 → GrowthBook；实验量大且与自有指标体系深度耦合（阿里 / 字节 / 美团一类规模）→ 自研 | 自研的代价不在工程而在统计：样本量、分群稳定性、多重比较这些问题答错时不报错，只给出一个错的结论 |
+
+**这一类里最容易被误选的，是「拿 A/B 平台当开关平台用」。** 两者的设计目标不同：A/B 平台的核心对象是**实验**（有开始与结束、有主指标、有显著性判定），它没有把「立刻对全量关闭」当成一等公民 —— 实验的结束是一次分析动作，不是一次止血动作。误选的典型后果：功能已经上线、事故已经发生，团队却发现手里唯一的关闭路径是「停止实验」，而停止实验要经过一轮指标分析。第二容易被误选的是把入口层的分桶当成长期灰度方案：它快、便宜，但分桶依据来自请求参数（见 4.2 第 1 条），在需要「分群可信、不可被调用方影响」的场景里必须上移到服务端主体标识。
+
+### 4.4 存量迁移
+
+**① 先做什么：不引入任何新平台，先把「回滚」变成一次可执行的动作。**
+
+挑一个变更频率高、可逆性好的服务（无状态、协议兼容），用**现有**网关做一次权重切流；同时把「回滚动作」写成一条命令，并让一位非作者的同学真的执行一次并计时。判据不在灰度效果，而在这一条：从接到指令到指标回落，耗时与最慢的环节能被写出来。这一步可回退：权重设回原值即回到起点，不涉及数据、不涉及架构。
+
+**② 历史资产怎么分类：三条路，逐类处理，不要一刀切。**
+
+- **可直接纳入权重的**（无状态、协议兼容）：返工成本接近零，按 ① 的方式逐个接入，接入顺序按「变更频率 × 事故代价」排。
+- **不能直接纳灰度的**（协议或 Schema 不向后兼容）：**必须先造出兼容态**再谈灰度 —— 走扩展-收缩，把不可逆动作压到流程最后一步（做法与代价见 [§ 3](09-gray-and-rollback-section-3-sec3.md) §3.2.7）。对这类资产直接上金丝雀，是把不兼容的数据问题稀释到小流量里，反而更难定位。
+- **已经不可逆的**（删过的列、已迁移的数据、已上线的模型与 Agent 配置）：**打标挂账**。建一份「单程票清单」，逐条记录：变更内容、日期、为什么不可逆、当前还有谁依赖它。清单的作用不是返工，而是**禁止在没有迁移方案的情况下对它再做同类变更** —— 历史资产不返工是可以接受的，继续在它上面做单向门变更是不可接受的。
+
+判据：随机抽 3 个存量服务【经验：抽样量随存量服务数量变】，团队能不能当场回答「回滚它需要什么动作、大概多久」。答不出的，必须明确归入「单程票清单」还是「待演练清单」，二选一，不能两者都不进。
+
+**推进顺序的一个具体排法：按变更类型推进，不按团队推进。** 存量改造最容易失败的排法是「按团队排期」—— 每个团队各自接入，进度随各团队自己的排期与发布频率分叉【经验：分叉幅度随团队数与各自的发布频率变，几个月后就会出现有的团队全接上、有的还没开始】，而跨团队的链路仍然没有一条可回滚的路径。可行的排法是**按变更类型推进**：第一轮只覆盖「配置与开关类」变更（成本最低、当天可回退）；第二轮覆盖「无状态服务的代码发布」；第三轮才碰「模型与数据」。每一轮结束都要留下一个可复用的产物（发布单模板、开关登记表、对账任务），下一轮直接沿用。
+
+**存量改造里最常见的两种失败，都不是技术失败。** 第一种是**把改造做成重做**：借着接灰度的名义重写发布流水线、重建环境，结果改造期内没有一次变更走新流程【经验：典型表现是启动后数月内，新流程承载的发布数始终为零，窗口长度随改造排期的粒度变】，期间所有发布仍在旧流程上裸奔。识别信号很直接 —— 改造启动后的发布单里，走新流程的比例是否在上升；不上升就说明做的是「重做」而不是「改造」。第二种是**只改流程不改工具**：发布了新的发布单模板，但回滚动作仍然是「找上次发布的同学」，因为没有任何一处工具把回滚做成一键可执行 —— 流程文件要求的动作，在系统里没有对应的按钮或命令，只存在于人的记忆里。
+
+**③ 双轨怎么维持、维持多久。**
+
+存量改造期通常同时存在三条双轨，它们的退出条件各不相同，但有一个共同点：**都不由排期决定**。
+
+| 双轨 | 维持动作 | 退出信号 |
+| --- | --- | --- |
+| 新旧版本共存 | 两版同时在线，写入路径双版本兼容 | 旧版本实例流量为 0 并持续一段时间【经验：随发布频率变，发布越频繁这个窗口越短】 |
+| 双写 | 两处都写 + 每日对账 | 对账差异率连续低于阈值，且差异能**逐条归因**（不是「大概都是这些」） |
+| 影子链路 | 复制真实流量跑新逻辑、结果丢弃 | 新链路已接管真实读路径，且写副作用隔离点经过实测确认 |
+
+双轨的额外成本按**峰值**留、不要按均值留：影子链路要按峰值流量复制一份，双写要按峰值写入吞吐扩容，对账要按峰值数据量跑。把成本按均值估，得到的结果是「对账任务在大促当天跑不完」，而那天恰好是最需要它的时候。
+
+**④ 什么信号说明可以退出双轨。**
+
+四个信号，缺一个都不算退出：旧版本已无流量且发布单里不再出现「回滚到它」；对账差异率稳定且差异可归因；开关的到期时间到了且无人认领（**直接删，不是续期** —— 续期一次就等于把组合数永久留在代码里）；最近一次事故复盘里的回滚动作与演练记录里的动作是同一套。最后一个信号最有价值：它说明「演练覆盖的路径」终于等于「事故走的路径」。
+
+### 4.5 模板 / 示例
+
+**模板 1：发布单（含回滚动作）**
+
+| 字段 | 填写要求 |
+| --- | --- |
+| 变更类型 | 代码 / 配置 / 数据 / 模型 / Agent 配置 —— 这一格决定后面几格怎么填（分类依据见 [§ 3](09-gray-and-rollback-section-3-sec3.md) §3.1 约束表第 1 行） |
+| 可逆性 | 可逆 / 需扩展-收缩 / 单向门；单向门必须写明不可逆动作在第几步执行 |
+| 灰度阶梯 | 每一级的比例、观察窗口，以及**窗口结束时按哪张面板放行、谁签字**；窗口长度该怎么取，见 [§ 3](09-gray-and-rollback-section-3-sec3.md) §3.7 第 2 条 |
+| 继续 / 暂停 / 回滚三组阈值 | 错误率、P95/P99、业务指标各自的倍数与窗口；**发布前由发布负责人填好并会签，发布过程中任何人不改这一格** —— 阈值该怎么取，见 [§ 3](09-gray-and-rollback-section-3-sec3.md) §3.5 反模式 3 的修法 |
+| 回滚动作 | 一条可执行的动作（切权重 / 改开关 / 反向重放），以及谁执行 |
+| 责任人 | 发布负责人 + 值班人 + 业务方确认人 |
+| 发布窗口 | 与值班排布一致（如周二、周四） |
+
+**怎么用**：整张表里只有两格不许照抄 —— 阈值和回滚动作。阈值要用你自己的历史数据算出「正常波动的上界」；回滚动作如果写不出一条可执行的命令，就说明这次变更还没准备好发布。
+
+**模板 2：开关清理查询（每季度跑一次）**
+
+```sql
+-- 列出应当清理的开关：到期、仍在生效、且无人认领
+SELECT flag_key, owner, expires_at, updated_at
+FROM   feature_flag
+WHERE  enabled = TRUE
+  AND  expires_at < now() - INTERVAL '1 quarter'
+ORDER  BY expires_at;
+-- 处理顺序：先确认无人依赖（查代码引用与近 30 天曝光量【经验：窗口随发布频率变】），再删除
 ```
 
-#### 3. Argo Rollouts（金丝雀自动发布）
+**怎么用**：`1 quarter` 这个期限可调【经验：随发布频率变，发布越频繁，开关的合理存活期越短】；不要用「最近有没有人改过」当保留下来的理由 —— 判断依据是曝光量，不是修改时间。
+
+**模板 3：金丝雀阶梯 + 指标判据（Argo Rollouts）**
+
+先写判据，再写阶梯并引用它 —— 顺序反过来的话，Rollout 会引用到一个还不存在的模板：
 
 ```yaml
-# Argo Rollouts：金丝雀 + 自动回滚
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata: { name: order-service-error-rate }
+spec:
+  metrics:
+  - name: error-rate
+    interval: 1m                        # 分析间隔：多久算一次
+    successCondition: result[0] < 0.01  # 阈值：达标 → 继续推进
+    failureCondition: result[0] > 0.03  # 阈值：越线 → 回滚
+    failureLimit: 2
+    provider:
+      prometheus:
+        address: http://prometheus:9090
+        query: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+          / sum(rate(http_requests_total[5m]))
+```
+
+```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Rollout
-metadata:
-  name: order-service
+metadata: { name: order-service }
 spec:
   strategy:
     canary:
-      steps:
+      analysis:                       # 判据：只引用模板，查询不写在这里
+        templates: [ { templateName: order-service-error-rate } ]
+      steps:                          # 阶梯：每一级 pause 就是采样窗口
       - setWeight: 5
-      - pause: {duration: 5m}
-      - setWeight: 10
-      - pause: {duration: 5m}
-      - setWeight: 30
-      - pause: {duration: 5m}
-      - setWeight: 60
-      - pause: {duration: 5m}
-      - setWeight: 100
-      canaryMetrics:
-      - name: error-rate
-        provider:
-          prometheus:
-            address: http://prometheus:9090
-            query: |
-              sum(rate(http_requests_total{status=~"5.."}[5m]))
-              / sum(rate(http_requests_total[5m]))
-        threshold: 0.01
-        interval: 30s
+      - pause: { duration: 10m }
+      - setWeight: 25
+      - pause: { duration: 10m }
 ```
 
-#### 4. Feature Flag（Apollo + Spring Boot）
+**怎么用**：填之前先把字段名对着你自己集群里的 CRD 核一遍（`kubectl explain` 一下 `AnalysisTemplate` 的 `spec.metrics`）—— 判据的字段名与默认值随版本变，照抄一份别处的 YAML 最常在这里被 API Server 拒绝。三格必须自己填：`query`、`successCondition` / `failureCondition`（两个阈值）、`interval`（分析间隔），少任何一个判据都不完整。`interval` 与 `pause` 要满足「`pause` ≥ 抓取间隔 + 聚合窗口 + `interval`」，否则控制器读的是旧数据、或窗口内样本数不足以判断。`0.01` / `0.03` 是**示例值，不要照抄** —— 先用历史数据算一遍你自己服务的正常波动上界，再留出余量【经验：区间随你的基线错误率与灰度流量占比变，流量越小越要放宽】。
 
-```java
-// Apollo Feature Flag 客户端
-@Component
-public class FeatureFlags {
-    
-    @ApolloConfig
-    private Config config;
-    
-    public boolean isFeatureEnabled(String flagName, String userId) {
-        boolean globalEnabled = config.getBooleanProperty(flagName, false);
-        if (!globalEnabled) return false;
-        
-        int percentage = config.getIntProperty(flagName + ".percentage", 0);
-        int userBucket = Math.abs(userId.hashCode()) % 100;
-        return userBucket < percentage;
-    }
-}
+**模板 4：Prompt 灰度分桶（AI 侧）**
 
-// 使用
-if (featureFlags.isFeatureEnabled("new-payment-flow", user.getId())) {
-    return newPaymentService.charge(order);
-} else {
-    return oldPaymentService.charge(order);
-}
+```python
+# 分桶键用服务端可信主体标识；摘要算法与 salt 进配置，跨语言一致
+def pick_prompt_version(user_id: str, scene: str) -> str:
+    salt = config.get("prompt.gray.salt")           # 换实验时才改 salt
+    bucket = int(hashlib.md5(f"{salt}:{user_id}".encode()).hexdigest(), 16) % 100
+    if bucket < 80:  return "v1"                    # 稳定版
+    if bucket < 95:  return "v2"                    # 实验版
+    return "v3"                                     # 最新实验版
+
+# 曝光埋点：版本必须进标签，否则事后无法按版本归因
+metrics.increment("prompt.exposure", tags={"version": version, "scene": scene})
 ```
 
-#### 5. 数据灰度（双写 + 影子表）
+**怎么用**：80 / 15 / 5 只是起始比例【经验：随流量与实验所需样本量变】；不要用语言内置的字符串哈希做分桶（见 4.2 第 2 条）；版本标签一定要进埋点 —— 没有它，灰度期间收集的数据事后无法归因到版本。
+
+**模板 5：Spring Boot + Apollo Feature Flag 完整示例**
+
+全链路只有这一处评估逻辑；三段判断的先后顺序，就是回滚时的行为顺序：
 
 ```java
-// 双写：新旧表同时写
-@Transactional
-public void createOrder(Order order) {
-    // 写主表
-    orderRepository.create(order);
-    
-    // 写影子表（仅灰度期间）
-    if (graySwitch.isDataGrayEnabled("order_table_v2")) {
-        orderV2Repository.create(order.toV2());
-    }
-}
-
-// 读路径：按灰度比例切流量
-public Order getOrder(Long orderId) {
-    if (graySwitch.shouldUseV2(orderId)) {
-        return orderV2Repository.findById(orderId);
-    } else {
-        return orderRepository.findById(orderId);
-    }
-}
-```
-
-### 4.3 工具链与平台（含 2024-2025 新工具）
-
-#### 灰度发布平台
-
-| 工具 | 出品方 | 特点 |
-| --- | --- | --- |
-| **Spinnaker** | Netflix（开源） | 企业级灰度发布平台，老牌 |
-| **Argo Rollouts** | Intuit（CNCF） | Kubernetes 渐进式交付，新生代事实标准 |
-| **Flagger** | Weaveworks（CNCF） | Kubernetes 自动化金丝雀发布 |
-| **LaunchDarkly** | LaunchDarkly | 商业 Feature Flag 平台领导者 |
-| **Unleash** | Unleash（开源） | 开源 Feature Flag |
-| **GrowthBook** | GrowthBook（开源） | 开源 A/B 测试 + Feature Flag |
-
-#### 配置中心
-
-| 工具 | 出品方 | 特点 |
-| --- | --- | --- |
-| **Apollo** | 携程（开源） | 国内主流，配置 + Feature Flag |
-| **Nacos** | 阿里（开源） | 注册中心 + 配置中心 |
-| **Spring Cloud Config** | Pivotal | Spring 生态标配 |
-| **Consul** | HashiCorp | KV + 服务发现 |
-
-#### 服务网格
-
-| 工具 | 出品方 | 特点 |
-| --- | --- | --- |
-| **Istio** | Google（开源） | 服务网格事实标准，流量调度强 |
-| **Linkerd** | Buoyant（开源） | 轻量服务网格 |
-| **Envoy** | Lyft（开源） | L7 代理，Istio 数据面 |
-
-#### 数据迁移工具
-
-| 工具 | 用途 |
-| --- | --- |
-| **gh-ost** | MySQL Online Schema Migration |
-| **pt-online-schema-change** | Percona 的 OSD 工具 |
-| **pg_repack** | PostgreSQL Online Table Rewrite |
-| **Apache SeaTunnel** | 大数据同步，CDC + 批量 |
-| **DataX** | 阿里开源，批量数据迁移 |
-| **Debezium** | CDC 平台，基于 Binlog |
-
-#### AI 模型灰度平台
-
-| 工具 | 出品方 | 特点 |
-| --- | --- | --- |
-| **MLflow** | Databricks（开源） | ML 生命周期管理 |
-| **KServe** | CNCF | Kubernetes 模型服务 |
-| **Seldon Core** | Seldon（开源） | Kubernetes 模型部署 |
-| **BentoML** | BentoML（开源） | ML 模型打包和服务化 |
-| **TFX** | Google | TensorFlow Extended，端到端 ML 平台 |
-
-#### A/B 测试平台
-
-| 工具 | 出品方 | 特点 |
-| --- | --- | --- |
-| **GrowthBook** | 开源 | A/B 测试 + Feature Flag 一体 |
-| **Optimizely** | Optimizely | 商业 A/B 测试领导者 |
-| **AB Tasty** | AB Tasty | 商业 |
-| **自研** | 阿里/字节/美团 | 大厂自研，深度定制 |
-
-### 4.4 代码 / 示例
-
-#### Spring Boot + Apollo Feature Flag 完整示例
-
-```java
-// FeatureFlagService：统一 Feature Flag 入口
+// FeatureFlagService：统一入口
 @Service
 public class FeatureFlagService {
-    
-    @Autowired
-    private Config config;  // Apollo Config
-    
+    @Autowired private Config config;                  // Apollo Config
+
     public boolean isEnabled(String flagKey, String userId) {
-        // 全局开关
-        boolean globalEnabled = config.getBooleanProperty(
-            flagKey + ".enabled", false);
-        if (!globalEnabled) return false;
-        
-        // 灰度比例
-        int percentage = config.getIntProperty(
-            flagKey + ".percentage", 0);
-        
-        // 白名单（白名单用户总是命中）
-        String whitelist = config.getProperty(
-            flagKey + ".whitelist", "");
-        if (whitelist.contains(userId)) return true;
-        
-        // 一致性 Hash
+        // ① 全局开关：改这一项即止血，不需要走发布流程
+        if (!config.getBooleanProperty(flagKey + ".enabled", false)) return false;
+
+        // ② 白名单：命中即开，不受比例影响
+        String whitelist = config.getProperty(flagKey + ".whitelist", "");
+        if (!whitelist.isEmpty()
+                && ("," + whitelist + ",").contains("," + userId + ",")) return true;
+
+        // ③ 比例：一致性取模，键取服务端可信主体标识
+        int percentage = config.getIntProperty(flagKey + ".percentage", 0);
         int bucket = Math.abs((flagKey + userId).hashCode()) % 100;
         return bucket < percentage;
     }
 }
 
-// 使用
-@RestController
-public class PaymentController {
-    
-    @Autowired
-    private FeatureFlagService featureFlags;
-    
-    @PostMapping("/pay")
-    public PaymentResult pay(@RequestBody PaymentRequest req) {
-        String userId = req.getUserId();
-        
-        if (featureFlags.isEnabled("payment.new-flow", userId)) {
-            // 新流程（灰度中）
-            return newPaymentFlow.process(req);
-        } else {
-            // 旧流程（稳定）
-            return oldPaymentFlow.process(req);
-        }
-    }
-}
+// 调用侧：两支各自独立，回滚时不需要动这段代码
+return featureFlags.isEnabled("payment.new-flow", req.getUserId())
+        ? newPaymentFlow.process(req)
+        : oldPaymentFlow.process(req);
 ```
 
-#### Argo Rollouts + Prometheus 自动回滚示例
+**怎么用**：三段判断的顺序不可交换 —— 白名单放到比例之后，就变成「命中比例的白名单用户才生效」，内部验证会随机失败（管理面与评估面该怎么分开诊断，见 4.2 第 4 条）；白名单两侧补逗号是为了避免 `uid=100` 命中 `1000` 这类子串误判。`Math.abs(x.hashCode()) % 100` 不是跨语言一致的哈希：如果同一批用户还要在别的语言的服务里分桶，必须换成写进配置的摘要算法（见 4.2 第 2 条）。`percentage` 的起点按你的流量定【经验：随灰度期需要积累的样本量变，流量越小起点越高】。
 
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
-metadata:
-  name: recommendation-service
-spec:
-  replicas: 10
-  strategy:
-    canary:
-      steps:
-      - setWeight: 5
-      - pause: {duration: 10m}
-      - setWeight: 25
-      - pause: {duration: 10m}
-      - setWeight: 50
-      - pause: {duration: 10m}
-      - setWeight: 75
-      - pause: {duration: 10m}
-      canaryMetrics:
-      - name: error-rate
-        provider:
-          prometheus:
-            address: http://prometheus.monitoring:9090
-            query: |
-              sum(rate(
-                http_requests_total{
-                  job="recommendation-service",
-                  status=~"5.."
-                }[5m]
-              ))
-              / sum(rate(
-                http_requests_total{
-                  job="recommendation-service"
-                }[5m]
-              ))
-        threshold: 0.01
-      - name: p99-latency
-        provider:
-          prometheus:
-            address: http://prometheus.monitoring:9090
-            query: |
-              histogram_quantile(0.99,
-                sum(rate(
-                  http_request_duration_seconds_bucket{
-                    job="recommendation-service"
-                  }[5m]
-                )) by (le)
-              )
-        threshold: 0.5
-```
+**模板 6：回滚演练记录**
 
-#### AI Agent Prompt 灰度示例
+| 字段 | 填写要求 |
+| --- | --- |
+| 演练对象 | 最近一次**真实发布**，不要用虚构场景 |
+| 参与人 | 必须包含一位不是本次变更作者的值班人 |
+| 回滚动作 | 实际执行的命令 / 操作，逐条记录，不写「切回旧版本」这类概括 |
+| 分段计时 | 接到指令 → 开始执行 → 指标回落，三段分别计时 |
+| 卡点 | 哪一步在等谁（等审批、等值班、等数据修复），如实填写 |
+| 结论 | 这条路径今天可用吗；不可用的话，缺的是哪一件东西 |
 
-```python
-# Prompt 灰度：不同用户用不同 Prompt
-class PromptGrayService:
-    def __init__(self):
-        self.config_center = ApolloClient()
-        self.prompt_versions = {
-            "v1": PromptV1(),  # 稳定版
-            "v2": PromptV2(),  # 实验版
-            "v3": PromptV3(),  # 最新实验版
-        }
-    
-    def get_prompt(self, user_id: str, scene: str) -> Prompt:
-        # 按用户 ID Hash 到固定版本
-        bucket = hash(user_id) % 100
-        
-        # 灰度策略：v1 80%, v2 15%, v3 5%
-        if bucket < 80:
-            version = "v1"
-        elif bucket < 95:
-            version = "v2"
-        else:
-            version = "v3"
-        
-        prompt = self.prompt_versions[version]
-        
-        # 记录实验数据（用于 A/B 分析）
-        metrics_client.increment(
-            "prompt.exposure",
-            tags={"version": version, "scene": scene}
-        )
-        
-        return prompt
-    
-    async def invoke_agent(self, user_id: str, query: str):
-        prompt = self.get_prompt(user_id, "qa")
-        return await agent.invoke(prompt=prompt, query=query)
-```
+**怎么用**：分段计时的价值大于总时长 —— 如果总时长里的大部分都花在「找不到谁有权限」上，那要修的是权限，而不是发布速度。
 
----
+### 4.6 自检清单
+
+> 下列条目里的抽样规模（3 个、20 次一类）与时间窗（30 天、一个季度）都是【经验】起点，随你的资产规模、发布频率与业务节奏调整 —— 它们是让你现在就能动手的量，不是结论。
+
+1. 抽最近 3 次发布，回滚动作是否写在发布单里，且写的是一条可执行的动作而不是一个能力名词？
+2. 看板上能否同时看到新旧版本的 P99 与分群指标 —— 只有均值或只有合计值即为不合格？
+3. 让一位非作者的值班同学实际执行一次回滚并计时：从接到指令到指标回落，最慢的是哪一步、谁在等谁？
+4. 灰度 upstream 的实际请求占比与配置值相差多少？差超过一个百分点【经验】就说明分桶键可被外部影响。
+5. 自动回滚的分析任务在过去 30 天里有没有 inconclusive 或数据缺失导致的失败记录？
+6. 抽 3 个已关闭的开关，看「关闭时间」与「指标回落时间」的间隔；间隔远大于配置推送间隔，说明有客户端没识别这个开关。
+7. 立刻执行一次数据变更的对账：差异率是多少，差异能不能逐条归因到具体行？
+8. 「单程票清单」里最新一条是什么时候加的？加进去之后，同类变更是否仍在发生？
+9. 影子链路的写操作去了哪个库？**发一条真实请求**，看它在目标库里留下的那一行、以及它触发的下游调用落在哪个账号上 —— 隔离点的正确形态见 [§ 3](09-gray-and-rollback-section-3-sec3.md) §3.7 第 8 条；这里只认实际发一次的结果，不认文档。
+10. 最近一次演练记录里的回滚动作，与最近一次真实事故复盘里的动作，是不是同一套？
+11. 随机抽一个开关：owner 是不是一位在职的具体的人，到期时间是不是已过，近 30 天曝光量是多少？
+12. 现在让你回滚这次变更：回滚的是流量、配置、数据还是模型？这四层里，哪一层今天没有可执行路径？
+
+### 4.7 小结
+
+> 本节小结：把灰度与回滚装进一个组织，**唯一决定成败的环节是「回滚路径被真的执行过一次」**，而不是灰度阶梯设计得多精细 —— 灰度阶梯只决定「问题被多大流量看到」，回滚路径决定「看到之后能不能停住」；前者是优化项，后者是生存项。所以投入顺序应当是：先把「一条可执行的回滚动作 + 一次真实演练 + 一份单程票清单」做掉，再去调灰度比例、阶梯与自动回滚阈值；顺序颠倒的团队通常拥有很漂亮的灰度看板，却在第一次真实事故当晚才发现自己没有任何一条被跑通的下坡路。
+
+> 配合 [§ 2 核心原理](09-gray-and-rollback.md)、[§ 3 设计模式与范式](09-gray-and-rollback-section-3-sec3.md) 与 [§ 6 落地实践](09-gray-and-rollback-section-6-sec6.md) 阅读。

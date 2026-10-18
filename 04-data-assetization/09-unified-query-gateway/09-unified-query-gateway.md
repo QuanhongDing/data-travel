@@ -92,8 +92,8 @@
 
 **Presto / Trino 时代（2013-2020）**：
 
-- **2013**：Facebook Presto 开源（后来成为 Trino）。
-- **2020**：Presto 创始人离开 Facebook，成立 Trino（starburstdata/trino）。
+- **2013**：Facebook 开源 Presto。
+- **2020**：社区分叉出的 PrestoSQL 更名为 Trino（trinodb/trino）。
 - **2015-2020**：Presto 在 Uber / Twitter / Facebook 大规模生产。
 
 **云原生联邦查询（2020-2024）**：

@@ -16,7 +16,7 @@
 | 根因分析怎么跟血缘结合？故障定位怎么做？ | §4.2、§5.3 |
 | DataHub vs Atlas vs Unity Catalog vs OpenLineage 怎么选？ | §4.3、§7.1 |
 | 血缘与 RAG / GraphRAG / LLM 怎么结合？ | §5.1、§5.2 |
-| 血缘在 AI 时代的演进方向？ | §5.3、§5.4 |
+| 血缘在 AI 时代的演进方向？ | §5.1、§5.2 |
 
 ---
 

@@ -1,416 +1,288 @@
-> 本文件是 **05-lineage-and-impact.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](05-lineage-and-impact.md)。
+> 本文件是 **05-lineage-and-impact.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](05-lineage-and-impact-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](05-lineage-and-impact.md)。
 
 ## 4. 工程实现
 
+[§ 3](05-lineage-and-impact-section-3-sec3.md) 回答的是「采哪条路线、粒度做到哪一层、代价放在哪一侧」；本节回答的是另一组问题：**在你的组织里按什么顺序做、每一步手上应该多出什么可被检查的东西、同一个做法装到已经有一批在跑作业的存量系统上要不要返工、以及上线之后凭哪些信号判断它已经坏了。** 选型判据在 §4.3，但选型的结论不在这里重申——这里只给「在什么约束下选哪个」。
+
+**本节写给存量改造的读者**：绝大多数组织不是从零建血缘，而是已经有一批在跑的作业、一份人工登记的血缘表、以及若干各自解析过 SQL 的平台。因此「先改哪里、历史资产怎么分类、双轨维持多久、何时退出」单独放在 §4.4；从零起步的团队可以把 §4.4 读成「你将在第一个季度面对的同一批问题」。§4.1 的顺序对两类读者是同一套。
+
 ### 4.1 落地步骤
 
-**Step 1：选型与试点（4-8 周）**
+**Step 1：选型与试点（4–8 周【经验：随首个数据源的作业方言数与采集权限的审批时长变，跨部门审批通常是最长的一段】）**
 
-1. 选 1 个核心域（如交易域）试点。
-2. 选型：DataHub / Atlas / OpenLineage / Unity Catalog。
-3. 部署 + 接入首个数据源。
-4. 验证 100 张表的表级血缘。
+1. 选 1 个核心域（如交易域）试点，**只选一个**。
+2. 选型：DataHub / Apache Atlas / OpenLineage / Unity Catalog——判据见 §4.3；这一步不要比较 UI。
+3. 部署并接入首个数据源，**先用只读权限**。
+4. 验证 100 张表的表级血缘【经验：这是抽样规模而非目标值，随试点域表数变；低于这个规模时抽样不足以暴露解析器的方言盲区】。
 
-**Step 2：自动采集（4-8 周）**
+- **产物**：一份「试点域资产清单 + 每张表的边来自哪条采集入口（作业定义解析 / 运行时事件 / 人工登记）」；不是一篇选型报告。
+- **判据**：随手挑 3 张试点域的表【经验：张数随试点域表数变】，问采集端「它的上游是哪几张」，与手工翻作业得到的结果逐条比对；不一致的每一条都要能说出原因（方言、变量、还是脚本）。
+- **为什么必须这一步**：因为范围一旦铺开到多个域，改采集方式的代价会从「换一个适配器」变成「重跑所有人的血缘分账」，所以**范围必须先小到可以整体推翻**。跳过试点直接全域铺开的团队，第一个季度的全部时间会花在解释覆盖率为什么上不去。
 
-1. 部署 SQL 解析服务（覆盖 Hive / Spark / Trino）。
-2. 部署 ETL 工具集成（Airflow / DolphinScheduler）。
-3. 部署 OpenLineage（如适用）。
-4. 自动血缘覆盖率目标 70%+。
+**Step 2：自动采集（4–8 周【经验：随需要覆盖的方言数与调度系统的接入面变】）**
 
-**Step 3：字段血缘（8-12 周）**
+1. 部署 SQL 解析服务，覆盖 Hive / Spark / Trino 三种方言——先做引擎实际在用的那些，不要按名单铺。
+2. 接 ETL 与调度侧集成（Airflow / DolphinScheduler）。
+3. 部署 OpenLineage（如适用），把调度与引擎两侧的事件统一到同一后端。
+4. 自动血缘覆盖率目标 70%+【经验：随脚本类作业占比变；脚本越多，这个门槛越应该下调，而不是硬顶】。
 
-1. 部署字段血缘解析（Spark Column Lineage / Cube Lineage）。
-2. 验证字段血缘准确率（人工抽检 100 个变换）。
-3. 与业务方对齐字段语义。
-4. 字段血缘覆盖率目标 50%+。
+- **产物**：一份**盲区清单**——列出解析不出边的作业名与条数，并给出它在你全部作业里的占比。
+- **判据**：从盲区清单里挑 5 条作业【经验：条数随盲区清单长度变】，手工确认它们是否真的解析不了（而不是解析器配置漏了）；确认后把「已知盲区占比」写进周报。**判据不是覆盖率达到 70%，而是盲区清单是不是真的、是不是被跟踪。**
+- **为什么必须这一步**：因为解析器采不到的边恰恰是没人写进版本库的那部分（脚本里的依赖），跳过盲区登记直接追覆盖率，等于让最关键的缺口永远不在视野里；这一步不做，Step 4 的门禁会稳定地放行高风险变更。
 
-**Step 4：应用集成（4-8 周）**
+**Step 3：字段血缘（8–12 周【经验：随表的宽窄与字段级解析的方言覆盖变，宽表占比高时更长】）**
 
-1. 与数据质量联动（异常 → 血缘定位）。
-2. 与变更管理联动（Schema 变更 → 血缘影响分析）。
-3. 与安全联动（敏感字段 → 血缘流转图）。
-4. 与成本联动（表血缘 → 成本归因）。
+1. 部署字段血缘解析（Spark Column Lineage / Cube Lineage，或自建解析器）。
+2. 人工抽检变换的正确性，抽 100 个变换【经验：条数随变换类型数与解析器版本变，覆盖聚合 / 条件分支 / JOIN 各若干】。
+3. 与业务方对齐字段语义（同名不同义的字段要点出来）。
+4. 字段血缘覆盖率目标 50%+【经验：随表宽（字段数）与是否逐字段透传变，宽表占比高时门槛应下调】。
+
+- **产物**：一份抽检记录——100 个变换里正确 / 近似 / 错误各多少条，错误集中在哪一类语法。
+- **判据**：抽检里的错误条目能不能归到具体语法类别（CTE、窗口函数、UDF、`SELECT *` 展开）；归不了类，说明抽检样本不够分散，而不是解析器没问题。
+- **为什么必须这一步 / 为什么在这个位置**：表级门禁为什么会被绕过，机制见 §3.5，本节不重复；这里只给排期用的两个数——历史变更里只触及单个字段的占比，以及审批系统里特批通道近三个月【经验：窗口长度随特批记录的留存期与团队变更频率变——变更频繁时一个月就够，留存期短的取满留存期】的申请条目中、申请理由栏写着「误拦申诉」「低风险，走特批」的有几条（特批记录通常保留申请理由，这两类条目可以直接数出来）。**这两个数决定顺序**：特批记录里已经出现这类条目，说明现有粒度正在制造绕行，字段级必须先于门禁上线；两类数都接近零，门禁可以先按表级上，字段级排进下一期。
+
+**Step 4：应用集成（4–8 周【经验：随要接的下游系统数量与门禁的审批层级变】）**
+
+1. 与数据质量联动：异常表 → 沿血缘定位上游，作为排障入口。
+2. 与变更管理联动：Schema 变更 → 血缘影响分析，进评审或 CI。
+3. 与安全联动：敏感字段 → 血缘流转图（合规举证用）。
+4. 与成本联动：表血缘 → 成本归因到链路。
+
+- **产物**：至少一条**会真的拦住人或卡住流程**的集成，以及它的运行记录（拦了几次、误拦几次）。
+- **判据**：用一次真实的低风险变更做 dry-run，看影响面分析结果是不是出现在评审材料里、并被人读过；只挂在页面上没人点开的集成，不算完成。
+- **为什么必须这一步**：因为血缘的价值取决于它挂在哪个环节上——放在文档与可视化页里没人主动看，只有挂进一个必须先回答它才能继续的流程，改动才会变成一件事先算得清代价的事；这一步也是全流程里唯一**自带对账机制**的环节（每次运行都在拿图里的下游与实际被改的下游相比）。
 
 **Step 5：智能化升级（持续）**
 
-1. 接入 LLM 辅助血缘补全。
-2. 接入自然语言查询（业务方自助）。
-3. 智能问询 + 异常归因。
+1. 接入 LLM 辅助血缘补全（补脚本与文档里的隐式依赖）。
+2. 接入自然语言查询（业务方自助问「这张表的数从哪来」）。
+3. 智能问询与异常归因（把候选根因直接推到排障会话里）。
+
+- **产物**：一个**人工确认队列**，以及队列的处理记录。
+- **判据**：抽 10 条 LLM 给出的候选边【经验：条数随近一周新增候选边数量变】，看它是否带来源标注与置信度，且是否有人真的处理过队列；没有处理记录的队列等于没有。
+- **为什么必须这一步 / 为什么在这个位置**：放在最后，是因为 LLM 补的是前面三种入口都覆盖不到的长尾；如果先上它，团队会用它去补那些本来跑一次就能采到的边——这一步做错的代价不会出现在图上，而是先出现在**人工确认队列**里：本来可采的边把队列灌满，真正需要人判的候选边排在后面没人看，候选边采纳率随之下降，最终连这条采集入口一起被放弃（判定见 §3.2.5）。
 
 **Step 6：联邦化（持续）**
 
 1. 跨云血缘联邦。
-2. 跨账号血缘联邦。
+2. 跨账号（多法人 / 多 BU）血缘联邦。
 3. 跨团队血缘共享。
+
+- **产物**：跨域实体标识规则（全限定名）与冲突消解规则，且成文。
+- **判据**：拿两个域里同名的表，看系统能不能把它们判成两个不同实体；判不出来就先不要接入第三个域。
+- **为什么必须这一步 / 为什么在这个位置**：联邦只在「数据不得出域」是硬约束时才有必要，且**标识规则必须在接入第二个域之前定完**——接入后再补，代价是重做整个标识体系（§3.2.4 的三件事在此不可省）。
+
+**这六步的依赖关系不可换序**：Step 2 产出的盲区清单是 Step 3 抽检的抽样框（不知道哪些边没采到，抽检就只能抽解析器擅长的那些）；Step 3 的抽检结果是 Step 4 门禁上线前的唯一精度依据；Step 4 dry-run 的记录又是 Step 5 的输入（业务方真的会问哪些问法、哪些候选边真的被采纳）。换序最常出现的两种：先上 Step 4 再回头补 Step 3——门禁因为粒度太粗被绕过，只能退回重做；先上 Step 6 再补标识规则——错接的机制见 §3.2.4，实施期的暴露方式是一次**跨域变更与它的回滚工单**：把当次影响面清单的导出（含查询时间）与回滚工单的发起时间对齐，就能看出清单是漏了（该列而没列）还是错接了（列了，但根本不是这条链路的下游），两者的修法完全不同。
+
+**最常被跳过的是 Step 3 的抽检**：它看起来只是一次验收动作，跳过它的人通常把「解析器跑通」当成「字段血缘可用」。第一个出问题的时点是 Step 4 的门禁上线之后——影响面清单与实际不符，团队同时遇到误拦与漏拦，第一次开始讨论「要不要开特批通道」；而这时候再回去抽检，要补的是已经写进流程图的口径。
 
 ### 4.2 关键技术点
 
-**1. 字段血缘采集（SQLFlow）**：
+下面五条覆盖「边怎么来、怎么查、怎么用于排障」；每条都写清它在什么条件下会失效——失效条件全部是**运行期可观测的信号**（比值、曲线、界面上的空结果），不是技术指标。
 
-```python
-# sqlflow_example.py
-# 阿里巴巴 SQLFlow：开源 SQL 血缘解析
-# https://github.com/alibaba/sqlflow
+**1. 字段血缘采集（SQLFlow）**
 
-from sqlflow import LineageParser
+- **做法**：把解析器挂在两条路径上——离线扫作业定义（版本库 / 调度平台的作业表）与在线挂在作业提交前；输出「目标字段 ← 来源字段 + 变换」三元组，写回存储时**标注来源 = 解析**。
+- **机制**：因为解析读的是作业定义文本而不是执行过程，所以**边在作业上线之前就已经存在**——第一次「某条新作业引用了没人登记过的上游」是在代码评审里被看到的，而不是在它跑了一周、下游口径对不上时才被发现。
+- **失效条件**：当作业里出现变量（`${bizdate}`）、拼接表名、UDF 与动态 SQL 时，解析器**不报错**，它给出的是一份缺边的图；症状是「解析出的边数 ÷ 作业文本里实际出现的表引用数」这个比值长期不动，而每次事故都能补出一条新边。可观测信号：解析失败率正常、覆盖率不动、事故复盘持续出现「图里没有这条边」【经验】。
+- **档位**：解析器与版本以各项目仓库的 release 记录为准（SQLFlow 见 github.com/alibaba/sqlflow；Spark SQL Lineage、Cube Lineage 见各自官方文档当前版本）。
 
-parser = LineageParser(
-    dialect="spark_sql",
-    visualize=True,
-)
+**2. OpenLineage 集成（Airflow）**
 
-sql = """
-INSERT INTO dwd_orders (user_id, order_id, total_amount)
-SELECT 
-    o.user_id,
-    o.order_id,
-    SUM(oi.price * oi.quantity) AS total_amount
-FROM ods_orders o
-JOIN ods_order_items oi ON o.order_id = oi.order_id
-WHERE o.dt = '2025-01-15'
-GROUP BY o.user_id, o.order_id
-"""
+- **做法**：在调度侧接 OpenLineage provider，作业每次运行时发 job / run / dataset 事件（含 schema 与字段级 facet）；后端可用 Marquez 或 DataHub。
+- **机制**：这条路线为什么能覆盖静态解析覆盖不到的边，机制见 §3.2.2，本节只讲它在运行期怎么用——每天拿当天运行事件里的输入实体，与血缘库里已登记的边做一次差集，差出来的行就是「跑过但没登记」的依赖，直接派成待办工单。它把「发现一条没登记的依赖」从一个**事故后的复盘结论**变成一个**当天的例行产出**：没有这张差集表，这类边只在有人到值班群里问「这张表谁改的」时才被发现。
+- **失效条件**：当采集端与后端分属两拨人、各自升级时，事件照发、后端落库的 facet 结构却可能已经对不上；症状是**事件量曲线正常，而页面上的字段级血缘长期为空**，且两边都不报错。判定方法：取当天跑过的一条作业，先在事件流里查到它的 run，再在后台按同一 run 查到它的输入输出实体——两步都查得到才算通；facet 的具体字段以所用 provider 与后端当前版本文档为准。
+- **档位**：【经验】（症状形态随两端的版本策略变，这里不给阈值）。
 
-result = parser.parse(sql)
-print(result.to_json())
+**3. 影响分析（基于 DataHub API）**
 
-# 输出：
-# {
-#   "target_table": "dwd_orders",
-#   "target_columns": {
-#     "user_id": ["ods_orders.user_id"],
-#     "order_id": ["ods_orders.order_id"],
-#     "total_amount": [
-#       "ods_order_items.price",
-#       "ods_order_items.quantity"
-#     ]
-#   },
-#   "source_tables": ["ods_orders", "ods_order_items"],
-#   "transformations": {
-#     "total_amount": "SUM(price * quantity)"
-#   }
-# }
-```
+- **做法**：变更前从实体标识出发查下游（GraphQL `lineage(direction: DOWNSTREAM, maxHops: N)`），把清单按「是否关键资产（有 SLA / 被核心指标引用）」分流，结果写进变更单或 CI 检查输出。
+- **机制**：因为影响面是**查询结果**而不是人工估计，所以它可以被评审流程自动调用——第一次「本该拦住的变更」是停在合并之前，而不是在第二天由下游任务失败反推出来；查询与展示的区别就在这一点：能被程序调用，才能进入流程。
+- **失效条件**：`maxHops` 是固定值，链路层级超过它时结果是**静默截断**的；症状是某些变更的下游清单恰好等于设定跳数覆盖到的资产数，更深的看板与指标不在清单里，而查询本身不给任何提示。判据：拿一次历史事故真正受影响的最远资产，用当时的影响面设置重放，看它是否在结果里。
+- **档位**：`maxHops` 与分流阈值按你的图深度与关键资产占比设定【经验】。
 
-**2. OpenLineage 集成（Airflow）**：
+**4. 根因分析（血缘 + 异常）**
 
-```python
-# airflow_openlineage.py
-from airflow import DAG
-from airflow.operators.python import PythonOperator
-from openlineage.airflow import OpenLineageProvider
+- **做法**：从异常节点沿血缘反向遍历（设访问深度上限），对带异常评分的上游节点按 `score / (distance + 1)` 排序，取前若干条作为**排查起点**，不是结论。
+- **机制**：因为排障的真实动作是「先缩小范围、再逐个验证」，候选列表改变的是排查顺序——把「按时间戳猜」换成「按链路距离与异常分排序」，跨多跳故障的定位时间从小时级进入分钟级【经验：随链路深度与监控覆盖度变】。
+- **失效条件**：当上游某段链路**没有异常监控覆盖**时，候选列表会返回空或明显偏少，而「空结果」与「上游确实正常」在界面上无法区分；症状是排障记录里反复出现「血缘说上游没问题，但重跑就好了」。修法不是调阈值，而是把无监控覆盖的节点在候选列表里显式标出，让空结果带上解释。
+- **档位**：【经验】（排序公式与 top-N 是过程参数，N 随值班人力与链路深度变）。
 
-# 在 DAG 中自动发出血缘事件
-@OpenLineageProvider(
-    namespace="spark",
-    job_name="etl_orders_daily",
-    inputs=[
-        {"namespace": "s3://lake", "name": "ods_orders"},
-        {"namespace": "s3://lake", "name": "ods_order_items"},
-    ],
-    outputs=[
-        {"namespace": "s3://warehouse", "name": "dwd_orders"},
-    ],
-)
-def etl_orders():
-    # ETL 逻辑
-    pass
+**5. 血缘新鲜度与定时校准（调度侧）**
 
-
-with DAG("etl_orders_daily", schedule_interval="@daily") as dag:
-    task = PythonOperator(
-        task_id="etl",
-        python_callable=etl_orders,
-    )
-```
-
-**3. 影响分析（基于 DataHub API）**：
-
-```python
-# impact_analysis.py
-import requests
-
-DATAHUB_GMS = "http://datahub-gms:8080"
-
-def get_downstream_impact(urn: str, max_hops: int = 5) -> list:
-    """查询下游影响"""
-    query = """
-    query getLineage($urn: String!, $direction: LineageDirection!, $maxHops: Int!) {
-        entity(urn: $urn) {
-            lineage(direction: $direction, maxHops: $maxHops) {
-                entities {
-                    entity {
-                        urn
-                        properties {
-                            name
-                            description
-                        }
-                        type
-                    }
-                    path {
-                        edges {
-                            source
-                            destination
-                        }
-                    }
-                }
-            }
-        }
-    }
-    """
-    response = requests.post(
-        f"{DATAHUB_GMS}/api/graphql",
-        json={
-            "query": query,
-            "variables": {
-                "urn": urn,
-                "direction": "DOWNSTREAM",
-                "maxHops": max_hops,
-            },
-        },
-    )
-    return response.json()["data"]["entity"]["lineage"]["entities"]
-
-
-# 使用
-downstream = get_downstream_impact(
-    "urn:li:dataset:(urn:li:dataPlatform:hive,prod.ods_orders,PROD)",
-    max_hops=5,
-)
-print(f"影响下游: {len(downstream)} 个实体")
-for entity in downstream:
-    print(f"  - {entity['entity']['properties']['name']}")
-```
-
-**4. 根因分析（血缘 + 异常）**：
-
-```python
-# root_cause_with_lineage.py
-from collections import defaultdict
-
-class LineageRootCauseAnalyzer:
-    def __init__(self, lineage_graph):
-        self.graph = lineage_graph  # {table: [(parent, transformation)]}
-        self.anomaly_scores = {}  # {table: anomaly_score}
-    
-    def find_root_cause(self, anomaly_table, threshold=0.5):
-        """从异常表反向追溯根因"""
-        visited = set()
-        candidates = []
-        
-        def dfs(node, depth, path):
-            if depth > 10 or node in visited:
-                return
-            visited.add(node)
-            
-            score = self.anomaly_scores.get(node, 0)
-            if score >= threshold and depth > 0:
-                candidates.append({
-                    "table": node,
-                    "score": score,
-                    "distance": depth,
-                    "path": path + [node],
-                })
-            
-            for parent, transformation in self.graph.get(node, []):
-                dfs(parent, depth + 1, path + [node])
-        
-        dfs(anomaly_table, 0, [])
-        
-        # 按 score / distance 排序
-        candidates.sort(key=lambda x: x["score"] / (x["distance"] + 1), reverse=True)
-        return candidates[:5]
-```
+- **做法**：把采集本身当成一组定时作业来运维——为**每条边**记「最后一次被采集到的时间」（而不是只记作业自己的更新时间）；把采集作业的失败率、连续失败次数纳入值班告警；每次重采与上一次结果做 diff，新增边与消失边都写进变更日志。
+- **机制**：因为在库里「边消失」与「边从未存在过」长得完全一样，所以只有把 diff 留下来，第一次「上游改了表名、一整条下游链路集体消失」才会以一个可回溯的变更事件出现，而不是等到有人发现影响面查询变空了才去猜。
+- **失效条件**：当采集调度与业务调度共用同一套队列与资源时，月末的调度高峰会把采集作业挤到队尾；症状是**血缘新鲜度呈周期性变差、月初自行恢复**，而采集失败率指标完全正常（采集没有失败，只是变慢了）。可观测信号：把「最新一条边的时间 − 当前日期」做成曲线，看它有没有周期【经验】。
+- **档位**：【经验】（告警阈值随采集频率与作业量变，不给固定值）。
 
 ### 4.3 工具链与平台（含 2024-2025 新工具）
 
-**开源工具**：
-
-| 工具 | 定位 | 优势 | 劣势 |
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
 | --- | --- | --- | --- |
-| **DataHub** | LinkedIn 开源元数据平台 | 字段血缘 + 强大 UI | 部署复杂 |
-| **Apache Atlas** | Hadoop 生态元数据 | 强分类分级 | 社区相对小 |
-| **Marquez** | OpenLineage 参考实现 | 统一规范 | UI 较弱 |
-| **OpenMetadata** | 开源元数据平台 | 易部署 | 生态中 |
-| **Metacat** | Netflix 开源元数据 | 简洁 | 已停更 |
-| **Datafold** | 数据测试 + 血缘 | Diff 强 | 商业化重 |
-| **Amundsen** | Lyft 开元数据 | 搜索强 | 已停更 |
+| 元数据 + 血缘平台（开源，自托管） | DataHub（字段血缘 + 强大 UI；部署复杂）/ Apache Atlas（Hadoop 生态元数据、强分类分级；社区相对小）/ OpenMetadata（易部署；生态中）；**已停更**：Metacat（Netflix 开源元数据，简洁）/ Amundsen（Lyft 开源，搜索强）——后两者的停更状态请按各自仓库的最近一次提交与最近一次发版复核 | 运维人力是主要约束时选轻量可自助部署的平台；引擎已在 Hadoop 生态、分类分级是硬需求时选 Atlas；要字段级血缘且愿意承担常驻组件运维时选 DataHub；已停更的两个只在盘点历史选型、或迁移一套已经建在它上面的部署时才看，不进入候选比较 | 选一个维护活跃度已经下降的项目（上线前先看它仓库最近一次提交与最近一次发版距今天数）的代价不是换 UI，而是整条采集链路要重建；低估常驻组件运维的代价，是血缘退化成「季度更新一次的离线报表」 |
+| 血缘规范 + 参考后端 | OpenLineage（统一规范，LF AI & Data 孵化）/ Marquez（参考实现；UI 较弱） | 数据源种类会持续增加、且要避免每接一个源重写采集时，选规范 + 自选后端；只覆盖一两种引擎且没有余力维护后端时，直接用某个平台的采集 | 把「选了规范」当成「选型完成」的代价：事件有了量，字段级切片、查询接口与门禁都还没有。已有事件能否补齐字段级，取决于采集端当时发出过哪些 facet，请按所用 provider 当前文档核验 |
+| 数据测试 + 血缘 Diff | Datafold | 团队已有 CI、要的是「改动前后结果集差异」而不是一份血缘图时选它 | 把它当纯血缘平台用的代价：跨域影响面仍要另建 |
+| 湖仓一体（血缘随计算引擎走） | Unity Catalog（Databricks Lakehouse 血缘） | 计算与存储在同一湖仓栈内、不想另建采集链路时选它 | 绑定单一栈的代价：自建引擎与跨栈资产会成为图上的断点，要另做适配 |
+| 企业级治理套件（商业） | Collibra / Alation / Atlan / Informatica | 合规举证与流程审批本身就是交付物、且预算能覆盖许可 + 实施时选套件；只要图与 API 时，套件的流程模块会变成沉没成本 | 许可之外的实施与驻场常是更大的一笔；定制流程一旦嵌进业务，退出成本高于迁移血缘本身 |
+| 中国大陆平台自带血缘 | 阿里云 DataWorks 血缘 / 字节跳动 DataFinder 血缘 | 资产已在该平台内、且接受「血缘随平台走」时选它；跨平台与自建引擎资产要预留适配预算 | 平台内能力好、平台外断链的代价：跨平台影响面仍靠人工补 |
+| AI 时代新工具（2024-2025） | Atlan AI（自然语言查询血缘）/ Collibra AI（AI 辅助血缘补全）/ DataHub + LLM（自动补全血缘）/ 阿里云 DataWorks 智能血缘（基于通义千问）/ Cube Lineage（Cube.js 字段血缘） | 先确认三件事再选：入口是否复用同一套权限与实体标识、回答能否区分「确定无上游」与「这一段没采到」、推断出的边是否可标注来源并进人工确认队列；三条都答不上时，把它当 PoC 而不是生产入口 | 把推断边直接入库的代价：审计时说不清某条依赖是否可靠，门禁会把模型猜测当成事实使用 |
 
-**商业 SaaS**：
+这一类里**最容易被误选的是「规范」被当成「产品」**——把 OpenLineage 选完就认为选型结束了。后果不会立刻出现：第一个季度交付出去的是「事件有量」这个指标，而业务方真正要的「改表前看一眼下游」仍然要问人；等到补后端与查询接口时，项目已经按「规范选型已完成」的假设排过两轮期，前面的排期里没有给采集补采留位置。第二容易被误判的是把「AI 时代新工具」当成立项依据——上面那一行的能力名在不同厂商材料里挂在不同的产品名下，其发布时点与能力边界请以各家官方文档当前版本为准。
 
-| 工具 | 定位 |
-| --- | --- |
-| **Unity Catalog** | Databricks Lakehouse 血缘 |
-| **Collibra** | 企业级数据治理 |
-| **Alation** | 数据目录 + 血缘 |
-| **Atlan** | 现代数据血缘 + 协作 |
-| **Informatica** | 企业级血缘 |
-| **阿里云 DataWorks 血缘** | 中国本土 |
-| **字节跳动 DataFinder 血缘** | 字节自研 |
+### 4.4 存量迁移
 
-**AI 时代新工具（2024-2025）**：
+**① 先做什么可以立刻见效且可回退。** 只上**只读的影响面查询**，不改任何发布流程。动作：取变更频率最高的那批关键表（先取 10–30 张【经验：随变更频率与团队数变】），跑出下游清单，找三个下游团队逐条核对【经验：团队数随下游链路的分叉数与各团队的对账成本变，分叉多时按链路归并成一次联合核对，而不是逐个约】。之所以说这一步可回退——没有任何东西被阻断，错的最坏后果是「一份清单不准」，删掉即可；它同时也是投入产出最高的一步，因为下游团队反馈的每一条不一致都在告诉你采集缺口的真实位置。
 
-- **Atlan AI**：自然语言查询血缘。
-- **Collibra AI**：AI 辅助血缘补全。
-- **DataHub + LLM**：自动补全血缘。
-- **阿里云 DataWorks 智能血缘**：基于通义千问。
-- **Cube Lineage**：Cube.js 字段血缘。
+**② 历史资产怎么分类处理。** 三类，不要混着做：
 
-### 4.4 代码 / 示例
+- **动过就改**：主干数仓的 SQL 作业——不返工历史，只规定「下次改动这张表时，顺带补齐它的边与来源标注」。适用面最广，成本被摊进本来就要做的变更里。
+- **打标挂账**：脚本、动态 SQL、外部导入——**不假装它们已经被采到**，显式标为「已知盲区」并给出占比；处理顺序由「它是否在关键链路上下游」决定，而不是由表数决定。
+- **全部返工**：只对「被核心指标引用」的资产重跑采集，按下游数量从高到低做。这个集合通常远小于总资产数【经验：比例随你的指标体系集中度变，越集中越小】。
 
-**示例 1：完整的血缘平台（OpenLineage + Marquez + DataHub）**
+**③ 双轨怎么维持、维持多久。** 旧的人工登记表与新的自动采集图并存，维持 1–2 个季度【经验：随作业变更频率变——变更越频繁，人工表失真越快，双轨就应该越短】。双轨期两条硬规定：每条边带来源标注；两路结论冲突时按 §3.2.2 给出的仲裁顺序处理（本节不复述规则本身）。**双轨真正的代价不是人力，是信任分裂**——两份清单不一致时，团队会选自己看惯的那份，于是新图长期只是「另一个视图」，而它的准确度没人关心。
+
+**④ 什么信号说明可以退出双轨。** 连续若干周抽样比对差异为 0【经验：周数随变更频率定，变更越快越应该拉长观察窗】；以及变更评审里不再有人问「这图准不准」。反向信号同样重要：如果影响面查询的打开次数在季度内持续下降，说明它没被接进任何流程——此时退双轨，等于把唯一还在被人用的那份也删掉。
+
+**⑤ 迁移期必须有一个具名角色。** 元数据运营（不是「平台团队顺便管」）：他维护盲区清单、处理人工确认队列、每周发布一次双轨差异【经验：频率随作业变更频率与这份差异的消费方数量变，变更越密、消费方越多越应缩短间隔】、并在变更评审里回答「这图准不准」。缺这个角色时上面四步都会退化成一次性项目——盲区清单无人更新、确认队列无人处理、双轨差异无人比对，而这三件事都不会报错。
+
+### 4.5 模板 / 示例
+
+**模板 1：字段血缘采集（SQLFlow）**
+
+```python
+from sqlflow import LineageParser          # 仓库：github.com/alibaba/sqlflow；模块路径、类名与参数名请按该仓库当前文档与其 release 记录核对
+parser = LineageParser(dialect="spark_sql")
+result = parser.parse(open("dws_trade_1d.sql").read())
+print(result.to_json())
+# 产出形如：{"target_columns": {"gmv": ["ods_order.amount"], ...},
+#            "source_tables": [...], "transformations": {"gmv": "SUM(amount)"}}
+```
+
+**怎么用**：`dialect` 必须填作业真实使用的方言（填错会静默给出缺边的结果）；批量跑时把每个作业的输出连同**作业名与提交时间**一起落库，否则后面无法回答「这条边是哪次解析出来的」。不要照抄这段里的路径与作业名。
+
+**模板 2：OpenLineage 接入 Airflow**
+
+```python
+from openlineage.airflow import OpenLineageProvider
+
+@OpenLineageProvider(namespace="warehouse", job_name="etl_orders_daily",
+                     inputs=[{"namespace": "lake", "name": "ods_orders"}],
+                     outputs=[{"namespace": "warehouse", "name": "dwd_orders"}])
+def etl_orders():
+    ...
+```
+
+**怎么用**：`namespace` 与实体 `name` 的组合就是跨系统的实体标识，**先定命名规则再写 DAG**——改标识等于重挂全部历史边。inputs / outputs 只在解析侧拿不到时才手写；能否自动推断，以及上面这段装饰器本身的名称、参数形态与挂载方式，都以所用 provider 与 Airflow 版本的当前文档为准——这一族 API 在版本之间调整过。
+
+**模板 3：影响面查询（DataHub GraphQL）**
+
+```graphql
+query downstream($urn: String!, $hops: Int!) {
+  entity(urn: $urn) {
+    lineage(direction: DOWNSTREAM, maxHops: $hops) {
+      entities { entity { urn type properties { name } } }
+    }
+  }
+}
+```
+
+**怎么用**：`$urn` 填你要改的实体（表或字段）；`$hops` 先按你的图最大深度设，**填小了会静默截断**，这一点比查询本身更重要。返回的清单要按「是否关键资产」再分一次流，否则门禁会把所有变更当成同等风险。字段名与参数名随后端版本演进，落地前先用该实例的 schema 自省（或平台自带的 GraphQL 浏览器）确认一次 `lineage` 的入参与返回形状，不要照抄本段。
+
+**模板 4：根因候选排序（血缘 + 异常）**
+
+```python
+def rank_root_causes(graph, anomaly_node, scores, max_depth=10, top_n=5):
+    """沿血缘反向遍历，按 score/(distance+1) 排序返回候选根因。"""
+    found = []
+    def dfs(node, depth, path):
+        if depth > max_depth:
+            return
+        if depth and node in scores:
+            found.append((node, scores[node], depth, path + [node]))
+        for parent in graph.get(node, []):
+            dfs(parent, depth + 1, path + [node])
+    dfs(anomaly_node, 0, [])
+    return sorted(found, key=lambda c: c[1] / (c[2] + 1), reverse=True)[:top_n]
+```
+
+**怎么用**：先把「遍历到但 `scores` 里没有」的节点单独计数并打日志——**这些就是无监控覆盖的节点，它们决定了空结果该被读成什么**。`max_depth` 与 `top_n` 是过程参数，按链路深度与值班人力设【经验】。
+
+**模板 5：本地最小血缘平台（OpenLineage + Marquez + DataHub）**
 
 ```yaml
-# docker-compose.yml
-version: '3'
 services:
   marquez:
     image: marquezproject/marquez:latest
-    ports:
-      - "5000:5000"
-    environment:
-      - DB_HOST=postgres
-  
+    ports: ["5000:5000"]
+    environment: [DB_HOST=postgres]
   datahub-gms:
     image: linkedin/datahub-gms:latest
-    ports:
-      - "8080:8080"
-  
+    ports: ["8080:8080"]
   openlineage-proxy:
     image: openlineage/proxy:latest
-    ports:
-      - "5001:5001"
-    environment:
-      - OPENLINEAGE_URL=http://marquez:5000
+    ports: ["5001:5001"]
+    environment: [OPENLINEAGE_URL=http://marquez:5000]
 ```
 
-**示例 2：基于 Spark 的字段血缘采集**
+**怎么用**：这是 **docker compose 的联调环境**，只用来验证「事件能不能出来、能不能被查到」；不要照抄成生产拓扑——镜像标签要换成固定版本（版本按各镜像仓库的 release 记录核验）、补持久化与鉴权、把采集端指向你自己的后端。
+
+**模板 6：Spark 字段血缘采集（Listener / 执行计划侧）**
 
 ```python
-# spark_column_lineage.py
-"""
-Spark Column Lineage Listener
-通过 Spark Listener 采集字段血缘
-"""
-from pyspark.sql.session import SparkSession
-from pyspark.sql import functions as F
-from pyspark import SparkContext
-
-class ColumnLineageListener:
-    def __init__(self, output_path):
-        self.output_path = output_path
-    
-    def analyze_sql(self, spark, sql_text, input_tables, output_table):
-        """分析 SQL 的字段血缘"""
-        # 创建临时视图
-        for table in input_tables:
-            df = spark.read.format("delta").load(f"s3://lake/{table}")
-            df.createOrReplaceTempView(table)
-        
-        # 执行 SQL
-        df = spark.sql(sql_text)
-        
-        # 提取字段血缘（通过 schema 推断）
-        field_lineage = []
-        for col in df.columns:
-            # 简化：通过 execution plan 提取
-            field_lineage.append({
-                "output_table": output_table,
-                "output_column": col,
-                "transformation": "derived",  # 实际需要 SQL 解析
-            })
-        
-        return field_lineage
-
-
-# 使用
-spark = SparkSession.builder.appName("LineageDemo").getOrCreate()
-listener = ColumnLineageListener("s3://lineage/")
-
-# 简单血缘
-df_orders = spark.read.parquet("s3://lake/orders/")
-df_users = spark.read.parquet("s3://lake/users/")
-
-df_joined = (
-    df_orders
-    .join(df_users, "user_id")
-    .select(
-        df_orders.order_id,
-        df_users.user_name,
-        df_orders.amount,
-    )
-)
-
-df_joined.write.parquet("s3://warehouse/dwd_orders/")
+def collect_column_lineage(df, output_table):
+    """示意：真实实现需解析 logical plan 而非字符串摘要。"""
+    plan = df._jdf.queryExecution().analyzed().toString()
+    return [{"output_table": output_table, "output_column": c,
+             "plan_excerpt": plan} for c in df.columns]
 ```
 
-**示例 3：基于 LLM 的血缘补全**
+**怎么用**：`plan_excerpt` 这一列是给人工复核用的——抽检字段血缘时，靠它把「这条边对不对」变成「这条边对应的计划片段是什么」。只采列名不采计划片段，等于把抽检变成凭感觉。
+
+**模板 7：LLM 血缘补全（候选边 + 人工确认）**
 
 ```python
-# llm_lineage_completion.py
-import os
-from anthropic import Anthropic
-
-client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-
-def complete_lineage_with_llm(table_name, sample_data, related_tables, business_desc):
-    """用 LLM 补全血缘"""
-    
-    prompt = f"""
-你是一个数据血缘专家。请基于以下信息判断表 {table_name} 的数据血缘。
-
-## 表 {table_name} 的样例数据
-{sample_data}
-
-## 业务描述
-{business_desc}
-
-## 相关表
-{related_tables}
-
-## 你的任务
-1. 分析 {table_name} 的字段可能来自哪些上游表
-2. 列出每个字段的来源（上游表 + 上游字段）
-3. 说明可能的数据变换逻辑
-4. 输出 JSON 格式
-
-## 输出格式
-```json
-{{
-  "table": "{table_name}",
-  "fields": [
-    {{
-      "field": "field_name",
-      "upstream": [
-        {{"table": "upstream_table", "field": "upstream_field"}}
-      ],
-      "transformation": "transformation_logic"
-    }}
-  ]
-}}
-```
-"""
-    
-    response = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=3000,
-        messages=[{"role": "user", "content": prompt}]
-    )
-    
-    return response.content[0].text
-
-
-# 使用
-result = complete_lineage_with_llm(
-    table_name="dwd_orders",
-    sample_data="""order_id, user_id, amount, status
-    1, 100, 100.0, PAID
-    2, 101, 200.0, PENDING""",
-    related_tables=["ods_orders", "ods_order_items", "ods_users"],
-    business_desc="订单事实表，每个订单一行",
-)
-print(result)
+prompt = f"""基于下面的作业脚本与口径文档片段，判断 {table} 各字段的来源。
+只输出 JSON：{{"candidates":[{{"field":"","upstream":[{{"table":"","field":""}}],
+"confidence":0.0,"evidence":"原文中的哪一句支持这条边"}}]}}
+证据不足时 confidence 必须低于确认阈值，不要猜。"""
 ```
 
----
+**怎么用**：`evidence` 与 `confidence` 是必填字段，缺了就不该入库；低于确认阈值的候选进人工确认队列，**不要直接写进血缘库**（理由见 §3.2.5）。抽取用的文本片段与提示词要版本化，否则模型或提示词一变，已入库的边会静默漂移而无人知道。
+
+**模板 8：影响面查询结果的落地字段（写进变更单的片段）**
+
+```text
+变更单附加字段（由影响面查询自动填充，不靠人工填）
+  changed_entity   : 被改实体的全限定名
+  hops_used        : 本次查询使用的跳数上限
+  downstream_count : 命中的下游实体数
+  key_assets       : 其中带 SLA / 被核心指标引用的条数
+  truncated        : 是否触达跳数上限（true 表示下游清单不完整）
+  edges_source_mix : 命中边的来源构成（解析 / 运行时 / 人工 / LLM 推断）
+  queried_at       : 查询时间（用于事后重建"当时的图是什么样"）
+```
+
+**怎么用**：`truncated` 与 `edges_source_mix` 是两格必须填的——前者说明清单完不完整，后者说明清单可不可信；`queried_at` 用来在事故复盘时重建当时的图，缺了它就永远分不清「图错了」还是「人看漏了」。其余格子按你变更单的字段体系改名即可。
+
+### 4.6 自检清单
+
+下面每条都需要**动一次系统才有答案**；凡是坐下来想一想就能回答的建模与选型问题，已归到 [§ 3.7](05-lineage-and-impact-section-3-sec3.md)，本节不重复。
+
+- [ ] 取当天真实跑过的一条作业，先在事件流里查到它的 run，再按同一 run 在后端查到输入输出实体——两步都查得到才算采集通。
+- [ ] 抽查最近提交的 20 条作业【经验：条数随方言数与复杂度分布变】，把解析结果与作业文本里出现的表引用逐条比对，列出未解析清单。
+- [ ] 停掉一个采集源 24 小时后恢复【经验：停用时长随采集频率与告警的检测延迟变——检测延迟长于这个窗口时，测出来的是告警没响，而不是恢复逻辑有没有问题】，检查有没有在预期时间内告警，恢复后有没有产生重复边或漏边。
+- [ ] 拿一次历史事故真正受影响的最远资产，用今天的影响面设置重放查询，看它是否在结果里。
+- [ ] 用一次真实变更跑一遍门禁 dry-run（不真拦），比对「门禁判定」与「实际被改动的下游」。
+- [ ] 抽样 3 个标记为「已知盲区」的脚本任务【经验：个数随盲区清单长度与脚本类型数变】，手工追它们的读写对象，核对盲区清单是否仍然准确。
+- [ ] 取一次真实的「作业改了、图上的边没更新」实例，沿采集链路走一遍，把卡点指名到具体哪一步（调度没触发 / 解析失败 / 写库失败），并确认这一类卡点有告警覆盖——[§ 3.7](05-lineage-and-impact-section-3-sec3.md) 问的是这件事有没有被跟踪，这里要的是它坏在哪一步。
+- [ ] 拉一次影响面查询的调用日志，按调用方标识分成程序化调用（CI / 评审系统 / 调度）与人工点击两类，看程序化那一类有没有持续出现——只有人工点击，说明它还没进任何流程（常态判据见 [§ 3.7](05-lineage-and-impact-section-3-sec3.md)）。
+- [ ] 升级一次解析器或引擎版本，记录边数变化并解释差异来源。
+- [ ] 换一次采集端或后端版本，验证字段级 facet 是否仍然落库（而不是只验证事件量）。
+- [ ] 从业务侧找一次「数对不上」的投诉，用血缘走一遍上游溯源，记录走到哪一跳断了。
+- [ ] 退双轨之前，随机抽 10% 的资产【经验：比例随资产规模与比对成本变】，比对人工登记表与自动采集图的差异条数。
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一决定成败的环节是 **Step 4「应用集成」——把影响面接进一个不回答它就无法继续的流程**。采集入口、解析器、字段级粒度都只是把边的质量做到可用，而只有「有人因为影响面而停下改动」这件事会把血缘从一份报表变成一套控制手段；它比其余环节更值得投入的理由是，**它是全流程里唯一自带对账回路的环节**——门禁每运行一次，都在拿「图里的下游」与「实际被改的下游」做比对，错了会当场暴露，而采集与展示环节错了没有任何人会知道。
+>
+> 配合 [§ 2 核心原理](05-lineage-and-impact.md)、[§ 3 设计模式与范式](05-lineage-and-impact-section-3-sec3.md) 与 [§ 6 落地实践](05-lineage-and-impact-section-6-sec6.md) 阅读。

@@ -92,15 +92,15 @@
 **第三阶段：联邦查询（2015-2020）**
 
 - 2015：Presto 加 Connector（Hive、MySQL、Kafka）。
-- 2018：Presto 分叉出 Trino。
-- 2019：Trino 主导联邦查询。
+- 2018：Presto 社区分叉出 PrestoSQL（2020 年更名为 Trino）。
+- 2019：PrestoSQL 发布首个独立 release，联邦查询的社区主线转向这一支。
 
 **第四阶段：Lakehouse 集成（2020-2024）**
 
 - 2020：Trino + Iceberg 深度集成。
 - 2021：Trino 400+、Iceberg V2 支持。
-- 2023：Trino 420+、Iceberg V3 支持（V3 规范本身的年份以 Apache Iceberg 官方表规范页当前内容为准；本书按 2024 年侧记，见 [03-lakehouse](../03-lakehouse/03-lakehouse.md) 的时间线）。
-- 2024：DataFusion 30+、Arrow 集成。
+- 2023：Trino 420+。
+- 2024：DataFusion 30+、Arrow 集成；Iceberg V3 规范发布（在 v2 已有的行级删除之上加入删除向量、增量读取与向量类型，见 [03-lakehouse](../03-lakehouse/03-lakehouse.md) 的时间线）。
 
 **第五阶段：AI 原生（2024-至今）**
 
@@ -143,8 +143,8 @@
 
 **Calcite**：
 
-- Apache 动态数据管理框架。
-- Trino / Spark SQL / Flink SQL 都基于 Calcite。
+- Apache 的「SQL 解析、校验与优化」框架——把 SQL 前端与优化器做成可复用的库，自身不存数据。
+- Flink 的 Table API / SQL 基于它；Trino 与 Spark SQL 走的是「自研前端 + 自研优化器」这条路线（ANTLR + 自研 CBO / Catalyst）。**「哪个引擎基于 Calcite」是可核验但不宜照抄的断言**：判定方法是在项目源码或依赖清单里查找相应框架的包，见 [§7.2](13-query-engine-section-7-sec7.md)。
 
 **DataFusion**：
 
@@ -220,14 +220,12 @@ RelNode optimizedPlan = planner.optimize(logicalPlan);
 **3. Trino + Iceberg V3**
 
 ```sql
--- Trino 查询 Iceberg V3
+-- Trino 查询 Iceberg：时间范围过滤在元数据层被翻译成分区剪裁
 SELECT * FROM iceberg.iceberg.orders
 WHERE order_time BETWEEN '2025-01-01' AND '2025-01-31';
-
--- 增量读取
-SELECT * FROM iceberg.iceberg.orders
-WHERE _updated_at > '2025-01-15';
 ```
+
+**增量读取不是一条通用 SQL**：Iceberg 的增量语义定义在规范层——「取两个快照之间新增的数据文件」（V3 规范的能力条目之一，见 [03-lakehouse](../03-lakehouse/03-lakehouse.md) 的时间线），而不是对某个「更新时间列」做 WHERE 过滤；引擎侧用什么语法把它暴露出来（元数据表、快照区间参数，还是连接器专有语法）随版本变化，落地前按你所装版本的 Iceberg 连接器文档核对，不要照抄别处的示例。
 
 **4. DataFusion Python 嵌入**
 

@@ -166,7 +166,7 @@ Netflix Keystone 架构决策的**5 大核心组件**：
 
 **具体数字（How much）**
 
-- 团队规模：Netflix 数据平台工程 500+ 人
+- 团队规模：Netflix 数据平台工程（数据平台部 DIE 口径约 200+ 人；数据团队合计约 1000+ 人 —— 两个数字的主语不同，见 [Netflix 案例 § 1.3](../../15-case-studies/05-netflix-data-stack/05-netflix-data-stack.md)【经验】）
 - 关键数字：**口径漂移 0%**；**维护 -50%**；**4 Region**；**2 亿+ 用户**
 - 业务影响：支撑 Netflix 全球 2 亿+ 用户的播放质量、推荐与内容决策分析
 
@@ -253,7 +253,7 @@ Netflix Keystone 架构决策的**5 大核心组件**：
 
 **具体数字（How much）**
 
-- 团队规模：阿里 MaxCompute / Hologres / 数据中台 1000+ 人
+- 团队规模：阿里 MaxCompute / Hologres / 数据中台千级人员规模
 - 关键数字：**副本 -50%**；**P99 < 1s**；**25 BU 统一**；**EB 级**
 - 业务影响：覆盖阿里全集团 25 BU，并作为云产品对外输出
 

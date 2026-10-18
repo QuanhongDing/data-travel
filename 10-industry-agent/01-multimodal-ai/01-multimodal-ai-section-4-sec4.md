@@ -1,421 +1,358 @@
-> 本文件是 **01-multimodal-ai.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](01-multimodal-ai.md)。
+> 本文件是 **01-multimodal-ai.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](01-multimodal-ai-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](01-multimodal-ai.md)。
 
 ## 4. 工程实现
 
+[§ 3](01-multimodal-ai-section-3-sec3.md) 回答的是「桥建在哪一层、代价是什么」；本节回答**它怎么在你的组织与账上成立**：什么顺序、每一步手上多出什么可被检查的东西、已经有一批在跑的传统 CV / OCR / 文本 RAG 要不要推倒、以及上线后凭哪些信号判断它坏了。
+
+**本节同时写给两类读者，但重心偏存量改造**：从零起步的团队按 §4.1 的七步顺序做即可；已经有一批在跑的模型与流水线的团队，先读 §4.4，再回头把 §4.1 当成「补哪些环节」的清单。多模态落地的顺序有一个和纯文本项目不同的地方：**成本与延迟由输入形态决定（帧数 × 分辨率 × 时长），而输入形态是业务给的、不是模型定的**——所以约束输入的那一步必须排在选模型之前。
+
 ### 4.1 落地步骤
 
-**Step 1：业务边界与多模态场景识别**
+**Step 1：业务边界与多模态场景识别（2–4 周【经验：随涉及业务方数量与样本获取难度变】）**
 
-- 圈定多模态 AI 要支撑的业务场景（文档理解 / 视觉问答 / 视频分析 / 语音转写）。
-- 识别核心多模态任务（OCR / VQA / 图像描述 / 视频理解）。
-- 评估数据规模、延迟要求、成本预算。
-- 输出：**多模态 AI 规划书（MMP = Multimodal Plan）**。
+1. 圈定多模态 AI 要支撑的业务场景（文档理解 / 视觉问答 / 视频分析 / 语音转写），**每个场景配一个业务侧验收人**。
+2. 识别核心多模态任务（OCR / VQA / 图像描述 / 视频理解）。
+3. 评估数据规模、延迟要求、成本预算——三项都要落到具体数字，而不是量级形容词。
+4. 输出：**多模态 AI 规划书（MMP = Multimodal Plan）**。
 
-**Step 2：模型选型与 PoC**
+- **产物**：MMP——含场景清单、每个场景的**输入上限**（分辨率、帧率、时长、单份文档页数）、延迟上限与单次调用成本上限。
+- **判据**：从生产流量里取 20 个真实样本【经验：随场景数与输入形态差异变】，逐个量出它的大小、时长与可接受的处置时间；量不出来的场景说明边界还没定义清楚，先别立项。
+- **为什么必须这一步 / 为什么在这个位置**：因为 token 数是帧数与分辨率的乘积，成本随输入规模线性增长——先约束输入再选模型，账单是可预算的；反过来做，后面所有成本讨论都会退化成追责。
 
-- 选型 VLM（GPT-4V / Claude / Gemini / Qwen-VL / InternVL / LLaVA）。
-- 选型多模态 Embedding（CLIP / BGE-VL / Jina CLIP）。
-- 选型语音模型（Whisper / Paraformer）。
-- 选型视频模型（VideoLLaMA / Gemini Video）。
-- PoC 验证关键场景效果。
-- 输出：**多模态模型选型报告**。
+**Step 2：模型选型与 PoC（3–6 周【经验：随候选模型数与数据边界审批时长变】）**
 
-**Step 3：多模态数据准备**
+1. 选型 VLM（GPT-4V / Claude / Gemini / Qwen-VL / InternVL / LLaVA）。
+2. 选型多模态 Embedding（CLIP / BGE-VL / Jina CLIP）。
+3. 选型语音模型（Whisper / Paraformer）。
+4. 选型视频模型（VideoLLaMA / Gemini Video）。
+5. PoC 在**自有评测集**上验证关键场景效果——不是跑公开榜单。
+6. 输出：**多模态模型选型报告**。
 
-- 建立多模态数据湖（图像 / 视频 / 音频 / 文档）。
-- 建立多模态预处理流水线（裁剪 / 缩放 / 抽帧 / 降噪）。
-- 建立多模态 Embedding 流水线（CLIP Embedding / BGE-VL Embedding）。
-- 建立多模态向量库（Milvus / Qdrant / Weaviate + 多模态 Embedding）。
-- 输出：**多模态数据基础设施**。
+- **产物**：一份固定的自有评测集（含每个场景的失败样本）+ 候选模型在同一评测集上的对照结果。
+- **判据**：做一次降档对照——把当前最强候选换成低一档的模型，同时记录能力保留比例与两条路径的**单次调用成本差**；两个数都答不出，说明这份报告只做了排行榜对比。
+- **为什么必须这一步 / 为什么在这个位置**：它必须在数据准备之前——评测集决定了后面切片、抽帧、转写的取舍标准；先建流水线再评测，等于让已有的数据决定什么算对。
 
-**Step 4：模型部署与推理优化**
+**Step 3：多模态数据准备（4–8 周【经验：随模态种类数与存量资产规模变】）**
 
-- 部署开源多模态 VLM（Qwen2-VL / InternVL2 / LLaVA-OneVision）。
-- 部署闭源多模态 API（GPT-4o / Claude / Gemini）。
-- 部署推理优化（vLLM + INT4 量化 + Continuous Batching）。
-- 部署 LLM Gateway（统一路由 GPT-4o / Claude / Gemini / Qwen-VL）。
-- 输出：**多模态推理服务平台**。
+1. 建多模态数据湖（图像 / 视频 / 音频 / 文档），对象存储与元数据分开。
+2. 建多模态预处理流水线（裁剪 / 缩放 / 抽帧 / 降噪）。
+3. 建多模态 Embedding 流水线（CLIP Embedding / BGE-VL Embedding）。
+4. 建多模态向量库（Milvus / Qdrant / Weaviate + 多模态 Embedding）。
+5. 输出：**多模态数据基础设施**。
 
-**Step 5：多模态 RAG 建设**
+- **产物**：一份「原文件 → 元数据 → 向量记录」的一一对应关系，以及**重编码的预估时长与成本**。
+- **判据**：抽 3 个资产【经验：个数随资产类型数变】，从元数据表能追到它在向量库里的记录，再从记录追回原文件；追不回去的那部分，就是将来既无法下线也无法重编码的部分。
+- **为什么必须这一步**：因为向量一旦落库，改动的成本就不再由「这一版编码器好不好」决定，而由「重算期间源侧还在更新、新旧两套向量要并存多久」决定；把重算要多久、占哪一套算力、由谁批这段窗口这三件事写进容量规划，是这一步唯一能顺带产出、而后面几步再也补不出来的东西。
 
-- 建立多模态 Embedding 库（CLIP / BGE-VL）。
-- 建立多模态检索（向量 + 文本 + 元数据）。
-- 建立多模态重排序（Reranker）。
-- 建立多模态生成（LLM + 多模态输入）。
-- 输出：**多模态 RAG 系统**。
+**Step 4：模型部署与推理优化（3–6 周【经验：随是否自建算力变】）**
 
-**Step 6：多模态 Agent 集成**
+1. 部署开源多模态 VLM（Qwen2-VL / InternVL2 / LLaVA-OneVision）。
+2. 部署闭源多模态 API（GPT-4o / Claude / Gemini）。
+3. 上线推理优化（vLLM + INT4 量化 + Continuous Batching）。
+4. 部署 LLM Gateway（统一路由 GPT-4o / Claude / Gemini / Qwen-VL）。
+5. 输出：**多模态推理服务平台**。
 
-- 建立多模态感知（VLM / 语音 / 视频）。
-- 建立多模态工具调用（图像编辑 / 视频剪辑 / 文档生成）。
-- 建立多模态决策（LLM + 工具）。
-- 建立多模态执行（图像 / 视频 / 文档生成）。
-- 输出：**多模态 Agent 平台**。
+- **产物**：一张「哪个场景走哪条路由」的路由表，含每条路由的配额与降级策略。
+- **判据**：手动停掉一条路由，看系统是否降级而不是整体报错；并在网关日志里查到每次请求实际命中的模型版本。
+- **为什么必须这一步**：因为同时接开源与闭源之后，两边的输入格式、限流与版本节奏都不同；路由表与降级策略是唯一能让「某个供应商出问题」不变成「业务出问题」的东西。
 
-**Step 7：可观测与治理**
+**Step 5：多模态 RAG 建设（4–8 周【经验：随库规模与语料更新频率变】）**
 
-- 部署多模态监控（响应时间 / 准确率 / 成本）。
-- 部署多模态审计（生成内容审查 / 版权审查）。
-- 部署多模态合规（GDPR / 等保 / 《生成式 AI 服务管理暂行办法》）。
-- 输出：**多模态治理体系**。
+1. 建多模态 Embedding 库（CLIP / BGE-VL）。
+2. 建多模态检索（向量 + 文本 + 元数据）。
+3. 建多模态重排序（Reranker）。
+4. 建多模态生成（LLM + 多模态输入）。
+5. 输出：**多模态 RAG 系统**。
+
+- **产物**：**检索单元的定义**（是整页、区块、还是帧）+ 增量同步机制（新资产多久可见）。
+- **判据**：源数据更新后量一次「索引可见延迟」的实测值（不是设计值）；并用固定问题集跑一次召回率，看有没有静默下降。
+- **为什么必须这一步 / 为什么在这个位置**：它排在数据准备之后、Agent 之前；检索单元定错（用文本 chunk 去承载图像意图）后面怎么调参都补不回来，而这一步的代价远低于 Agent。
+
+**Step 6：多模态 Agent 集成（6–10 周【经验：随写操作数量与权限审批变】）**
+
+1. 建多模态感知（VLM / 语音 / 视频）。
+2. 建多模态工具调用（图像编辑 / 视频剪辑 / 文档生成）。
+3. 建多模态决策（LLM + 工具）。
+4. 建多模态执行（图像 / 视频 / 文档生成）。
+5. 输出：**多模态 Agent 平台**。
+
+- **产物**：工具清单（每个工具的幂等键、错误码分级、回滚路径）+ 独立执行身份与配额。
+- **判据**：对一个写操作做「连跑两次」的演练，看结果是否幂等；再做一次回滚演练，看是否真的回得去。
+- **为什么必须这一步**：因为动作一旦作用在真实系统上，错误的性质就变了——不再只是答案错，而是状态错；执行层缺幂等与回滚时，第一次事故的清理成本会高于它省下的人力。
+
+**Step 7：可观测与治理（长期【经验：随所在辖区的合规要求变】）**
+
+1. 部署多模态监控（响应时间 / 准确率 / 成本）。
+2. 部署多模态审计（生成内容审查 / 版权审查）。
+3. 部署多模态合规（GDPR / 等保 /《生成式 AI 服务管理暂行办法》）。
+4. 输出：**多模态治理体系**。
+
+- **产物**：一张「输入分级 → 允许的处理路径」对照表，以及生成内容的来源与授权记录留存方案。
+- **判据**：抽一次真实对外物料，走一遍来源与授权链条；走不通的物料不得对外。
+- **为什么必须这一步**：它排在最后不是因为最不重要，而是因为它的输入是前六步产生的日志与元数据——前面没留中间产物，这一步只能用人工补证据。
+
+**最常被跳过的是 Step 3 里的元数据对应关系**：团队会先跑通编码与检索，元数据留到「以后补」。第一个出问题的时点不是查询报错，而是第一次要**换编码器**或**下线一批资产**的时候——找不到原件与向量的对应，只能整库重建，而重建窗口要占用同一套算力。
 
 ### 4.2 关键技术点
 
-1. **多模态模型选型**：开源（Qwen2-VL / InternVL2 / LLaVA-OneVision / CogVLM）vs 闭源（GPT-4V / Claude / Gemini）。
-2. **多模态 Embedding**：CLIP / BGE-VL / Jina CLIP / Nomic Embed Vision / Voyage Multimodal。
-3. **多模态向量库**：Milvus / Qdrant / Weaviate / Pinecone + 多模态 Embedding。
-4. **多模态 RAG**：检索（向量 + 文本 + 元数据）+ 重排 + 多模态生成。
-5. **推理优化**：vLLM + INT4 量化 + Continuous Batching + TensorRT-LLM（针对 VLM）。
-6. **LLM Gateway**：LiteLLM / OpenRouter / Portkey / 自研，统一路由 GPT-4o / Claude / Gemini / Qwen-VL。
-7. **多模态工具调用**：Anthropic Claude Tool Use + 多模态、OpenAI Function Calling + 多模态。
-8. **多模态文档理解**：PaddleOCR + Qwen-VL / GPT-4V / Claude / DocLLM / LayoutLMv3。
-9. **视频处理**：FFmpeg（视频切片）+ VideoLLaMA / Gemini Video / 视频 Embedding。
-10. **语音处理**：Whisper / Paraformer / FunASR + VALL-E 2 / VITS。
-11. **3D 处理**：Open3D / PCL / 3D Gaussian Splatting。
-12. **多模态 Agent**：LangGraph + 多模态、AutoGen + 多模态、Claude Computer Use、GPT-4o Computer Use。
+下面 12 条按「模型 → 数据 → 推理 → 应用」排列。每条给做法、机制、失效条件；失效条件全部是**运行期可观测的信号**（比值、账单、抽检分布、界面上的空结果），建模与选型层面的取舍见 [§ 3](01-multimodal-ai-section-3-sec3.md)。
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+**1. 多模态模型选型（开源 vs 闭源）**
 
-**多模态 VLM（开源）**：
+- **做法**：按「输入能否离域 + 延迟预算 + 语种」三列做候选筛选，再在同一自有评测集上横向比（开源：Qwen2-VL / InternVL2 / LLaVA-OneVision / CogVLM；闭源：GPT-4V / Claude / Gemini）。
+- **机制**：因为「这份输入能不能离开本域」是硬约束而不是性能指标，所以把它放在第一列会直接改写候选集——一旦不可外发，排行榜前几名自动出局，省掉的是整整一轮注定要重做的 PoC。
+- **失效条件**：当选型只用英文样例时，上线后中文长尾错误率会明显偏高，症状是「同类文档英文全对、中文错在专有名词上」，且改提示词不动。判据：评测集里中文样例占比是否与生产流量一致【经验】。
+- **档位**：【经验】（中文样例占比随业务语种分布变，不给固定比例）；候选与版本见 §4.3，能力与版本以各家官方文档当前版本为准。
 
-- **Qwen2-VL / Qwen2.5-VL**（阿里）——开源 VLM 标杆，中文优秀。
-- **InternVL2 / InternVL2.5 / InternVL3**（上海 AI Lab + 商汤）——开源 VLM 性能 SOTA。
-- **LLaVA-OneVision**（开源）——统一多模态模型。
-- **MiniGPT-4 / MiniGPT-v2**（开源）——轻量 VLM。
-- **CogVLM / CogAgent**（智谱）——中文 VLM。
-- **DeepSeek-VL / DeepSeek-VL2**（深度求索）——开源 VLM。
-- **Yi-VL**（零一万物）——开源 VLM。
-- **Molmo**（Allen AI）——开源 VLM，数据集开放（Pixels 1M）。
-- **Pixtral**（Mistral）——开源 VLM。
+**2. 多模态 Embedding**
 
-**多模态 VLM（闭源）**：
+- **做法**：库侧离线编码、查询侧在线编码，两侧**同一模型同一版本**；CLIP / OpenCLIP、BGE-VL、Jina CLIP、Nomic Embed Vision、Voyage Multimodal 按语种与模态覆盖面选——候选只收图文 / 视频帧编码器，只处理文本的多语言编码器不在此列。
+- **机制**：因为编码是离线批处理、查询是在线逐条，这两笔钱的立项口径天然不同——建库那笔可以按库规模一次性报批，问答那笔只能进月度调用账单。分开立项之后，「再加一批语料」与「多接一个业务方」各自有明确的成本数字；混在同一个科目里，第一次超支时没人能判断是库长大了还是调用量翻倍了。
+- **失效条件**：查询依赖精确标识符（合同编号、图纸版次、物料条码、法规条文号这类字面唯一、没有近义词的串）时，向量空间会稳定地召不回正确答案（机制见 [§ 3.2.4](01-multimodal-ai-section-3-sec3.md)）；症状是「关键词搜得到、语义搜索搜不到」，且换任何编码器都一样。补法是加字面倒排与结构化过滤，不是调参。
+- **档位**：【推算】（向量维度与单条存储量级沿用 [§ 3.2.4](01-multimodal-ai-section-3-sec3.md) 的推导链，本条不另给数字）。
 
-- **GPT-4V / GPT-4o / GPT-4o Voice**（OpenAI）——闭源多模态标杆。
-- **Claude 3.5 Sonnet Vision / Claude 3.7 Sonnet Vision / Claude 4 Sonnet**（Anthropic）——闭源 VLM。
-- **Gemini 1.5 Pro / Gemini 1.5 Flash / Gemini 2.0 Flash**（Google）——原生多模态。
-- **Reka Core / Reka Edge**（Reka AI）——多模态模型。
-- **Step-1V**（阶跃星辰）——国产多模态大模型。
-- **文心一言 4.0 Turbo**（百度）——中文多模态大模型。
+**3. 多模态向量库**
 
-**多模态 Embedding**：
+- **做法**：Milvus / Qdrant / Weaviate / Pinecone 承载「多模态 Embedding + 元数据」，分片、量化与近邻参数在容量规划时就定下来。
+- **机制**：因为向量是**常驻成本**，按维度 × 实体数放大，所以它第一次暴露问题不会是查询变慢，而是容量与账单——这笔钱在选型时通常只被当成「多了一个数据库」。
+- **失效条件**：实体数增长而索引参数没跟着调时，召回率缓慢下降而延迟指标完全正常；症状是「同一个问题上个月答得对，这个月答错了」且没有代码变更。可观测信号：用固定问题集定期跑召回率曲线【经验】。
+- **档位**：【经验】（参数随库规模与硬件变，不给固定值）。
 
-- **CLIP / OpenCLIP**（OpenAI / LAION）——事实标准图像-文本 Embedding。
-- **BGE-VL / BGE-M3**（BAAI）——中文多模态 Embedding。
-- **Jina CLIP**（Jina AI）——生产级多模态 Embedding。
-- **Nomic Embed Vision**（Nomic）——多模态 Embedding。
-- **Voyage Multimodal**（Voyage AI）——多模态 Embedding。
-- **ImageBind**（Meta）——6 模态 Embedding。
-- **CLAP**（LAION）——音频-文本 Embedding。
-- **VideoCLIP**——视频-文本 Embedding。
+**4. 多模态 RAG**
 
-**多模态语音**：
+- **做法**：检索（向量 + 文本 + 元数据）→ 重排（Reranker）→ 多模态生成（LLM + 图像 / 视频输入）；**检索单元必须包含图像或帧向量**。
+- **机制**：因为重排层是唯一同时看得见候选集与最终生成调用的环节，把候选数卡在这里等于给生成层的调用次数装了一个可调闸门——闸门值一改，当月的生成账单与端到端延迟同时跟着动；不在这里收敛，生成调用次数就会随检索 TopK 的改动被动漂移，两次调参之间没有可比性。
+- **失效条件**：换编码器时若只换了查询侧，库侧向量与查询向量不再同处一个空间；症状是**召回质量整体塌陷而系统不报错**（答案依然通顺）。判据：索引里的向量来自哪个模型版本，是否可查。
+- **档位**：【经验】。
 
-- **Whisper / Whisper V3 Turbo**（OpenAI）——事实标准 ASR。
-- **Paraformer**（阿里达摩院）——非自回归 ASR，中文优秀。
-- **FunASR**（阿里开源）——中文 ASR 工具包。
-- **SenceVoice**（阿里开源）——多语言 ASR。
-- **VALL-E / VALL-E 2**（微软）——TTS 语音克隆。
-- **Suno Bark / VITS / VITS2**——开源 TTS。
-- **CosyVoice**（阿里开源）——多语言 TTS。
-- **ChatTTS**（开源）——对话 TTS。
-- **GPT-4o Voice**（OpenAI）——原生语音生成。
+**5. 推理优化（vLLM + INT4 量化 + Continuous Batching）**
 
-**多模态视频**：
+- **做法**：开源 VLM 走 vLLM 部署，开 Continuous Batching，按显存预算选量化档（如 INT4 / AWQ），VLM 另评估 TensorRT-LLM。
+- **机制**：因为量化与批处理换的是显存与吞吐的账，所以它让单卡能承载的模型变大——第一次效果回归因此常常出现在**量化上线之后**，而不是模型替换之后，排查顺序会反直觉。
+- **失效条件**：输入分布偏向高分辨率图像时，单请求的视觉 token 数会吃掉批处理收益；症状是吞吐上不去而 GPU 利用率并不高。第二个症状是细粒度任务（小字号、表格线）准确率下滑而整体评测分数不变——因为评测集里这类样本占比低【经验】。
+- **档位**：【经验】。
 
-- **Sora**（OpenAI）——视频生成标杆（闭源）。
-- **Veo 2**（Google）——视频生成（闭源）。
-- **可灵 1.5**（快手）——国产视频生成（闭源 + 部分开源）。
-- **Vidu**（生数科技）——国产视频生成（清华系）。
-- **HunyuanVideo**（腾讯混元）——开源视频生成。
-- **Wan 2.1**（阿里通义）——开源视频生成。
-- **CogVideoX**（智谱）——开源视频生成。
-- **Stable Video Diffusion**（Stability AI）——开源视频生成。
-- **Gen-3 / Gen-4 Alpha**（Runway）——视频生成。
-- **Pika 2.0**——视频生成。
-- **Luma Dream Machine**（Luma AI）——视频生成。
-- **VideoLLaMA / Video-LLaVA**（开源）——视频理解。
-- **Gemini 1.5 / 2.0 Video**（Google）——长视频理解。
+**6. LLM Gateway**
 
-**多模态 Agent（2024-2025）**：
+- **做法**：用 LiteLLM / OpenRouter / Portkey 或自研做统一路由与配额，把 GPT-4o / Claude / Gemini / Qwen-VL 收敛到一个出口；**输入格式规范化（尤其图像尺寸与编码）在网关做**。
+- **机制**：因为所有调用经过同一个出口，所以供应商限流或版本漂移会先在网关的路由错误率上出现——问题形态从「业务方说回答变差了」变成「某条路由错误率升高」，可归因、可回滚。
+- **失效条件**：网关只做路由、不做输入规范化时，同一张图在不同模型下的差异会在网关之后才暴露，表现为结果差很多却无法定位；症状是排障只能一个个模型试【经验】。判据：日志里有没有「请求 → 实际命中的模型版本」这条链路。
+- **档位**：【经验】。
 
-- **GPT-4o Computer Use**（OpenAI，2024-10）——AI 控制电脑。
-- **Claude Computer Use**（Anthropic，2024-10）——AI 控制电脑。
-- **Gemini 2.0 Agent**（Google，2024-12）——原生多模态 Agent。
-- **LangGraph + 多模态**——多模态 Agent 编排。
+**7. 多模态工具调用**
 
-**多模态生成（图像）**：
+- **做法**：用模型侧工具协议（Anthropic Claude Tool Use、OpenAI Function Calling）把图像编辑 / 视频剪辑 / 文档生成声明成工具；执行层提供幂等键、错误码分级与回滚。
+- **机制**：桥建在动作空间这一层，意味着「能做什么」只由工具声明决定（这一点见 [§ 3.2.6](01-multimodal-ai-section-3-sec3.md)）；落到实施期，它决定的是**每一次写操作能不能被追溯到当时生效的那一版声明**——声明本身要进版本库、审计记录里要带声明版本号，否则第一次「模型做了不该做的写操作」时，复盘只能看到今天这一版声明，看不出当时究竟放开了什么。
+- **失效条件**：工具的错误码一律返回空集或笼统失败时，模型会把「环境拒绝」当成「自己参数不对」并反复重试；症状是一次小分歧被放大成一批无效调用，费用按轮数增长【经验】。
+- **档位**：【经验】。
 
-- **DALL-E 3**（OpenAI）——图像生成。
-- **Midjourney V6.1 / V7**（商业）——图像生成事实标准。
-- **Stable Diffusion 3.5 / SDXL**（Stability AI）——开源图像生成。
-- **Flux.1**（Black Forest Labs）——开源图像生成。
-- **Imagen 3 / Imagen 4**（Google）——图像生成。
-- **Recraft V3**——图像生成（设计导向）。
-- **Ideogram 2.0**——图像生成（文字渲染）。
+**8. 多模态文档理解**
 
-**3D 视觉**：
+- **做法**：PaddleOCR 做确定性转写、版面模型给坐标；Qwen-VL / GPT-4V / Claude / DocLLM / LayoutLMv3 做理解与组织；**关键字段的最终取值取自确定性路径**。
+- **机制**：因为版面结构不进 token 序列（二维版面被拍平成一维），生成路径对「同一行的两列」只能靠猜；把取值搬到 OCR / 版面路径，等于把错误的形态从「读起来通顺」变成「可对账」——这才是它唯一可靠的验证方式（机制本身见 §3.2.2、§3.2.5）。
+- **失效条件**：输入从固定版式换成扫描件或手机拍照时，版面坐标漂移会让字段抽取整体错位；症状是抽检 20 张时错误**集中在同一区块**而不是随机分布【经验】。
+- **档位**：【经验】。
 
-- **NeRF / Instant-NGP / 3D Gaussian Splatting**（开源）——3D 重建。
-- **PointNet / Point Transformer**（开源）——点云处理。
-- **Open3D / PCL**——3D 工具库。
-- **Meshy / Tripo3D / CSM**——AI 3D 生成。
+**9. 视频处理**
 
-**多模态 RAG（2024-2025）**：
+- **做法**：FFmpeg 做切片与抽帧，VideoLLaMA / Gemini Video 做理解，帧向量进多模态 Embedding 库；抽帧率与分辨率在预处理层就被约束。
+- **机制**：因为抽帧率与分辨率是在预处理层定死的、模型侧换不掉，所以这一层的配置直接决定**单次请求的成本上限**：同一段视频，抽帧率与缩放档各调一级，账单能差一个数量级而模型看到的内容没变。工程上要把它写成受版本管理的配置项——改一次就在评测集上重跑一遍「后半段问题」类样本，否则改动只能事后从账单上被发现。
+- **失效条件**：上游直传整段视频时，超出预算的部分会被静默截断或丢帧；症状是「后半段的问题答不上来」，而它的错误形态与「视频里确实没这段」无法区分。判据：抽一帧人工核对它是否出现在模型实际看到的帧序列里。
+- **档位**：【推算】（帧数 × 单帧 token，推导链见 [§ 3.5](01-multimodal-ai-section-3-sec3.md)）；具体上限以所用模型当前文档为准。
 
-- **LangChain Multi-modal RAG**——多模态 RAG。
-- **LlamaIndex Multi-modal RAG**——多模态 RAG。
-- **CLIP-based RAG**——以文搜图。
-- **VideoRAG**——视频 RAG。
-- **多模态 GraphRAG**——多模态知识图谱 RAG。
+**10. 语音处理**
 
-### 4.4 代码 / 示例
+- **做法**：Whisper / Paraformer / FunASR 做转写、VALL-E 2 / VITS 做合成；转写结果带时间戳与置信度，关键取值取自转写文本而不是生成复述。
+- **机制**：因为转写是确定性路径、合成是生成路径，把两者拆开部署才能让「音频 → 文本」这一步被单独单测——第一次发现「专有名词被音译」是在转写文本里，而不是在最终答案里。
+- **失效条件**：多人重叠说话或强噪声时，转写错误以**漏句**而非错词的形式出现，下游 LLM 会用一个通顺但错误的答案把缺口补上；症状是纪要读起来完整却与录音对不上，且看不出破绽【经验】。
+- **档位**：【经验】。
 
-**示例 1：基于 OpenAI GPT-4o 的多模态推理（Python）**
+**11. 3D 处理**
+
+- **做法**：Open3D / PCL 做点云与几何处理，3D Gaussian Splatting 做重建；3D 资产以「文件 + 元数据」入湖，检索走元数据属性。
+- **机制**：因为 3D 的业务检索需求通常是「按属性筛」而不是「按语义像」，所以把它塞进向量库得到的是一套与问题不匹配的检索——属性筛选用元数据就够，这条路线的收益来自元数据的完整度而不是向量质量。
+- **失效条件**：重建质量依赖采集条件时，同一物体在不同光照或角度下的资产不可互换；症状是下游应用（试穿、测量）在部分资产上偏差明显而算法没变。判据：资产元数据里有没有记采集条件【经验】。
+- **档位**：【经验】。
+
+**12. 多模态 Agent**
+
+- **做法**：LangGraph / AutoGen 编排「感知 → 决策 → 动作 → 观察」循环，界面操作交给各家的计算机使用能力（Anthropic Claude Computer Use、OpenAI 的计算机使用工具一类；具体名称与可用范围以官方文档当前版本为准）；执行层给 Agent 一个**专属服务账号**、一张**配额表**，并把每条动作写进可归因的审计记录——这三件是准入条件而不是上线后的优化项（理由见 [§ 3.4](01-multimodal-ai-section-3-sec3.md) 组合三）。
+- **机制**：因为循环的终止条件是「模型认为任务完成了」而不是「外部校验通过」（这一点见 §3.2.6），工程上唯一能改结果的动作是**把外部判据塞进循环**——对账数字、单号回查、单据编号复核，任意一条都能把「看起来做完了」换成「可验证做完了」。
+- **失效条件**：当 [§ 3.2.6](01-multimodal-ai-section-3-sec3.md) 所说的那种权限放大躲不开时（界面上的按钮点不动，就得把账号权限开到远超单次任务所需），一次误操作的作用范围等于该账号的全部权限；症状是清理一次误操作的时间比任务本身更长，而且这段时间要先花在值班工单上——查这次动作是谁的账号、在哪一轮调用里发出去的【经验】。
+- **档位**：【经验】。
+
+### 4.3 工具链与平台（含 2024–2025 新工具【公开：年份以各家发布说明为准】）
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 多模态 VLM（开源） | Qwen2-VL / Qwen2.5-VL（阿里）/ InternVL2 / InternVL2.5 / InternVL3（上海 AI Lab + 商汤）/ LLaVA-OneVision / MiniGPT-4 / MiniGPT-v2 / CogVLM / CogAgent（智谱）/ DeepSeek-VL / DeepSeek-VL2（深度求索）/ Yi-VL（零一万物）/ Molmo（Allen AI，数据集开放）/ Pixtral（Mistral） | 输入不可离域时只能选自部署；中文场景优先评估中文语料占优的系列；要能单独替换视觉编码器就选桥接式（§3.2.2） | 选错的代价不在效果而在**换件成本**：量化后的效果回归、坐标与模板不匹配，都要重做一轮评测 |
+| 多模态 VLM（闭源） | GPT-4V / GPT-4o / GPT-4o Voice（OpenAI）/ Claude 3.5 Sonnet Vision / Claude 3.7 Sonnet Vision / Claude 4 Sonnet（Anthropic）/ Gemini 1.5 Pro / Gemini 1.5 Flash / Gemini 2.0 Flash（Google）/ Reka Core / Reka Edge（Reka AI）/ Step-1V（阶跃星辰）/ 文心一言 4.0 Turbo（百度） | 要最强通用能力且输入可外发时选托管 API；要原生语音交互时先看是否支持「音频进、音频出」 | 只走一家的代价：所有路由共用一个故障窗口，一次版本更新就要把全部场景的回归重跑一遍；换供应商等于重做评测（见 §3.5「过度依赖单一模型」） |
+| 多模态 Embedding | CLIP / OpenCLIP（OpenAI / LAION）/ BGE-VL（BAAI）/ Jina CLIP / Nomic Embed Vision / Voyage Multimodal / ImageBind（Meta）/ CLAP（LAION）/ VideoCLIP | 要一次检索跨模态选统一空间（CLIP / ImageBind）；要精度选多空间并行 + 精排；只处理文本的多语言编码器（BGE-M3 一类）不在此行——它进图文库会让检索单元退回文本 chunk | 换编码器要重算全库向量，而重算窗口与线上检索抢同一套算力；这笔账通常要等**第一次换件变更单被驳回**时才有人提 |
+| 多模态语音 | Whisper / Whisper V3 Turbo（OpenAI）/ Paraformer（阿里达摩院）/ FunASR / SenseVoice（阿里开源）/ VALL-E / VALL-E 2（微软）/ Suno Bark / VITS / VITS2 / CosyVoice（阿里开源）/ ChatTTS / GPT-4o Voice | 中文长音频优先评估中文 ASR；做语音克隆前先确认授权与合规边界 | 转写与合成混在一条链路上时，错误以「漏句」形态出现，无法单测 |
+| 多模态视频 | Sora（OpenAI）/ Veo 2（Google）/ 可灵 1.5（快手）/ Vidu（生数科技）/ HunyuanVideo（腾讯混元）/ Wan 2.1（阿里通义）/ CogVideoX（智谱）/ Stable Video Diffusion（Stability AI）/ Gen-3 / Gen-4 Alpha（Runway）/ Pika 2.0 / Luma Dream Machine（Luma AI）/ VideoLLaMA / Video-LLaVA / Gemini 1.5 / 2.0 Video | 理解长视频选长上下文方案；生成类先确认商用条款再进物料链路 | 直传整段视频的代价是成本与延迟不可定价（§3.5 有推算） |
+| 多模态 Agent（2024-2025） | 计算机使用能力：Claude Computer Use（Anthropic）/ OpenAI 的计算机使用工具 / Google Gemini 的 agentic 能力；编排：LangGraph + 多模态 / AutoGen + 多模态 | 判据是写操作有没有幂等键与回滚路径；没有就停在「生成建议 → 人确认」；各家能力的名称、可用范围与发布状态以官方文档当前版本为准 | 没有专属账号与配额就让它跑，出事当天答不出「它凭什么能改这条数据」；复盘要从审计记录里逆查它这一轮调过哪些工具 |
+| 多模态生成（图像） | DALL-E 3（OpenAI）/ Midjourney V6.1 / V7 / Stable Diffusion 3.5 / SDXL（Stability AI）/ Flux.1（Black Forest Labs）/ Imagen 3 / Imagen 4（Google）/ Recraft V3 / Ideogram 2.0 | 对外物料先核对商用条款与文字渲染能力（各模型对图中文字的准确度差异明显） | 把生成工具的使用条款当成授权条款，代价是商用链条可能不完整 |
+| 3D 视觉 | NeRF / Instant-NGP / 3D Gaussian Splatting / PointNet / Point Transformer / Open3D / PCL / Meshy / Tripo3D / CSM | 检索需求是「按属性筛」就用元数据，不要塞进向量库 | 强行向量化的代价：得到一套与业务问题不匹配的检索 |
+| 多模态 RAG（2024-2025） | LangChain Multi-modal RAG / LlamaIndex Multi-modal RAG / CLIP-based RAG / VideoRAG / 多模态 GraphRAG | 判据是**检索单元**是不是图像 / 帧向量；只有文本 chunk 的系统属于「文本 RAG 加了图片描述」 | 用框架默认的文本检索单元做以文搜图，代价是召回长期「差一点」而找不到原因（见 §3.3） |
+
+这一类里**最容易被误选的是「框架的示例架构 = 生产架构」**：把框架文档里的多模态 RAG 例子直接当设计——检索单元还是文本 chunk、元数据没接、重排没有。它不会立刻失败：第一个月的调用量与账单都正常，问题要到某个季度的例行抽检才浮出来——固定问题集上的相关度比上线基线低了一档，而这段时间里监控面板上的延迟、错误率，以及业务方提的工单，三者都没有动过。第二容易误判的是**把闭源 VLM 当成唯一路由**：接入最省事，代价是故障域与能力上限同时被一家绑定。产品与版本请以各家官方文档当前版本为准；表中带年份的条目，年份取各家公开发布的时间点【公开：可按「产品全名 + 发布说明」自行检索核验】；拿不准某能力是否已发布时，按「产品全名 + 该能力的输入与输出」自行核验，而不是按能力名归类。
+
+### 4.4 存量迁移
+
+**① 先做什么可以立刻见效且可回退。** 先在**存量流程里挑出对账时要逐位核对的字段**——本章业务语境下通常是合同金额、订单号、检验批号、法规条文号——把它们的取值来源从生成路径切到确定性路径（通用做法见 [§ 3.5](01-multimodal-ai-section-3-sec3.md)「忽视幻觉」一行的修法）。挑哪几列的依据不是重要性，而是**历史工单里这类错误多久出现一次、发现一次要多久**：这两个数在存量系统上数得出来，数不出来的字段说明它其实没有对账环节。这一步不动模型、不动流水线，随时可回退（保留旧路径做灰度对照），而且立刻改变错误形态——从「读起来通顺」变成「可与原件对账」。它是现有系统上投入产出最高的一次改动。
+
+**② 历史资产怎么分类处理。** 三类，不要混着做：
+
+- **保留不动**：已有的传统 CV 专用模型（检测 / 分割 / 分类）与固定版式 OCR 流水线——它们在关键字段上本来就比通用模型可靠，把它们当作流水线的确定性层留下，而不是推倒重来。
+- **扩检索单元**：已有的文本 RAG 语料——按「检索单元是否含图像 / 帧向量」分类；只有文本 chunk 的那部分不要整体重编码，先扩检索单元与元数据，够用就不动编码器。
+- **挂账后补**：已有图像 / 视频 / 音频资产——先补元数据（来源、时间、权限、清晰度、采集条件）并挂账，向量化按需推进；全库重编码是一次性大成本，必须等评测集与检索单元定型后再做。
+
+**③ 双轨怎么维持、维持多久。** 托管 API 与新模型（或新旧模型版本）并存，维持 1–2 个季度【经验：随业务对准确率的敏感度与回归成本变】。双轨期两条硬规定：同一个固定评测集上两条路径都要跑，**并记录「哪条路径给出的结论最终被采纳」**——没有这条记录，切换与否只能靠印象决定；关键字段的取值必须能区分来自哪条路径。
+
+**④ 什么信号说明可以退出双轨。** 关键字段在固定评测集上连续若干轮不劣于托管路径【经验：轮数与档位随场景重要度变】；以及模型版本升级不再需要人工回归全部场景（说明评测集已经能自动拦住回归）。反向信号同样重要：如果业务侧开始问「这条结论是哪条路径给的」，说明差异已经影响到使用方，此时应先收敛路径而不是强行切换。
+
+### 4.5 模板 / 示例
+
+**模板 1：多模态推理（OpenAI GPT-4o）**
 
 ```python
-from openai import OpenAI
 import base64
+from openai import OpenAI
 
 client = OpenAI()
 
-# 编码图像
-def encode_image(image_path):
-    with open(image_path, "rb") as f:
+def encode_image(path: str) -> str:          # 演示用；生产链路见「怎么用」
+    with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode("utf-8")
 
-image_base64 = encode_image("product.jpg")
-
-# 多模态对话
-response = client.chat.completions.create(
-    model="gpt-4o",
-    messages=[
-        {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": "请分析这张商品图，并给出营销文案建议。"},
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{image_base64}",
-                        "detail": "high"
-                    },
-                },
-            ],
-        }
-    ],
-    max_tokens=1000,
+resp = client.chat.completions.create(
+    model="gpt-4o", max_tokens=1000,
+    messages=[{"role": "user", "content": [
+        {"type": "text", "text": "分析这张商品图并给出营销文案建议。"},
+        {"type": "image_url", "image_url": {
+            "url": f"data:image/jpeg;base64,{encode_image('product.jpg')}", "detail": "high"}},
+    ]}],
 )
-
-print(response.choices[0].message.content)
 ```
 
-**示例 2：基于 Qwen2-VL 的本地多模态推理（Python + vLLM）**
+**怎么用**：`detail` 决定分辨率档，直接换成 token 与费用——放入生产前用 Step 1 定的输入上限卡一遍。`encode_image()` 只是让示例能跑：真实链路应先落对象存储再把引用交给模型，否则日志里会留存原始图像（还是 §3.5「数据隐私」那一行的老问题）。
+
+**模板 2：本地多模态推理（Qwen2-VL + vLLM）**
 
 ```python
 from vllm import LLM, SamplingParams
 from PIL import Image
-
-# 启动 Qwen2-VL
-llm = LLM(
-    model="Qwen/Qwen2-VL-72B-Instruct",
-    tensor_parallel_size=4,
-    gpu_memory_utilization=0.9,
-    max_model_len=32768,
-    enforce_eager=False,
-    quantization="awq",
-)
-
-# 多模态推理
-image = Image.open("document.png")
-sampling_params = SamplingParams(temperature=0.2, max_tokens=2048)
-
-outputs = llm.generate(
-    {
-        "prompt": "<|image_pad|>请提取这张文档中的关键信息，包括标题、作者、日期和摘要。",
-        "multi_modal_data": {"image": image},
-    },
-    sampling_params=sampling_params,
-)
-
-for output in outputs:
-    print(output.outputs[0].text)
+llm = LLM(model="Qwen/Qwen2-VL-72B-Instruct", tensor_parallel_size=4,
+          gpu_memory_utilization=0.9, max_model_len=32768, quantization="awq")
+out = llm.generate({"prompt": "<|image_pad|>提取文档中的标题、作者、日期与摘要。",
+                    "multi_modal_data": {"image": Image.open("document.png")}},
+                   SamplingParams(temperature=0.2, max_tokens=2048))
 ```
 
-**示例 3：基于 LangChain + GPT-4o 的多模态 RAG**
+**怎么用**：`tensor_parallel_size` 与 `quantization` 是本机显存决定的两个格子，换机器就要重估；量化档换一次就要在评测集上重跑一遍（§4.2 第 5 条）。模型名与参数以 vLLM 当前版本与模型卡为准。
+
+**模板 3：多模态 RAG（LangChain + GPT-4o）**
 
 ```python
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 from langchain.vectorstores import Milvus
 from langchain_community.document_loaders import UnstructuredImageLoader
 from langchain.retrievers.multi_modal import MultiModalRetriever
-from langchain_core.messages import HumanMessage
 
-# 1. 多模态数据加载
-image_loader = UnstructuredImageLoader("data/product_catalog/")
-docs = image_loader.load()
+def build_mm_retriever(embeddings):
+    """embeddings：你所用图文编码器的封装（文本与图像进同一向量空间）"""
+    docs = UnstructuredImageLoader("data/product_catalog/").load()   # 图像资产 → Document（检索单元是图像本身）
 
-# 2. 多模态 Embedding（CLIP）
-clip_embeddings = OpenAIEmbeddings(model="clip-vit-base-patch32")
-
-# 3. 向量库（Milvus 多模态）
-vectorstore = Milvus.from_documents(
-    docs,
-    clip_embeddings,
-    collection_name="product_images",
-    connection_args={"host": "localhost", "port": "19530"},
-)
-
-# 4. 多模态 RAG
-retriever = MultiModalRetriever(
-    retriever=vectorstore.as_retriever(search_kwargs={"k": 5}),
-    model=ChatOpenAI(model="gpt-4o"),
-)
-
-# 5. 多模态问答
-query = "推荐几款适合夏天穿的连衣裙"
-results_with_images = retriever.invoke(query)
-
-# 6. 多模态生成
-message = HumanMessage(
-    content=[
-        {"type": "text", "text": f"基于以下产品推荐：{query}"},
-        {"type": "text", "text": "请用 200 字给出推荐理由。"},
-    ]
-)
-
-response = ChatOpenAI(model="gpt-4o").invoke([message])
-print(response.content)
+    store = Milvus.from_documents(docs, embeddings, collection_name="product_images",
+                                  connection_args={"host": "localhost", "port": "19530"})
+    return MultiModalRetriever(retriever=store.as_retriever(search_kwargs={"k": 5}),   # k 见「怎么用」
+                               model=ChatOpenAI(model="gpt-4o"))
 ```
 
-**示例 4：基于 Whisper 的语音转写（Python）**
+**怎么用**：调用时只填一个参数——`build_mm_retriever(embeddings=...)`，这里的 `embeddings` 必须来自一个**图文**编码器封装（CLIP / BGE-VL / Jina CLIP 一类的封装），拿文本 embedding 顶上会让库里全是文本向量、检索单元被迫退回文本 chunk（§4.2 第 4 条）。`k` 是召回数，要与重排层一起定——没有重排层时把 `k` 调大只会把噪声喂给生成。`UnstructuredImageLoader` / `Milvus` / `MultiModalRetriever` 的导入路径与签名在框架版本间变动频繁，请按所用版本当前文档核对后再落地。
+
+**模板 4：语音转写（Whisper）**
 
 ```python
 import whisper
-
-# 加载模型
 model = whisper.load_model("large-v3")
-
-# 语音转写
-result = model.transcribe(
-    "meeting.mp3",
-    language="zh",
-    task="transcribe",
-    initial_prompt="这是一场关于 AI 与数据架构的技术会议。",
-)
-
-# 输出结果
-for segment in result["segments"]:
-    print(f"[{segment['start']:.2f}s - {segment['end']:.2f}s] {segment['text']}")
-
-# 带时间戳的字幕
-with open("meeting_subtitle.srt", "w") as f:
-    for i, segment in enumerate(result["segments"], 1):
-        f.write(f"{i}\n")
-        f.write(f"{segment['start']:.3f} --> {segment['end']:.3f}\n")
-        f.write(f"{segment['text']}\n\n")
+result = model.transcribe("meeting.mp3", language="zh", task="transcribe",
+                          initial_prompt="这是一场关于 AI 与数据架构的技术会议。")
+for seg in result["segments"]:
+    print(f"[{seg['start']:.2f}-{seg['end']:.2f}] {seg['text']}")
 ```
 
-**示例 5：基于 CLIP 的以文搜图（Python）**
+**怎么用**：`initial_prompt` 就是领域词表，专有名词的准确率主要靠这一格；输出带时间戳是为了让人工抽检能定位到音频位置。模型档位按延迟预算选，不要默认用最大档。
+
+**模板 5：以文搜图（CLIP）**
 
 ```python
-import clip
-import torch
+import clip, torch
 from PIL import Image
 
-# 加载 CLIP
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32", device=device)
-
-# 编码图像
-image = preprocess(Image.open("product.jpg")).unsqueeze(0).to(device)
-with torch.no_grad():
-    image_features = model.encode_image(image)
-
-# 编码文本查询
-text = clip.tokenize(["一件红色的连衣裙", "一台笔记本电脑", "一只可爱的猫"]).to(device)
-with torch.no_grad():
-    text_features = model.encode_text(text)
-
-# 计算相似度
-similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
-values, indices = similarity[0].topk(3)
-
-print("Top 3 最匹配的描述:")
-for value, index in zip(values, indices):
-    print(f"  {['红色连衣裙', '笔记本电脑', '可爱的猫'][index]}: {value.item():.2f}%")
+img = model.encode_image(preprocess(Image.open("product.jpg")).unsqueeze(0).to(device))
+txt = model.encode_text(clip.tokenize(["一件红色的连衣裙", "一台笔记本电脑"]).to(device))
+sim = (100.0 * img @ txt.T).softmax(dim=-1)
 ```
 
-**示例 6：基于 Anthropic Claude Computer Use 的多模态 Agent（Python）**
+**怎么用**：库侧必须用同一个模型与权重离线编码后再建索引，查询侧只编码文本；两处不同版本是最常见的静默故障（§4.2 第 4 条）。这段只适合演示——生产里 `ViT-B/32` 的粒度通常不够，换更大档要重编码全库。
+
+**模板 6：多模态 Agent（Claude Computer Use）**
 
 ```python
+import base64
 import anthropic
 from playwright.sync_api import sync_playwright
 
 client = anthropic.Anthropic()
+tools = [{"type": "computer_20241022", "name": "computer",
+          "display_width_px": 1024, "display_height_px": 768, "display_number": 1}]
+messages = [{"role": "user", "content": "打开浏览器，访问 anthropic.com，截图保存"}]
 
-def use_computer(task_description: str):
-    """使用 Claude 控制浏览器完成任务"""
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
-        page = browser.new_page()
-
-        tools = [
-            {
-                "type": "computer_20241022",
-                "name": "computer",
-                "display_width_px": 1024,
-                "display_height_px": 768,
-                "display_number": 1,
-            },
-            {
-                "type": "text_20241022",
-                "name": "str_replace_editor",
-            }
-        ]
-
-        messages = [{"role": "user", "content": task_description}]
-
-        while True:
-            response = client.beta.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=4096,
-                tools=tools,
-                messages=messages,
-            )
-
-            # 收集所有工具调用 + 文本响应
-            tool_results = []
-            for content in response.content:
-                if content.type == "text":
-                    print(f"Claude: {content.text}")
-
-                if content.type == "tool_use":
-                    if content.name == "computer":
-                        action = content.input["action"]
-                        print(f"Action: {action}")
-
-                        if action == "screenshot":
-                            screenshot = page.screenshot()
-                            tool_results.append({
-                                "type": "tool_result",
-                                "tool_use_id": content.id,
-                                "content": [{"type": "image", "source": {"type": "base64", "data": base64.b64encode(screenshot).decode()}}]
-                            })
-                        elif action == "left_click":
-                            page.mouse.click(content.input["coordinate"]["x"], content.input["coordinate"]["y"])
-                            tool_results.append({"type": "tool_result", "tool_use_id": content.id, "content": "Clicked"})
-
-            if response.stop_reason == "end_turn":
-                break
-
-            messages.append({"role": "assistant", "content": response.content})
-            messages.append({"role": "user", "content": tool_results})
-
-        browser.close()
-
-# 任务：搜索并截图
-use_computer("打开浏览器，访问 anthropic.com，截图保存")
+with sync_playwright() as p:                        # Playwright：真正执行点击与截图的执行层
+    page = p.chromium.launch(headless=False).new_page()
+    while True:
+        resp = client.beta.messages.create(model="claude-3-5-sonnet-20241022",
+                                           max_tokens=4096, tools=tools, messages=messages)
+        results = []
+        for blk in resp.content:                    # 执行分支：不回灌 tool_result，循环拿不到观察结果
+            if blk.type != "tool_use":
+                continue
+            if blk.input["action"] == "screenshot":
+                png = base64.b64encode(page.screenshot()).decode()
+                results.append({"type": "tool_result", "tool_use_id": blk.id,
+                                "content": [{"type": "image",
+                                             "source": {"type": "base64", "data": png}}]})
+            elif blk.input["action"] == "left_click":
+                page.mouse.click(blk.input["coordinate"]["x"], blk.input["coordinate"]["y"])
+                results.append({"type": "tool_result", "tool_use_id": blk.id, "content": "Clicked"})
+        if resp.stop_reason == "end_turn":
+            break
+        messages.append({"role": "assistant", "content": resp.content})
+        messages.append({"role": "user", "content": results})
 ```
 
----
+**怎么用**：这段的重点不是循环写法，而是循环外面那三件事——专属执行账号、写操作的幂等键、以及每次动作的审计记录；缺任何一件都不该让它在真实系统上跑。循环里的执行分支（截图与点击）是回灌 `tool_result` 的前提，删掉它循环只会空转——§4.6 的幂等演练与回滚演练都依赖这条分支真的接到执行层。`tools` 的类型标识、`model` 名与 `client.beta` 的路径随 SDK 版本变化，请按官方文档当前版本核对。
+
+### 4.6 自检清单
+
+下面每条都要**动一次系统才有答案**；凡是坐下来想一想、或翻记录就能回答的建模与选型问题，已归到 [§ 3.7](01-multimodal-ai-section-3-sec3.md)，本节不重复。
+
+- [ ] 抽 20 份真实输入【经验：份数随输入形态差异度变】，比对「确定性路径取值」与「生成路径复述」的差异条数——差异为 0 才算关键字段没有走生成路径。
+- [ ] 取一段最长的真实视频，量出它的帧数、单帧 token 与实际调用费用，和 Step 1 定的上限对一次账。
+- [ ] 手动停掉一条模型路由（或让一个供应商限流），看系统是否降级、有没有告警、降级能被谁看到。
+- [ ] 做一次降档分流：把低一档的模型挂上 5%–10% 的生产流量【经验：比例随总流量与两档单价差变，流量越小越要给高比例】，对比它在离线评测集上的能力保留比例与生产分流下的比例——两者不一致时以生产为准，并把结论留档供下一次降本提案引用。
+- [ ] 抽 3 类输入【经验：类数随输入模态种类数变】，验证它们在日志与链路里是否留存了原始文件；留存策略是否与输入分级表一致。
+- [ ] 做一次版本升级演练：换一个模型版本，统计需要人工回归的场景数——这个数字决定下一次升级的排期。
+- [ ] 找一个刚发生的源侧更新，量它到「可被检索到」的墙钟时间，再与索引告警阈值对一次账：超阈值时告警发给了谁、当天值班的人有没有在面板上看到。
+- [ ] 断网 / 离线部署演练：列出有多少功能不可用，以及不可用的功能是否有替代路径。
+- [ ] 对一个写操作做连跑两次的幂等演练，再做一次回滚演练，记录两次的实际结果。
+- 下列两项翻记录即可回答，已归 [§ 3.7](01-multimodal-ai-section-3-sec3.md) 第 7、11 条，本节不重复：全库重编码的时长与成本有没有进过容量规划；对外生成物料的来源与授权链条有没有按当期条款与当地法规核对过。
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一决定成败的环节是 **Step 1 把输入形态量化成约束**（分辨率、帧率、时长、页数各是多少，超出怎么办）。它看起来只是一份规划书，但它同时决定了选型能不能收敛、成本能不能预算、以及预处理层有没有存在的理由；后面六步里绝大多数「效果不好」与「账单失控」，追到最后都是这一格当初留了空白。它比其余环节更值得投入的原因很直接：**输入形态是唯一在模型之外、又能线性决定成本的变量**——模型可以换、框架可以换，而一帧就是几百个 token 这件事换不掉。
+>
+> 配合 [§ 2 核心原理](01-multimodal-ai.md)、[§ 3 设计模式与范式](01-multimodal-ai-section-3-sec3.md) 与 [§ 6 落地实践](01-multimodal-ai-section-6-sec6.md) 阅读。

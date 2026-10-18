@@ -1,508 +1,360 @@
-> 本文件是 **07-audit-and-compliance.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](07-audit-and-compliance.md)。
+> 本文件是 **07-audit-and-compliance.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](07-audit-and-compliance-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](07-audit-and-compliance.md)。
 
 ## 4. 工程实现
 
+审计与合规的落地很少是"从零建一套"，而更像**给一批已经在跑的日志补上它的用途**：日志多半已经在各系统里流着，问题是没有一条能回答具体问题，也没有人算过它到底覆盖了哪些路径。所以本文件写给**存量改造者**：4.1 的六步按"先补哪一环、后补哪一环"排序，4.4 讲历史日志与历史系统的处理，从零搭建的读者可以照 4.1 走，只是 Step 2 会更轻。
+
+模式本身（集中式的覆盖边界、不可篡改如何证明、规则库与监控谁先谁后）在 [§ 3](07-audit-and-compliance-section-3-sec3.md) 里；本节只回答装进组织时「先做哪一步、怎么知道做对了、存量怎么处理」。有一条顺序会在后文反复出现，先写在前面：**完整性（分母）必须先于不可篡改**——防篡改保护的是已经采到的部分，而风险通常在没采到的部分。
+
 ### 4.1 落地步骤
 
-**Step 1：合规框架识别（4-8 周）**
+每一步给三件事：**产物**（手上多出来的、可被检查的东西）、**判据**（可执行动作，不是"评审通过"）、**为什么必须在这一步**。
 
-1. 识别适用合规框架（GDPR / 个保法 / HIPAA / PCI-DSS / 等保 2.0/3.0）。
-2. 列出所有合规要求（按框架映射）。
-3. 评估当前合规差距（Gap Analysis）。
-4. 优先级排序（P0 / P1 / P2）。
+**Step 1：合规框架识别与差距分析（4–8 周【经验：随适用框架数与业务线数量变，框架越多越要先做控制项合并】）**
 
-**Step 2：审计日志采集（4-8 周）**
+1. 识别适用框架（GDPR / 个保法 / HIPAA / PCI-DSS / 等保 2.0/3.0），把要求按**控制项**列成一张表，每条写上它对应哪几个框架的哪几条。
+2. 做差距评估（Gap Analysis），按 P0 / P1 / P2 排序；排序依据是"不做会怎样"，而不是"审计会不会提"。
 
-1. 接入所有关键系统的审计日志（DB / 大数据 / 应用 / API）。
+- **产物**：控制项清单（每条带框架映射）+ 差距表 + P0 清单与责任人。
+- **判据**：抽 3 条控制项问"它对应哪几个框架的哪几条、现在满足没有、谁负责"——答不出映射的，后面一定会在两个框架上各做一遍；再抽一条 P0 问"不做会怎样"，答"审计会提"的降级到 P2。
+- **为什么必须这一步**：规则的单位必须是控制项，否则维护面随框架数线性增长，而且两套流程会对同一份事实给出两个结论（[§ 3.2.3](07-audit-and-compliance-section-3-sec3.md)）。按框架立项的团队，在第二个框架进来时会把第一套流程重做一遍。
+
+**Step 2：审计日志采集与留存分层（4–8 周【经验：随需接入的系统数与采集方式（库侧 / 引擎钩子 / 网关）变】）**
+
+1. 接入关键系统的审计日志（DB / 大数据 / 应用 / API），每接一个源就登记它的采集方式与它覆盖不到的路径；采集端自带落盘缓冲与至少一次重投。
 2. 集中式存储（ELK / S3 / 自研）。
-3. 不可篡改存储（WORM / 区块链）。
-4. 保留期设置（按合规要求）。
+3. 不可篡改存储（WORM / 区块链），范围只覆盖证据区。
+4. 保留期按适用框架设置，并与分区 / 生命周期绑定。
 
-**Step 3：合规规则配置（4-8 周）**
+- **产物**：采集点清单 + 覆盖率报表（分子＝已采到的来源数，分母＝需要采集的来源数）+ 保留策略 + 证据区范围定义。
+- **判据**：① **演练**：挑一个真实调查问题（例如"上周谁导出过客户名单"），交给**当周值班的人**跑通"问题→结论"，并记录耗时与卡在哪一环【经验：目标是分钟级，随已接入来源数与查询工具成熟度变】——建设这套系统的人跑得通不算数，他不用查就知道该翻哪张表；② **分层**：抽一个已过保留期的分区，看它是被生命周期策略自动清掉的，还是需要人工跑删除脚本，后者说明保留期还没和分区绑定。防篡改那一半的自验方法（从链头重算、比对锚点）见 [§ 3.2.2](07-audit-and-compliance-section-3-sec3.md)，本节不重复。
+- **为什么必须这一步**：先装不可篡改，保护的是刚采到的那一部分，而风险恰好在没采到的那部分。保留期则是本主题里唯一"不可优化"的成本——一旦与分区绑定，改它是一次数据迁移而不是改参数，所以分层要一次到位。
+- **加密与脱敏要采到的是"执行结果"**：访问控制、加密、脱敏这三类要求通常由数据安全侧实现，审计侧要做的是采到它们的执行结果（谁被拒了、哪个字段被脱敏了），否则合规报告只能证明"配置了策略"，不能证明"策略真的生效过"。
+- **保留期的数字来自框架，不是自选**：SOX 之下会计师审计工作底稿需保留 7 年，HIPAA 安全规则下的相关文档 6 年，PCI DSS 要求日志至少 12 个月且其中近 3 个月可即时调取，GDPR 则只要求"不超过必要期限"而不定年限【公开：SOX——Pub. L. 107-204（2002 年法案）及其实施规则；HIPAA 安全规则——45 CFR Part 164；PCI DSS——PCI SSC 标准现行版本要求项 10.5.1；GDPR——Regulation (EU) 2016/679 第 5(1)(e) 条】。具体条号与版本以各文本原文为准，读者可按上述文本名自行核验；出处的展开见 [§ 3.1](07-audit-and-compliance-section-3-sec3.md)。
+- **「区块链」与「哈希链 + WORM」不是一回事**：前者解决的是多个互不信任主体共享记录，单一组织内部举证用追加写 + 哈希链 + 存储层写一次读多次即可达到同等效果，要选它需单独论证增量价值（机制比较见 [§ 3.2.2](07-audit-and-compliance-section-3-sec3.md)）。
 
-1. 配置合规检查规则（访问控制 / 加密 / 脱敏）。
-2. 部署持续监控（实时告警）。
-3. 配置自动化合规报告。
-4. 与 SIEM 系统集成（Security Information and Event Management）。
+**Step 3：合规规则与持续监控（4–8 周【经验：随控制项数量与消费点数量变】）**
 
-**Step 4：监管报送自动化（4-8 周）**
+1. 配置合规检查规则（访问控制 / 加密 / 脱敏），以控制项为单位，每条带框架映射与版本。
+2. 部署持续监控与实时告警，告警分级路由（立即告警 / 工单 / 合规台账）。
+3. 配置自动化合规报告，字段只允许来自可执行判断与数据源，不允许人工填；与 SIEM 集成，把审计事件与被观测系统的事件放到同一条时间线上。
 
-1. 梳理监管报送要求（EAST / 1104 / 人行报表）。
-2. 自动化数据 ETL + 校验 + 报送。
-3. 监管接口对接。
-4. 异常处理 + 重报送。
+- **产物**：规则库四件套（规则 + 测试用例 + 框架映射表 + 版本）+ 告警分级路由 + 每条控制项的发现时限与关闭时限。
+- **判据**：抽一条上周真实产生的告警，问值班的人三件事——它落在哪一级路由上、工单有没有在承诺的关闭时限内关掉、结单理由是不是"已知问题"【经验：抽的那一周要跨过一次月末结算峰值，否则会系统性低估处置时长】；再数同一份规则挂了几个消费点（门禁 / 告警 / 台账），只挂一处就说明它还只是一份文档。规则的可复现性与关闭时长分布怎么读，分别是 [§ 3.2.3](07-audit-and-compliance-section-3-sec3.md) 与 [§ 3.2.4](07-audit-and-compliance-section-3-sec3.md) 的自验方法，本节不重复。
+- **为什么必须这一步**：先立规则库（定义态）再铺监控（运行态）。反过来先铺监控，每加一个消费点（门禁、报表、权限审批）都要重写一次判断；而规则库缺测试用例时，它会在第二次修改时失去可信度。
 
-**Step 5：AI 合规（4-8 周）**
+**Step 4：监管报送自动化（4–8 周【经验：随报送表数量与监管接口的稳定性变】）**
 
-1. LLM 调用审计。
-2. AI 模型版本管理。
-3. 训练数据来源追溯。
-4. AI 输出合规检查。
+1. 梳理报送要求（EAST / 1104 / 人行报表），把每个报送字段映射到内部字段，映射表进版本库。
+2. 自动化 ETL + 校验 + 报送：先校验（空值、非正值、跨期波动），再加密与签名。
+3. 监管接口对接（含失败重试与截止时点管理）；异常处理 + 重报送走流程，不允许人工改数。
 
-**Step 6：合规运营（持续）**
+- **产物**：报送链路（抽取 → 校验 → 加密 → 签名 → 递交 → 留痕）+ 字段映射表 + 校验规则清单 + 重报送手册。
+- **判据**：取上期报送的一个数，从报送值回溯到内部字段，看当天能否定位到差异来源；再演练一次校验失败，看重报送是否需要有人手工改数——需要，说明校验规则还没覆盖到根因。
+- **为什么必须这一步**：报送要与审计证据同源。先做报送、后补审计，会让报送长成一条独立链路，之后再想同源就要改口径，而改口径意味着把历史报送数重新解释一遍。
 
-1. 月度合规评审。
-2. 季度合规审计。
-3. 年度第三方审计（SOC 2、ISO 27001）。
-4. 合规培训。
+**Step 5：AI 侧留痕与合规（4–8 周【经验：随模型与工具调用量、以及 Agent 是否已上生产变】）**
+
+1. LLM 调用审计：prompt 与输出按"哈希 + 脱敏副本"双份留存。
+2. AI 模型版本管理：版本、评估结论、上线时间可查。
+3. 训练数据来源追溯（按模型版本登记训练与检索数据的来源清单）；AI 输出合规检查，输出侧的敏感信息与政策判定结果一并留痕。
+
+- **产物**：模型调用与工具调用并进的同一审计事件流 + 模型版本登记 + 数据来源清单 + 三类留痕各自的保留期。
+- **判据**：从上个月真实发生的会话里挑一条（从用户投诉或线上问询里来的，不从测试环境挑），让当班的人只开审计库、不找研发，把这次会话碰过的资源、引用到的文档版本逐条补进那张投诉工单——要跨三个人各导一份表才拼得出来的，说明三个来源还没落进同一张表；再看三类留痕的保留期是不是分开设的——训练数据来源留痕数量极少但要求最严，按调用留痕的口径管它是浪费。
+- **为什么必须这一步**：模型升级后旧输出不可复现，审计结论只能建立在留痕上，所以这一步不能等合规要求来了再做——历史会话补不回来。而且 AI 功能常以 POC 方式上线、留痕落在另一个人手里，等到被要求举证时才发现没有。
+
+**Step 6：合规运营与外部审计（持续）**
+
+1. 月度合规评审，看的是告警关闭率与豁免清单，不是规则条数。
+2. 季度合规审计，抽控制项而不是抽报告。
+3. 年度第三方审计（SOC 2、ISO 27001），证据从既有台账导出而不是为审计现做；合规培训的对象是被控制项约束的人（研发、业务、数据），不是合规团队自己。
+
+- **产物**：评审记录 + 按控制项导出的证据包 + 豁免清单（带自动到期）。
+- **判据**：抽一条证据，看它能否链接回所依据的原始事件（只有结论、没有来源的，审计现场会被打回）；查豁免清单有多长、最近一条到期了没有。
+- **为什么必须这一步**：外部审计是抽样，所以平日必须持续产出证据——审计前凑材料与全年持续产出，区别在于前者无法自证覆盖了未抽样的时段。
+
+**这六步里最常被跳过的是 Step 2 里的"覆盖率度量"**——大家都在接数据源，很少有人去算分母。跳过它不会立刻报错，第一个暴露时点是第一次真正需要举证的时刻（争议、监管问询或第三方审计）：要查的时段没接入、或者当时正在按采样丢弃，而缺失的记录无法补造。
 
 ### 4.2 关键技术点
 
-**1. 审计日志采集（数据库）**：
+**统一审计事件采集**
+
+- **做法**：所有来源归一化到同一张事件表（谁 / 何时 / 对什么 / 结果 / 来源系统 / 密级）；SQL 只留哈希与归一化模板，不留原文；机密级访问立即告警而不等批量；写日志的账号不能删日志。
+- **机制**：因为只留指纹与模板，跨系统关联与"按模式聚合"仍做得成，而单条记录从 KB 级降到百字节级——这直接决定保留期能开多长（量的推导见 [§ 3.1](07-audit-and-compliance-section-3-sec3.md)）。**代价是它换掉了"当时这句 SQL 到底写了什么"这个能力**，而争议里问的往往正是这句话。
+- **失效条件**：当采集源里出现"只覆盖主干系统"的组合时（库侧插件只覆盖直连、埋点只覆盖自研、网关只覆盖走网关的流量），覆盖率会在半年左右开始失真【经验：这个时间随新系统上线速度与采集方式的组合变，上新越密的组织越短】，而且这个过程不产生任何报错。症状是覆盖率报表还停在建设期的那一版：分母没变，分子其实在跌。观测信号：每天对比"采集器写入条数"与"源系统自报的操作条数"，比值连续下降即失真开始。
+- **档位**：【经验】
+
+**不可篡改与锚定**
+
+- **做法**：证据区用追加写 + 哈希链（链的构造与 DDL 见 [§ 3.2.2](07-audit-and-compliance-section-3-sec3.md)，本节讲怎么把它装起来），链头由一条定时作业发布到另一套权限域或第三方时间戳；存储层用对象锁的合规模式兜底；保留期与分区 / 生命周期绑定。
+- **机制**：因为这一层落在存储侧（对象锁的合规模式 + 一条把链头写出去的定时作业），应用侧改代码、回滚发版、出故障都动不到证据区，不可篡改于是表现为一条不随发版变化的运维配置，而不是一句自觉；又因为只在保留期内不可删，成本被压在证据区这一小块上，而这块的边界画在哪是建设期自己定的。代价是**它把成本从"存储"转成了"不可回收的存储"**：这笔钱在保留期内没有优化空间，会在账单上跟着保留期长度走好几年，而当初把边界画大一点时看不出差别。
+- **失效条件**：当证据区范围被一次事故后扩大（"干脆全量入证据区"）时，删除权请求会开始卡死，而"不可篡改"此时反过来变成违法风险。症状是删除请求处理的平均耗时逐月上升、并出现"因合规原因无法履行"的结单理由。观测信号：证据区条数占日志总量的比例，以及删除请求的平均履行时长——后者上升要先查前者。
+- **档位**：【经验】
+
+**合规规则库（规则即代码）**
+
+- **做法**：条款 → 控制项 → 可执行判断；规则进版本库、配测试用例、带框架映射；同一份规则被事前门禁、事中告警、事后举证三处消费。
+- **机制**：规则库为什么能在多框架下收敛成一份判断，见 [§ 3.2.3](07-audit-and-compliance-section-3-sec3.md)。装进组织后它靠的是一条**发布路径**：规则改动进版本库、合并前跑测试用例、框架映射表在同一次提交里更新，三处消费点读到的永远是同一版判断，不会出现门禁放行而台账判违规的情况。代价是**它要的是一份编制，而不是一套工具**：规则库的正确性没有任何系统能替你发现，只能靠一个固定的人守，而这个人在多数团队的岗位序列里没有独立位置，通常挂在别的职责后面——他被调去做别的项目时，不会有人接手。
+- **失效条件**：当没有人对规则正确性负责时，规则库的更新周期会落后于监管与业务变化。症状不是规则报错，而是"新场景没有规则可命中"：新业务上线后配套的控制项迟迟不进库，监控看起来一切正常。观测信号：规则库最近一次修改时间 vs 条款 / 业务变更次数；两者之比长期不动，说明规则库已经停更。
+- **档位**：【经验】
+
+**持续监控与告警分级**
+
+- **做法**：每条控制项写三件事（判断条件、发现时限、关闭时限）；告警按三级路由（立即告警 / 工单 / 台账）；自动修复（收权、断会话、回滚配置）带预演与回滚路径。
+- **机制**：因为控制项的发现时限与关闭时限被写进了值班的告警队列（逾时升级到上一级），当班的人拿到的是"关掉这条工单"而不是"自己判断这算不算违规"——判断已经在规则库里做完，响应侧只剩执行；证据也是同一条判断顺手产出的，季度评审从库里导一次即可（这条为什么在模式层成立，见 [§ 3.2.4](07-audit-and-compliance-section-3-sec3.md)）。代价是**误报的账单落在业务侧**：自动修复没有"先通知、后执行"这一段时，一次误封产生的是业务事故单，而不是一条被忽略的告警——损失不在风控口径里，没人预先为它定价，事后也很难归因回那条规则。
+- **失效条件**：当自动修复没有预演期就直接开写操作时，一次误判会切断正在跑批的服务账号。症状不会以"审计失败"出现，而是以"凌晨任务大面积失败"出现——同一晚多个不相关的作业同时报错。观测信号：自动修复动作数与业务事故单的相关性；上线初期建议只做"标记 + 通知"，跑满一个完整的结算峰值窗口后再开写操作。
+- **档位**：【经验】
+
+**监管报送链路**
+
+- **做法**：报送字段映射到内部字段并进版本库；生成时先校验（空值、非正值、跨期波动）再加密与签名；递交后记录报送日志（谁、何时、报了哪一版）；重报送走流程。
+- **机制**：因为报送结论可逐条回溯到内部字段，监管问"这个数怎么来的"能在当天回答；因为递交留痕，重报送与截止时点都可举证。代价是**映射表本身成为需要维护的资产**：内部字段每变一次，它都要跟着动。
+- **失效条件**：当映射只存在于某个人的表格里、没进版本库时，字段改名或口径调整会让报送在下一个周期静默出错。症状是跨期波动校验通过、但监管侧反馈"与我们掌握的不符"。观测信号：映射表最近一次更新时间 vs 内部字段变更次数。
+- **档位**：【经验】
+
+**AI 侧三类留痕（保留期分开设）**
+
+- **做法**：模型调用留痕（每次调用一条，含 prompt 哈希与脱敏副本、检索到的文档 ID）、工具调用留痕（每次外部动作一条，含实际读写的资源）、训练与检索数据来源留痕（每个模型版本一条）；三者的保留期分开设定。
+- **机制**：因为模型调用与工具调用并进同一条审计事件流、带同一个会话标识，一条投诉进来时可以用一次查询串成一条链——谁问的、模型调了哪些工具、碰到哪些资源——而不是三个人各导一份表再手工拼；因为原文区与哈希区物理分开，删除权可以在原文区履行（销毁密钥）而不破坏证据链。代价是**留痕体量随调用量增长**，成本模型与"一次采集、多次查询"的日志完全不同；它在存储侧是三条独立的生命周期策略，训练数据来源那条写"随模型版本下线"，不跟着调用留痕一起滚存。
+- **失效条件**：当留痕把原始 prompt 与输出直接存进审计库时，审计库自身成为最集中的敏感数据暴露面。症状是审计库自己不在被审计范围内：它的密级标注缺失、访问记录缺失、保留期没人管。观测信号：审计库账号的访问是否能在审计记录里查到——查不到，就说明它已经成了盲区。
+- **档位**：【经验】
+
+### 4.3 工具链与平台
+
+选型的困难不在"哪个平台更强"，而在"你家缺的是采集、判断、还是证据"。下表按类别给判据，产品名只列公开可查的形态。
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 云控制面审计 | AWS CloudTrail / Azure Monitor / Google Cloud Audit Logs / 阿里云操作审计（ActionTrail）/ 阿里云审计服务 | 先问一件事：**数据访问事件是否默认开启**（管理事件与数据事件往往要分别开启、分别计费）。资源集中在哪个云就先用哪家的原生能力，因为采集点由厂商维护，覆盖率不用自己保证 | 只开管理面事件就以为覆盖了数据访问 → 第一次查"谁读了这张表"才发现没有记录，而事件已经过去 |
+| 集中日志与 SIEM | Splunk / ELK Stack / Apache Ranger Audit | Ranger Audit 只覆盖 Hadoop 生态的执行点，是**来源**不是平台；自建 ELK 的成本随运维能力浮动，没有 7×24 值班经验时先选托管 | 自建却没人为索引与保留策略负责 → 磁盘写满后日志静默停止，且没人当班发现 |
+| 协议层 / 库侧审计 | 阿里云数据库审计 / Imperva / IBM Guardium / MySQL Audit Plugin / PostgreSQL pgAudit / Oracle Audit Vault | 这是唯一能看见"语句级读了什么、改了哪些行"的一族。要语句级证据就必须有它，并且要提前确认两件事：插件的写入开销、它自己的保留策略 | 只靠应用埋点 → 直连库的操作完全没有记录，而内部高权限账号最常走这条路 |
+| 不可变存储 | Amazon S3 Object Lock（合规模式）/ 阿里云 OSS 的 WORM 策略 / 企业级存储的写一次读多次能力 | 保留期内不可删＝成本不可回收，所以只覆盖证据区。先统计"过去一年真正被用于举证的条目数"，再据此定义范围，而不是反过来先定范围 | 全量进 WORM → 存储成本按保留期线性上涨且不可回收，同时删除权请求被卡死 |
+| 判断引擎 | Open Policy Agent（OPA） | 判据是**有没有消费点**：规则库要挂在门禁、告警或举证中的至少一处。OPA 只判断不执行，每个消费点要自己接钩子 | 上了判断引擎却没接消费点 → 规则写得很完整，实际没有任何动作发生 |
+| 控制项编排 SaaS | Vanta / Drata / Tugboat Logic / Secureframe | 强项是编目与证据收集，弱项是判断与阻断——它不是门禁。以 SOC 2 / ISO 27001 认证为目标、且已有云原生日志的团队收益最大 | 把它当门禁用 → 认证材料齐了，但违规访问照样发生 |
+| 自研合规中台 | 阿里云合规中心 / 阿里云合规审计类产品 / 字节合规中台（自研形态） | 把控制项、证据与管控动作放在一套体系里，机制上最强、承接成本也最高（常驻人力）。控制项数量与变更频率都到一定规模时才开始划算 | 自研却没有固定 Owner → 规则库随人员流动失修，比不建更危险（它让人以为有控制） |
+| AI 场景留痕 | Langfuse / LangSmith / Arize Phoenix / Helicone / Confident Security / 阿里云通义安全 | 留痕能力 ≠ 证据链。判据两步：它是否支持你需要的留存期与访问控制；以及**它自己是否被纳入审计**（谁看了这些留痕）。候选只作形态归类，某产品是否覆盖某类留痕请以其官方文档为准 | 把可观测性工具当合规系统 → 演示能看，举证时拿不出留存策略 |
+
+**关于「字节合规中台」的说明**：它是自研形态，没有对外产品文档，所以表中只把它当作一类形态列出，不对其能力作断言——托管产品的能力边界在官方文档里可逐项核验，自研中台的边界只能从公开技术分享或岗位描述里间接推断。**这一类里最容易被误选的是把「集中日志平台」当成「审计系统」来买**：两者的重合面很大（都要把多来源汇成一份可按主体与时间检索的事件流），但集中日志平台不解决两件事——**覆盖率的分母**与**保留期的合规性**。误选后不会以"不好用"暴露，而是在第一次争议时暴露：能查到主干系统的记录，查不到当时那个业务的记录，而日志平台一切正常——它从来没承诺过覆盖哪些路径。判据只有一句：**问一句"这个平台覆盖了多少个来源、分母是多少"，答不出分母就说明买到的是日志平台而不是审计系统。**
+
+### 4.4 存量迁移
+
+**① 先做哪一件，可以立刻见效且可回退。** 动作是**先度量覆盖率、再试跑一个真实调查问题**，两者都只读、不改采集链路，因此完全可回退。为什么先做它：不度量就补采集点，很可能补在最不缺的地方——而覆盖率的分子分母都能从"源系统注册表 + 各采集器上报"里取到，不需要先建平台。补一句代价：这一步会立刻暴露一堆"答不上来"，这正是它的产出，不要把它包装成"平台已上线"。
+
+**② 历史日志与历史系统分三档处理，不要一刀切返工。**
+
+| 档 | 处理方式 | 适用条件 | 什么时候该升级处理 |
+| --- | --- | --- | --- |
+| 全部归一化 | 历史日志按新 schema 重灌 | 原始字段齐全、且落在保留期与举证场景内 | — |
+| 只改动的部分 | 新事件走新 schema，历史保持原样并打 `pre_schema_version` 标记，由查询层做兼容 | 历史量大、字段不全 | 该时段进入一次真实举证时 |
+| 打标挂账 | 尚未接入的系统列成"未覆盖清单"，逐条挂责任人与计划接入时间 | 长尾系统、低频使用 | 清单进入月度评审后仍在涨 |
+
+判据：一个月后【经验：观察周期随新系统的上线频率变，上线越密越要缩短】看未覆盖清单是在缩短还是在变长；同时看**新增系统是否走同一条接入路径**——不走，缺口会随新系统继续增长，那时补的速度追不上产生的速度。
+
+**③ 双轨期怎么维持、维持多久。** 新旧两套保留策略必然并行一段时间，规则要写死两条：**新数据只能走新策略**；老数据允许按老策略只读，但必须能回答"某一段历史数据适用哪个策略"。第二条件比第一条更容易失守——一旦答不出，双轨就变成了双份解释。期限上没有通用数字【经验：以"最近一段高频查询窗口内的调查请求全部能在新链路上回答"为界，窗口长度随业务查询习惯变】，做不到就不要退出双轨。
+
+**④ 什么信号说明可以退出双轨。** 三个一起满足才退：一是**未覆盖清单连续两个月净减少**【经验：窗口随长尾系统的接入速度变，接入慢的组织要放宽到一个季度】；二是**老链路的查询量趋零**（监控查询接口的调用量，而不是问团队"还用不用"）；三是一次真实的审计或争议中，证据全部从新链路取出。任一条不满足就退出，得到的是"两套都在、谁来都要自己判断一次"——这比单套还慢。
+
+**⑤ 迁移期最容易犯的一个错：把不可篡改的范围一次扩大。** "历史数据靠不住"的焦虑会让人把全部历史塞进证据区，而那是不可回收的成本。规则要写死：**只有能说出"要回答哪个举证问题"的数据源才进证据区**，说不出来的先留在归档层。归档层与证据区的差别不在技术上（都能读），而在成本承诺上（证据区承诺不可删）。
+
+### 4.5 模板 / 示例
+
+**模板 1：统一审计采集器（`audit_collector.py`）**
 
 ```python
-# audit_collector.py
-from typing import Optional
-from datetime import datetime
-import boto3
+from datetime import datetime, timezone   # sha256 / normalize / classify 为示意用辅助函数
 
 
 class AuditCollector:
-    """统一审计日志采集器"""
-    
-    def __init__(self):
-        self.cloudtrail = boto3.client('cloudtrail')
-        self.rds_audit_logs = []
-        self.app_audit_logs = []
-    
-    def log_database_operation(
-        self,
-        user: str,
-        operation: str,  # SELECT / INSERT / UPDATE / DELETE
-        database: str,
-        table: str,
-        sql: str,
-        timestamp: Optional[datetime] = None,
-        ip_address: Optional[str] = None,
-    ):
-        """记录数据库操作"""
-        log_entry = {
-            "timestamp": (timestamp or datetime.now()).isoformat(),
-            "user": user,
-            "operation": operation,
-            "database": database,
-            "table": table,
-            "sql_hash": hash(sql),  # 不存原文，只存哈希
-            "sql_pattern": self._extract_pattern(sql),  # 提取模式
-            "ip_address": ip_address,
-            "session_id": self._get_session_id(),
-            "rows_affected": self._get_rows_affected(),
+    """统一采集器：只留指纹与模板，不留 SQL 原文"""
+
+    def log_database_operation(self, actor, action, database, table, sql,
+                               src_ip=None, rows_affected=None):
+        entry = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "actor": actor, "action": action,          # SELECT / INSERT / UPDATE / DELETE
+            "resource": f"{database}.{table}",
+            "resource_cls": classify(database, table),  # 密级：公开 / 内部 / 秘密 / 机密
+            "sql_hash": sha256(sql),
+            "sql_shape": normalize(sql),               # 常量替换为占位符，用于按模式聚合
+            "rows_affected": rows_affected, "src_ip": src_ip,
+            "source_system": CURRENT_SOURCE,           # 每源必填，覆盖率靠它算分母
+            "outcome": "OK",
         }
-        
-        # 1. 写入不可篡改存储
-        self._write_immutable(log_entry)
-        
-        # 2. 实时分析（异常检测）
-        self._check_anomaly(log_entry)
-        
-        return log_entry
-    
-    def log_access(
-        self,
-        user: str,
-        resource: str,
-        action: str,  # READ / WRITE / DELETE / EXPORT
-        classification: str,  # 数据分级
-        timestamp: Optional[datetime] = None,
-    ):
-        """记录数据访问"""
-        log_entry = {
-            "timestamp": (timestamp or datetime.now()).isoformat(),
-            "user": user,
-            "resource": resource,
-            "action": action,
-            "classification": classification,
-        }
-        
-        # 高敏感数据访问立即告警
-        if classification in ["机密", "绝密"]:
-            self._alert_high_sensitivity_access(log_entry)
-        
-        self._write_immutable(log_entry)
-        return log_entry
-    
-    def _write_immutable(self, log_entry):
-        """写入不可篡改存储（S3 Object Lock）"""
-        # 关键：开启 Object Lock + Compliance 模式
-        # 任何人都无法修改或删除
-        s3 = boto3.client('s3')
-        s3.put_object(
-            Bucket='audit-logs-bucket',
-            Key=f"audit/{log_entry['timestamp'][:10]}/{log_entry['session_id']}.json",
-            Body=json.dumps(log_entry),
-            ObjectLockMode='COMPLIANCE',
-            ObjectLockRetainUntilDate=datetime.now() + timedelta(days=2555),  # 7 年
-        )
-    
-    def _check_anomaly(self, log_entry):
-        """异常检测"""
-        # 例：异常时间访问、异常 IP、异常 SQL 模式
-        if log_entry["operation"] == "DELETE" and log_entry["rows_affected"] > 10000:
-            self._alert("Large DELETE detected", log_entry)
+        self.write_immutable(entry)      # 证据区：追加写 + 哈希链
+        self.check_anomaly(entry)        # 大批量 DELETE、异常时段、异常来源 IP
+        return entry
+
+    def log_access(self, actor, resource, action, classification):
+        entry = {"ts": datetime.now(timezone.utc).isoformat(), "actor": actor,
+                 "resource": resource, "action": action, "resource_cls": classification,
+                 "source_system": CURRENT_SOURCE, "outcome": "OK"}
+        if classification in ("机密", "绝密"):
+            self.alert_high_sensitivity_access(entry)   # 立即告警，不等批量
+        self.write_immutable(entry)
+        return entry
 ```
 
-**2. 合规规则检查（OPA）**：
+**怎么用**：`source_system` 是覆盖率的分母来源，漏填这一格等于这一源不可度量；`sql_shape` 是把原文换成模板后的产物，保留它是为了在丢掉原文之后仍然能做"哪类查询在激增"这类分析；`write_immutable` 与 `alert` 的顺序不要颠倒——先告警后落盘的实现会在告警链路阻塞时丢记录。
+
+**模板 2：合规规则（`compliance.rego`）**
 
 ```rego
-# compliance.rego
-package compliance.gdpr
+package compliance.controls
 
-# GDPR 数据最小化原则
+# 控制项 1：数据最小化 —— 未获授权不得读取机密资源
 deny[msg] {
-    input.user.pii_access
-    not input.consent_record
-    msg := sprintf("GDPR violation: user %v accessed PII without consent", [input.user.id])
+  input.event.action == "READ"
+  input.event.resource_cls == "机密"
+  not input.grant.approved
+  msg := sprintf("未授权访问机密资源 %s（事件 %s）", [input.event.resource, input.event.event_id])
 }
 
-# GDPR 数据主体权利 - 删除权
+# 控制项 2：删除权 —— 删除用户数据必须有已批准的删除请求
 deny[msg] {
-    input.action == "delete_user_data"
-    not input.deletion_request_approved
-    msg := "GDPR violation: deletion requires approved request"
+  input.event.action == "delete_user_data"
+  not input.event.deletion_request_approved
+  msg := "删除用户数据缺少已批准的删除请求"
 }
 
-# GDPR 数据跨境传输
+# 控制项 3：跨境传输 —— 数据所在区域与主体所在区域不一致时必须先获批准
 deny[msg] {
-    input.data.location != "EU"
-    input.user.region == "EU"
-    not input.cross_border_approval
-    msg := "GDPR violation: cross-border transfer without approval"
+  input.data.location != input.user.region
+  not input.event.cross_border_approved
+  msg := sprintf("跨境传输缺少批准（%s → %s）", [input.user.region, input.data.location])
 }
 ```
 
-**3. 监管报送自动化**：
+**怎么用**：每条规则都要配一组测试用例（命中与不命中的样例事件各若干），没有测试的规则库第二次修改就没人敢动；框架映射写在单独的映射表里而不是写进规则名——一条控制项常常同时对应多个框架的条款；`deny` 只产出判断，落到门禁、告警还是举证，取决于你在哪一处接钩子，没接就等于一份文档，OPA 的具体语法与版本请以官方文档当前版本为准。
+
+**模板 3：监管报送（`regulatory_reporting.py`）**
 
 ```python
-# regulatory_reporting.py
-"""
-监管报送自动化：EAST、1104、人行报表、银保监报表
-"""
-import pandas as pd
-from datetime import datetime, timedelta
-from typing import List
-
-
 class RegulatoryReporter:
-    """监管报送自动化"""
-    
-    def __init__(self):
-        self.templates = {
-            "EAST": self._east_template,
-            "1104": self._1104_template,
-            "PBOC": self._pboc_template,
-        }
-    
-    def generate_east_report(self, period: str) -> pd.DataFrame:
-        """生成 EAST 报表"""
-        # 1. 数据抽取
-        data = self._extract_data(period)
-        
-        # 2. 数据校验
-        validation_errors = self._validate_east(data)
-        if validation_errors:
-            raise ValueError(f"EAST validation failed: {validation_errors}")
-        
-        # 3. 报表生成
-        report = self._east_template(data)
-        
-        # 4. 加密 + 数字签名
-        signed_report = self._sign_report(report)
-        
-        return signed_report
-    
-    def _extract_data(self, period: str) -> pd.DataFrame:
-        """数据抽取（按报送要求）"""
-        return pd.read_sql(
-            """
-            SELECT 
-                customer_id,
-                account_id,
-                transaction_id,
-                transaction_date,
-                transaction_amount,
-                transaction_type,
-                counterparty_account,
-                counterparty_name,
-                balance_after,
-                currency
-            FROM east_data
-            WHERE data_period = :period
-            """,
-            con=self.engine,
-            params={"period": period},
-        )
-    
-    def _validate_east(self, data: pd.DataFrame) -> List[str]:
-        """EAST 数据校验"""
-        errors = []
-        if data["transaction_amount"].isnull().any():
-            errors.append("transaction_amount has nulls")
-        if (data["transaction_amount"] <= 0).any():
-            errors.append("transaction_amount has non-positive values")
-        return errors
-    
-    def submit_report(self, report_type: str, period: str, data: pd.DataFrame):
-        """提交报送"""
-        # 1. 加密
-        encrypted = self._encrypt_report(data)
-        
-        # 2. 数字签名
-        signature = self._sign_report(data)
-        
-        # 3. 通过监管接口报送
-        response = self._submit_to_regulator(
-            report_type=report_type,
-            period=period,
-            data=encrypted,
-            signature=signature,
-        )
-        
-        # 4. 报送日志（审计追溯）
-        self._log_submission(report_type, period, response)
-        
-        return response
+    """报送链路：抽取 → 校验 → 加密 → 签名 → 递交 → 留痕；TEMPLATES 中 EAST / 1104 属原银保监体系口径的监管报表，PBOC 为人行口径"""
+
+    TEMPLATES = {"EAST": build_east, "1104": build_1104, "PBOC": build_pboc}
+
+    def generate(self, report_type: str, period: str):
+        data = extract(report_type, period)        # 按报送字段映射表抽取
+        errors = validate(report_type, data)       # 空值 / 非正值 / 跨期波动
+        if errors:
+            raise ValueError(f"{report_type} {period} 校验失败：{errors}")
+        return sign(encrypt(self.TEMPLATES[report_type](data)))
+
+    def submit(self, report_type: str, period: str, payload) -> dict:
+        resp = submit_to_regulator(report_type, period, payload)
+        log_submission(report_type, period, resp, data_version=DATA_VERSION)
+        return resp
 ```
 
-**4. AI 时代合规审计**：
+**怎么用**：先写 `validate` 再写模板——空值、非正值、跨期波动这三类检查是重报送的主要来源，规则不全就会出现"报了才知道错"；`log_submission` 里的数据版本号不能省，缺了它两年后无法复现这一版是怎么算出来的；校验失败就走重报送，不要在下游用手工改数绕过去，那会让审计无据可查。
+
+**模板 4：AI 合规审计（`ai_compliance_audit.py`）**
 
 ```python
-# ai_compliance_audit.py
-import os
-from datetime import datetime
-from anthropic import Anthropic
-
-client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-
-
 class AIComplianceAuditor:
-    """AI 系统合规审计"""
-    
-    def audit_llm_call(self, user_id, prompt, response, context):
-        """审计 LLM 调用"""
-        
-        # 1. 记录原始数据
-        audit_log = {
-            "timestamp": datetime.now().isoformat(),
-            "user_id": user_id,
-            "prompt": prompt,
-            "response": response,
-            "context": context,
-            "model": "claude-3-5-sonnet-20241022",
-            "tokens": len(prompt) + len(response),
+    """模型调用、工具调用与模型版本三类留痕"""
+
+    def audit_llm_call(self, user_id, agent_id, model, prompt, response,
+                       retrieved_doc_ids, tool_calls):
+        log = {
+            "ts": now_iso(),
+            "actor": {"user_id": user_id, "agent_id": agent_id},
+            "model": model,                                  # 名称 + 版本，两者都要
+            "prompt_hash": sha256(prompt), "prompt_redacted": redact(prompt),
+            "retrieved_doc_ids": retrieved_doc_ids,           # 依据了哪几份文档
+            "tool_calls": tool_calls,                         # [{"tool":..., "resource":..., "rows":...}]
+            "output_hash": sha256(response),
+            "sensitive_findings": detect_sensitive(prompt + response),
+            "policy_result": "allowed_with_redaction",        # 判定结果本身也要留痕
         }
-        
-        # 2. 敏感数据检测
-        sensitive_findings = self._detect_sensitive_data(prompt + response)
-        audit_log["sensitive_findings"] = sensitive_findings
-        
-        # 3. AI 输出合规检查
-        compliance_issues = self._check_compliance(prompt, response)
-        audit_log["compliance_issues"] = compliance_issues
-        
-        # 4. 不可篡改存储
-        self._store_immutable(audit_log)
-        
-        return audit_log
-    
+        store_split(log)      # 可删的原文区（短保留、加密）与不可删的哈希区分开
+        return log
+
     def audit_model_version(self, model_id, version, training_data_sources):
-        """审计模型版本"""
-        audit_log = {
-            "timestamp": datetime.now().isoformat(),
-            "event": "model_version_change",
-            "model_id": model_id,
-            "version": version,
-            "training_data_sources": training_data_sources,
-            "data_provenance_verified": self._verify_data_provenance(training_data_sources),
-        }
-        self._store_immutable(audit_log)
-        return audit_log
-    
-    def _detect_sensitive_data(self, text):
-        """敏感数据检测"""
-        # 使用正则 + AI 双重检测
-        return []
-    
-    def _check_compliance(self, prompt, response):
-        """合规检查"""
-        # 检查是否含歧视、违法、危险内容
-        issues = []
-        
-        # AI 评估合规性
-        evaluation_prompt = f"""
-请评估以下 AI 对话的合规性：
-Prompt: {prompt}
-Response: {response}
-
-检查项：
-1. 是否含歧视 / 偏见内容
-2. 是否含违法 / 危险信息
-3. 是否泄露个人隐私
-4. 是否符合公司政策
-
-输出 JSON 格式：
-{{"compliant": true/false, "issues": [...]}}
-"""
-        
-        result = client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=500,
-            messages=[{"role": "user", "content": evaluation_prompt}]
-        )
-        
-        return issues
+        return store_split({"event": "model_version_change", "model_id": model_id,
+                            "version": version,
+                            "training_data_sources": training_data_sources})
 ```
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+**怎么用**：`policy_result` 要留痕，不能只留"拒绝了"——合规判定本身也要能被复盘；`store_split` 是这一步唯一不能省的设计，删除权在原文区履行（销毁密钥），证据链靠哈希区继续成立；`training_data_sources` 用清单而不是"内部数据"这类描述，否则追溯起点就断了。
 
-**审计日志工具**：
-
-| 工具 | 定位 |
-| --- | --- |
-| **AWS CloudTrail** | AWS 操作审计 |
-| **Azure Monitor** | Azure 审计 |
-| **Google Cloud Audit Logs** | GCP 审计 |
-| **阿里云操作审计（ActionTrail）** | 阿里云审计 |
-| **ELK Stack** | 自建集中日志 |
-| **Splunk** | 企业级日志 + SIEM |
-| **Apache Ranger Audit** | 大数据审计 |
-
-**合规自动化平台**：
-
-| 工具 | 定位 |
-| --- | --- |
-| **Vanta** | SOC 2 / ISO 27001 自动化 |
-| **Drata** | 持续合规监控 |
-| **Tugboat Logic** | 安全合规自动化 |
-| **Secureframe** | SOC 2 / HIPAA 自动化 |
-| **阿里云合规审计** | 中国本土合规 |
-| **字节合规中台** | 字节自研 |
-
-**数据库审计**：
-
-| 工具 | 定位 |
-| --- | --- |
-| **MySQL Audit Plugin** | MySQL 原生 |
-| **PostgreSQL pgAudit** | PG 原生 |
-| **Oracle Audit Vault** | Oracle |
-| **IBM Guardium** | 企业级数据库审计 |
-| **Imperva** | 数据库安全 + 审计 |
-| **阿里云数据库审计** | 中国本土 |
-
-**AI 时代合规工具（2024-2025）**：
-
-- **Langfuse**：LLM 调用审计。
-- **LangSmith**：LangChain 审计。
-- **Arize Phoenix**：LLM 评估 + 审计。
-- **Helicone**：LLM API 网关 + 审计。
-- **Confident Security**：机密 LLM 审计。
-- **阿里云通义安全**：AI 合规。
-
-### 4.4 代码 / 示例
-
-**示例 1：完整的合规审计平台**
+**模板 5：合规平台接口（`compliance_platform.py`）**
 
 ```python
-# compliance_platform.py
 from fastapi import FastAPI
-from datetime import datetime, timedelta
-import json
 
 app = FastAPI(title="合规审计平台")
 
 
-@app.post("/api/v1/audit/log")
+@app.post("/api/v1/audit/log")            # 写侧：入库要幂等，重投是常态
 def log_audit_event(event: dict):
-    """记录审计事件"""
-    # 不可篡改存储
-    return {"status": "logged", "id": event.get("id")}
+    return {"status": "logged", "event_id": store(event)}
 
 
-@app.get("/api/v1/compliance/report")
+@app.get("/api/v1/compliance/report")     # 读侧：报告只导出既有台账，不现算
 def generate_compliance_report(framework: str, period: str):
-    """生成合规报告"""
-    return {
-        "framework": framework,
-        "period": period,
-        "compliance_score": 0.95,
-        "issues": [],
-        "evidence": [],
-    }
+    controls = load_controls(framework)   # 控制项来自规则库的框架映射表
+    return {"framework": framework, "period": period,
+            "items": [{"control": c.id, "evidence_refs": c.evidence_refs(period)}
+                      for c in controls]}
 
 
 @app.post("/api/v1/regulatory/submit")
-def submit_to_regulator(report_type: str, period: str, data: dict):
-    """提交监管报送"""
-    return {"status": "submitted", "submission_id": "..."}
+def submit_to_regulator(report_type: str, period: str, payload: dict):
+    return reporter.submit(report_type, period, payload)
 ```
 
-**示例 2：GDPR 数据主体权利响应（自动化）**
+**怎么用**：报告接口里不要出现写死的合规分数（例如 `"compliance_score": 0.95` 这种常量）——分数必须由控制项逐条算出并带上证据引用，否则这份报告只是汇报材料的接口化；`evidence_refs` 是报告能否在审计现场立住的关键，没有它就只有结论；写侧接口做幂等，采集端至少一次重投会带来重复事件。
+
+**模板 6：数据主体权利响应（`gdpr_data_subject_rights.py`）**
 
 ```python
-# gdpr_data_subject_rights.py
-"""
-GDPR 数据主体权利响应自动化：
-- 访问权（Right to Access）
-- 删除权（Right to Erasure / Right to be Forgotten）
-- 数据可携权（Right to Data Portability）
-- 更正权（Right to Rectification）
-- 限制处理权（Right to Restriction of Processing）
-"""
-
-
 class GDPRRightsHandler:
-    def handle_access_request(self, user_id: str) -> dict:
-        """访问权：返回该用户的所有数据"""
-        return {
-            "user_id": user_id,
-            "personal_data": self._get_all_personal_data(user_id),
-            "processing_purposes": self._get_processing_purposes(user_id),
-            "data_sources": self._get_data_sources(user_id),
-            "retention_period": self._get_retention_period(user_id),
-            "third_party_sharing": self._get_third_party_sharing(user_id),
-        }
-    
-    def handle_erasure_request(self, user_id: str) -> dict:
-        """删除权：删除该用户的所有数据"""
-        deletion_plan = {
-            "user_id": user_id,
-            "tables_to_delete": [],
-            "tables_to_anonymize": [],
-            "tables_to_retain": [],  # 因法律义务保留的
-        }
-        
-        # 1. 查找所有含该用户数据的表
-        tables = self._find_user_tables(user_id)
-        
-        for table in tables:
-            if table["can_delete"]:
-                deletion_plan["tables_to_delete"].append(table)
-            elif table["can_anonymize"]:
-                deletion_plan["tables_to_anonymize"].append(table)
-            else:
-                deletion_plan["tables_to_retain"].append(table)
-        
-        # 2. 执行删除（受控 + 审计）
-        for table in deletion_plan["tables_to_delete"]:
-            self._delete_user_data(table, user_id)
-        
-        # 3. 执行匿名化
-        for table in deletion_plan["tables_to_anonymize"]:
-            self._anonymize_user_data(table, user_id)
-        
-        # 4. 审计记录
-        self._log_deletion(user_id, deletion_plan)
-        
-        return deletion_plan
-    
-    def handle_portability_request(self, user_id: str) -> dict:
-        """数据可携权：导出用户数据"""
-        data = self._get_all_personal_data(user_id)
-        return {
-            "user_id": user_id,
-            "format": "JSON",
-            "data": data,
-            "exported_at": datetime.now().isoformat(),
-        }
-```
+    """访问权 / 删除权 / 可携权 / 更正权 / 限制处理权"""
 
----
+    def handle_access_request(self, user_id: str) -> dict:
+        return {"user_id": user_id,
+                "personal_data": all_personal_data(user_id),
+                "processing_purposes": purposes(user_id),
+                "data_sources": sources(user_id),
+                "retention_period": retention(user_id),
+                "third_party_sharing": sharing(user_id)}
+
+    def handle_erasure_request(self, user_id: str) -> dict:
+        plan = {"user_id": user_id, "tables_to_delete": [],
+                "tables_to_anonymize": [], "tables_to_retain": []}
+        for t in find_user_tables(user_id):
+            bucket = ("tables_to_delete" if t.can_delete else
+                      "tables_to_anonymize" if t.can_anonymize else "tables_to_retain")
+            plan[bucket].append(t)     # tables_to_retain 里的每张表必须写明保留依据与期限
+        for t in plan["tables_to_delete"]:
+            delete_user_data(t, user_id)
+        for t in plan["tables_to_anonymize"]:
+            anonymize_user_data(t, user_id)
+        log_deletion(user_id, plan, immutable_overlap=immutable_overlap(plan))
+        return plan
+```
+**怎么用**：`tables_to_retain` 不能空着不填——因法律义务保留的每一张表都要写明依据与期限，否则"删除权已履行"无法自证；`immutable_overlap` 是关键一格，它记录这次删除与不可变证据区的重叠范围，重叠处靠"加密后销毁密钥"履行而不是改日志；访问请求的响应里五项（个人数据、处理目的、数据来源、保留期、第三方共享）缺一项就构不成完整答复，其中"第三方共享"最常被忽略。
+
+### 4.6 自检清单
+
+以下每一条都要动手查系统；"坐下来想一想"能回答的（覆盖率怎么算、保留期与不可篡改怎么权衡、模式选得对不对）见 [§ 3.7](07-audit-and-compliance-section-3-sec3.md)，本节不重复。
+
+- [ ] 本月做过一次"从提问到结论"的**真实调查演练**吗？实际用时多少、卡在哪一环（字段缺失 / 来源没接入 / 不会查）。
+- [ ] 取一个上期报送字段，把它与审计事件里对应的原始操作对一次——两边的条数与金额能不能对上（对不上就说明报送与审计是两条链路）。
+- [ ] 三方对账：审计库条数 vs 采集端上报条数 vs 源系统自报操作条数，三个差额各是多少、能否逐条解释。
+- [ ] 把锚点校验任务**真跑一遍**（不是看它的状态灯），记录从链头重算的耗时与比对结果。
+- [ ] 取一个已过保留期的分区按流程删一次，看删除动作本身有没有留下记录（删除也要留痕）。
+- [ ] 拿一条已经过期的豁免，去查当时被豁免的那个账号现在还有没有权限——豁免到期有没有真的自动收权。
+- [ ] 用审计库自己的账号做一次访问，看这次访问会不会出现在审计记录里——审计系统是否在审计自己。
+- [ ] 抽 3 条 AI 会话留痕，按"从一次投诉到结论"自己走一遍：每条卡在**谁手里**、当场补录了哪张表或哪个字段、共花了多久——卡点是否集中在同一个人身上。
+- [ ] 用一个模拟的删除权请求走一遍全链路，记录在哪一步被不可删除的日志挡住、当时是怎么处理的。
+- [ ] 用真实夜班数据算一次误报率：上周有几次告警把人叫起来，其中几次是误报。
+- [ ] 抽 3 个采集点，检查时钟同步与事件序列字段**是否真的有值**（不是 schema 里有这一列）；再演练一次"某系统下线"：它的审计日志怎么归档、归档后能否按原查询方式回答历史问题。
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一那个决定成败的环节，是 **Step 2 里"先算分母、再决定保护什么"这个次序**——它比用哪个不可变存储、买哪家合规平台都更值得投入，因为**审计系统的平时反馈信号是空的**（没人查也不报错），唯一能在内部产生"进展感"的替代品就是"接入了多少日志"；一旦验收标准变成接入量，覆盖率与完整性就没人算得清，后面的不可篡改、持续监控、监管报送就全部建在一份完整度未知的样本上。而这个环节之所以值得优先，还因为它几乎不花钱——它真正花的是"允许别人来问一个我们答不上来的问题"，而这恰好是审计系统唯一真正的验收方式。
+>
+> 配合 [§ 2 核心原理](07-audit-and-compliance.md)、[§ 3 设计模式与范式](07-audit-and-compliance-section-3-sec3.md) 与 [§ 6 落地实践](07-audit-and-compliance-section-6-sec6.md) 阅读。

@@ -141,10 +141,10 @@
 - 2022：OpenAI text-embedding-ada-002（1536 维）。
 - 2022：Cohere Embed v2。
 - 2023：BGE（BAAI）系列——中文 SOTA。
-- 2023：OpenAI text-embedding-3-small / 3-large（3072 维）。
 
 **前沿阶段（2024+，当前）**：
 
+- 2024：OpenAI text-embedding-3-small / 3-large（3072 维）。
 - 2024：BGE-M3（多语言 / 长文本 / 多功能三合一）。
 - 2024：Cohere Embed v3（多语言 + Matryoshka 损失）。
 - 2024：Snowflake Arctic Embed（SOTA 检索模型）。
