@@ -155,7 +155,7 @@ spec:
 **第六层：Operator 模式简化运维。**
 - **Strimzi**（Kafka Operator）：自动扩容、副本管理、版本升级；
 - **Pravega Operator**：流存储 Operator；
-- **HDFS Operator**：Hadoop 3.x 起官方支持；
+- **HDFS Operator**：HDFS 集群部署与节点管理；
 - **Spark Operator**（spark-on-k8s-operator / kubeflow）：简化 Spark 作业提交。
 
 **3. 常见陷阱**
@@ -219,7 +219,7 @@ spec:
 - **YARN**：JMX exporter + `yarn.resourcemanager` / `yarn.nodemanager` 指标；
 - **Spark**：Spark Metrics System + Prometheus Sink（`spark.metrics.conf`）；
 - **Flink**：Flink Metrics Reporter + Prometheus；
-- **Kafka**：JMX exporter 或 `kafka_exporter`（LinkedIn 出品）；
+- **Kafka**：JMX exporter 或 `kafka_exporter`；
 - **HBase**：JMX exporter + RegionServer metrics。
 
 **第五层：ServiceMonitor 自动发现。**
@@ -329,8 +329,8 @@ spec:
 **第四层：典型大数据 Operator。**
 - **Strimzi Kafka Operator**：Kafka 部署、扩容、升级、副本再平衡；
 - **Spark Operator**（Google Cloud 维护 / spark-on-k8s-operator）：Spark 作业提交、生命周期管理；
-- **Flink Kubernetes Operator**（阿里云维护）：Flink 作业 Savepoint、升级；
-- **HDFS Operator**（Hadoop 3.x）：HDFS 集群部署、升级、节点 Decommission；
+- **Flink Kubernetes Operator**（Apache Flink 官方维护）：Flink 作业 Savepoint、升级；
+- **HDFS Operator**：HDFS 集群部署、升级、节点 Decommission；
 - **Pravega Operator**：流存储部署。
 
 **第五层：自研 Operator 的场景。** 当开源 Operator 不满足需求时自研：

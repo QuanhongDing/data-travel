@@ -285,7 +285,7 @@ Ranger 必须能覆盖这四层，且决策点（Plugin / Sidecar）部署在每
 - Ranger 通过 Plugin Hook 把策略评估下沉到本地，本地 Adapter 再翻译给底层存储；
 - 与 LakeFormation / Unity Catalog 等的「跨云 Catalog」组合使用，让 Bucket / Prefix 对上层透明。
 
-**第四层：与 CIEM / Data Security Posture 的关系。** 多云管控平台的合规状态不能靠「扫描一次」判断——需要持续评估（DSP - Data Security Posture Management）：监控哪些 IAM 角色有权访问数据、哪些权利是 unused，并把检测结果回写到策略中心，自动回收「幽灵权限」。
+**第四层：与 CIEM / Data Security Posture 的关系。** 多云管控平台的合规状态不能靠「扫描一次」判断——需要持续评估（DSPM - Data Security Posture Management）：监控哪些 IAM 角色有权访问数据、哪些权利是 unused，并把检测结果回写到策略中心，自动回收「幽灵权限」。
 
 **3. 常见陷阱**
 
@@ -298,7 +298,7 @@ Ranger 必须能覆盖这四层，且决策点（Plugin / Sidecar）部署在每
 
 - **「跨云账号冻结某个用户如何做到？」** 答：身份联邦 → 中央政策（deny all）+ 各云 IAM 同步执行；Kafka 事件驱动 + 30 分钟内全网生效。
 - **「跨云审计日志如何治理？」** 答：每云 audit → Kafka mirror → 中央 SIEM；保留与归档策略按统一周期。
-- **「DSP 的工具选型？」** 答：商用：Wiz / Lacework / Dig Security；自研：Cloudsploit / Steampipe 集成 Ranger / LakeFormation。
+- **「DSPM 的工具选型？」** 答：商用：Wiz / Lacework / Dig Security；自研：Cloudsploit / Steampipe 集成 Ranger / LakeFormation。
 
 **5. 参考资料**
 
@@ -323,13 +323,13 @@ Ranger 必须能覆盖这四层，且决策点（Plugin / Sidecar）部署在每
 - 是否理解「万节点 = KDC 必须多主 + 异地灾备」；
 - 能否说清 Kerberos 性能优化（TGT 复用、加密算法选择、principal 数量控制）；
 - 是否了解跨域 Trust 的工程边界。
-- 加分项：能给出具体参数（KDC CPU、principal 数、TLS 开关）。
+- 加分项：能给出具体参数（KDC CPU、principal 数）。
 
 **2. 参考答案框架**
 
 **第一层：高可用（HA）。**
 
-- **KDC 多主 + DNS SRV**：KDC 至少 3 主（主-主模式）+ 跨机房；客户端通过 `krb5.conf` 的 DNS SRV 记录自动 failover。
+- **KDC 多主 + DNS SRV**：KDC 至少部署 3 台，跨机房分布（主从与主主两种形态；主主需 LDAP 后端）；客户端通过 `krb5.conf` 的 DNS SRV 记录自动 failover。
 - **主从数据同步**：用 `kprop` 做主从同步，`kadmind` 暴露 master key；要定期演练「主 KDC 故障 → 从 KDC 接管」。
 - **Client 配置**：客户端上配所有 KDC 地址，避免单点。
 
@@ -373,10 +373,9 @@ Ranger 必须能覆盖这四层，且决策点（Plugin / Sidecar）部署在每
 - Cloudera CDP 7.x 关于 Kerberos HA 的部署指南。
 - 阿里 / 字节关于万节点集群 Kerberos 高可用的公开技术博客。
 - Amazon / Microsoft 关于云上 Kerberos Federation 的实践材料。
-- **招商银行的 KDC 多主 + 跨机房灾备** —— 在金融数据中心用 LDAP 作为 KDC 后端，配合 DNS SRV 多主模式 + `kprop` 同步演练。
+- **招商银行的 KDC 多主 + 跨机房灾备** —— 在金融数据中心用 LDAP 作为 KDC 后端，配合 DNS SRV 多主模式 + LDAP 双活。
 - **中国移动的大数据集群 Kerberos 多 KDC** —— 31 省分大数据集群的 Kerberos 跨省同步用 SCIM + 联邦认证 + 短 TTL 票据回收。
 - **国家电网调度系统 Kerberos 主主部署** —— 在调度自动化系统中用 KDC 主主 + LDAP 双活，确保主 KDC 故障时从 KDC 自动接管而不中断调度数据。
-- **平安银行** —— 平安银行的数据分级与脱敏实践——把客户、账户、交易按敏感度分级，配合 ABAC 权限与脱敏网关，是国内金融业最完整的案例。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
 

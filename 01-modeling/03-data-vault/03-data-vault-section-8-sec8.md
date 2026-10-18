@@ -553,7 +553,7 @@ WHERE match_rule = 'ID_CARD_EXACT_MATCH'
 
 - **场景 3：从自然语言查询自动生成 SQL。** 把"查询过去三个月所有 VIP 客户的下单金额"喂给 LLM，让 LLM 自动遍历 Hub/Link/Sat 生成对应的 PIT / Bridge 查询 SQL。
 
-- **代表项目**：dbtvault（结合 dbt 自动生成 DV 模型）、Databricks DataPilot（自然语言生成 SQL + DV 推荐）、Snowflake Cortex（自然语言 → SQL + DV 自动建模）。
+- **代表项目**：dbtvault（结合 dbt 自动生成 DV 模型）、Databricks Genie（自然语言生成 SQL + DV 推荐）、Snowflake Cortex（自然语言 → SQL + DV 自动建模）。
 
 **第三层：Agent 自演化——Self-Evolving Data Vault。**
 

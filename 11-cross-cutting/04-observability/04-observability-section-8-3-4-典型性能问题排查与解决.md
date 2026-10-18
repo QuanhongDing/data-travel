@@ -26,7 +26,7 @@
 **第三层：参数级优化（治标）。**
 - **NM 心跳合并**：`yarn.nodemanager.resource-monitor.interval-ms` 调大（默认 1s 可调到 3-5s）；`yarn.resourcemanager.nodemanagers.heartbeat-interval-ms`（RM 端）同步调整。
 - **AM 注册异步化**：早期 YARN 的 AM 注册走同步流程，Hadoop 2.9+ 加入异步路径；确认版本在 2.9+。
-- **Container 分配批量**：`yarn.scheduler.capacity.resource-calculator` 选 `DominantResourceCalculator`，开启 `assignmultiple`；`yarn.scheduler.fair.assignmultiple` 默认 1，可调到 5-10。
+- **Container 分配批量**：`yarn.scheduler.capacity.resource-calculator` 选 `DominantResourceCalculator`；Fair 调度器开启 `yarn.scheduler.fair.assignmultiple=true`（布尔开关，一次分配多个 Container）。
 - **状态存储优化**：`yarn.resourcemanager.fs.state-store.uri` 指向独立 Namenode；`yarn.resourcemanager.state-store.async` 启用异步写。
 - **GC 调优**：G1GC + `MaxGCPauseMillis=200`；堆 > 64GB 试 ZGC（JDK 15+）。
 - **RPC 异步**：`yarn.ipc.client.factory.class` 用 `HadoopYarnProtoRPC`；`yarn.ipc.server.read.threadpool.size` 调整。

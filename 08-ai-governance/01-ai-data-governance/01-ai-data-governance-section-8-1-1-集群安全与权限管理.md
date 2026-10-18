@@ -206,7 +206,7 @@
 
 **第二层：六步合规改造路径。**
 
-1. **数据资产盘点与分类分级**：执行 GB/T 35273 + GB/T 38667，把字段打上「一般 / 敏感 / 重要」三级标签；PII 字段额外标记 `pii-high/medium/low`；上线 ROPA（Record of Processing Activities）。
+1. **数据资产盘点与分类分级**：执行 GB/T 35273，把字段打上「一般 / 敏感 / 重要」三级标签；PII 字段额外标记 `pii-high/medium/low`；上线 ROPA（Record of Processing Activities）。
 2. **PII 检测与脱敏**：用 Presidio / 自研 NER 自动扫描全表，配合 Ranger Masking 做访问时改写。湖北某省级政务平台公开材料描述「按字段级分类分级 + 默认全脱敏 → 按角色透明开放」。
 3. **访问控制与最小授权**：基于 RBAC + ABAC（属性标签）；默认拒绝（deny-by-default），按业务理由单独授权；特权账号单独审计。
 4. **审计与可追溯**：所有数据访问（人、机器）记录：访问者、时间、资源、操作、依据。审计保留 ≥ 6 个月（敏感场景 ≥ 3 年）。落地：Kafka + ClickHouse + 冷归档。

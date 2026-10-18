@@ -183,7 +183,7 @@
 
 **4. 追问预测**
 
-- **「Kerberos 在万节点规模怎么扩展？」** 答：用跨域信任（Cross-Realm Trust）+ 多个 KDC 联邦；Uber 公开过把 KDC 拆分为多个分片（多 KDC 联邦）的实践（本节无法给出该分享的文档名与年份）。详见 §5.6.6。
+- **「Kerberos 在万节点规模怎么扩展？」** 答：用跨域信任（Cross-Realm Trust）+ 多个 KDC 联邦；LinkedIn 公开过把 KDC 拆分为多个分片（多 KDC 联邦）的实践（本节无法给出该分享的文档名与年份）。详见 §5.6.6。
 - **「敏感字段动态脱敏怎么做？」** 答：Ranger + Atlas + Hive View：Atlas 标"敏感"，Ranger 策略匹配，自动改写 SQL。
 - **「加密对性能影响多大？」** 答：HDFS Transparent Encryption 的加密读路径有可观测的性能损耗（【经验】档：幅度随加密算法、负载类型与是否启用 AES-NI 硬件加速而异，本节无法给出可溯源的统一数字）；CPU bound 场景可改用 AES-NI 硬件加速。
 

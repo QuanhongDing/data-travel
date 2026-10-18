@@ -210,7 +210,7 @@
 **产品与发布说明**
 
 - 【公开】dbt Semantic Layer 于 2023 年 GA（其 MetricFlow 引擎在该年并入 dbt 体系）；本节沿用 [§ 3 §3.2.2](10-metric-system-section-3-sec3.md) 与 [§ 7 §7.3.1](10-metric-system-section-7-sec7.md) 的同一条引用，请以 dbt 官方发布说明与文档当前版本为准。
-- 【公开】语义层的公开实现清单：dbt Semantic Layer、Cube（MetricQL）、LookML、Airbnb Minerva、AtScale、Lightdash 等，见本章 §4.3 表「开源语义层」行；每一家的定义格式与许可按其官方文档核验。
+- 【公开】语义层的公开实现清单：dbt Semantic Layer、Cube（MetricQL）、LookML、Airbnb Minerva、AtScale、Lightdash 等，见本章 §4.3 表「开源语义层」「商业语义层」行；每一家的定义格式与许可按其官方文档核验。
 - 【公开】云与 BI 厂商的自然语言取数能力在 2024 年前后发布，产品名与时间**统一以 §4.3 表「云厂商 AI 原生」行的口径为准**，本节不另立版本号。
 - 【公开】两条可自行核验的"前置条件"：Snowflake 一方要求先提供语义模型文件（本章 §4.5.4 给出注册语义模型再提问的示例）；Microsoft 一方把 Copilot 与 Fabric 容量档位、管理员租户开关绑定。前置条件比营销描述更值得读——它说明了这套能力依赖什么。
 - 【公开】Microsoft GraphRAG 于 2024 年开源（论文标题以该项目仓库的 publications 页为准）。

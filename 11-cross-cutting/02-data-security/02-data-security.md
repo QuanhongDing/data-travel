@@ -139,11 +139,11 @@
 - 1990s：数据库权限（DBMS GRANT）为主。
 - 2003：Sarbanes-Oxley Act（SOX）推动审计落地。
 - 2005-2010：数据加密（TDE、列级加密）普及。
-- 2010：Apache Sentry（Cloudera）发布，大数据权限管理起步。
 
 **大数据与合规驱动阶段（2010–2020）**：
 
 - 2012：GDPR 通过（2018 生效）。
+- 2013：Apache Sentry（Cloudera）发布，大数据权限管理起步。
 - 2014：Apache Ranger（Hortonworks）发布。
 - 2017：网络安全法（中国）实施。
 - 2018：GDPR 生效，个保法立法启动。

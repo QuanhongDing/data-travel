@@ -324,16 +324,16 @@
 - 分发 keytab 到所有节点。
 - 重启 HDFS / YARN，测试 `hdfs dfs -ls /` 看是否要票据。
 
-**Step 3：Hive 启用 Kerberos + Ranger Plugin。**
+**Step 3：Hive 启用 Kerberos。**
 - `hive-site.xml`：启用 `hive.server2.authentication = KERBEROS`。
-- 配置 Ranger Hive Plugin：在 `ranger-hive-plugin/install.properties` 配置 Ranger Admin URL，开启 audit。
-- 重启 HiveServer2，看日志确认 Plugin 加载成功。
+- 重启 HiveServer2 使 Kerberos 认证生效。
 
-**Step 4：Ranger Admin 部署。**
+**Step 4：Ranger Admin 部署与 Ranger Plugin 集成。**
 - 安装 Ranger Admin（含内置 Solr / MySQL）。
 - 配置 `ranger-admin-site.xml`：数据库连接、审计存储。
 - 启动 Ranger Admin，访问 Ranger Admin 的 Web 控制台（默认 6080 端口）。
 - 创建 Service（Hive / HDFS / HBase / Kafka），配置 resource、policy。
+- 配置 Ranger Hive Plugin：在 `ranger-hive-plugin/install.properties` 配置 Ranger Admin URL，开启 audit；重启 HiveServer2，看日志确认 Plugin 加载成功。
 
 **Step 5：Ranger Usersync 与 Tagsync 部署。**
 - Usersync：配置 LDAP / AD 同步用户组；定时任务。

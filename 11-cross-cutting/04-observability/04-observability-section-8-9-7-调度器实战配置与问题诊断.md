@@ -214,7 +214,7 @@ root
 
 **4. 追问预测**
 
-- **「实时队列和非实时怎么隔离？」** 答：实时队列放在独立父队列 + 关抢占 / 减 ACL + 严格 ACL；非实时队列走另一父队列。
+- **「实时队列和非实时怎么隔离？」** 答：实时队列放在独立父队列 + 保持可被抢占（`disable-preemption=false`，靠优先级与 max-capacity 优先保留，而非关抢占）/ 减 ACL + 严格 ACL；非实时队列走另一父队列。
 - **「队列命名规范？」** 答：`{env}.{team}.{purpose}` 三段式，如 `prod.realtime.flink`。
 - **「如何灰度新队列？」** 答：先 capacity=1 试运行，验证 ACL、抢占；再调到目标容量。
 
@@ -349,7 +349,7 @@ root
 - **C. 抢占失衡**：
   - 调高队列优先级（`priority`）；
   - 增加 `max-preemption-per-iteration`；
-  - 给队列 `disable-preemption=true`（保护不被抢）。
+  - **不要用 `disable-preemption=true` 保护队列。** 禁用抢占虽能给队列硬保证不被抢，但牺牲集群利用率（30% 资源空闲），是 §9.7.3 已列出的常见陷阱；保护不被抢应改用上面的优先级 / 抢占阈值手段。
 
 **第六层：长期治理 —— 资源再平衡。**
 - **季度 review**：每队列利用率 / SLA 满意度报表。
@@ -367,7 +367,7 @@ root
 
 **4. 追问预测**
 
-- **「Queue 的 fairShare 怎么算？」** 答：`fairShare = capacity × cluster_capacity / sum(capacity)`；FIFO 时是 `cluster_capacity × queue_capacity / sum`。
+- **「Queue 的 fairShare 怎么算？」** 答：`fairShare = capacity × cluster_capacity / sum(capacity)`，即按各队列 capacity 在总 capacity 中的占比分配集群容量。Fair / FIFO 属于队列内的 `.ordering-policy`，只决定队列内作业的排序，并不改变这条队列间的份额公式——两者不是同一公式的两种写法，也不构成两套算法。
 - **「如何识别 node-label 不匹配？」** 答：NM 标签 `node.labels` 与队列标签必须一致；调度器日志里有 `ResourceRequest` 与 NM 标签对比。
 - **「队列利用率低但作业在等？」** 答：PendingApplications > 0 且 AvailableMB = 0 → 资源被抢占或 max-capacity 满。
 

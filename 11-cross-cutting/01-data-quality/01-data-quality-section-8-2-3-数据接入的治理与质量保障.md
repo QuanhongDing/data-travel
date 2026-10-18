@@ -375,7 +375,7 @@ LinkedIn 在构建数据接入管道时，强烈推荐**二进制 + Schema**（A
 
 - `string → timestamp`：用 `to_timestamp` 函数（注意时区）。
 - `string → int`：注意空值、错误值的处理（默认转 `null` 还是报错）。
-- `int → bigint`：扩字段类型，**会破坏向后兼容**。
+- `int → bigint`：扩字段类型，**会破坏向前兼容**（旧版本读新数据）。
 - `float → decimal`：金额字段必须用 `decimal` 避免精度丢失。
 
 阿里 OneData 规范中要求**金额一律用高精度 `decimal`（如 `decimal(20,4)`）**——这是"类型一致性"的工程铁律（该规范原文本节无法给出可核验出处，此处按【经验】档理解）。

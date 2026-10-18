@@ -101,15 +101,15 @@
 **第二层：三层职责。**
 
 - **批处理层（Batch Layer）**：用 Spark 周期性（如 T+1）重算全量历史，结果写入 ADS 表的批处理分区（`_batch_dt=yyyymmdd`）。Spark 在 Delta 上做 `MERGE` / 全量覆盖，**承诺：给定同样的输入永远得到同样的输出**。
-- **速度层（Speed Layer）**：Flink 或 Spark Structured Streaming 消费 Kafka，做去重、维度关联、简单聚合，写入 ADS 表的实时分区（`_batch_dt` 留空，按事件时间分区）。**承诺：秒级/分钟级新鲜度，但允许被批结果覆盖**。
+- **速度层（Speed Layer）**：Flink 或 Spark Structured Streaming 消费 Kafka，做去重、维度关联、简单聚合，写入 ADS 表的实时分区（与批处理同批日期、携带当日 `_batch_dt`，并以 `source='speed'` 标记、按事件时间 `_event_dt` 过滤最近窗口）。**承诺：秒级/分钟级新鲜度，但允许被批结果覆盖**。
 - **服务层（Serving Layer）**：OneService API（FastAPI / Cube / dbt Semantic Layer）查询 ADS 时，**按批处理分区与实时分区在同一次查询里合并（见第三层）**；实时需求也可用 Doris / ClickHouse 做 OLAP 副本加速。这样避免了"同一指标两套数据来源"的口径漂移。
 
 **第三层：湖表布局。** Delta Lake 的好处是把批流写到同一张表的不同 dt 上，让"批流融合"简化为单表查询。
 
-- `dms_aof(orders, _batch_dt=20251015, _speed=batch)`
-- `dms_aof(orders, _batch_dt=20251015, _speed=speed, _event_dt >= now-1h)`
+- `dms_aof(orders, _batch_dt=20251015, source=batch)`
+- `dms_aof(orders, _batch_dt=20251015, source=speed, _event_dt >= now-1h)`
 
-服务层查询用 `WHERE _batch_dt = today AND (_speed='batch' OR _event_dt >= cutoff)`，批结果和速度层数据在同一查询里自然合并。
+服务层查询用 `WHERE _batch_dt = today AND (source='batch' OR _event_dt >= cutoff)`，批结果和速度层数据在同一查询里自然合并。
 
 **第四层：关键运维契约。**
 
@@ -245,7 +245,7 @@
 - **写入侧控制**（治本）：
   - 调小 `spark.sql.shuffle.partitions`、调大 `spark.sql.files.maxPartitionBytes`（默认 128 MB）。
   - 用 Iceberg 的 `write.distribution-mode=hash` 或 `bucket` 让数据按主键聚合写入。
-  - 流式场景用 `trigger(availableNow=True)` 而非 micro-batch，避免每个 micro-batch 产一个 commit。
+  - 流式场景用 `trigger(availableNow=True)`（处理完所有可用数据后停止）替代持续触发的连续 micro-batch，把写入收敛为有限批次、缓解小文件堆积。
 
 - **周期合并**（治标）：
   - **Iceberg**：`rewrite_data_files` procedure + `rewrite_position_delete_files`；常用 schedule 是每天合并 + 周合并删除文件。
@@ -323,15 +323,15 @@
 
 **第三层：与批处理层的统一——湖表作为公约数。** 关键设计：
 
-- **物理布局**：ADS 表有两个系列——`ads_orders_batch(dt='yyyy-mm-dd')` 和 `ads_orders_realtime(event_dt >= ...)`。速度层只覆盖最近窗口，批处理层覆盖全量。
+- **物理布局**：ADS 表有两个系列——`ads_orders_batch(_batch_dt='yyyy-mm-dd')` 和 `ads_orders_realtime(_event_dt >= ...)`。速度层只覆盖最近窗口，批处理层覆盖全量。
 - **服务层查询**（OneService API）：
   ```sql
   SELECT * FROM ads_orders
-  WHERE dt = '2025-10-15'
-    AND (source = 'batch' OR event_dt >= current_timestamp() - INTERVAL '1' HOUR)
+  WHERE _batch_dt = '2025-10-15'
+    AND (source = 'batch' OR _event_dt >= current_timestamp() - INTERVAL '1' HOUR)
   ```
   即"批结果 + 速度层最近窗口"，自然融合。
-- **回填**：批结果生成后，速度层在批覆盖范围内的旧数据被逻辑删除（用 Delta 的 `DELETE WHERE event_dt < cutoff` 或 schema 字段做软删除）。
+- **回填**：批结果生成后，速度层在批覆盖范围内的旧数据被逻辑删除（用 Delta 的 `DELETE WHERE _event_dt < cutoff` 或 schema 字段做软删除）。
 
 **第四层：性能优化要点。**
 
@@ -403,7 +403,7 @@
 - **模式 A：合并查询（Merge Query）**
   ```sql
   SELECT * FROM ads_orders
-  WHERE dt = today AND (source = 'batch' OR event_dt >= now - INTERVAL '1' HOUR)
+  WHERE _batch_dt = today AND (source = 'batch' OR _event_dt >= now - INTERVAL '1' HOUR)
   ```
   物理上同一张表的不同分区/字段，逻辑上"批结果 + 速度层最近窗口"。
 

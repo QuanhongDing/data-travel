@@ -29,20 +29,20 @@ Container = 物理进程，由 YARN NodeManager（NM）管控；Executor 是 Spa
   - **磁盘健康**：`yarn.nodemanager.disk-health-checker.enable` + `yarn.nodemanager.disk-health-checker.disk-free-space-threshold`。
 - 触发动作：Container OOM → NM kill Container → AM 收到 `ContainerFailed` 事件。
 
-**第三层：故障检测路径 2 —— AM 与 Executor 的双向心跳。**
+**第三层：故障检测路径 2 —— 心跳保活机制。**
 - **Executor → AM 心跳**：`spark.executor.heartbeatInterval`（默认 10s）；超过 `spark.network.timeout`（默认 120s）+ 重试次数未响应，AM 判定 Executor 失联。
-- **AM → NM 心跳**：保持 AM 注册状态；NM 不会主动 kill AM。
+- **AM → ResourceManager（RM）心跳**：AM 向 RM 注册、心跳保活；NM 只管 Container 生命周期，不承载 AM 的注册心跳。
 - **Executor 自身**：用 `BlockManager` 做连接保活。
 
 **第四层：故障恢复动作。**
 - **Task 重试**：`spark.task.maxFailures`（默认 4）控制 Task 重试次数；重试失败的 Stage 由 `spark.stage.maxConsecutiveAttempts`（默认 4，连续 Stage 尝试上限）控制。
 - **Executor 重启**：AM 收到 Executor 失联 → 触发 `SchedulerBackend.killExecutor` → 申请新 Container → 重启 Executor。
 - **调度启动等待**：`spark.scheduler.maxRegisteredResourcesWaitingTime`（默认 30s）控制开始调度前等待 Executor 注册的时间上限；超时后 Spark 以已注册资源开始调度，并不会让 Stage 失败。
-- **Application 重试**：`yarn.resourcemanager.am.max-attempts`（默认 2）控制 AM 重试；Driver 重启后从 checkpoint 恢复（Structured Streaming）或从头开始（DStream）。
+- **Application 重试**：`yarn.resourcemanager.am.max-attempts`（默认 2）控制 AM 重试；Driver 重启后从 checkpoint 恢复（Structured Streaming；DStream 开启 Checkpoint 时同样从 Checkpoint 恢复，未开启时从头开始）。
 
 **第五层：磁盘损坏的特别处理。** NM 健康检查发现磁盘损坏：
 - `yarn.nodemanager.disk-health-checker.disk-failures-tolerated`（默认 0）：容忍坏盘数量；
-- 触发动作：标记 NM `UNHEALTHY` → AM 心跳失败 → Container 被驱逐；
+- 触发动作：标记 NM `UNHEALTHY` → 该节点上的 Container 被驱逐；
 - 自动 Decommission：`yarn.resourcemanager.nm-unhealthy-handler` 配置自动加入黑名单。
 
 **3. 常见陷阱**
@@ -262,7 +262,7 @@ Container = 物理进程，由 YARN NodeManager（NM）管控；Executor 是 Spa
 - **HA 不配 QJM。** 早期 NN HA 用 NFS 共享 EditLog，单点风险更高。
 - **ZK 集群 3 节点同 rack。** ZK 节点必须跨 rack；同 rack 故障 ZK 全挂。
 - **副本数不变。** 默认 3 副本看似安全，但 rack-aware 没配置 = 3 副本可能在同 rack。
-- **Decommission 不规划。** Decommission 速度受 `dfs.datanode.bandwidthPerSec` 影响，太快会与生产抢资源。
+- **Decommission 不规划。** Decommission 速度受 `dfs.datanode.balance.bandwidthPerSec` 影响，太快会与生产抢资源。
 
 **4. 追问预测**
 

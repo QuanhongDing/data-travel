@@ -167,7 +167,7 @@ IDP 更新的管理工时（【推算】，推导链如下）
 - O*NET 数据库（美国劳工部，含跨职业技能重要度评分，按年度发布数据库版本）——同上；二者的差别在维护方式：由机构按年批量更新，而非随项目持续更新。
 - Charan, Drotter & Noel, «The Leadership Pipeline»（2001）——每个层级需要不同的领导技能、时间管理与工作价值观，不能跨层级跃迁（主文件 §1.1 已引）。它是「通道设计必须显式」这一论断的原始出处，与 AI 无关，因此这条判据不会因 AI 而改变。
 - Schein, «Career Anchors»（职业锚，1990）——个人的职业价值观有一个稳定核心，组织若只提供与核心不匹配的路径，个人会用流动来修正错配（[§7.3.4](02-talent-ladder-section-7-sec7.md) 已引）。
-- Winter, Manshreck & Wright, «Software Engineering at Google»（2020）——Google 的工程晋升依赖同行反馈与晋升委员会，而非直接经理单独决定（[§7.3.2](02-talent-ladder-section-7-sec7.md) 已引）。
+- Winters, Manshreck & Wright, «Software Engineering at Google»（2020）——Google 的工程晋升依赖同行反馈与晋升委员会，而非直接经理单独决定（[§7.3.2](02-talent-ladder-section-7-sec7.md) 已引）。
 - [PMBOK 指南第 6 版, 2017] 一类的项目管理知识体系把责任分配矩阵列为规划资源管理的工具——与本节的关系是反面的：**矩阵的定位是沟通与规划工具，不是授权机制；这一点不因 AI 改变。**
 
 **官方文档 / 发布说明（判定入口）**

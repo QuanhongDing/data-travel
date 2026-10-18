@@ -221,7 +221,8 @@ Agent 评估的可复现性由三样东西决定（缺一样，两次跑就不�
 
 ### 5.4 公开进展与文献
 
-- **实验方法论**：【公开】CUPED 的方法论文（Deng / Xu / Kohavi / Walker，WSDM 2013）；【公开】Interleaving 的配对比较方法（信息检索方向，2008 年前后发表于 CIKM / SIGIR / WSDM 系列会议；可按 "interleaving" 与 "retrieval evaluation" 组合检索核验具体篇目与年份）；【公开】RRF 融合的原始论文（Cormack 等，SIGIR 2009）。
+- **实验方法论**：【公开】CUPED 的方法论文（Deng / Xu / Kohavi / Walker，WSDM 2013）；【公开】Interleaving 的配对比较方法（信息检索方向，2008 年前后发表于 CIKM / SIGIR / WSDM 系列会议；可按 "interleaving" 与 "retrieval evaluation" 组合检索核验具体篇目与年份）。
+- **检索融合方法**：【公开】RRF 融合的原始论文（Cormack 等，SIGIR 2009）。
 - **因果推断**：【公开】Double / Debiased Machine Learning（Chernozhukov 等，2018，Econometrics Journal）；【公开】Causal Forest 与异质处理效应估计（Wager & Athey，2018，JASA）；【公开】Uplift 建模的元学习器（Künzel 等，PNAS 2019）；【公开】双重稳健的异质效应估计（DR-Learner，2020 年预印本；可按 "DR-learner" 与 "doubly robust heterogeneous effects" 检索核验其当前发表版本）。
 - **LLM 评估**：【公开】HELM（Stanford，2022 年起）；【公开】MT-Bench 与 Chatbot Arena 的裁判方法论文（2023）；【公开】过程奖励与逐步验证的代表工作 "Let's Verify Step by Step"（2023 年预印本，2024 年在 ICLR 发表；可按篇名检索核验当前版本）。
 - **Agent 评估**：【公开】WebArena（2023）、SWE-bench（ICLR 2024）、AgentBench（ICLR 2024）、GAIA（Meta，2023–2024 年间发布）、ToolBench（2023）、OSWorld（2024）、AndroidWorld（2024）的论文与公开榜单；【公开】SWE-bench Verified（2024），由发起方之外的机构做人工校验后发布的子集。

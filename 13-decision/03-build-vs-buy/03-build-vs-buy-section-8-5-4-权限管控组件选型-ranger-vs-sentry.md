@@ -32,7 +32,7 @@
 - **把 Sentry 与 Ranger 当成"完全替代品"等价对比**。两者路线不同，Sentry 的能力子集更小，不能简单说"换 Ranger 即可"——业务上需要 review 现有 Sentry 策略与 Impala 角色映射是否能在 Ranger 重写。
 - **忽视运维成本**。Ranger 的 plugin 模式让"权限策略生效"从"组件重启"变为"plugin 周期拉取"，对组件兼容性矩阵要求高；老旧 CDH 5.x 上的 Ranger plugin 在 HBase / Kafka 上常出现兼容事故。
 - **混淆"组件 vs 平台"**。Ranger 不只是权限组件，更是**统一管控平台**——它把"策略/审计/标签"三件套合并，Sentry 没有这种"平台属性"。
-- **忽略 CDP 时代的现状**。2020 年 Cloudera 合并 HDP 后，Ranger 已成为 CDP 默认选项，再讨论"选 Ranger 还是 Sentry"基本等同于"是否上 CDP"。
+- **忽略 CDP 时代的现状**。2018 年宣布、2019 年初完成的 Cloudera / Hortonworks 合并后，Cloudera 把 Ranger 作为统一权限方向；2020 年后 Ranger 已成为 CDP 默认选项，再讨论"选 Ranger 还是 Sentry"基本等同于"是否上 CDP"。
 
 **4. 追问预测**
 
@@ -64,11 +64,11 @@
 
 **2. 参考答案框架**
 
-**第一层：策略模型。** ① **Ranger**：策略以"资源 / 权限 / 委托人 / 条件"四元组存于 Ranger DB（MySQL/Postgres），每条 policy 是一个 JSON 风格的对象，**细到 HDFS path / Hive column / tag / action 级别**。Policy 可继承、可启用/禁用、可带 deny exception。② **Sentry**：策略是「**privilege model**」——把 Hive 的"server.database.table.column.action"抽象成 privilege，role 是 privilege 的集合，group 是 user 的集合，三层关系。Sentry 的策略粒度天然止于 SQL model 层（不能跨 HDFS/Kafka）。
+**第一层：策略模型。** ① **Ranger**：策略以"资源 / 权限 / 委托人 / 条件"四元组存于 Ranger DB（MySQL/Postgres），每条 policy 是一个 JSON 风格的对象，**细到 HDFS path / Hive column / tag / action 级别**。Policy 可继承、可启用/禁用、可带 deny exception。② **Sentry**：策略是「**privilege model**」——把 Hive 的"server.database.table.column.action"抽象成 privilege，role 是 privilege 的集合，group 是 user 的集合，三层关系。Sentry 的策略模型最初只围绕 Hive / Impala，后扩展到 HDFS / Kafka，但组件覆盖面（4-5 个）远窄于 Ranger（20+）。
 
 **第二层：授权生效路径。** ① **Ranger**：在 HiveServer2 / HDFS NameNode / Kafka Broker 内**嵌入 plugin**，plugin 周期（默认 30s）从 Admin REST 拉取策略缓存到本地。每次访问发生时，plugin 在 Hive Driver / HDFS RPC 内部**拦截**请求并按缓存策略评估——这是「in-process interceptor」模式，授权点离 SQL 解析最近，但代价是 plugin 与 Hive 各版本绑定，紧耦合。② **Sentry**：通过 **Sentry Binding** 嵌入 HiveServer2，策略集中存放在 **Sentry Service**（独立进程 + 数据库）；HiveServer2 在启动时从 Sentry Service 全量拉取策略并加载到本地内存，之后由 Hive Hook 在 SQL 执行阶段**内存判定**，无逐次 RPC 开销；代价是策略变更必须重启 HiveServer2 才能生效（冷加载）。
 
-**第三层：可扩展性。** ① **Ranger**：扩展性体现在两方面——可以加 plugin 接入新组件（Kafka、HBase、HDFS、Solr、Trino、Presto 都已原生支持）；可以加新策略类型（如 tag-based、masking、row filter）。② **Sentry**：扩展性弱——模型本身只覆盖 SQL 层，添加新组件要写新 Sentry Model；2020 年后社区基本停滞，新组件接入需要自己 fork。
+**第三层：可扩展性。** ① **Ranger**：扩展性体现在两方面——可以加 plugin 接入新组件（Kafka、HBase、HDFS、Solr、Trino、Presto 都已原生支持）；可以加新策略类型（如 tag-based、masking、row filter）。② **Sentry**：扩展性弱——模型以 Hive / Impala 的 SQL 授权为主、HDFS / Kafka 属后续扩展，添加新组件要写新 Sentry Model；2020 年后社区基本停滞，新组件接入需要自己 fork。
 
 **第四层：与企业平台的兼容性。** Ranger 的 plugin 架构在多组件共存的湖仓架构（如 Hive + Spark + Trino + Iceberg）中优势明显；Sentry 在 Hive + Impala 为主的传统 CDH 栈里与 Impala 集成最深（Impala daemon 直接连 Sentry Service，绕过 Hive metastore），性能更好。
 
@@ -77,7 +77,7 @@
 - **只讲"谁有 UI"**。UI 不是机制差异的核心。
 - **误以为 Sentry 必须绑定 Impala**。Sentry 也能接入 Hive，只是 Impala 用得更多。
 - **忽略"策略生效时延"**。Ranger plugin 默认 30s 拉取，期间修改策略不立刻生效；Sentry 的策略在 HiveServer2 启动时全量加载到内存，变更必须重启 HS2 才能生效——冷加载意味着策略更新要走发版。
-- **不区分 SQL 授权与文件级授权**。Ranger 同时覆盖 Hive (SQL) 与 HDFS (path)，Sentry 只覆盖 SQL——这在"分析师下数据到 S3 然后本地读"的场景下后果严重。
+- **不区分 SQL 授权与文件级授权**。Ranger 同时覆盖 Hive (SQL) 与 HDFS (path)，Sentry 从 Hive / Impala 起步、后扩展到 HDFS / Kafka，总共只有 4-5 个组件——这在"分析师下数据到 S3 然后本地读"的场景下后果严重。
 - **混淆"兼容性"和"可扩展性"**。兼容性指与现有组件版本匹配，可扩展性指未来能否接入新组件。
 
 **4. 追问预测**

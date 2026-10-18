@@ -65,7 +65,7 @@
 - **Uber 的 Exactly-Once 实时支付风控** —— 订单、支付、风控事件走 Kafka + Flink EOS 链路，强保证"同一笔交易事件只触发一次风控决策"，是出行行业金融化场景 EOS 的标准实现。
 - **Netflix ChAP（Chaos Automation Platform）的一致性保障** —— 在混沌工程注入故障时验证 Exactly-Once 语义是否被破坏，是头部流媒体公司对消息链路一致性的工程验证范式。
 - **字节跳动火山引擎基于 Kafka EOS 的实时特征链路** —— 实时特征从 Kafka 消费后写入 HDFS / Iceberg，依赖 EOS 保证特征不重复计算，对应国内大厂对 EOS 的规模化使用。
-- **美团 OCTO 服务的 Kafka EOS 实践** —— 美团内部基础架构在万台规模 Kafka 集群上启用 EOS，支撑外卖、到店等多业务线的交易链路一致性，是 OTHO 系数据中心一致性的代表。
+- **美团 OCTO 服务的 Kafka EOS 实践** —— 美团内部基础架构在万台规模 Kafka 集群上启用 EOS，支撑外卖、到店等多业务线的交易链路一致性，是 O2O 行业数据中心一致性的代表。
 - **滴滴订单一致性的 Flink EOS 落地** —— 订单创建、支付、分账走 Flink + Kafka EOS，保证高峰时段订单链路"零重复计费"，是出行行业 EOS 的标杆。
 
 > 注：以上参考资料按可核验程度分三类——① 规范 / 官方文档 / 论文 / 图书类条目（含文档站点名、章节名、论文题名与会议年份），可按条目名称自行检索核验，本节未附精确链接；② 标注企业 / 人名 / 平台并提到公开博客 / 公开演讲 / 公开分享 / 公开材料但未给篇名的条目，属方向性参考，本节未附链接，引用前请自行查证；③ 仅标注企业名的实践类条目（含各条目中的规模描述，如「PB 级」「万级 Flink 作业」，以及「标杆」「最完整」「最权威」等评价性表述），为方向性行业案例，本节未附可核验的文档名与年份。
@@ -256,7 +256,7 @@ Flink 的 Chandy-Lamport 分布式快照协议是这一切的核心：
 - **Uber 的 Flink EOS 实时支付链路** —— 支付事件从 Kafka 消费后经 Flink 2PC Sink 写入 MySQL / Iceberg，端到端 EOS 保证"同一笔支付事件只入账一次"，是出行行业金融化 EOS 的代表。
 - **Netflix ChAP 对 Flink EOS 的混沌验证** —— Netflix 用 ChAP 注入 Source / Sink / Checkpoint 各种故障，验证 Flink EOS 是否真在故障中保持承诺，是头部流媒体公司对 EOS 的工程验证范式。
 - **字节跳动火山引擎基于 Flink + Kafka EOS 的实时特征平台** —— 万级 Flink 作业统一走 EOS 链路，支撑推荐、广告、风控等场景的特征一致性。
-- **美团基于 Flink EOS 的外卖订单实时统计** —— 外卖订单从下单到履约的全链路实时统计靠 EOS 保证"同一订单只被统计一次"，是 OTHO 系外卖业务的 EOS 落地。
+- **美团基于 Flink EOS 的外卖订单实时统计** —— 外卖订单从下单到履约的全链路实时统计靠 EOS 保证"同一订单只被统计一次"，是 O2O 行业外卖业务的 EOS 落地。
 - **滴滴基于 Flink EOS 的订单计费** —— 订单金额计算与司机分账走 Flink EOS，避免高峰时段订单链路重复计费，是出行行业 EOS 的真实落地。
 
 > 注：以上参考资料按可核验程度分三类——① 规范 / 官方文档 / 论文 / 图书类条目（含文档站点名、章节名、论文题名与会议年份），可按条目名称自行检索核验，本节未附精确链接；② 标注企业 / 人名 / 平台并提到公开博客 / 公开演讲 / 公开分享 / 公开材料但未给篇名的条目，属方向性参考，本节未附链接，引用前请自行查证；③ 仅标注企业名的实践类条目（含各条目中的规模描述，如「PB 级」「万级 Flink 作业」，以及「标杆」「最完整」「最权威」等评价性表述），为方向性行业案例，本节未附可核验的文档名与年份。
@@ -337,7 +337,7 @@ Spark Structured Streaming 的 Checkpoint 写在可靠的分布式存储（HDFS 
 - **Netflix 的 Spark Structured Streaming 用户行为流水线** —— 实时用户行为从 Kafka 消费后用 foreachBatch + Cassandra upsert 实现 EOS，是头部流媒体公司的 Spark Streaming 落地。
 - **Uber 的 Spark Streaming + Iceberg 增量写入** —— Uber 用 Spark Structured Streaming 把订单事件增量写入 Iceberg，靠 foreachBatch + 幂等 upsert 保证 EOS，是出行行业湖仓一致性的代表。
 - **字节跳动基于 Spark Streaming 的实时特征链路** —— 实时特征从 Kafka 消费后用 Spark Streaming foreachBatch 写入 ClickHouse / HDFS，靠 EOS 保证特征不重复计算。
-- **美团 Spark Structured Streaming + Iceberg 的外卖订单实时统计** —— 外卖订单实时指标用 Spark Streaming + Iceberg EOS 实现，是 OTHO 系外卖业务的湖仓一致性落地。
+- **美团 Spark Structured Streaming + Iceberg 的外卖订单实时统计** —— 外卖订单实时指标用 Spark Streaming + Iceberg EOS 实现，是 O2O 行业外卖业务的湖仓一致性落地。
 - **滴滴 Spark Streaming + Iceberg 订单计费对账** —— 订单计费用 Spark Streaming 走 EOS 写入 Iceberg，事后离线对账，是出行行业订单一致性的代表。
 
 > 注：以上参考资料按可核验程度分三类——① 规范 / 官方文档 / 论文 / 图书类条目（含文档站点名、章节名、论文题名与会议年份），可按条目名称自行检索核验，本节未附精确链接；② 标注企业 / 人名 / 平台并提到公开博客 / 公开演讲 / 公开分享 / 公开材料但未给篇名的条目，属方向性参考，本节未附链接，引用前请自行查证；③ 仅标注企业名的实践类条目（含各条目中的规模描述，如「PB 级」「万级 Flink 作业」，以及「标杆」「最完整」「最权威」等评价性表述），为方向性行业案例，本节未附可核验的文档名与年份。
@@ -517,7 +517,7 @@ CDC 在 Lakehouse 中的**关键作用**：
 - **Netflix 的 CDC + Iceberg 增量同步** —— Netflix 用 Debezium 同步用户行为数据库到 Iceberg 湖表，是头部流媒体公司 CDC 落地的代表。
 - **阿里精卫（基于 trigger + CDC）的高可用数据同步** —— 阿里精卫是 trigger 路径的代表性工具，用于支持没有 binlog 的数据库（如 PolarDB 早期版本），是国内 CDC 工具的代表。
 - **字节跳动基于 Debezium 的实时特征 CDC 链路** —— 推荐特征从业务库 CDC 到 Kafka + Iceberg，是国内大厂 CDC 的规模化使用。
-- **美团基于 Debezium 的外卖订单 CDC 落地** —— 外卖订单库 binlog 通过 Debezium 同步到 Kafka + Flink 实时层，是 OTHO 系外卖业务的 CDC 落地。
+- **美团基于 Debezium 的外卖订单 CDC 落地** —— 外卖订单库 binlog 通过 Debezium 同步到 Kafka + Flink 实时层，是 O2O 行业外卖业务的 CDC 落地。
 - **滴滴基于 CDC + Iceberg 的订单计费一致性** —— 订单库 CDC 到 Iceberg，支撑实时计费与离线对账，是出行行业 CDC 一致性的代表。
 - **京东 PB 级订单 CDC 与实时 ETL** —— 京东零售订单库通过 CDC 同步到实时数仓，支撑 618 / 双 11 大促场景的实时一致性。
 
@@ -622,7 +622,7 @@ Flink 用 **Chandy-Lamport 分布式快照协议**实现全局一致快照：
 - **Flink 在 Uber 的实时支付链路** —— Uber 用 Flink EOS 支撑支付链路，订单、支付、风控事件精确一次处理，是出行行业 EOS 的代表。
 - **Netflix ChAP 对 Flink EOS 的混沌验证** —— Netflix 用 ChAP 注入各种故障，验证 Flink EOS 在异常下是否仍保持，是头部流媒体公司对 EOS 的工程验证范式。
 - **字节跳动火山引擎基于 Flink EOS 的实时特征链路** —— 万级 Flink 作业统一走 EOS，是国内大厂 EOS 的规模化使用。
-- **美团基于 Flink EOS 的外卖订单实时统计** —— 外卖订单全链路实时统计靠 Flink EOS 保证，是 OTHO 系外卖业务的 EOS 落地。
+- **美团基于 Flink EOS 的外卖订单实时统计** —— 外卖订单全链路实时统计靠 Flink EOS 保证，是 O2O 行业外卖业务的 EOS 落地。
 - **滴滴 Flink EOS 的订单计费与司机分账** —— 订单金额计算与司机分账走 Flink EOS，是出行行业 EOS 的真实落地。
 - **阿里云 Flink 版的实时计算 EOS** —— 阿里云 Ververica Flink 在 PB 级数据上的 EOS 实践，是国内云厂商 Flink EOS 的工程范本。
 

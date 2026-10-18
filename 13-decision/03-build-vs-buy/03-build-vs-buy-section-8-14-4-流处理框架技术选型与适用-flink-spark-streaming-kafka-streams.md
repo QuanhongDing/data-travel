@@ -17,7 +17,7 @@
 **第一层：核心设计理念。**
 
 - **Apache Flink**：**原生流处理（Native Streaming）**——把"流"当作一等公民，批只是"有界流"的特例。核心抽象是 `DataStream` / `Table` API，执行引擎以事件为单位流动，**事件时间（Event Time）+ 水位线（Watermark）** 原生支持。状态管理是一等公民（Keyed State / Operator State），checkpoint / savepoint 提供精确一次（Exactly-Once）语义。
-- **Spark Structured Streaming**：**微批（Micro-batch）为骨、Continuous 模式为辅**——把流当作"无界表"，按固定间隔（如 1s–1min）切批处理。核心是 `DataFrame` / `Dataset` API，复用 Spark SQL 优化器；最近引入 Continuous Processing 模式做低延迟（但生态与特性支持有限）。
+- **Spark Structured Streaming**：**微批（Micro-batch）为骨、Continuous 模式为辅**——把流当作"无界表"，按固定间隔（如 1s–1min）切批处理。核心是 `DataFrame` / `Dataset` API，复用 Spark SQL 优化器；自 Spark 2.3（2018）引入 Continuous Processing 模式做低延迟（但长期处于实验性、功能受限）。
 - **Kafka Streams**：**库（Library）而非引擎**——应用内嵌的流处理库，读写都绑定 Kafka，无独立集群。核心是基于 Kafka 分区做并行，用 **KTable / KStream / GlobalKTable** 抽象流与表。适合"轻量、单一 Kafka 数据源、应用内嵌"场景。
 
 **第二层：三维度强弱。**

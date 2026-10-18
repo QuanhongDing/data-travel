@@ -26,7 +26,7 @@
 **第三层：扩容/缩容的工程关键点。**
 
 - **扩容**：① **Kafka Consumer Group 重平衡**（rebalance）——扩容会增加 partition rebalance 延迟，必须调 `session.timeout.ms` / `max.poll.interval.ms`；② **Flink TaskManager 扩容**——新 TM 启动需要恢复状态，从 checkpoint 恢复速度决定扩容速度；③ **状态后端选择**——RocksDB state backend 比 HashMap 慢但支持增量 checkpoint，更适合大状态。
-- **缩容**：① **Kafka 缩分区**——Kafka 不支持自动缩分区，必须先扩后迁 + 手动 rebalance；② **Flink 缩并发**——按 max parallelism 调整 parallelism，Flink 自动缩放并行度；③ **检查点清理**——缩容后老 checkpoint 必须清理，避免占用存储。
+- **缩容**：① **Kafka 缩分区**——Kafka 不支持对已有 topic 原地减少分区数（扩分区不等于缩分区）；要真正减少分区，只能新建一个分区数更少的新 topic，再把生产端与消费端迁移过去、下线旧 topic；② **Flink 缩并发**——按 max parallelism 调整 parallelism，Flink 自动缩放并行度；③ **检查点清理**——缩容后老 checkpoint 必须清理，避免占用存储。
 
 **第四层：工业实践。** 阿里云 Flink on K8s 用「**存算分离 + 自定义 HPA**」支撑双 11 实时大屏，扩容分钟级完成。字节跳动火山引擎 Flink Cloud 用「**云原生 + 自适应并发**」实现秒级弹性。Uber 在其 Kafka 集群上用「**LinkedIn Cruise Control + 自动 rebalance**」做分区自动平衡，是 Kafka 弹性的工业范本。Netflix 用 Flink + RocksDB state backend + 自定义 Autoscaler 实现实时推荐管线的弹性。LinkedIn 在 Kafka 4.x（KIP-500）的「**KRaft 模式**」上完全去 Zookeeper 化，Broker 容器化后扩展更顺滑。
 
@@ -40,7 +40,7 @@
 **4. 追问预测**
 
 - **「Flink Reactive Mode 怎么用？」** 答：开启 `scheduler-mode: reactive`，配置 `scheduling.source.assignments` 与 `taskmanager.numberOfTaskSlots`，Flink 自动按 Slot 利用率扩缩容。
-- **「Kafka 缩分区怎么办？」** 答：先扩分区（如 12 → 24），做 partition reassignment 让数据均匀分布；老 consumer 自然迁移到新分区；老的 12 分区仍可消费但不再写入。
+- **「Kafka 缩分区怎么办？」** 答：Kafka 不支持对已有 topic 减少分区数，扩分区也不等于缩分区——扩完后全部 24 个分区都参与写入，不存在「老分区不再写入」。要减少分区只能新建一个分区数更少的新 topic，把生产端改写到新 topic、消费端迁移过去，再下线旧 topic。
 - **「如何保证弹性时不丢数据？」** 答：① Flink 用 exactly-once + checkpoint；② Kafka 用 `acks=all` + 幂等 producer；③ 业务层做幂等消费。
 - **「云原生 Flink 的成本怎么算？」** 答：存算分离 + 抢占式 Spot 实例 + 自动缩容，按实际使用计费；一般可比 YARN 模式降本 30%–50%。
 

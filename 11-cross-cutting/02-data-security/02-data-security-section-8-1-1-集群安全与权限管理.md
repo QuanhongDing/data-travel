@@ -81,7 +81,7 @@
 
 **第三层：性能保障。**
 
-- **策略缓存**：Ranger Plugin 在每台 Executor 内存缓存策略（默认 30 秒）；Spark Driver 启动时预热，避免首次任务全表扫策略。
+- **策略缓存**：Ranger Plugin 在 Driver 进程内缓存策略（默认 30 秒）；Spark Driver 启动时预热，避免首次任务全表扫策略。
 - **批量授权**：把"用户的所有角色"预计算成位图（Bitmap），匹配变成位运算；Uber 在万节点 Spark 上的 RBAC 即采用类似优化。
 - **增量同步**：Ranger Admin 通过 REST 推送增量策略变更，避免全量同步拖垮网络。
 - **本地 ACL 决策**：简单权限本地判；只有涉及动态条件（time / IP / tag）才回查 Ranger Admin。

@@ -105,7 +105,7 @@
 
 **4. 追问预测**
 
-- **「100 万条策略性能怎么样？」** 答：Ranger Admin 负责分发，Plugin 缓存策略；评估在本地毫秒级完成。瓶颈在 Admin 的策略同步网络，不在评估本身。
+- **「100 万条策略性能怎么样？」** 答：Ranger Admin 负责分发，Plugin 缓存策略；单次评估在本地缓存完成、不产生到 Admin 的 RPC。但策略规模上万条后，Plugin 匹配会从哈希查退化为顺序匹配、评估 RT 显著上升——100 万条时评估本身并非毫秒级，瓶颈在评估侧而非 Admin 的变更分发；需要做策略合并（policy compaction）与热策略分级缓存。
 - **「Tag-Based Policy 的标签从哪来？」** 答：从元数据系统（Atlas / DataHub / Unity Catalog）通过 Kafka 推送过来；标签本身需要分类分级流程。
 
 **5. 参考资料**
@@ -180,14 +180,14 @@
 - 是否能从**实现层**说清差异：Plugin 拦截 vs HMS 绑定。
 - 能否说清策略表达力差异（动态脱敏 / 行级过滤）。
 - 是否知道策略生效方式的差异（热加载 vs 冷加载）。
-- 加分项：能讲清性能权衡（Ranger Plugin 判定在本地缓存完成、缓存未命中才多一次到 Ranger Admin 的 RPC vs Sentry 的策略存在自身服务里、HS2 启动时加载到内存，判定不产生额外 RPC——它绕开的正是 HMS 这条路径）。
+- 加分项：能讲清性能权衡（Ranger Plugin 判定在本地缓存完成、单次评估不产生到 Ranger Admin 的 RPC——到 Admin 的 RPC 只在周期刷新策略时发生 vs Sentry 的策略存在自身服务里、HS2 启动时加载到内存，判定不产生额外 RPC——它绕开的正是 HMS 这条路径）。
 
 **2. 参考答案框架**
 
 **第一层：实现机制差异。**
 
 - **Ranger**：通过 Hive Plugin 嵌入 HiveServer2；策略存在 Ranger Admin（MySQL/Postgres）；Plugin 启动时拉策略，热加载（30 秒内生效）；SQL 编译阶段评估策略；支持列脱敏、行过滤、tag-based policy。
-- **Sentry**：通过 Sentry Binding 嵌入 HiveServer2；策略存在 Sentry 服务（也用 MySQL）；Hive 启动时读策略，冷加载（重启 HiveServer2 生效）；Hive Hook 在 SQL 执行阶段拦截；只支持表 / 列级权限。
+- **Sentry**：通过 Sentry Binding 嵌入 HiveServer2；策略存在 Sentry 服务（也用 MySQL）；Hive 启动时读策略，冷加载（重启 HiveServer2 生效）；Hive Hook 在 SQL 执行阶段拦截；支持 Database / Table / Column / URI 级权限（不支持行级过滤 / 动态脱敏）。
 
 **第二层：功能特性差异。**
 
@@ -204,7 +204,7 @@
 
 **第三层：性能与一致性权衡。**
 
-- **Ranger**：每次 SQL 评估由 Plugin 在本地缓存里判定，**未命中才多一次到 Ranger Admin 的 RPC**（评估本身不产生 RPC）；策略更新即时生效；但依赖 Ranger Admin 可用性。
+- **Ranger**：每次 SQL 评估由 Plugin 对本地缓存中的策略副本在插件内求值，**单次评估不产生到 Ranger Admin 的 RPC**（到 Admin 的 RPC 只发生在周期刷新策略时）；策略变更按热加载周期（30 秒内）生效；但依赖 Ranger Admin 可用性。
 - **Sentry**：策略在 HiveServer2 启动时加载到内存；无 RPC 开销（内存判）；但策略更新必须重启 HS2 才能生效。
 
 **第四层：典型迁移路径。** Cloudera CDH 5.x 时代默认 Sentry；CDH 6.x 后转向 Ranger；很多老客户正在做 Sentry → Ranger 迁移。迁移的难点不是数据（策略可以重新导入），而是组织——团队需要重新培训 Ranger 的概念。

@@ -229,7 +229,7 @@ GET /api/v1/metric/gmv?dim=date,city&filter=is_new_user=true&time_range=last_30d
 - 阿里《大数据之路》——OneService 屏蔽差异的国内范本。
 - Databricks Unity Catalog 官方文档——Catalog / Metrics / API 统一的产品范式。
 - Snowflake Cortex 官方文档——统一查询 + AI 的现代实现。
-- 《Designing Data-Intensive Applications》第 11 章——数据系统对外契约的设计原则。
+- 《Designing Data-Intensive Applications》第 4 章「Encoding and Evolution」——数据系统对外契约的设计原则。
 - **永辉超市零售数据中台对外只暴露 OneService 指标 API** —— 门店系统无需感知底层存储从 Hive 切换到 Iceberg 的迁移。
 - **平安银行信用卡指标查询通过统一服务层屏蔽底层迁移** —— 公开案例描述了从 Hive 到 Iceberg 切换期间调用方零感知。
 - **中信证券研报数据 OneService 封装** —— 业务方通过统一 API 拉取指标，底层从传统数仓切换到湖仓时契约稳定。

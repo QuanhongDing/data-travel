@@ -18,7 +18,7 @@
 **第一层：先定义问题边界。** NameNode 内存增长 ≠ 内存泄漏。增长曲线分三类：① 线性但增速 < 数据量增速——**正常**（Namespace 随文件数自然增长）；② 线性且增速远超数据量增速——**疑似泄漏**；③ 阶跃式跳变——**通常是某次批量创建/删除**。所以第一步永远是「确认是泄漏」，而不是直接抓 dump。
 
 **第二层：定位阶段。**
-- **采样分析**：开启 `NameNode` 的 `jmx`（默认端口 9010 / 50070），采集 `HeapMemoryUsage` / `NumFilesUnderConstruction` / `BlocksTotal` / `PendingDeletionBlocks` 等指标；阿里 MaxCompute 体系下也使用自研 RPC 染色 + 慢调用分析（本节未附其文档名与链接，按【经验】档处理）。
+- **采样分析**：开启 `NameNode` 的 `jmx`（默认端口 50070（Hadoop 2.x）/ 9870（Hadoop 3.x）），采集 `HeapMemoryUsage` / `NumFilesUnderConstruction` / `BlocksTotal` / `PendingDeletionBlocks` 等指标；阿里 MaxCompute 体系下也使用自研 RPC 染色 + 慢调用分析（本节未附其文档名与链接，按【经验】档处理）。
 - **Heap Dump 取证**：`jmap -dump:live,format=b,file=nn.hprof <pid>`（离线抓）；线上环境优先用 `jcmd <pid> GC.heap_dump`，**会触发 Full GC**，必须在低峰期做，dump 后立刻拷贝走（占用 2× 堆大小）。
 - **工具分析**：Eclipse MAT 分析 `Leak Suspects` / `Dominator Tree`；关注 `org.apache.hadoop.hdfs.server.namenode.FSNamesystem`、`BlockManager` 的 `excessReplicateMap` / `pendingReplication` 等容器。
 - **版本漏洞**：HDFS 历史上出过多次内存缺陷（HDFS-14872 / HDFS-16547 / BlockReceiver 的 race condition），需要核对当前 Hadoop 版本对应的 Jira 与补丁。
@@ -300,7 +300,7 @@
 **4. 追问预测**
 
 - **「如何区分是真实数据满还是临时文件满？」** 答：`du -sh /data/dn/*/current/BP-*/current/finalized` 看实际 HDFS block 文件大小，与 NM 的 `ContainerLocal` 目录 `du -sh /data/nm-local-dir` 对比。差异大说明是临时文件。
-- **「Decommission 的速度怎么控制？」** 答：`dfs.datanode.bandwidthPerSec` 控制搬迁带宽（默认 10 MB/s），高带宽下会与生产流量抢资源。
+- **「Decommission 的速度怎么控制？」** 答：`dfs.datanode.balance.bandwidthPerSec` 控制搬迁带宽（默认 10 MB/s），高带宽下会与生产流量抢资源。
 - **「HDFS Federation 下磁盘治理有什么不同？」** 答：每个 Namespace 有独立的 DN pool，需要按 Namespace 做磁盘监控；Disk Balancer 在 Federation 下也按节点运行。
 - **「挂载点满了但节点其它盘空着，怎么办？」** 答：HDFS 3.x Disk Balancer + 多目录配置；或调整 RoundRobin 策略（`dfs.datanode.fsdataset.parallel.volume.balancing.enabled`）。
 
