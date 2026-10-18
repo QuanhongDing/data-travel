@@ -1,263 +1,203 @@
-> 本文件是 **04-streaming-store.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](04-streaming-store.md)。
+> 本文件是 **04-streaming-store.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](04-streaming-store-section-3-sec3.md) 里的模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](04-streaming-store.md)。
 
 ## 4. 工程实现
 
+[§ 3](04-streaming-store-section-3-sec3.md) 把模式选择还原成几条具体约束：**持久层放在哪里**（Broker 本地磁盘 / 独立存储集群 / 对象存储）、**元数据由谁管理**、扩容时数据要不要搬、保留多久与谁来付这份存储费（[§ 3.1](04-streaming-store-section-3-sec3.md)）。其中决定「要不要走计算存储分离这条支线」的判据只有一条——**存储增长是否真的与流量增长脱钩**（[§ 3.3](04-streaming-store-section-3-sec3.md)）。本节接在它后面回答：**选定之后，这份架构在你的机器清单、你的消费者代码和你的账单上具体长什么样**。同一个选型落在两家公司会变成完全不同的动作，差别在团队有没有运维有状态集群的能力、现存消费端的位点语义是什么、保留期由谁签字。
+
+本文件对两类读者写的：**从零搭建的团队**按 4.1 的七步顺序走即可；**在已有集群上改造的团队**重点看 4.4（存量迁移）与 4.6（自检），它们的瓶颈通常不是「没部署」，而是「保留了几年、但位点语义与保留期都没人定过」。
+
+一条前置约定贯穿全节：**所有「多少」都必须来自你自己的实测**——单分区吞吐、端到端 P99、每千条消息的请求成本、冷读比例、保留期。选型与规划记录里凡是没有实测支撑的理由，都只能记为待验证，不能记为结论。
+
 ### 4.1 落地步骤
 
-**Step 1：选型（2-4 周）**
+**Step 1：选型（【经验】2–4 周，随候选数量与 PoC 复杂度变）**
 
-- 通用：Kafka（生态最大）。
-- 云原生 / 多租户：Pulsar。
-- 阿里系：RocketMQ。
-- 云上 Serverless：AutoMQ / Warpstream。
+- 按持久层的落点筛候选：通用场景 Kafka；云原生 / 多租户 Pulsar；阿里系业务与事务消息 RocketMQ；云上 Serverless 与按量付费 AutoMQ / Warpstream 一类。
+- 主判据只有一条：**存储增长是否真的与流量增长脱钩**。脱钩（存储涨得远快于流量）才轮得到计算存储分离；同比例增长时，分离带来的收益接近于零 [§ 3.3](04-streaming-store-section-3-sec3.md)。
+- 用你自己的消息大小分布与读写比对候选做一次小规模 PoC。
+- **产物**：选型记录——持久层落点、扩容是否搬数据、保留期与计费方式（容量 / 请求次数 / 出网流量三项分开）、每条的实测依据。
+- **判据**：PoC 里量出三个数——单分区吞吐、端到端 P99、每千条消息的请求成本（对象存储类实现必测）。三个数量不出来，选型记录里的理由就还是立场而不是证据。
+- **为什么必须第一步**：持久层落点决定了后面每一步的内容——要不要规划 KRaft、要不要做分层、监控里有没有「冷读比例」这一项。选错了，后面六步都要重做。
 
-**Step 2：集群规划（1-2 周）**
+**Step 2：集群规划（【经验】1–2 周）**
 
-- Broker 数：3-10（取决于峰值吞吐）。
-- Partition 数：预估未来 1-2 年峰值。
-- 副本数：3（生产环境）。
-- 磁盘：NVMe SSD（Kafka 顺序写 + PageCache）。
+- Broker 数：【经验】3–10，随峰值吞吐与可用性要求变；跨可用区的分布与副本同步的网络规划一并确定。
+- Partition 数：按「峰值吞吐 ÷ 单分区实测吞吐 × 预留系数」估算，并按未来 1–2 年的峰值留余量【推算】（推导链：先压测出单分区吞吐 → 取业务峰值吞吐 → 相除得到下限 → 乘以预留系数覆盖增长与倾斜）。
+- 副本数：【经验】生产取 3（容一次节点故障后仍有足够副本可确认），并与最小同步副本数、确认策略成组设定。
+- 磁盘：NVMe SSD——顺序写与 PageCache 是这套架构性能假设的前提。
+- **产物**：集群规格表（Broker 数 / 分区数 / 副本数 / 磁盘类型与容量 / 节点规格）+ 单分区吞吐的压测记录。
+- **判据**：抽 3 个 Topic，核三件——分区数是否大于消费者组内消费者数且留有余量；`min.insync.replicas` 与确认策略是否配套；磁盘告警阈值是否低于保留策略所需容量（用保留期 × 日增字节反算）。
+- **为什么必须第二步、且在压测之前**：分区数是并行度上限，且改动会改变同一 key 的分区映射（等于改数据分布，见 [§ 3.5](04-streaming-store-section-3-sec3.md)），必须一次算够；副本与确认策略是「数据在故障中会怎样」这条独立轴的配置，晚配等于没配。
 
-**Step 3：网络与安全（1-2 周）**
+**Step 3：网络与安全（【经验】1–2 周）**
 
-- 内网带宽 ≥ 10 Gbps。
-- SASL / SSL 认证。
-- ACL 权限控制。
+- 内网带宽【经验】10 Gbps 起步（随峰值吞吐与副本同步量变）；SASL / SSL 认证；ACL 权限控制，按主题给权限而不是按集群。
+- 明确出网流量与跨区流量由谁付费；对象存储类实现把请求次数也纳入预算。
+- **产物**：认证与 ACL 策略 + 主题级权限矩阵 + 网络带宽与出流量预算。
+- **判据**：用一个非授权账号实际发一条消息，确认被拒（只核配置文件不算）；再核「副本同步与分区重分配占用多少带宽」有没有量过——追赶复制同样是带宽大户。
+- **为什么放在规划之后、上线之前**：安全配置是发布前必须就位的一次性动作，而带宽是扩容时最容易被忽略的瓶颈。
 
-**Step 4：Schema 管理（1-2 周）**
+**Step 4：Schema 管理（【经验】1–2 周）**
 
-- Confluent Schema Registry / Karapace / 自研。
-- Avro / Protobuf（推荐）。
+- 部署注册中心（Confluent Schema Registry / Karapace / Apicurio / 自研「数据库 + Service」）并**显式设定兼容性策略**（向后 / 向前 / 全兼容）。
+- 序列化格式选 Avro / Protobuf 一类带 schema 标识的格式；schema 变更走评审流程，注册中心作为门禁。
+- **产物**：注册中心实例 + 兼容性策略配置 + 主题与 schema 的对应表 + schema 变更流程。
+- **判据**：抽 3 个主题，**实际提交一次不兼容的 schema 变更，确认被拒绝**——只在文档里写「应当拒绝」不算。这条在 Agent 事件流场景里从「推荐」变成「必需」：事件 schema 一旦演进失控，历史事件就再也拼不回一次完整的决策（见 [§ 5.2.1](04-streaming-store-section-5-ai.md)）。
+- **为什么必须早于上线**：schema 一旦发布就进入兼容性约束，旧事件永远存在；等注册中心后补时，已经有一批无约束的消息在流动。
 
-**Step 5：监控告警（1-2 周）**
+**Step 5：监控告警（【经验】1–2 周）**
 
-- Kafka Exporter + Prometheus + Grafana。
-- Consumer Lag、Broker 健康、Disk、Network。
+- 采集与看板：Kafka Exporter + Prometheus + Grafana（或同类托管方案）。
+- 指标至少覆盖六项：**每个消费者组的滞后**、Broker 健康与存活、**磁盘水位与对象存储用量**、网络、ISR 收缩与重平衡次数、**无消费者的分区数**。
+- **产物**：Dashboard + 告警规则 + 每类指标的 owner。
+- **判据**：找一个「已无消费者超过 N 天」的分区，看现有指标能否把它找出来；答不出来就说明你在为没人读的数据长期付费。第二个动作：核告警阈值是否有基线（滞后告警若按固定值配，会在大促式的写入放量时误报）。
+- **为什么必须在这一步而不是上线后**：流式系统的故障多表现为「延迟累积」而不是「报错」，滞后是静默退化的唯一早期信号，而它只有在有基线之后才能被识别为异常。
 
-**Step 6：分层存储（如需要，2-4 周）**
+**Step 6：分层存储（如需要，【经验】2–4 周）**
 
-- Kafka Tiered Storage 配置 S3/OSS。
-- Pulsar Tiered Storage 配置 S3/OSS。
+- Kafka Tiered Storage 配 S3 / OSS；Pulsar Tiered Storage 配 S3 / OSS；确定**热窗口**（本地保留多久 / 多少）与卸载策略。
+- 把冷读比例接进观测，并把对象存储的容量费、请求费与出流量费纳入成本模型。
+- **产物**：分层配置 + 热窗口参数 + 冷读路径的观测与出流量预算。
+- **判据**：做一次「消费者停滞后追赶」演练，把追赶时间量出来并与不分层时的历史值对比。答不出追赶时间的量级，就不要把保留期拉长。
+- **为什么放在监控之后**：分层最直接的代价是冷读延迟与出流量费用，没有监控就没有代价曲线，热窗口只能靠感觉定。
 
-**Step 7：测试与上线（2-4 周）**
+**Step 7：测试与上线（【经验】2–4 周）**
 
-- 压测（生产者 / 消费者 / Broker）。
-- 故障演练（Broker 宕机、网络分区）。
-- 灰度上线。
+- 压测：生产者、消费者、Broker 三侧分别压，不要只压端到端。
+- 故障演练：Broker 宕机、网络分区、**杀掉主副本节点**；灰度上线并明确回滚路径。
+- **产物**：压测报告 + 故障演练记录 + 灰度与回滚方案。
+- **判据**：故障演练后核两件——是否有「已确认写入」丢失（这是确认策略与最小同步副本数是否真正配套的唯一验证）；重平衡期间消费者是否出现重复处理（这是消费端幂等是否真正生效的唯一验证）。
+- **为什么放在最后**：它验证的是前六步的配置是否自洽——分区数与并行度、副本与确认策略、保留期与磁盘容量。任何一步的假设错了，都会在这里以「压测很漂亮、故障演练时丢消息」的形式暴露。
+
+**本步里最常被跳过的是 Step 7 的故障演练**：压测能看到数字，故障演练只看到「没出事」，因此在排期上最先被压缩。跳过后第一个出问题的时点不是上线当天，而是**上线后的第一次真实节点故障**（可能是几个月后）：症状是丢一批已返回成功的写入、或下游出现重复订单，而此前每一项性能指标都正常。第二常被跳过的是 Step 5 里的「无消费者的分区数」——它不产生告警，只产生账单。
 
 ### 4.2 关键技术点
 
-**1. Kafka KRaft 集群配置**
+**KRaft 集群配置（无外部协调系统）**
+
+- **做法**：用 `process.roles` / `node.id` / `controller.quorum.voters` 定义角色与控制器 quorum（示例见 4.5），控制器节点数与部署位置独立规划（可与 Broker 混部，但要有独立磁盘与网络预算）。
+- **机制**：因为元数据成为集群内部一条由一致性协议复制的日志，元数据变更路径与数据面解耦、可回放、可由快照重建，不再需要在两套系统间做一致性协调。
+- **失效条件**：**当控制器 quorum 失去多数派时**，集群「不可变更」——已有分区读写仍继续，但建 Topic、扩分区、Leader 选举、ISR 收缩全部停摆；症状是「业务看起来还活着，任何运维动作都做不了」。第二个失效点是混部节点磁盘被打满时，元数据提交失败而数据写入正常，故障排查容易被引到数据面去。
+- **档位**：【经验】控制器节点数取奇数（3 或 5），随可用性要求与故障域数量变。
+
+**确认策略与最小同步副本（acks 三档）**
+
+- **做法**：按业务等级分别设定——关键链路用「等所有同步副本确认」并配最小同步副本数约束（如 `acks=all` + `min.insync.replicas=2`），非关键链路可放松到只等主副本。三档语义见主文件 [§2.1](04-streaming-store.md)。
+- **机制**：因为 `acks` 决定「返回成功时数据落在几份副本上」、`min.insync.replicas` 决定「至少几份才算落定」，两者合起来才定义「已确认」的含义；分开看各自都对，合起来才有效。
+- **失效条件**：**当 `min.insync.replicas` 被设成 1 时**，`acks=all` 退化成 `acks=1`——主副本一坏，已返回成功的写入就消失。另一个方向是副本可用数低于最小同步副本数时写入被直接拒绝（用可用性换一致性），症状是集群「读得到但写不进」。观测信号：ISR 收缩次数与写入拒绝率。
+- **档位**：【经验】副本数 3 起步；单分区吞吐与延迟数字以自己压测为准，不要照搬常数。
+
+**Schema 注册与兼容性策略**
+
+- **做法**：所有写入先在注册中心登记 schema，读方按 schema 标识解析；兼容性策略显式配置为配置项而不是默认值；schema 变更走评审。
+- **机制**：因为读写双方通过 schema 标识比对结构，兼容性检查可以在**提交时**拒绝不兼容变更，把「线上反序列化失败」提前成「变更被拒」。
+- **失效条件**：**当兼容性策略未配置或自研注册中心只做存储与下发、不做检查时**，不兼容变更会静默流过；症状不是报错，而是几个月后回放历史事件时拼不出完整记录（Agent 事件流场景下就是「拼不回一次决策」）。观测信号：消费端反序列化失败率、schema 版本数增长与消费端支持版本的差距。
+- **档位**：【经验】注册中心与检查策略属于上线前必须就位的一次性动作，后补要面对已在流动的无约束消息。
+
+**消费位点提交与消费端幂等**
+
+- **做法**：`enable.auto.commit=false`，处理成功后手动提交位点（`commitSync`）；消费端按主键去重或状态表条件更新实现幂等；重平衡监听器里在分区被回收前提交已完成的部分。
+- **机制**：因为自动提交把「处理成功」与「位点前移」绑成同一个动作，而这两件事在业务上并不等价，所以手动提交把两者拆开、把幂等责任显式交给消费端（详见 [§ 7](04-streaming-store-section-7-sec7.md)）。位点记在哪，同时决定重放从哪里开始、换一个消费程序能否接着读。
+- **失效条件**：**当幂等本身没有事务边界时**（先写业务库、后标记已处理，中间崩溃），重试会重复执行；**当幂等键选错时**（用时间戳或自增 ID 而不是业务唯一键），去重形同虚设。症状是数据量对不上且对不上得毫无规律。观测信号：同一幂等键的写入尝试次数。
+- **档位**：【经验】投递语义是至少一次，重复不可避免；幂等是必须项而不是优化项。
+
+**Exactly-Once 端到端**
+
+- **做法**：队列侧开启事务与幂等写入，计算引擎侧开启检查点并使用事务性 sink（示例见 4.5），汇端仍要幂等。
+- **机制**：因为端到端精确一次 = 队列侧事务 / 幂等 + 引擎侧检查点与提交语义 + 汇端幂等，**三段缺一段就不成立**；位点随检查点一起落定时，重放才不会产生重复。
+- **失效条件**：**当 sink 不是事务性的、或跨系统写入无法与队列位点原子提交时**，端到端只能退回「至少一次 + 汇端幂等」；此时若仍对外承诺「精确一次」，故障会集中出现在引擎与 sink 的接缝处——表现为重复而不是丢数。
+- **档位**：【经验】检查点间隔从 30 秒到几分钟，随状态大小与端到端延迟要求变；间隔越短，代价越大。
+
+**分区键与顺序保证 / 倾斜**
+
+- **做法**：用业务实体 ID（用户 / 订单 / 会话）做分区键，保证同一实体落到同一分区；定期看各分区的消息数与字节数偏差。
+- **机制**：因为只有同一分区内才有顺序保证，跨分区的顺序只能靠业务补偿；分区键同时决定并行度上限与倾斜程度。
+- **失效条件**：**当存在热点键时**（单个大客户、单个热门会话），分区会长期倾斜；**扩大分区数不解决倾斜**，只会把倾斜摊到更多分区上，因为同一 key 永远落同一个分区。症状是某一分区的字节数与滞后长期高于平均值若干倍，而整体吞吐指标正常。可换的手段只有换 key 或加一层两级聚合。
+- **档位**：【经验】选 key 时同时要问「这个实体的流量分布会不会长期不均」。
+
+**保留策略与分层热窗口**
+
+- **做法**：保留策略按两个问题分别定义——**热窗口多长**（本地留多久）、**冷数据多久被访问一次**；保留期由人签字而不是取默认值；冷读比例进入监控。
+- **机制**：因为本地只留被频繁读的段、冷段整块卸载到对象存储，保留时长的成本由**冷数据访问频率**决定，而不是由时长本身决定。
+- **失效条件**：**当出现「消费者长时间停滞后追赶」或「重放很久以前的历史」时**，低成本长保留反转成回归性能问题——每一个被读的冷段都要向对象存储发起请求，追赶时间从「被本地磁盘带宽限制」变成「被对象存储的请求延迟与吞吐限制」。症状是追赶耗时远超按字节数估算的预期，且与跳过的数据量成正比。观测信号：冷读比例与追赶耗时的散点。
+- **档位**：【经验】热窗口按实测访问分布定，不要凭感觉给一个天数。
+
+### 4.3 工具链与平台
+
+**消息中间件**
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 消息中间件 | Apache Kafka、Apache Pulsar、Apache RocketMQ、AutoMQ、Warpstream、Confluent Cloud、StreamNative Cloud | 判据是「持久层落在哪 + 谁运维」：已有机器资源、团队熟悉 JVM 运维、需要最大生态选 Kafka；要多租户与计算存储分别扩选 Pulsar；业务需要「本地事务与消息原子生效」选 RocketMQ 的事务消息；云上按量付费、能接受更高延迟下限选自建在对象存储上的实现（AutoMQ / Warpstream 一类）；不想自己运维有状态集群选托管（Confluent Cloud / StreamNative Cloud） | 把计算存储分离当普遍更优：没有多租户与独立扩存储的需求时，换来的是每次读写多一跳网络与三套集群的运维面；把所有负载赶到托管服务上：成本模型与限流策略都由供应商决定，突发流量时排障要跨两个控制面 |
+
+**Schema 管理**
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| Schema 管理 | Confluent Schema Registry、Karapace、Apicurio、自研（数据库 + Service） | 判据是「兼容性检查是否完备」而不是「能不能存 schema」：要开箱即用与生态兼容选 Confluent Schema Registry；要开源替代选 Karapace；要支持更多格式选 Apicurio；只有在既有平台强绑定、且团队愿意自己实现推送与校验时才选自研 | 自研只做存储与下发、不做提交时校验：不兼容变更静默流过，几个月后回放历史事件才暴露；选不支持兼容性策略的实现：等于把 schema 治理退化成一份文档 |
+
+**CDC 工具**
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| CDC | Debezium、Flink CDC、Canal、Maxwell | 判据是「源库类型 + 下游是否是 Flink」：多源异构（MySQL / PostgreSQL / MongoDB 一类）选 Debezium；全栈已是 Flink、要连接器与流作业同源选 Flink CDC；只做 MySQL Binlog 且生态在阿里系选 Canal，需要极简实现选 Maxwell | 每个源各写一套：长尾源长期接不进来，而它们往往是最需要被看见的链路；让业务系统直连流存储：耦合且无法削峰 |
+
+**流批一体存储**
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 流批一体存储 | Apache Paimon、Apache Fluss、Apache Hudi、Apache Iceberg | 判据是「写入侧是流还是批」+「读取侧要的是什么」：写入是持续流式、要秒级可见选流式表格式（Paimon / Fluss 一类）；已有湖仓、主要是批量写入与增量读选 Hudi / Iceberg 这一类 | 选择与写入形态不匹配的格式：compaction 永远追不上写入，症状是查询抖动而不是写入变慢；继续「流一份、批一份」双写：两份数据必然产生两套口径，且对账成本长期存在 |
+
+这一类里**最容易被误选的是 Schema 管理里的「自研（数据库 + Service）」**。自研的代价不在实现，而在**兼容性检查的完备性**：注册中心的核心价值不是存 schema，而是「不兼容的变更在提交时会被拒绝」。自研方案常常只做了存储与下发，于是几个月后不兼容变更悄悄流过，而那时的数据已经流出去了一批。判据很具体：拿一个不兼容的变更去提交，看它是否被拒。上表列出的是一族候选，各产品的具体能力、维护状态与许可请以官方文档与仓库 LICENSE 的当前版本为准。
+
+### 4.4 存量迁移
+
+存量集群的问题几乎从来不是「没部署」，而是三件事没人定过：**消费位点由谁记、保留期多长、消费者是否幂等**。改造要按可逆性从高到低排。
+
+**① 先做两件立刻见效、可回退的动作。** 一是**补观测**：把每个消费者组的滞后、Broker 存活与磁盘水位、ISR 收缩与重平衡次数、无消费者的分区数接进来——纯读侧，随时可撤。二是**把消费端的位点从自动提交改为手动提交**：改动只落在消费代码里，回退就是改回自动提交，而位点语义是所有后续能力（重放、回填、幂等）的地基（「手动提交 + 消费端幂等」这一标准做法的机制见本文件 [§ 4.2](04-streaming-store-section-4-sec4.md)）。这两件都不需要停服、不改变数据。
+
+**② 历史资产按四条路分类处理。**
+
+- **Topic 层**：存量 Topic 按业务域归并（过细的合并、过粗的拆开）。成本高、且会影响到消费方，通常只对「本次要动的域」做；
+- **保留策略**：先给所有 Topic 一个统一的默认保留期兜底，再对**被下游依赖的** Topic 逐个签字确认，未确认的挂「待定」标并进入观测——这是**打标挂账**的典型用法，它让「没定过的」变成可见的风险而不是隐形的默认值；
+- **消费者**：按「是否幂等」分成两类，不幂等的挂账列入风险清单（重平衡与回放会产生重复动作），并给它们标注「回放受限」；
+- **看不见的部分**：动态拼接的 topic 名、脚本类消费者、外部导入导出，单独打标并逐步补齐——**盲区已知远好于盲区未知**。
+
+判据（可执行）：列一张「Topic × 保留期 × 消费方 × 是否幂等 × 是否已签字 × 最后更新日期」的表，抽 5 行核对。填不满的那些就是第一批要处理的对象；**这张表的空白率**比任何治理指标都更能说明存量集群的真实状态。
+
+**③ 双轨怎么维持、维持多久。** 旧轨是「短保留 + 自动提交 + 单集群 + 只监控滞后」，新轨是「保留期签字 + 手动提交 + 消费端幂等 + 分层（如需要）+ 完整指标」。双轨必须指定**唯一优先级**：同一条链路两套都在时以新轨为准，否则保留期与位点会有两个来源，回到「同一件事在两处是否还对得上」的校验成本上。维持时长【经验】至少一个完整的保留期，或直到一次真实的回放 / 回填需求被走完；若没有任何真实场景驱动，双轨会一直挂着，且会逐渐退化成「只有新集群被维护」。
+
+**④ 什么信号说明可以退出双轨。** 四个信号同时具备才退：核心主题的消费端都已幂等；保留期已逐个签字（不是沿用默认值）；至少发生过一次真实回放 / 回填且没有产生重复；若上了分层，冷读比例已有基线。任一不满足就继续双轨。最常见的错误是**把「没出过事故」当退出信号**——没出事可能只是因为还没有人触发过重放。
+
+**顺序理由**：这三类动作的可逆性不同。消费端改动可回退；保留与分层只能往「更长」的方向走，**缩短保留期会丢数据，是不可逆的**；而改分区数与副本策略会改变同一 key 的分区映射，等于改数据分布，最难回头。所以存量集群的动手术顺序是：**观测 → 消费端位点与幂等 → 保留策略与分层 → 分区数与副本策略**。
+
+### 4.5 模板 / 示例
+
+**示例 1：KRaft 配置与分层存储**
 
 ```properties
-# server.properties (Kafka 3.3+ KRaft)
+# server.properties（KRaft：元数据由集群内部一条日志管理）
 process.roles=broker,controller
 node.id=1
 controller.quorum.voters=1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
 listeners=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
 advertised.listeners=PLAINTEXT://kafka-1:9092
 
-# Tiered Storage (Kafka 3.6+)
-tiered.storage.enable=true
-tiered.storage.local.retention.ms=86400000  # 本地保留 1 天
-tiered.storage.remote.storage.system=s3
-tiered.storage.s3.bucket.name=my-kafka-tiered
-tiered.storage.s3.region=us-east-1
+# 分层存储（本地只留热窗口，其余卸载到对象存储）
+# 下面三格不写死键名：分层存储的配置项前缀、可用版本、以及「远端后端是内置还是插件」
+# 都随版本与实现而变。填之前先核你所用的那个版本的官方文档，逐格换成文档里的键名：
+#   ① 开启远程存储的配置项 = {该版本文档中的键名}
+#   ② 本地热窗口的配置项   = {该版本文档中的键名}，取值按实测热窗口定（1 天的量级只是占位）
+#   ③ 远端落点的配置项     = {桶 / 区域 / 凭据由谁提供；是否需要额外部署一个远端存储实现}
 ```
 
-**2. Avro / Protobuf + Schema Registry**
+**怎么用**：`node.id` 与 `controller.quorum.voters` 必须按你的节点数改。分层那三格**不要照抄键名**——分层存储在各实现里的配置项前缀不同，且远端存储往往不是内置后端、要额外部署一个实现，所以「能不能只靠一组配置项打开」这件事本身也要先核。判定方法：查你所用那个版本的官方文档与 release note，确认分层存储在该版本是否已 GA、开启所需的配置项清单、以及是否依赖额外组件；本地热窗口的取值则由「热数据窗口」的实测访问分布决定，不是照搬一个天数。分层开启前先确认冷读路径的观测已就位（4.1 Step 6）。
 
-```java
-// Producer with Schema Registry
-Properties props = new Properties();
-props.put("bootstrap.servers", "kafka:9092");
-props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-props.put("value.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
-props.put("schema.registry.url", "http://schema-registry:8081");
-
-Producer<String, Order> producer = new KafkaProducer<>(props);
-
-Order order = new Order(1L, 100L, new BigDecimal("99.99"));
-ProducerRecord<String, Order> record = new ProducerRecord<>("orders", order.getId().toString(), order);
-producer.send(record);
-```
-
-**3. Consumer Group + 幂等**
-
-```java
-// Consumer with manual commit + idempotent processing
-Properties props = new Properties();
-props.put("bootstrap.servers", "kafka:9092");
-props.put("group.id", "order-processor");
-props.put("enable.auto.commit", "false");
-props.put("isolation.level", "read_committed");
-
-KafkaConsumer<String, Order> consumer = new KafkaConsumer<>(props);
-consumer.subscribe(List.of("orders"));
-
-while (true) {
-    ConsumerRecords<String, Order> records = consumer.poll(Duration.ofMillis(100));
-    for (ConsumerRecord<String, Order> record : records) {
-        // 幂等处理：按主键去重
-        if (isProcessed(record.key())) continue;
-        processOrder(record.value());
-        markProcessed(record.key());
-    }
-    consumer.commitSync();  // 手动提交 offset
-}
-```
-
-**4. Exactly-Once 端到端**
-
-```java
-// Flink + Kafka EOS
-StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-env.enableCheckpointing(60000); // 1 分钟
-env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
-
-KafkaSource<String> source = KafkaSource.<String>builder()
-    .setBootstrapServers("kafka:9092")
-    .setGroupId("flink-consumer")
-    .setTopics("orders")
-    .setStartingOffsets(OffsetsInitializer.committedOffsets())
-    .setValueOnlyDeserializer(new SimpleStringSchema())
-    .build();
-
-KafkaSink<String> sink = KafkaSink.<String>builder()
-    .setBootstrapServers("kafka:9092")
-    .setRecordSerializer(KafkaRecordSerializationSchema.builder()
-        .setTopic("processed-orders")
-        .setValueSerializationSchema(new SimpleStringSchema())
-        .build())
-    .setDeliveryGuarantee(DeliveryGuarantee.EXACTLY_ONCE)
-    .setTransactionalIdPrefix("flink-tx-")
-    .build();
-
-env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source")
-   .map(this::process)
-   .sinkTo(sink);
-```
-
-### 4.3 工具链与平台（含 2024-2025 新工具）
-
-**消息中间件（2024-2025）**：
-
-| 工具 | 版本 | 2024-2025 新特性 |
-| --- | --- | --- |
-| Apache Kafka | 3.7+ | KRaft 默认、Tiered Storage 稳定、Kafka 4.0 路线 |
-| Apache Pulsar | 3.2+ | 分层存储成熟、Kafka 协议兼容 |
-| Apache RocketMQ | 5.3+ | Controller 模式（去 NameServer）、事务消息优化 |
-| AutoMQ（2024 新） | 1.x | 兼容 Kafka 协议 + 100% 对象存储 + Serverless |
-| Warpstream（2024） | 1.x | 无 Broker，存 S3/Kafka 协议兼容 |
-| Confluent Cloud | - | 托管 Kafka、Tiered Storage |
-| StreamNative Cloud | - | 托管 Pulsar |
-
-**Schema 管理**：
-
-| 工具 | 特点 |
-| --- | --- |
-| Confluent Schema Registry | 业界标准、Avro / JSON / Protobuf |
-| Karapace | 开源 Schema Registry 替代 |
-| Apicurio | 开源、支持更多格式 |
-| 自研（数据库 + Service） | 灵活、可定制 |
-
-**CDC 工具**（流式存储的数据源）：
-
-| 工具 | 特点 |
-| --- | --- |
-| Debezium | MySQL / PostgreSQL / MongoDB CDC |
-| Flink CDC | 国产、深度集成 Flink |
-| Canal | 阿里系、MySQL Binlog |
-| Maxwell | MySQL Binlog |
-
-**流批一体存储（2024-2025）**：
-
-| 工具 | 特点 |
-| --- | --- |
-| Apache Paimon | LSM Tree + 流批一体 |
-| Apache Fluss（前 Flink Table Store 衍生） | 流式原生、毫秒级延迟 |
-| Apache Hudi | MOR 模式流式 |
-| Apache Iceberg | 弱流式（依赖 Flink 写入） |
-
-### 4.4 代码 / 示例
-
-**示例 1：完整 Kafka 流式架构（含分层存储）**
-
-```yaml
-# docker-compose.yml
-services:
-  kafka-1:
-    image: apache/kafka:3.7.0
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092
-      KAFKA_TIERED_STORAGE_ENABLE: "true"
-      KAFKA_TIERED_STORAGE_LOCAL_RETENTION_MS: "86400000"
-      KAFKA_TIERED_STORAGE_S3_BUCKET_NAME: my-kafka-tiered
-      KAFKA_TIERED_STORAGE_S3_REGION: us-east-1
-```
-
-**示例 2：Flink + Paimon 流批一体（2024 新工具）**
-
-```java
-// Flink + Paimon 实时入湖
-tEnv.executeSql("""
-    CREATE TABLE kafka_orders (
-      order_id BIGINT,
-      user_id BIGINT,
-      amount DECIMAL(18, 2),
-      ts TIMESTAMP(3)
-    ) WITH (
-      'connector' = 'kafka',
-      'topic' = 'orders',
-      'properties.bootstrap.servers' = 'kafka:9092',
-      'format' = 'json'
-    )
-""");
-
-tEnv.executeSql("""
-    CREATE TABLE paimon_orders (
-      order_id BIGINT,
-      user_id BIGINT,
-      amount DECIMAL(18, 2),
-      ts TIMESTAMP(3),
-      PRIMARY KEY (order_id) NOT ENFORCED
-    ) WITH (
-      'connector' = 'paimon',
-      'path' = 's3://lake/paimon/orders'
-    )
-""");
-
-// 端到端 EOS
-tEnv.executeSql("""
-    INSERT INTO paimon_orders
-    SELECT order_id, user_id, amount, ts
-    FROM kafka_orders
-""");
-```
-
-**示例 3：AutoMQ 云原生 Kafka（2024 新工具）**
-
-```yaml
-# AutoMQ 完全兼容 Kafka 协议，存储 100% 在对象存储
-# 启动 AutoMQ
-docker run -d \
-  -e AUTO_MQ_LISTENER=PLAINTEXT://0.0.0.0:9092 \
-  -e AUTO_MQ_S3_BUCKET=my-bucket \
-  -e AUTO_MQ_S3_REGION=us-east-1 \
-  automq/automq:latest
-```
-
-**示例 4：Schema Evolution with Avro**
+**示例 2：Avro schema 与 Producer 配置**
 
 ```json
 {
-  "type": "record",
-  "name": "Order",
-  "namespace": "com.example",
+  "type": "record", "name": "Order", "namespace": "com.example",
   "fields": [
     {"name": "order_id", "type": "long"},
     {"name": "user_id", "type": "long"},
@@ -267,4 +207,128 @@ docker run -d \
 }
 ```
 
----
+```java
+Properties props = new Properties();
+props.put("bootstrap.servers", "kafka:9092");
+props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+props.put("value.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
+props.put("schema.registry.url", "http://schema-registry:8081");
+Producer<String, Order> producer = new KafkaProducer<>(props);
+producer.send(new ProducerRecord<>("orders", order.getId().toString(), order));
+```
+
+**怎么用**：schema 里**只加可选字段**是最省事的演进方向；一旦要删字段或改类型，先确认注册中心的兼容性策略会拦住什么。序列化器与注册中心地址换成你实际部署的那一套；上线前务必试提一次不兼容变更，确认被拒。
+
+**示例 3：手动提交 + 幂等消费者**
+
+```java
+props.put("group.id", "order-processor");
+props.put("enable.auto.commit", "false");        // 位点由消费端显式提交
+props.put("isolation.level", "read_committed");  // 只读已提交的事务消息
+
+while (true) {
+    ConsumerRecords<String, Order> records = consumer.poll(Duration.ofMillis(100));
+    for (ConsumerRecord<String, Order> r : records) {
+        if (processedStore.contains(r.key())) continue;  // 幂等：按业务主键去重
+        processOrder(r.value());
+        processedStore.mark(r.key());                    // 与处理同处一个事务边界
+    }
+    consumer.commitSync();                               // 处理成功后才前移位点
+}
+```
+
+**怎么用**：`processedStore` 的去重键必须是业务唯一键（不是位点、不是时间戳）；`mark` 与 `processOrder` 必须在同一个事务边界里，否则崩溃时会出现「已处理但未记录」。换成 Redis 或数据库实现时，注意它的原子性是否等价。
+
+**示例 4：Flink 端到端精确一次（三段缺一不可）**
+
+```java
+env.enableCheckpointing(60000);
+env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
+// KafkaSource：从已提交位点续读
+// KafkaSink：setDeliveryGuarantee(EXACTLY_ONCE) + setTransactionalIdPrefix(...)
+// 汇端若为外部系统，必须自带幂等；否则本示例只保证到 sink 边界
+```
+
+**怎么用**：把它当成一份清单而不是一段代码——队列侧事务、引擎侧检查点与提交语义、汇端幂等三段，逐段确认；只要 sink 落到非事务性系统，对外就不能再承诺端到端精确一次。
+
+**示例 5：本地一键起一套（docker-compose，含分层的 Kafka）**
+
+```yaml
+services:
+  kafka-1:
+    image: apache/kafka:3.7.0          # 具体版本以官方 release note 为准
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092
+      # 分层存储的镜像变量不在这里给死：镜像把配置项名机械地转成
+      # 大写下划线形式（点变下划线、加 KAFKA_ 前缀），所以变量名由配置项名决定，
+      # 先在该镜像对应版本的官方文档里查到配置项名，再推出变量名（见示例 1 的填法）。
+```
+
+**怎么用**：只用来做本地联调与演练，不要当生产模板——生产要补认证、ACL、副本与最小同步副本数、以及跨可用区分布。把变量名当模板照抄是本例最容易踩的一格：变量名是「配置项名转大写下划线」推出来的，键名一变，变量名跟着变；照搬别处的变量名通常不会在启动时报错，只表现为集群起来了、分层并没有生效——所以配完要回头确认它真的生效了，而不是确认进程起来了。
+
+**示例 6：Flink + Paimon 流批一体入湖**
+
+```java
+tEnv.executeSql("""
+  CREATE TABLE kafka_orders (order_id BIGINT, user_id BIGINT,
+      amount DECIMAL(18,2), ts TIMESTAMP(3))
+  WITH ('connector'='kafka', 'topic'='orders',
+        'properties.bootstrap.servers'='kafka:9092', 'format'='json')""");
+
+tEnv.executeSql("""
+  CREATE TABLE paimon_orders (order_id BIGINT, user_id BIGINT,
+      amount DECIMAL(18,2), ts TIMESTAMP(3),
+      PRIMARY KEY (order_id) NOT ENFORCED)
+  WITH ('connector'='paimon', 'path'='s3://lake/paimon/orders')""");
+
+tEnv.executeSql("INSERT INTO paimon_orders SELECT order_id, user_id, amount, ts FROM kafka_orders");
+```
+
+**怎么用**：主键是这套格式的关键格子——它决定相同主键的更新如何归并；写入侧无主键时表会退化成追加日志。启用前先确认后台 compaction 与快照保留策略有 owner，否则小文件会追不上写入。
+
+**示例 7：对象存储原生的流存储（AutoMQ 一类）**
+
+```bash
+# 兼容既有 Kafka 协议；存储主体落在对象存储
+docker run -d \
+  -e AUTO_MQ_LISTENER=PLAINTEXT://0.0.0.0:9092 \
+  -e AUTO_MQ_S3_BUCKET={你的桶} \
+  -e AUTO_MQ_S3_REGION={你的区域} automq/automq:latest
+```
+
+**怎么用**：只适合做 PoC 的启动方式；选它之前必须用自己的消息大小分布量一遍「每千条消息的请求成本 + 端到端 P99」，因为这套架构的代价正好落在这两项上。版本与部署形态以官方文档为准。
+
+**模板 8：Topic 台账与保留期签字**
+
+```text
+Topic | 业务域 | 保留期 | 签字人 | 签字日期 | 消费方 | 是否幂等 | 最后更新
+{...} | {...}  | {N 天} | {...}  | {...}   | {...}  | 是/否   | {...}
+```
+
+**怎么用**：「签字人」与「签字日期」两列是这张表存在的理由——没有签字的保留期只是默认值。先只对「被下游依赖」的 Topic 要求签字，避免一次全量填表导致所有人都填同一行。
+
+### 4.6 自检清单
+
+- [ ] **先过一遍 [§ 3.7](04-streaming-store-section-3-sec3.md) 的 12 条**：那 12 条问的是「这套配置设计对了没有」（域归属、分区数公式、副本 / 最小同步副本 / 确认策略配套、消费幂等、监控项、分层、保留策略两问、杀主副本演练、分区键、事务消息回查、compaction）。本清单不把它们再复述一遍，只问落地阶段才问得出来的问题——**设计对不代表在你这套存量集群上装对了**。
+- [ ] 抽 5 行核台账「Topic × 保留期 × 消费方 × 是否幂等 × 是否已签字 × 最后更新日期」，填不满的那几行就是第一批要处理的对象。
+- [ ] 保留期签字表的空白率是多少？被下游依赖的 Topic 里，还有几个停留在默认值、没有签字人与签字日期？
+- [ ] 单分区吞吐的压测记录放在哪、谁持有、最近一次更新是什么时候？它对应的镜像与配置版本和线上是否一致？
+- [ ] 用一个非授权账号实际发一条消息，确认被拒了吗？（只核 ACL 配置文件不算）
+- [ ] 告警阈值有基线吗？滞后告警是不是按固定值配的（大促式放量时会误报）？
+- [ ] 有没有「已无消费者超过 N 天」的分区？现有指标能不能把它找出来？
+- [ ] 分层若已上：冷读比例有基线吗？做过一次「消费者停滞后追赶」并留下时间数字吗？出流量预算记在哪个团队账上？
+- [ ] Schema 注册中心的兼容性策略是显式配置的吗？实际提交一次不兼容变更，确认被拒了吗？
+- [ ] 经历过一次真实的回放 / 回填吗？过程中有没有产生重复动作？
+- [ ] 灰度与回滚路径演练过吗？回滚要不要停服、会不会丢数据？
+- [ ] 双轨退出的四个信号是否同时具备（消费端已幂等 / 保留期已逐个签字 / 发生过一次真实回放且无重复 / 冷读比例已有基线）？
+
+### 4.7 小结
+
+> 本节小结：整条落地过程里唯一那个决定成败的环节，是**把这套配置成组设定、并用一次真实故障演练验证一遍**——副本数与最小同步副本数与确认策略必须一起定，分区数与并行度必须一起算，保留期与热窗口、冷读路径必须一起看。
+>
+> 它之所以比其余环节更值得投入，是因为这套系统的两种故障形态（延迟累积、以及「已返回成功的写入消失」）都不产生报错：前者只有基线与滞后指标看得见，后者只有在真正杀过一次节点之后才看得见。任何一项配置单独看都对，合在一起才有效——这也是别处抄不到、只能自己演练一次的地方。
+>
+> 配合 [§ 2 核心原理](04-streaming-store.md)、[§ 3 设计模式与范式](04-streaming-store-section-3-sec3.md) 与 [§ 6 落地实践](04-streaming-store-section-6-sec6.md) 阅读。

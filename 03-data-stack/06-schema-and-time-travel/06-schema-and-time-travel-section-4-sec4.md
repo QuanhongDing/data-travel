@@ -1,245 +1,315 @@
-> 本文件是 **06-schema-and-time-travel.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](06-schema-and-time-travel.md)。
+> 本文件是 **06-schema-and-time-travel.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](06-schema-and-time-travel-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](06-schema-and-time-travel.md)。
 
 ## 4. 工程实现
 
+[§3](06-schema-and-time-travel-section-3-sec3.md) 回答的是「Schema 的身份由谁持有」——字段 id、日志版本、commit，还是注册中心。本节不重复那些模式的结构与代价，只回答选完之后的问题：**这套东西在你已经有的表、已经发出去的消息、已经写好的作业上怎么装进去；装完怎么知道装对了；装错了第一个症状长什么样。**
+
+本文件面向两类读者，读法不同。**从零搭一条新链路的人**按 §4.1 的 Step 1–6 顺序走，§4.2 是每一步背后的机制与失效条件。**在存量资产上改造的人**先读 §4.4，再回头挑 §4.1 里能立刻见效且可回退的那两步（Step 2 定的命名规范落到新建的表与新建的 topic 上，与 Step 6 的 CI 门禁），其余按批次推进。§4.3 给工具选型判据，§4.5 给可直接套用的模板，§4.6 是自检清单。
+
+有一条约束贯穿全节，先写在前面：**Schema 演进的代价不在「改」这一步，而在「别人什么时候才知道你改了」。** 因为列身份、日志版本、commit 这些身份载体都让「改」退化成一次元数据编辑（物理文件一个字节都不动），所以变更是极其便宜的；代价是变更频率会超出下游的适配速度，最后的故障不是「改不动」而是「改太勤」。下面每一步的判据，都是围绕这条约束设计的。
+
 ### 4.1 落地步骤
 
-**Step 1：选型 Schema 管理工具（1-2 周）**
+**Step 1：选型 Schema 管理工具（1–2 周，随存量表数量与是否需要跨引擎读取而变【经验】）**
 
-- 消息：Confluent Schema Registry / Karapace。
-- 表：Iceberg / Hudi / Delta / Paimon。
-- 元数据：Unity Catalog / DataHub。
+- 三条产品线各选一次，不要一次选一个「统一平台」：消息契约（Confluent Schema Registry / Karapace）、表格式（Iceberg / Hudi / Delta Lake / Paimon）、元数据目录（Unity Catalog / DataHub）。
+- 把三份选型理由写成决策记录，写清各自**管的是什么**，而不是写「功能更全」。
+- **产物**：三条产品线的选型决策记录 + 一张「谁负责哪一类契约」的责任表。
+- **判据**：在本周内让一次真实的字段变更走通全链路——改一个字段，然后**在旧数据上按新名字查询一次**，看结果是读到数据、读到 NULL，还是报「列不存在」。三者对应三种完全不同的工具语义，这一步就是为了在采购之前先看到它。
+- **为什么必须这一步 / 为什么在这个位置**：选型决定后面所有步骤的判据形态。选错的影响不是「用起来别扭」，而是 §4.2 的失效条件会被整段绕过——把元数据目录当注册中心用，兼容性检查就没有执行点。
 
-**Step 2：设计 Schema 演进规则（1-2 周）**
+**Step 2：设计 Schema 演进规则（1–2 周，随要回翻的历史变更条数与参与评审的团队数而变【经验】）**
 
-- 兼容性规则（Backward / Forward / Full）。
-- 命名规范。
-- 变更流程（PR + Review）。
+- 定三件事：兼容性规则（Backward / Forward / Full 选哪一档）、命名规范、变更流程（PR + Review）。
+- 先把「消费者最多落后几个版本」这个数写下来，兼容性档位该由它推导，而不是照抄注册中心的默认值（机制见 [§3.2.4](06-schema-and-time-travel-section-3-sec3.md)）。
+- **产物**：一份演进规则文档 + 一张「变更类型 × 允许 / 不允许 / 需审批」的判据表。
+- **判据**：把最近 10 次真实 Schema 变更记录翻出来，逐条标注按新规则它属于哪一类。出现「规则里没有这一档」的条目，说明规则还没写完——不要带着缺口进入下一步。
+- **为什么必须这一步 / 为什么在这个位置**：规则是后面所有自动化的输入。CI 门禁、注册中心的兼容性策略、变更评审单，执行的都是这份规则；规则没定就上自动化，等于把工具的默认值固化成了制度。
 
-**Step 3：搭建 Schema Registry（1-2 周）**
+**Step 3：搭建 Schema Registry（1–2 周，随部署形态是托管服务还是自建高可用集群而变【经验】）**
 
-- Confluent Schema Registry（K8s / Docker）。
-- Karapace（开源替代）。
-- 配置兼容性策略。
+- 部署与配置：Confluent Schema Registry（K8s / Docker）或 Karapace 作为开源替代，配置兼容性策略。
+- 把「注册中心必须高可用」当成硬要求：它不可用时，生产者的注册与消费者的首次解析都会失败（已缓存的解析结果通常仍可用）。
+- **产物**：可访问的注册端点 + 已注册 subject 列表 + 兼容性策略配置。
+- **判据**：注册一条**故意不兼容**的 schema（例如删掉一个没有默认值的字段），确认服务端拒绝并返回错误码（Confluent 兼容模式下常见 409 Conflict，具体码以官方文档当前版本为准），而不是接受。这一步必须亲手做一次，因为它验证的是「门禁真的关着」。
+- **为什么必须这一步 / 为什么在这个位置**：它是 Step 2 规则的第一个执行点。排在表格式之前，是因为消息一旦发出去就无法回收，而表还可以重写。
 
-**Step 4：表格式 + Schema Evolution（2-4 周）**
+**Step 4：表格式 + Schema Evolution（2–4 周，随存量表数量与列身份普查的覆盖范围而变【经验】）**
 
-- Iceberg ID-based Schema。
-- 字段命名规范。
-- 变更 SOP。
+- 确认列身份：Iceberg 走 ID-based Schema，字段 id 终生不复用；字段命名规范与变更 SOP 一并定下。
+- 对存量表做一次「列身份普查」：新写入的表是否天然带 id，历史外表是否没有——这张清单是 §4.4 的输入。
+- **产物**：字段命名规范 + 变更 SOP + 「哪些表已有列身份、哪些没有」的清单。
+- **判据**：抽 3 张改得最频繁的表，各做一次改名列，然后在**旧快照**上按新列名查询，确认能读通；再查这批表历史上有没有「改列含义但保留列名与类型」的变更——那正是 [§3.2.1](06-schema-and-time-travel-section-3-sec3.md) 的失效条件。
+- **为什么必须这一步 / 为什么在这个位置**：列身份是整个表侧方案的地基，而且**不能靠事后补**——老文件落盘时冻结了当时的布局。排在注册中心之后，是因为表侧的变更还有重写这条路，风险低于消息侧。
 
-**Step 5：Time Travel 配置（1-2 周）**
+**Step 5：Time Travel 配置（1–2 周，随要覆盖的复盘窗口长度与需要改配的清理作业数量而变【经验】）**
 
-- 快照保留策略。
-- 清理规则。
-- 监控告警。
+- 定快照保留策略与清理规则（Iceberg 的 expire snapshots、Delta 的 VACUUM、Hudi 的 clean），配监控告警。
+- 把保留窗口与一条**具体的业务承诺**对齐，而不是与「最近 N 天」这个默认值对齐。
+- **产物**：保留策略配置 + 一句能被验证的承诺（例如「可回溯到某一期模型训练所用的那份快照」）+ 清理任务的监控项。
+- **判据**：写下这个窗口覆盖到哪一天；触发一次清理，确认目标快照仍在且可查；再确认保留单位是时间还是提交数——按提交数配的低频表，N 个 commit 可能只覆盖几天（[§3.2.3](06-schema-and-time-travel-section-3-sec3.md)）。
+- **为什么必须这一步 / 为什么在这个位置**：它决定回溯能力的**实际**边界。放在表格式之后，因为保留策略只有在列身份确定之后才有意义，否则回溯回来的形状与当时的现实不符（见 [§3.5](06-schema-and-time-travel-section-3-sec3.md) 的「删列不通知下游」）。
 
 **Step 6：CI/CD 集成（持续）**
 
-- Schema PR Review。
-- 兼容性测试。
-- 灰度发布。
+- 三件事进流水线：Schema PR Review、兼容性测试、灰度发布。
+- 兼容性检查必须与单测同级——它是门禁，不是提示。
+- **产物**：流水线里一条会失败的检查 + 一份「破坏性变更需附迁移计划」的评审要求。
+- **判据**：提交一次不兼容变更的 PR，确认**在合并前**流水线失败；再提交一次兼容变更，确认它不需要人工审批就能通过。门禁只在必要时拦，否则会被绕过。
+- **为什么必须这一步 / 为什么在这个位置**：前五步做到的是「有规则、有工具」，只有这一步让规则在**每一次**变更上被执行。它是本节性价比最高的一步，也是唯一完全不需要动数据的一步。
+
+最常被跳过的是 **Step 5**，其次是 Step 2 里「兼容性档位由消费者落后版本推导」这一句。两者的症状都延迟出现。Step 5 被跳过时，前几个月一切正常，症状出现在第一次需要复现历史的那一刻——窗口早已滑过那个节点。Step 2 被跳过时，症状出现在某个消费者没跟上发布节奏的第二天，表现为该主题的所有老消费者**集体反序列化失败**；而那时 schema 已经进入不可变历史，回滚要还原元数据版本，不是改文件。
 
 ### 4.2 关键技术点
 
-**1. Iceberg Schema Evolution**
+**Iceberg ID-based Schema Evolution（含隐藏分区）**
 
-```sql
--- 加列
-ALTER TABLE orders ADD COLUMN coupon_amount DECIMAL(18,2);
+- **做法**：加列用 `ALTER TABLE ... ADD COLUMN ... DEFAULT`；改名只改 name 映射；类型只做扩展、不做收缩。查询用 `FOR SYSTEM_TIME AS OF` 或 snapshot id；隐藏分区让 `WHERE order_time BETWEEN ...` 不写分区列也能裁剪。
+- **机制（落地视角）**：模式本身为什么有效见 [§3.2.1](06-schema-and-time-travel-section-3-sec3.md)，本节只取它对流程的影响——**因为身份挂在 id 上而不是名字上，一次改名对下游、对 CI、对变更工单都是「无事发生」，所以它的成本从「协调 N 个下游改 SQL」降到「跑一次提交」**。这直接决定 §4.1 Step 6 里门禁的形态：检查只需要判断「这一次变更属不属于加列 / 改名」，不必为改名单开一条发布流程。隐藏分区同理：分区值由列的变换推导，新增一个 region 列不触发重写，因此它不进入 §4.4 的迁移批次。
+- **失效条件（落地形态）**：**当读取侧存在不由平台维护的自研读取器（导出作业、自研 source、直读 metadata 文件的脚本）时，这条会失效**——「先取 schema 再按 id 投影」那一层要每个读取器各自实现，引擎升级了而自研读取器没有。症状：引擎自带查询全部正常，只有那几个自研作业读到的列错位（旧位置上的新字节被当成新列），且不报错。观测信号：把同一张表同一快照交给每个读取器各查一次，比对列名与列值。另一半失效来自语义变更——**兼容性检查看不见含义**，改单位、改币种、改枚举取值的含义而列名与类型不动，这类变更在评审单上会被填成「类型未变、无需评审」，于是没有任何环节会去看它（这条的一般形态见 [§3.2.1](06-schema-and-time-travel-section-3-sec3.md)，§4.5 模板 8 的「语义变更」一行就是为拦它而设）。
+- **档位**：机制描述无数字；「id 不可复用」属规范约定【公开】（Apache Iceberg 表规范 Schema 章节，项目 2018 年进入 ASF 孵化，条款以该规范当前版本为准）。
 
--- 重命名（ID-based）
-ALTER TABLE orders RENAME COLUMN old_name TO new_name;
+**Confluent Schema Registry 与兼容性级别**
 
--- 类型扩展
-ALTER TABLE orders ALTER COLUMN amount TYPE BIGINT;
+- **做法**：注册走 `POST /subjects/<topic>-value/versions`；线上消息体只带 schema id（线格式与那 5 字节开销的推导见 [§3.2.4](06-schema-and-time-travel-section-3-sec3.md)，本节不重推）；兼容性级别按消费者落后程度选——这个数取自 §4.1 Step 2 写下的那一行，不是注册中心的默认值。
+- **机制（落地视角）**：模式本身为什么有效见 [§3.2.4](06-schema-and-time-travel-section-3-sec3.md)，本节取它对流程的影响——**因为裁决点只有一个（注册那一刻），「谁有权改契约」第一次有了可执行的位置**：权限挂在注册端点上，而不是挂在人的自觉上。这也是 §4.1 Step 3 要求「亲手提交一次不兼容 schema」的原因：那是这套权限唯一一次现场证明，看文档看不出门禁到底关没关。
+- **失效条件（落地形态）**：**当注册端点只有平台团队能访问、而业务团队绕开它直接写 topic 时，这条会失效**——注册中心里的 subject 列表看上去很干净，线上却存在未经登记的消息体，兼容性检查没有任何执行点。症状：消费端报「取不到 schema id」一类解析失败，而按该 id 在注册中心里查不到任何记录。观测信号：把 subject 列表与 topic 列表做一次差集（§4.6 第 5 条），差集不为空即为已失效。反向的直觉在门禁上同样要纠正：**加字段（带默认值）属安全方向，拦下它只会让开发者学会绕过门禁**——方向判据见 §3.2.4，落地判据见 §4.1 Step 6。
+- **档位**：【公开】BACKWARD / FORWARD / FULL / NONE 由 Confluent Schema Registry 定义并在服务端执行（Confluent 官方文档，2015 年起）——具体模式名、传递级别与语义以官方文档当前版本为准。
 
--- Time Travel
-SELECT * FROM orders
-FOR SYSTEM_TIME AS OF '2025-01-15 10:00:00';
+**Delta Lake Time Travel 与恢复**
 
--- 隐藏分区
-SELECT * FROM orders
-WHERE order_time BETWEEN '2025-01-01' AND '2025-01-31';
+- **做法**：`DESCRIBE HISTORY` 看版本序列；用 `versionAsOf` / `timestampAsOf` 读历史；恢复误操作用「读旧版本 → overwrite 回原表」。写入侧的 schema 合并属 [§3.2.2](06-schema-and-time-travel-section-3-sec3.md)，本节只讲回溯。
+- **机制（落地视角）**：模式本身为什么有效见 [§3.2.2](06-schema-and-time-travel-section-3-sec3.md)。落到流程上只剩一条推论：**schema 与文件集合是同一个版本号下的配套产物，所以「事后补」这条路是封死的**——不可能用今天的 schema 读回昨天的字节，要复现只能回到当时那个版本号，而它还在不在取决于清理作业，不取决于你留了多少备份。**代价因此落在配置上：回溯窗口由 VACUUM 单点决定**，而默认保留期通常短于业务对「复现」的要求，且这个默认值从没经过任何一次评审。
+- **失效条件**：**当 VACUUM 保留期短于复盘周期时，这条会静默失效**——某天要复盘三个月前的训练数据，日志版本还在，但它引用的文件已被清掉，查询直接失败。症状：`DESCRIBE HISTORY` 里能看到那个版本号，按它查询却报文件不存在；这比「查不到历史」更糟，因为它看起来还能查到。落地判据是 §4.1 Step 5 那一句「窗口覆盖到哪一天」得写在纸上，而不是只留在清理作业的配置里。
+- **档位**：保留期是配置项，按业务复盘周期设，不照抄默认值【经验】；机制见 Delta Lake 官方文档（项目 2019 年开源）的 Time Travel 与 VACUUM 章节，以当前版本为准。
+
+**Iceberg V3 新特性：Variant、向量列与行级删除**
+
+- **做法**：半结构化载荷装进 Variant 列；向量装进 `ARRAY<FLOAT>` 一类列类型；删除走行级删除，而不是整分区重写。
+- **机制**：要分清它们分别落在哪一层——Variant 与向量列是**列类型层面**的能力，改变的是「表里要装的东西」；行级删除不是列类型能力，它改的是**删除路径**（一次删除要写多少、下游要重读多少）。三者共同的、也是与机制无关的一点是：**它们都没有改变任何一条兼容性语义**——列身份的稳定性、兼容性判定发生在哪一侧，一条都没动。（一个容易混的名字：行级删除在规范里的实现细节叫**删除向量 / deletion vector**，与「向量列类型」是两回事，名字相近、毫无关系，不要把前者读成后者。）**代价记在向量维度上**：维度写进了列类型，于是改维度不是元数据编辑，而是加列 + 回填 + 双写 + 切换 + 重建索引的一条迁移路径（[§5.2.3](06-schema-and-time-travel-section-5-ai.md) 展开）。
+- **失效条件**：**当把向量维度当成「可以原地改的属性」时，这条会失效**——引擎拒绝改类型，或者接受之后让两批不同维度的向量落在同一列语义下。症状：索引侧报维度不匹配，而表侧看起来完好无损。
+- **档位**：这三项的名称与所属版本按该项目的发布说明记录（可自行核验）；**其中类型类能力（Variant / 向量类型）本节不给版本结论**——它当前在规范里标为正式还是提案、在引擎的哪一版可用，按 [§5.2.3](06-schema-and-time-travel-section-5-ai.md) 的判定方法核对：查该格式规范文档中该类型的标记，再查引擎 release note 里它出现在哪一版；【经验】行级删除的收益随删除比例上升，接近全表删除时与重写无异。
+
+**用 tag / branch 钉住节点，替代拉长保留窗口**
+
+- **做法**：日常保留窗口按天（或按 commit 数）配得尽可能短，只对「确定要复现的那几个节点」打 tag 或建 branch（例如某个训练集所用的快照）；给 tag 定命名规则与清理责任人。
+- **机制**：因为历史是引用计数而不是副本（[§7.3.3](06-schema-and-time-travel-section-7-sec7.md)），被 tag 引用的快照不会被清理任务回收，所以「一次性复现某一年某个版本」这件事不需要把整条窗口拉长——用一次引用换来一个不受窗口滑落影响的锚点。**代价是引用本身要有主**：tag 不会自己消失，也不会自己说明为什么存在。
+- **失效条件**：**当 tag 无人管理（每年新增几十个、没有命名规则、没有归属）时，这条会反转成成本累积**——保留成本从「按天」变成「按 tag 数」叠加，而清理任务每天都在报「有 N 个快照被引用、无法删除」。症状：存储账单不降反升，且没人能说出哪些 tag 还有人用。
+- **档位**：窗口长度与 tag 数量都随业务复盘周期变【经验】；机制与「换一条路线要动什么」的迁移成本表（数据迁移 / 查询改写 / 运维重建 / 团队再学习四列，另加「工作量量级」）见 [§7.7](06-schema-and-time-travel-section-7-sec7.md)；「需要一次性的时点复现」这一处境对应的建议见 [§7.8](06-schema-and-time-travel-section-7-sec7.md) 的小结表（三列：处境 / 建议 / 关键理由），两张表不是同一张。
+
+### 4.3 工具链与平台
+
+下表前三行是产品类别，第四行是机制类别（把检查挂在哪个阶段）——选型时先确认边界，再比产品。
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 消息契约登记 | Confluent Schema Registry / Karapace / Apicurio / 自研（DB + Service） | 看消费者是否跨团队、是否落后版本：跨团队且升级不同步 → 需要能在服务端执行兼容性检查的集中登记；单团队同步升级 → 一条约定 + CI 脚本即可。自研只在已有注册与鉴权基础设施、且要与内部系统深度耦合时才划算 | 不上集中登记：兼容性没有执行点，不兼容的 schema 直接发到线上，而消息历史不可回收，回滚无从下手 |
+| Lakehouse 表格式 | Iceberg / Delta Lake / Hudi / Paimon | 看列表述：要「改名不惊动下游 + 多引擎共读」→ Iceberg 的字段 id；写入方受控、要保留写入侧灵活性 → Delta 的显式 / 自动合并；增量写入 + 按提交点回溯 → Hudi 的 timeline；实时数仓 + 主键 upsert → Paimon 的主键表 | 选错格式不会当天坏，而是在第一次「改主键」「改列语义」时退化为全量重写；这笔账要到规模上来才看得见 |
+| 元数据目录 | Unity Catalog（Databricks，2024）/ Polaris（Snowflake，2024）（这两处的年份与归属属【公开】档，来源为各自的发布说明）/ DataHub / Apache Atlas | 判据是「谁持有权威解析」：跨引擎读同一批表 → 需要 REST 目录协议一类的实现；只要元数据检索与血缘 → DataHub 一类即可；传统 Hadoop 生态存量 → Atlas。目录不负责快照与列身份 | 用目录当注册中心：兼容性没有执行点；用注册中心当目录：查不到「这张表谁能读」 |
+| 兼容性检查入 CI | 注册中心自带的兼容性 API / 表格式自带的 schema 校验 / 自研脚本 | 看检查能跑在哪个阶段：提交时就能拿到新旧两版 schema → 用注册中心自带的 API；只能在写入时校验 → 表格式侧兜底 + 提交侧补一个脚本 | 只靠写入时校验：问题暴露在数据已经进入不可变历史之后，回滚要还原元数据而不是改文件 |
+
+这一类里最容易被误选的是**把元数据目录当注册中心用**——Unity Catalog、Polaris、DataHub 都出现在「元数据」这个词下面，看选型表很容易归成一类。误选的后果不是报错，而是**兼容性这件事根本没有任何执行点**：目录能告诉你表长什么样，却不能在写入注册的那一刻拒绝一个不兼容的 schema；反过来，注册中心也不会告诉你「这张表谁能读」。这与 [§3.2.6](06-schema-and-time-travel-section-3-sec3.md) 的混合模式是同一件事——两层管的对象不同，所以可以并存，但不能互相替代。
+
+产品能力与版本请以各产品官方文档的当前版本为准：本表只给类别与判据，某个具体版本是否支持某条能力，按能力名回官方文档核对，不要按集成清单页选型。
+
+表格式那几行的版本与能力项，列在这里作为**核对清单**【公开】（版本名与年份抄自各项目的发布说明，可自行核验，以发布说明当前版本为准）：Iceberg V3（2024）：Variant、Vector、行级删除；Delta Lake 3.2（2024）：Delta UniForm、列映射；Hudi 1.0（2024）：Timeline Server、Schema Checkpoint；Paimon 1.1（2024）：主键演进、Schema 校验。这张清单的用途是告诉你**该按什么名字去核**，不是告诉你这些能力在你的部署版本里一定可用——版本对不对得上，只有回发布说明才作数。
+
+**其中类型类能力（Variant、Vector、向量列）不要按清单直接写进 DDL。** 与 [§5.2.3](06-schema-and-time-travel-section-5-ai.md) 的口径一致，本节不对「该类型是否已进入正式规范、在哪一版进入」作断言；判定方法是查该格式规范文档中该类型标记为正式还是提案，以及引擎 release note 里它出现在哪一版。行为类能力（行级删除、主键演进、Schema 校验）同理，以发布说明为准——清单给的是名字，不是可用性结论。
+
+### 4.4 存量迁移
+
+**① 先做什么：立刻见效且可回退的两步**
+
+第一步是把兼容性检查接进 CI（Step 6），第二步是把命名规范与「新写入必须合规」落到新建的表与新建的 topic 上（Step 2 定的规则，只是**落点**在新建对象上；它同样不动历史数据）。两者都不动历史数据：前者只在提交时读新旧两版 schema，后者只约束新写入。**可回退**的意思是关掉这条检查就回到原状——但要注意回退之后风险立刻回来，所以回退只应发生在「检查误伤了正常变更」时，并且要在同一周内把规则修好再打开。
+
+不要先做「给存量表补列身份」。机制上它做不了：文件布局在落盘时就冻结了，**历史文件的列身份补不回来**。能做的是「新写入合规 + 旧文件按它当时写下的 schema 读」，这是一条单行道，所以它必须排在 Step 4 的普查清单之后，而不是之前。
+
+**② 历史资产怎么分类处理（三档，不要一刀切）**
+
+| 档 | 判据（怎么分） | 处理 |
+| --- | --- | --- |
+| 立刻返工 | 高频读取，且最近 60–90 天有改名 / 类型变更记录【经验】 | 迁移到有列身份的格式，同时把变更 SOP 补上 |
+| 只改动的部分 | 仍在写入，但少有结构变更 | 新写入按新规则走，旧文件按它当时的 schema 读，不重写 |
+| 打标挂账 | 只读、低频，或已排入下线计划 | 登记进普查清单并标注「无列身份」，设一个复核日期；不要为了整齐而重写它 |
+
+判据的执行动作：对每张表查两件事——它是否已有字段 id（Iceberg 表天然有，Hive 外表通常没有），以及它过去 60–90 天被改过几次结构。窗口取多长随这张表的写入频率与历史上线节奏而变【经验】：一周一变的高频表取 60 天就够分辨，一年动一次的表要取到 90 天以上，否则三档里的「立刻返工」永远为空。两个答案的组合直接落到上表三档。
+
+为什么不能一刀切「全部返工」：因为重写一张表的代价是**这张表的数据总量**，而一次 Schema 变更本身的代价只是元数据编辑。把「补齐列身份」做成全量返工，等于为一个元数据问题付一次全表重写的钱。判据就是第二列那个数——**结构变更次数**。一个季度没改过结构的表，重写它换来的收益要很久才收回；而一周改一次的表，不重写就是每周付一次静默错算的风险。
+
+**③ 迁移期的双轨怎么维持、维持多久**
+
+双轨的形态是：旧路径（无集中登记的 topic、无列身份的存量表）与新路径（已登记、有新规则）并行，同时划一条明确的线——**新写入必须走新路径**，否则双轨会退化成两套长期并存的系统。维持多久由一件可数的事决定：**消费者最多落后几个版本**。这个数同时决定兼容性档位该选哪一档（[§3.2.4](06-schema-and-time-travel-section-3-sec3.md)），也决定旧路径上还能不能安全地发变更。
+
+双轨期唯一必须做的跨轨动作，是把边界写下来：哪些表与主题仍在旧轨、各自谁负责迁完、预计什么时候迁完。没有这张表，双轨期的每一次故障都要重新讨论「这算哪个系统的责任」。
+
+有一个容易写错的地方：把「迁完」定义成「表已经换格式」。机制上不成立——**存量历史文件的列身份补不回来**，所以旧文件永远是旧语义。正确的定义是「这张表以后的新写入都在新轨上，且它的变更已经进入 CI 门禁」；旧文件按它当时的 schema 读，不是缺陷，是设计。
+
+**④ 什么信号说明可以退出双轨**
+
+三个信号同时出现才算：
+
+- 注册中心的 subject 列表与 topic 列表的差集为空——没有主题在无登记地发消息；
+- 一次全量兼容性扫描之后，破坏性变更的占比低到不需要逐条人工评审；
+- 普查清单上「打标挂账」的表，要么有了下线日期，要么进入了迁移批次，而不是停留在清单里。
+
+只满足前两条就退出，风险落在长尾主题上：它们的消费者少，但通常正是不可替代的那几个，而一次不兼容变更的代价与消费者数量无关。
+
+**⑤ 换方案的代价**（例如从自动合并的表格式换到严格元数据变更）见 [§7.7](06-schema-and-time-travel-section-7-sec7.md) 的迁移成本表（数据迁移 / 查询改写 / 运维重建 / 团队再学习四列），本节不重复。
+
+### 4.5 模板 / 示例
+
+**模板 1：Iceberg Schema Evolution + Time Travel（PySpark）**
+
+```python
+from pyspark.sql import SparkSession
+
+spark = (SparkSession.builder
+         .appName("SchemaEvolution")
+         .config("spark.sql.catalog.iceberg", "org.apache.iceberg.spark.SparkCatalog")
+         .config("spark.sql.catalog.iceberg.type", "hive")
+         .config("spark.sql.catalog.iceberg.uri", "thrift://metastore:9083")  # 填你的 metastore 地址
+         .getOrCreate())
+
+spark.sql("""CREATE TABLE iceberg.orders (
+    order_id BIGINT, user_id BIGINT, amount DECIMAL(18,2), order_time TIMESTAMP)
+    PARTITIONED BY (days(order_time)) STORED AS ICEBERG""")
+
+spark.sql("ALTER TABLE iceberg.orders ADD COLUMN coupon_amount DECIMAL(18,2)")   # 加列
+spark.sql("ALTER TABLE iceberg.orders RENAME COLUMN coupon_amount TO discount_amount")  # 改名，id 不变
+
+df_yesterday = spark.read.option("as-of-timestamp", "2025-01-15 10:00:00").table("iceberg.orders")
+df_snapshot  = spark.read.option("snapshot-id", "1234567890").table("iceberg.orders")
 ```
 
-**2. Confluent Schema Registry**
+**怎么用**：填三格——`iceberg` 这个 catalog 名、`spark.sql.catalog.iceberg.uri` 那一行的 metastore 地址（换成 Hive Metastore 或 REST 目录的地址；用 REST 目录时 `type` 与 `uri` 两行都要改）、以及表名。`PARTITIONED BY (days(order_time))` 这一格按你的时间列改，不要照抄 `days()` 这个变换——它决定隐藏分区能不能生效。改名列之后，务必在旧快照上再查一次（Step 4 的判据），否则你验证的只是「新数据能写」。
+
+**模板 2：Schema Registry 部署、注册与兼容性检查**
 
 ```bash
-# 启动 Schema Registry
+# 部署（K8s 上按同样三件事配：kafkastore 地址、host name、对外端点）
 docker run -d \
   -e SCHEMA_REGISTRY_HOST_NAME=schema-registry \
   -e SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=kafka:9092 \
-  confluentinc/cp-schema-registry:latest
+  -p 8081:8081 \
+  confluentinc/cp-schema-registry:latest   # 上生产换成固定的版本标签，不要用 latest
 
-# 注册 Schema
+# 注册新版本
 curl -X POST http://localhost:8081/subjects/orders-value/versions \
   -H "Content-Type: application/vnd.schemaregistry.v1+json" \
   --data '{"schema": "{\"type\":\"record\",\"name\":\"Order\",\"fields\":[...]}"}'
 
-# 兼容性检查
+# 注册一个不兼容版本（验收用）：期望被拒绝（409 一类），而不是 200
 curl -X POST http://localhost:8081/subjects/orders-value/versions \
   -H "Content-Type: application/vnd.schemaregistry.v1+json" \
-  --data '{"schema": "{...new schema...}"}'
-# 返回 200 OK / 409 Conflict（兼容性失败）
+  --data '{"schema": "{...删掉一个无默认值字段后的 schema...}"}'
 ```
 
-**3. Delta Lake Time Travel**
+**怎么用**：填 kafkastore 地址、host name、subject 名与 schema 体。部署段还必须亲手补两件事，否则它是一条「能跑起来但会在生产上坏掉」的链路：**按高可用部署**（它就是 §4.1 Step 3 里那个「不可用时生产者注册与消费者首次解析都会失败」的单点），以及**把兼容性策略显式配成规则文档里那一档**——不配就是取默认值，而默认值与 Step 2 推导出来的档位很可能不是同一个。第二条请求要**保留在验收记录里**——它是 Step 3 的判据，返回成功说明兼容性策略没生效（常见原因是整条 subject 被设成了 NONE）。返回码的具体形态以官方文档当前版本为准。
 
-```python
-# Time Travel
-df_v1 = spark.read.format("delta") \
-    .option("versionAsOf", 123) \
-    .table("orders")
-
-df_v2 = spark.read.format("delta") \
-    .option("timestampAsOf", "2025-01-15") \
-    .table("orders")
-
-# 恢复误操作
-df_v1.write.format("delta").mode("overwrite").saveAsTable("orders")
-```
-
-**4. Iceberg V3 新特性（2024）**
-
-```sql
--- Variant 类型（半结构化）
-ALTER TABLE orders ADD COLUMN metadata VARIANT;
-
--- 向量类型（AI 集成）
-ALTER TABLE products ADD COLUMN description_embedding ARRAY<FLOAT>;
-
--- 行级删除（更高效）
-DELETE FROM orders WHERE order_time < '2025-01-01';
-```
-
-### 4.3 工具链与平台（含 2024-2025 新工具）
-
-**Schema Registry（2024-2025）**：
-
-| 工具 | 特点 |
-| --- | --- |
-| Confluent Schema Registry | 业界标准、商业版成熟 |
-| Karapace | 开源兼容版 |
-| Apicurio | 开源、支持更多格式 |
-| 自研（DB + Service） | 灵活、可定制 |
-
-**Lakehouse 表格式**：
-
-- Iceberg V3（2024）：Variant、Vector、行级删除。
-- Delta Lake 3.2（2024）：Delta UniForm、列映射。
-- Hudi 1.0（2024）：Timeline Server、Schema Checkpoint。
-- Paimon 1.1（2024）：主键演进、Schema 校验。
-
-**元数据目录**：
-
-- Unity Catalog（Databricks，2024）：跨表格式统一治理。
-- Polaris（Snowflake，2024）：REST Catalog。
-- DataHub（开源）：元数据 + 血缘。
-- Apache Atlas（开源）：传统 Hadoop 生态。
-
-### 4.4 代码 / 示例
-
-**示例 1：完整 Iceberg Schema Evolution + Time Travel**
-
-```python
-# PySpark + Iceberg
-from pyspark.sql import SparkSession
-
-spark = SparkSession.builder \
-    .appName("SchemaEvolution") \
-    .config("spark.sql.catalog.iceberg", "org.apache.iceberg.spark.SparkCatalog") \
-    .config("spark.sql.catalog.iceberg.type", "hive") \
-    .config("spark.sql.catalog.iceberg.uri", "thrift://metastore:9083") \
-    .getOrCreate()
-
-# 1. 创建表
-spark.sql("""
-    CREATE TABLE iceberg.orders (
-        order_id BIGINT,
-        user_id BIGINT,
-        amount DECIMAL(18, 2),
-        order_time TIMESTAMP
-    ) PARTITIONED BY (days(order_time))
-    STORED AS ICEBERG
-""")
-
-# 2. 加列（Schema Evolution）
-spark.sql("""
-    ALTER TABLE iceberg.orders
-    ADD COLUMN coupon_amount DECIMAL(18, 2)
-""")
-
-# 3. 重命名（ID-based）
-spark.sql("""
-    ALTER TABLE iceberg.orders
-    RENAME COLUMN coupon_amount TO discount_amount
-""")
-
-# 4. Time Travel 查询
-df_yesterday = spark.read \
-    .option("as-of-timestamp", "2025-01-15 10:00:00") \
-    .table("iceberg.orders")
-
-# 5. Snapshot ID 查询
-df_snapshot = spark.read \
-    .option("snapshot-id", "1234567890") \
-    .table("iceberg.orders")
-```
-
-**示例 2：Schema Registry + Avro**
+**模板 3：生产者 / 消费者的 Avro 序列化配置（Java）**
 
 ```java
-// Avro + Schema Registry
 Properties props = new Properties();
 props.put("bootstrap.servers", "kafka:9092");
 props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 props.put("value.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
 props.put("schema.registry.url", "http://schema-registry:8081");
-props.put("auto.register.schemas", "true");
+props.put("auto.register.schemas", "true");   // ← 这一格决定门禁在什么时刻生效
 
 KafkaProducer<String, Order> producer = new KafkaProducer<>(props);
+producer.send(new ProducerRecord<>("orders", new Order(1L, 100L, new BigDecimal("99.99"))));
 
-// 序列化时自动注册 schema
-Order order = new Order(1L, 100L, new BigDecimal("99.99"));
-producer.send(new ProducerRecord<>("orders", order));
-
-// Consumer 自动按最新 schema 反序列化
+// 消费侧：换掉反序列化器即可，按写者 schema id 取回 schema 再解析，不用自己写解析逻辑
+props.put("value.deserializer", "io.confluent.kafka.serializers.KafkaAvroDeserializer");
 KafkaConsumer<String, Order> consumer = new KafkaConsumer<>(props);
 consumer.subscribe(List.of("orders"));
 ```
 
-**示例 3：Delta Lake Time Travel + 恢复**
+**怎么用**：填 bootstrap 地址、`schema.registry.url`（生产环境用带鉴权的 https 端点，不要照抄这里的 `http://`）、序列化器类名与消息类型。**`auto.register.schemas` 是这份配置里最容易被留默认的一格**：它为 `true` 时，生产者遇到未注册的 schema 会自己注册，于是 §4.1 Step 6 的门禁从「合并前」挪到了「上线后第一次发送」——不兼容仍会被注册中心拒绝，但拒绝发生在生产者的运行时，而不是评审环节。要么设成 `false`、由 CI 先注册，要么保持 `true` 但确认注册端的兼容性策略确实是规则文档里那一档；后者三件里缺一件，等于门禁只拦一半。
+
+**模板 4：Delta Lake Time Travel 与恢复（PySpark / SQL）**
 
 ```python
-# Delta Lake Time Travel
-# 查看历史版本
-spark.sql("DESCRIBE HISTORY orders").show(truncate=False)
+spark.sql("DESCRIBE HISTORY orders").show(truncate=False)          # 先看还有哪些版本
 
-# 查询历史版本
-df_old = spark.read.format("delta").option("versionAsOf", 5).table("orders")
-
-# 恢复误操作
-spark.read.format("delta") \
-    .option("versionAsOf", 5) \
-    .table("orders") \
-    .write.format("delta") \
-    .mode("overwrite") \
-    .saveAsTable("orders")
+df_old = spark.read.format("delta").option("versionAsOf", 5).table("orders")  # 或 timestampAsOf
+df_old.write.format("delta").mode("overwrite").saveAsTable("orders")          # 恢复到该版本
 ```
 
-**示例 4：Iceberg V3 Variant + Vector（2024 新特性）**
+**怎么用**：`versionAsOf` 与 `timestampAsOf` 二选一。恢复那一步是 overwrite 语义，**执行前先确认旧版本引用的文件仍在**——否则你会拿一个已被 VACUUM 清掉的版本去覆盖现在的表，把小事故变成大事故。
+
+**模板 5：Avro Schema 与新字段默认值**
+
+```json
+{
+  "type": "record",
+  "name": "Order",
+  "fields": [
+    {"name": "order_id", "type": "long"},
+    {"name": "amount",   "type": ["null", "double"], "default": null}
+  ]
+}
+```
+
+**怎么用**：只照抄「新字段必须带 default」这条结构，字段名与类型按你的域改。删字段时不要只删那一行——先标 deprecated、保留一个迁移期，再停写，最后才考虑物理清理（[§3.5](06-schema-and-time-travel-section-3-sec3.md)）。
+
+**模板 6：Iceberg V3 Variant + Vector 列**
 
 ```sql
--- V3 Variant 类型（半结构化数据）
-ALTER TABLE user_events ADD COLUMN metadata VARIANT;
-
--- 写入 JSON 数据
+ALTER TABLE user_events ADD COLUMN metadata VARIANT;              -- 半结构化载荷
 INSERT INTO user_events VALUES
   (1, '{"source": "web", "browser": "chrome", "tags": ["vip", "new"]}');
-
--- V3 向量类型（AI 集成）
-ALTER TABLE products ADD COLUMN description_embedding ARRAY<FLOAT>;
+ALTER TABLE products ADD COLUMN description_embedding ARRAY<FLOAT>;  -- 向量列
 ```
 
----
+**怎么用**：Variant 列用来装载荷，向量列的类型写法以该项目官方文档当前版本为准。**维度一旦写进列类型就是一次迁移**，不是一次元数据编辑——写下去之前先确认迁移方案（[§5.2.3](06-schema-and-time-travel-section-5-ai.md)）。
+
+**模板 7：把兼容性检查接进 CI（流程模板，不绑定产品）**
+
+```text
+提交阶段（合并前必须通过）：
+  1. 取「目标环境当前生效的 schema 版本」   ← 注册中心 API / 表格式的 schema 历史
+  2. 取「本次分支里的新 schema」
+  3. 按规则文档里登记的那一档兼容性（Backward / Forward / Full）比较两者
+  4. 不兼容 → 失败并输出差异；兼容 → 通过
+关键：第 1 步必须取目标环境的当前版本，而不是本分支上一次提交——
+      前者能拦住「两个分支各自都兼容、合到一起不兼容」，后者拦不住。
+```
+
+**怎么用**：这条流程不需要新产品——注册中心与表格式都提供读历史版本的能力。填的是第 3 步的档位：它必须与规则文档里的那一档一致，改档位时两边一起改；档位一旦在流水线里被硬编码成与文档不同的值，门禁拦的就是另一套规则。
+
+**模板 8：Schema 变更评审单**
+
+```text
+变更对象：<表名 / topic 名>
+变更类型：加列 / 改名 / 类型变更 / 删列 / 语义变更
+兼容性判定：<Backward / Forward / Full> —— 依据：消费者最多落后 <N> 个版本
+影响面：受影响的下游（表 / 作业 / 看板），其中关键资产 <N> 个
+回溯窗口：本次变更前最后一个快照覆盖到 <日期> —— 复盘时是否仍可查：<是 / 否>
+回滚预案：还原元数据版本 / 从旧快照重写 —— 执行人：<人>
+```
+
+**怎么用**：填「语义变更」那一类时必须走血缘与评审，不要走 schema 流程——兼容性检查看不见含义。「回溯窗口」一格答不上来时，先回去补 Step 5，不要在这一格写「已确认」。
+
+### 4.6 自检清单
+
+- [ ] 在一条真实流水线上提交一次不兼容变更的 PR——失败发生在合并前还是合并后？失败日志在不在？
+- [ ] 「消费者最多落后几个版本」写在规则文档里了吗？兼容档位是从它推出来的，还是注册中心的默认值？
+- [ ] 流水线里检查用的兼容档位，与规则文档里那一档是同一个值吗？
+- [ ] 抽 3 张最近改过名的表，在旧快照上按新列名查询，能读到数据吗？
+- [ ] 把注册中心的 subject 列表与 topic 列表做一次差集，结果是多少？
+- [ ] 触发一次清理任务，之前记录的目标快照还在吗？写下的窗口覆盖日期与实际一致吗？
+- [ ] 保留策略的配置单位是时间还是提交数？抽 3 张低频表，N 个 commit 实际覆盖了多少天？
+- [ ] 抽一张带向量列的表，改一次维度要走哪几步？这组步骤写进迁移方案了吗？
+- [ ] 列身份普查清单上，有多少张表标着「无列身份」却没有复核日期？
+- [ ] 双轨期的路由表上，每个表与主题的负责人、预计迁完时间都填了吗？
+- [ ] 最近 5 次变更的评审单里，「回溯窗口」填的是具体日期，还是「已确认」？（取样条数按你团队的变更频率定，低频团队抽到最近 5 次即可【经验】，高频团队取 10 次以免漏掉结构变更那一条）
+- [ ] 「Kafka → 湖」的字段映射在哪份文件里？是显式声明的一份，还是入湖作业每次自动推断的？
+
+这 12 条查的都是**已经建成的东西**，不是设计原则（模式层面的自检见 [§3.7](06-schema-and-time-travel-section-3-sec3.md)，本节不重复）。第 1–3 条查门禁在不在（含流水线档位与规则文档是否一致），第 4–8 条查失效面（改名、无登记主题、保留窗口、向量维度），第 9–12 条查台账在不在（普查清单、路由表、评审单、映射表）。最常被跳过的是第 6 条与第 11 条——它们都只需要一次操作，却分别决定「回溯能力还在不在」与「下一次变更有没有人能说清代价」。
+
+### 4.7 小结
+
+> 本节小结：六步里真正决定成败的是 **Step 2 与 Step 6 这一对**——把兼容性规则定清楚，并让它挂在一个每次变更都会执行的检查上。因为本主题的机制让「改」变得极其便宜（元数据级编辑、老文件不动、改名不惊动下游），所以**唯一的防线不是改得小心，而是改动必须经过一个会失败的检查点**；选型、搭建、保留策略其余各步，都是在为这个检查点提供输入。
+>
+> 配合 [§ 2 核心原理](06-schema-and-time-travel.md)、[§ 3 设计模式与范式](06-schema-and-time-travel-section-3-sec3.md) 与 [§ 6 落地实践](06-schema-and-time-travel-section-6-sec6.md) 阅读。
