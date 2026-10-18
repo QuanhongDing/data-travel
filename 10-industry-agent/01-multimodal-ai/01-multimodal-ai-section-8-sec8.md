@@ -283,7 +283,7 @@
 
 - **感知模块（Perception）**：负责接收并理解多模态输入。输入包括屏幕截图、摄像头视频、麦克风音频、文档图像。核心技术：VLM（GPT-4o / Claude / Gemini）做 OCR + UI 元素识别 + 视觉推理。例如 Claude Computer Use 的感知层用 Claude 3.5 Sonnet 把屏幕截图解析为「结构化 UI 状态」（按钮坐标、文本字段、图标含义）。
 - **规划模块（Planning）**：把用户任务拆解为可执行步骤。核心技术：CoT（Chain of Thought）/ ReAct / Tree of Thoughts / LangGraph 状态机。例如「帮我订明天北京到上海的最便宜航班」会被拆为「搜索航班 → 比较价格 → 选择座位 → 输入支付信息 → 确认」。
-- **工具模块（Tools）**：提供执行能力。传统 Agent 用结构化 API（数据库查询、HTTP 请求），Computer Use Agent 用「**鼠标点击、键盘输入、截图读取**」三种原子操作。Anthropic Claude Computer Use 的工具集只有 5 个：`screenshot` / `left_click` / `right_click` / `type` / `key`，OpenAI Operator 的工具集类似。
+- **工具模块（Tools）**：提供执行能力。传统 Agent 用结构化 API（数据库查询、HTTP 请求），Computer Use Agent 用「**鼠标点击、键盘输入、截图读取**」三种原子操作。Anthropic Claude Computer Use 与 OpenAI Operator 都通过一组原子动作操作界面（具体工具 / 动作清单随版本演进，以各家官方文档当前版本为准）。
 - **执行模块（Action）**：在真实环境执行操作。Computer Use Agent 通常用 Playwright / Selenium 控制浏览器，或用 PyAutoGUI 控制桌面。执行结果通过截图回传给感知模块，形成「感知 → 规划 → 执行」的循环。
 
 **第二层：与传统 API Agent 的本质差异。** 传统 API Agent（如 LangChain Agent、AutoGen）是「**结构化环境**」——所有操作都通过定义良好的 API 完成，错误可枚举、回滚可控、状态可观测。Computer Use Agent 是「**非结构化环境**」——所有操作都在图形界面上发生，错误是开放集（任何 UI 变化都可能让 Agent 困惑）、回滚困难（点错按钮可能跳到未知页面）、状态不透明（看不到数据库 / 日志，只能看屏幕）。

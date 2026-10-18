@@ -66,7 +66,7 @@ Kahneman 关键的洞见是：**偏误不是因为 System 1"坏"，而是因为�
 - **不可逆决策（Type 1）**：核心数据迁云、自研流处理引擎替换、批处理系统重写——必须**强制激活 System 2**。Amazon 把这定义为"Type 1 决策（one-way doors）"，要求 PR/FAQ + 多轮 Review。
 - **重复决策（Repetitive Decisions）**：把"每次都要 System 2 思考"的事情**封装成 Checklist / ADR 模板**，让 System 2 的判断逻辑被前置固化下来——这正是工程界常说的一条原则："if it has to be done more than twice, encode it"（要做两次以上的事，就把它固化下来）。
 
-**第四层：与 AI 时代的关系。** 2023 年起，越来越多组织开始把原本属于 System 2 的"深度分析"任务（文献检索、备选方案生成、利弊对比）外包给 LLM。这带来新的风险——**人类会倾向于把 LLM 的输出当作"权威判断"**而不再启动自己的 System 2，这正是 Kahneman 在 2024 年去世前最后一篇论文中警示的「Algorithm Aversion → Algorithm Appreciation」的极端反转。Anthropic 在 2022 年提出的 Constitutional AI 也正是为了把人类 System 2 的判断准则"编码进 AI 推理过程"中。
+**第四层：与 AI 时代的关系。** 2023 年起，越来越多组织开始把原本属于 System 2 的"深度分析"任务（文献检索、备选方案生成、利弊对比）外包给 LLM。这带来新的风险——**人类会倾向于把 LLM 的输出当作"权威判断"**而不再启动自己的 System 2，这正是 Kahneman 在 2024 年去世前最后一篇论文中警示的「Algorithm Aversion → Algorithm Appreciation」的极端反转。Anthropic 在 2022 年提出的 Constitutional AI 常被拿来当例子，但它其实是一套用自然语言准则做对齐的训练方法，目标是无害性对齐、不是决策治理（见 §5）。
 
 **3. 常见陷阱**
 
@@ -80,14 +80,14 @@ Kahneman 关键的洞见是：**偏误不是因为 System 1"坏"，而是因为�
 - **「哪些决策场景必须强制启动 System 2？」** 答：不可逆决策（迁云、删表协议、跨年合同）；战略级架构决策（自研 vs 采购）；高不确定性决策（涉及外部监管、跨组织利益）。可以通过 ADR 模板强制 Reviewer 列出"3 条反对意见"来"逼出" System 2。
 - **「如何在团队里推广决策卫生（Decision Hygiene）？」** 答：把双过程理论嵌入培训——让团队识别自己正在用 System 1 做哪类决策；用 ADR / Pre-Mortem / Devil's Advocate 把应该用 System 2 的决策显式化；用 Decision Journal 复盘自己的偏误模式。Kahneman 在 2021 年的合作论文中明确把这种流程约束定义为"decision hygiene"。
 - **「System 2 思考有上限吗？」** 答：有。决策疲劳（Decision Fatigue）意味着同一天做的第 10 个决策比第 1 个质量显著差——所以"重要决策集中在精力最好时段"是有认知科学依据的。
-- **「LLM 会不会替代 System 2？」** 答：会替代一部分（重复性、信息密度低的判断），但 LLM 自己也受偏误影响——例如 LLM 也存在锚定效应（prompt 第一个例子会显著影响后续输出）、也容易被权威框架诱导。Anthropic 在 2022 年发布的 Constitutional AI 论文里专门讨论了这个问题。
+- **「LLM 会不会替代 System 2？」** 答：会替代一部分（重复性、信息密度低的判断），但 LLM 自己也受偏误影响——例如 LLM 也存在锚定效应（prompt 第一个例子会显著影响后续输出）、也容易被权威框架诱导。
 
 **5. 参考资料**
 
 - Daniel Kahneman《Thinking, Fast and Slow》（2011，中译本《思考，快与慢》2014）——双过程理论的原始定义与 12 种偏误的完整论述，是本题的标准出处。
 - Daniel Kahneman、Olivier Sibony、Cass R. Sunstein 三人在《Harvard Business Review》（2021）发表的《A Skeptic's Guide to Decision Hygiene》——把双过程理论落到工程流程上，提出"checklist + pre-mortem + decision journal"三件套，是 §8.6 工程落地的直接理论基础。
 - Amazon 2015 年致股东信（Bezos "two-way doors vs one-way doors" 公开原文）——可逆 / 不可逆决策分级的工业起源，也是"什么样的决策需要强制启动 System 2"的现实例子。
-- Anthropic 2022 年发布的 Constitutional AI 论文及公开博客——AI 时代如何把 System 2 的判断准则编码进 AI 推理，是 §8.7 题的伏笔。
+- Anthropic 2022 年发布的 Constitutional AI 论文及公开博客——一套用自然语言准则做对齐的训练方法（目标是无害性对齐，不是决策治理）；可借鉴的只是「把准则显式写下来让模型自评」这一半，是 §8.7 题的伏笔。
 - Netflix 公开的企业文化 PPT（"Freedom & Responsibility"，2009 首发、多次公开迭代）——以"if it has to be done more than twice, encode it"为代表的决策卫生实践，揭示头部流媒体公司如何在文化层面把决策心理学落地。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
@@ -806,7 +806,7 @@ Type 2（可逆）——Flink 计算可重放，数据未绑定 Flink 私有格�
 **第五层：常见失败模式与规模适配。**
 
 - **写太重**：一份 ADR 写 20 页——最后没人写、没人读。健康 ADR 通常是 1-2 页。**规模适配**：小团队只保留 Title / Context / Decision / Consequences 4 个字段。
-- **写太轻**：一份 ADR 只写"决定用 Flink"——失去了决策上下文。**底线**：Considered Options ≥ 2、Consequences 双面必填。
+- **写太轻**：一份 ADR 只写"决定用 Flink"——失去了决策上下文。**底线**：Considered Options ≥ 3、Consequences 双面必填。
 - **和 PR 流程脱节**：ADR 写完就归档，与代码改动无关——读者永远不知道"现在的代码对应哪份 ADR"。**做法**：在代码库关键目录放 `README` 引用相关 ADR 编号。
 - **只写"正确决策"**：失败决策不写 ADR——这恰恰放弃了最有价值的复盘素材。
 
@@ -1016,7 +1016,7 @@ Prompt 设计必须解决三个问题：**防幻觉、防漏检、防误导**。
 
 **第六层：业界实践与参考。**
 
-- **Anthropic Constitutional AI（2022 提出，2024 迭代）**：Anthropic 在公开论文中描述了用一套"宪法"准则约束 AI 输出——这与"用 12 种偏误约束 LLM 检测"是同一种思路的更大规模实现：把人类的判断准则显式编码进 AI 推理过程中。
+- **Anthropic Constitutional AI（2022 提出，2024 迭代）**：Anthropic 在公开论文中描述的是一套用自然语言准则做对齐的训练方法（目标是无害性对齐，不是决策治理）；其中「把一套准则显式写下来、让模型据此自我批判」的机制，与"用 12 种偏误约束 LLM 检测"是同一种思路——可视为它在决策场景的一种借用，而不是更大规模的组织决策程序。
 - **Daniel Kahneman / Olivier Sibony / Cass R. Sunstein《Noise》（2021）**：书中明确主张"用规则（rule）替代部分人判断"来降低决策噪声——LLM 辅助偏误检测正是这种思路的 AI 版本。
 - **斯坦福 HAI（Human-Centered AI）研究院公开发表的系列研究**：讨论 LLM 在决策辅助中的角色边界与人类审阅必要性，是"AI 不可当决策 Owner"这一结论的学术支持。
 
@@ -1037,7 +1037,7 @@ Prompt 设计必须解决三个问题：**防幻觉、防漏检、防误导**。
 
 **5. 参考资料**
 
-- Anthropic 公开发表的 Constitutional AI 论文（2022 提出、2024 迭代）——把人类准则显式编码进 AI 推理的范式来源。
+- Anthropic 公开发表的 Constitutional AI 论文（2022 提出、2024 迭代）——用自然语言准则做对齐的训练方法；本检测器借用的是它「把准则显式写下来让模型自评」这一半，而非把它当作决策治理来源。
 - Daniel Kahneman / Olivier Sibony / Cass R. Sunstein《Noise: A Flaw in Human Judgment》（2021）——"用规则替代部分人判断"降低决策噪声的理论依据。
 - 斯坦福 HAI（Human-Centered AI）研究院关于 LLM 决策辅助与人类审阅的公开研究——AI 不可作决策 Owner 的学术支撑。
 - 本书第 13 章决策心理学章节 §4.5"AI 辅助识别偏误（Python / Claude）"示例——可落地代码模板。
@@ -1120,8 +1120,8 @@ Prompt 设计必须解决三个问题：**防幻觉、防漏检、防误导**。
 - Zillow Offers（2021）关停事件的公开财报与媒体报道——自动化偏误在大规模业务决策中的代价。
 - 美国国家公路交通安全管理局（NHTSA）公开的自动驾驶事故调查报告——自动化偏误在安全领域的标准案例。
 - Daniel Kahneman / Olivier Sibony / Cass R. Sunstein《Noise: A Flaw in Human Judgment》（2021）——AI 用于降低决策噪声（而非替代判断）的定位。
-- Anthropic 公开发表的 Constitutional AI 论文——用"宪法"约束 AI 输出的责任设计范式。
-- 本书第 13 章决策心理学章节 §5.1"人机协同决策"与 §5.3"AI 决策可解释性"——理论到工程的映射。
+- Anthropic 公开发表的 Constitutional AI 论文——一套用"宪法"约束 AI 输出的对齐训练方法（目标是无害性对齐，不是决策治理）。
+- 本书第 13 章决策心理学章节 §5.2.4「人机分工与解释」与 §5.5「被过度宣传的部分」——人机协同决策与 AI 决策可解释性从理论到工程的映射。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
 

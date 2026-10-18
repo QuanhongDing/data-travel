@@ -403,7 +403,7 @@ LIMIT 10;
   - **pgvector** 通过 `hnsw(filtered)` 类似的扩展（如 `pgvectorscale` 的 StreamingDiskANN）部分支持。
   - **Oracle 23ai** 的 AI Vector Search 把「vector index 与 B-Tree 索引联动」作为核心卖点。
 
-**第五层：延迟与召回率的真实取舍。**
+**第五层：延迟与召回率的真实取舍。** 下表为**一般 ANN 引擎**的经验取向（非 pgvector 专属；pgvector 的专属阈值口径不同，另见第六层）。
 
 | 策略 | 召回率 | 延迟（低选择率） | 延迟（高选择率） | 适用 |
 | --- | --- | --- | --- | --- |

@@ -196,7 +196,7 @@
 
 - **引擎选型**：Flink 是事实标准。其事件时间（EventTime）+ Watermark 机制是处理乱序与晚到数据的关键；Checkpoint 机制保证 exactly-once 语义；Keyed State（ValueState / ListState / MapState）天然适配"按用户聚合"的场景。美团 / 字节 / 阿里在实时特征场景几乎全部用 Flink。
 - **窗口设计**：常用**滚动窗口（Tumbling Window）**做周期性指标、**会话窗口（Session Window）**做行为聚类、**滑动窗口（Sliding Window）**做"最近 N 分钟"类指标。**Watermark 设置要严格且有容错**——既不能太宽松（窗口延迟关闭），也不能太紧（误丢数据），典型生产设置是"业务可容忍迟到时间 + 几秒 buffer"。
-- **状态后端**：生产环境用 **RocksDBStateBackend**（增量 Checkpoint、KV 存储、状态可超内存）。对于超大状态（如全量用户画像实时部分），还需要使用 **ForSt / 自研 KV** 做状态后端，避免 OOM。
+- **状态后端**：生产环境用 **RocksDBStateBackend**（增量 Checkpoint、KV 存储、状态可超内存）。对于超大状态（如全量用户画像实时部分），还需要把状态**外置到自研 KV（如美团 Cellar）**，避免 OOM。
 - **反压（Backpressure）治理**：开启 Flink 自带的反压检测；当上游（如 Kafka）出现反压时，自动调节 Kafka 消费速率 + 临时扩大并行度。生产建议配置"反压告警 + 自动扩容"联动。
 
 **第四层：存储侧的选型。**
@@ -289,7 +289,7 @@
 
 - **影响分析**：上游 DWD 表新增字段 / 修改类型 / 删除字段时，通过血缘反向查找到受影响的特征和模型，输出"变更影响清单"。Uber Databook、LinkedIn DataHub、阿里 DataWorks 都内置这一能力。
 - **溯源分析**：模型监控报警时（如 AUC 下降），通过血缘反向追到具体特征 / 特征版本 / 计算任务，快速定位。美团在 Feature Store V2 中把这一过程嵌入到「模型健康看板」。
-- **特征治理**：定期跑"孤儿特征"（无任何消费方）、"重复特征"（多份相似语义的特征）、"过气特征"（N 个月未使用）扫描，配合下线 / 合并机制。美团 2020 年的 5 万+ 僵尸特征治理就是建立在血缘之上。
+- **特征治理**：定期跑"孤儿特征"（无任何消费方）、"重复特征"（多份相似语义的特征）、"过气特征"（N 个月未使用）扫描，配合下线 / 合并机制。美团 2020 年针对 5 万+ 特征的治理（含僵尸特征清理）就是建立在血缘之上。
 
 **第五层：行业垂直案例。**
 
@@ -503,12 +503,17 @@ Feast、Databricks Feature Store、Tecton 都把 point-in-time join 作为**核�
 
 - **「point-in-time join 在 Spark SQL 怎么写？」** 答：用 `window` 函数 + 排序后取最近一条记录，典型 SQL 模式：
   ```sql
-  SELECT s.id, s.label, f.feature_value
-  FROM samples s
-  LATERAL VIEW (SELECT feature_value FROM features 
-                WHERE entity_id = s.entity_id 
-                  AND event_time <= s.event_time 
-                ORDER BY event_time DESC LIMIT 1) f;
+  WITH matched AS (
+    SELECT s.id, s.label, f.feature_value, f.event_time,
+           ROW_NUMBER() OVER (PARTITION BY s.id ORDER BY f.event_time DESC) AS rn
+    FROM samples s
+    JOIN features f
+      ON f.entity_id = s.entity_id
+     AND f.event_time <= s.event_time
+  )
+  SELECT id, label, feature_value
+  FROM matched
+  WHERE rn = 1;
   ```
   Feast / Databricks 提供了专门的 point-in-time join API。
 - **「回填数据量太大（PB 级）怎么办？」** 答：分层处理——特征快照按主键分桶；回填脚本按时间分片并行；用湖表增量读替代全表扫；用近似算法（如 HyperLogLog / Count-Min Sketch）替代精确聚合。

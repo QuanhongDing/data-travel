@@ -21,7 +21,7 @@
 
 ### 1.1 是什么
 
-**学术定义**：绩效管理（Performance Management）是一套**持续循环**的管理过程，包含目标设定（Planning）、过程辅导（Coaching）、绩效评估（Appraisal）、结果反馈（Feedback）、发展改进（Development）。理论基础源于 **Peter Drucker 的 MBO（Management by Objectives，1954）**、**Andy Grove 的 OKR（Objectives and Key Results，Intel 1970s）**、**Jack Welch 的 9 宫格 + 末位淘汰（GE 1980s）**。
+**学术定义**：绩效管理（Performance Management）是一套**持续循环**的管理过程，包含目标设定（Planning）、过程辅导（Coaching）、绩效评估（Appraisal）、结果反馈（Feedback）、发展改进（Development）。理论基础源于 **Peter Drucker 的 MBO（Management by Objectives，1954）**、**Andy Grove 的 OKR（Objectives and Key Results，Intel 1970s）**、**Jack Welch 的活力曲线 + 末位淘汰（GE 1980s）**。
 
 **工程定义**：在数据架构师语境下，**绩效管理 = 目标设定 × 评估体系 × 反馈机制 × 激励组合 × 末位管理** 的闭环体系。它解决的核心问题是：
 
@@ -48,7 +48,7 @@
 - **「干好干坏一个样」是最伤团队的**：平均主义会让 A 类员工（高绩效）流失，B 类员工（一般）留下。
 - **OKR vs KPI 之争**：数据团队的工作很多是「**探索性**」（新架构、新工具、新范式），传统 KPI 难以衡量「**创新**」「**长期收益**」。
 - **AI 时代能力快速迭代**：传统数据架构师必须叠加 AI 能力，绩效体系必须支持「**能力跃迁**」。
-- **90 / 9 / 1 法则（Google 验证）**：90% 员工高产出、9% 中等、1% 低产出——绩效体系必须识别并激励这 90%。
+- **评分宽松是系统性倾向**：每个经理的理性选择都向上给分，绩效体系必须提供足够的区分度，才能把高产出者识别出来并激励到位。
 
 **痛点**：
 

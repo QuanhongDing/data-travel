@@ -454,7 +454,7 @@ Partition Spec (V2)：
 
 **1. 考察点**
 
-- 是否能从「**架构层**」区分"基于 ZK + Kafka 的 CP 系统"（Confluent SR）与"基于 Raft 的 AP 系统"（Karapace）的本质差异。
+- 是否能从「**架构层**」区分"基于 ZK + Kafka 的 CP 系统"（Confluent SR）与"基于 Kafka 元数据的 AP 系统"（Karapace）的本质差异。
 - 是否理解「**协议层**」上 Avro vs Protobuf vs JSON Schema 的支持广度对选型的影响。
 - 是否能用「**RTO/RPO**」量化 Schema Registry 集群高可用的工程要求——SR 挂掉等于全链路阻塞。
 - 加分项：能讲清「**多集群灾备**」+「**本地缓存**」+「**降级策略**」的金融级方案，以及 Paimon SR 在湖仓场景的差异化优势。
@@ -472,7 +472,7 @@ Partition Spec (V2)：
 
 | 维度 | Confluent SR | Karapace | Apicurio | Paimon SR |
 | --- | --- | --- | --- | --- |
-| **架构** | ZK + Kafka + REST | 兼容 Confluent API、自带 RAFT 元数据 | PostgreSQL/AMQ/Kafka 多 backend | Flink Catalog + REST |
+| **架构** | ZK + Kafka + REST | 兼容 Confluent API、Kafka 元数据（免 ZK） | PostgreSQL/AMQ/Kafka 多 backend | Flink Catalog + REST |
 | **CP/AP** | CP（ZK 强一致） | AP（Kafka 元数据） | AP（DB backend） | CP（Flink Catalog） |
 | **协议支持** | Avro / Protobuf / JSON Schema | Avro / Protobuf / JSON Schema | Avro / Protobuf / JSON Schema / OpenAPI / AsyncAPI | Avro / Protobuf + Table Schema |
 | **兼容性策略** | BACKWARD / FORWARD / FULL / NONE | 同 Confluent | 同 Confluent + 自定义规则 | Backward + 主键演进校验 |

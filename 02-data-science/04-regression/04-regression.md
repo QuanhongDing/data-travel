@@ -127,7 +127,7 @@
 **深度学习阶段（2016+）**：
 
 - 2018：**DeepAR**（Amazon）——时序预测的 RNN 自回归。
-- 2020：**N-BEATS** / **N-HiTS**（Element AI）——时序预测的深度学习基础模型。
+- 2020：**N-BEATS**（Element AI）——时序预测的深度学习基础模型；**N-HiTS**（Element AI）——同族时序基础模型（具体年份本书未给出可核验出处，此处不锁定）。
 - 2021：**Informer**——长序列时序 Transformer。
 - 2022：**PatchTST**（ICLR 2023）——时序 Transformer 的 Patch 化。
 - 2022：Uber 推出 **DeepETA**（ETA 预估的深度学习）。
@@ -315,7 +315,7 @@ AR（自回归）+ I（差分）+ MA（移动平均）。
 17. **ARIMA / SARIMA**——经典时序模型。
 18. **Prophet**（Facebook 2017）——加法模型，自动节假日。
 19. **DeepAR**（Amazon 2018）——自回归 RNN。
-20. **N-BEATS / N-HiTS**（2020）——时序基础模型。
+20. **N-BEATS**（2020）/ **N-HiTS**——时序基础模型。
 21. **Informer / Autoformer**——长序列 Transformer。
 22. **PatchTST**（2023）——Patch 化时序 Transformer。
 23. **TimesNet / iTransformer**（2023-2024）——时序 SOTA。

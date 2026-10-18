@@ -111,7 +111,7 @@
 **深度学习阶段（2012–2020）**：
 
 - 2012：AlexNet（Krizhevsky / Hinton）在 ImageNet 断层第一，开启深度学习时代。
-- 2014：VGG / GoogLeNet / ResNet，图像分类 SOTA 不断刷新。
+- 2014：VGG / GoogLeNet，图像分类 SOTA 不断刷新。
 - 2015：He 等提出 **ResNet**（残差网络），深度首次突破 100 层。
 - 2016：Word2Vec / GloVe + LSTM 做文本分类成为标准。
 - 2017：Transformer（Vaswani et al., "Attention Is All You Need"）奠定 BERT 基础。

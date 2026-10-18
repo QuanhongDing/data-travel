@@ -103,7 +103,7 @@
 - Airbnb Minerva 开源（指标定义 + 查询）——开源年份无可核来源，以 Airbnb 官方发布说明为准。
 - **2021**：Cube.js 流行（指标 API 平台）。
 - **2022**：dbt Semantic Layer 推出。
-- **2022**：MetricFlow（dbt 收购）开源。
+- **2022**：MetricFlow（Transform 开源，后被 dbt 收购）。
 
 **AI 原生阶段（2023+）**：
 
@@ -129,7 +129,7 @@
 - **指标血缘（Metric Lineage）**：指标 → 派生表 → 原始表。
 - **指标语义层（Semantic Layer）**：指标定义 + 维度 + 计算的统一抽象（dbt Semantic Layer）。
 - **Cube.js**：开源指标 API 平台。
-- **MetricFlow**：dbt 开源指标定义框架。
+- **MetricFlow**：Transform 开源、后被 dbt 收购的指标定义框架。
 - **Airbnb Minerva**：指标定义 + 查询框架。
 - **OSCAR**：两套「同名不同义」的指标要素模型共用此缩写——本书本主题指 OneMetric 一系（O=Owner / S=Statistic / C=Caliber / A=Attribute / R=Reference，见 [§6 案例 6.1](10-metric-platform-section-6-sec6.md)）；数据建模章另指阿里 OneData 一系（O=业务对象 / S=修饰词 / C=业务过程 / A=统计周期 / R=原子指标，见 [Ch1-10 指标体系](../../01-modeling/10-metric-system/10-metric-system.md)）。引用时须先指明属于哪一系。
 - **LookML**：Looker 的指标定义语言。

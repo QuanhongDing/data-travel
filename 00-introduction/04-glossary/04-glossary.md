@@ -106,7 +106,7 @@
 | --- | --- | --- |
 | **DQC** | Data Quality Center | 数据质量中心 |
 | **DAMA DMBOK** | — | 数据管理知识体系 |
-| **等保 2.0 / 3.0** | 网络安全等级保护 | 中国合规标准 |
+| **等保 2.0 / 3.0** | 网络安全等级保护 | 中国合规标准（现行对照以等保 2.0 为准；「等保 3.0」尚无正式标准号与实施日期，不得当作已实施的现行标准） |
 | **GDPR** | General Data Protection Regulation | 欧盟数据保护条例 |
 | **PIPL** | Personal Information Protection Law | 中国个人信息保护法 |
 | **HIPAA** | Health Insurance Portability and Accountability Act | 美国医疗数据保护法 |
@@ -115,7 +115,7 @@
 | **去标识化 / 匿名化** | De-identification / Anonymization | 隐私保护技术 |
 | **差分隐私 (DP)** | Differential Privacy | 隐私计算技术 |
 | **联邦学习 (FL)** | Federated Learning | 跨方建模 |
-| **PSI / PIR** | Private Set Intersection / Retrieval | 隐私集合求交 / 检索 |
+| **PSI / PIR** | Private Set Intersection / Private Information Retrieval | 隐私集合求交 / 隐私信息检索 |
 
 ### 2.5 架构与运维
 

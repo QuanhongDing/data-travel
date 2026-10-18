@@ -389,7 +389,7 @@ Kafka EOS（同一事务内提交数据 + offset）
 
 **第五层：状态膨胀的工程影响。**
 
-- 大状态（TB 级）+ Processing Time = 一旦 Failover 必须从 0 重建（无 Checkpoint 可恢复）；
+- 大状态（TB 级）+ Processing Time：Failover 后仍可从最近一次 Checkpoint 恢复状态，并非「无 Checkpoint 可恢复、必须从 0 重建」；它真正的代价是**结果不可复现**——回放或故障恢复都会改变输出（见 §13.2.3 对 Processing Time 的判断）；
 - Event Time + RocksDB + 增量 Checkpoint 下，Failover 恢复可控制在分钟级（经验值，随状态规模与远端存储带宽而异）。
 
 **第六层：行业真实选择。**

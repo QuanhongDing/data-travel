@@ -128,7 +128,7 @@
 **阶段 4 · 2018-2024：Metric 语义层（Semantic Layer Era）**
 
 - 借鉴 BI 领域"语义层（Semantic Layer）"思路，把指标定义作为独立层抽象。
-- 关键产品：dbt Semantic Layer（2023 GA）、Cube（开源）、Airbnb Minerva、Looker LookML（早期）、AtScale、MetricFire、Firebolt。
+- 关键产品：dbt Semantic Layer（2023 GA）、Cube（开源）、Airbnb Minerva、Looker LookML（早期）、AtScale。
 - 关键概念：MetricFlow（dbt 子项目）、MetricQL（Cube 查询语言）、Cube.js、LookML。
 - 优势：跨工具复用（一份指标定义同时支持 Tableau、Superset、Mode、Hex）。
 

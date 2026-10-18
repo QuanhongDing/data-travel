@@ -89,7 +89,7 @@ GitHub 在 2016 年公开的 `github/architectural-decision-records` 仓库就�
 
 - Michael Nygard 博客《Documenting Architecture Decisions》（2011 年发表于 Cognitect 官方博客）——ADR 概念的原始出处，给出 Nygard 4 段模板的最早定义。
 - GitHub 公开仓库 `github/architectural-decision-records`（2016 年起持续维护）——大型互联网公司公开 ADR 的最完整样本，每条 ADR 都附 Status、Context、Decision、Consequences 字段范例。
-- ThoughtWorks Technology Radar 自 2014 年起对 ADR 的多次条目（Trial → Assess → Adopt 演化）——工业界对 ADR 接受度的一手证据。
+- ThoughtWorks Technology Radar 自 2014 年起对 ADR 的多次条目（Assess → Trial → Adopt 演化）——工业界对 ADR 接受度的一手证据。
 - MADR 项目官方文档——完整版模板字段定义与最佳实践。
 - 《The Software Architecture Chronicles》（Eberhard Wolff）系列博客——比较 ADR、设计文档、Wiki 的定位差异。
 
@@ -410,7 +410,7 @@ GitHub 在 `github/architectural-decision-records` 仓库的部分 ADR（如 ADR
 
 - **「如何让团队真的写 Bad，而不是走过场？」** 答：把 Bad 一栏作为 Review Checklist 强制项——Reviewer 看到 Bad 一栏空或敷衍必须打回。CI lint 工具可校验「Good 与 Bad 字数差不能超过 X 倍」（如 3 倍）。GitHub Actions 已经有 ADR 校验的自定义规则示例。
 - **「Pre-Mortem 在 5 人小团队怎么落？」** 答：不必召开正式会议——合并前 PR 评论里加一段「如果 12 个月后这个决策被证明错了，原因可能是？」；任何 Reviewer 写满 3 句真实具体的原因视为满足 Pre-Mortem 要求。
-- **「如果团队决策被认知偏差坑过，ADR 库如何避免重蹈覆辙？」** 答：在 ADR 的 Confirmed 段链接历史 Postmortem 报告——「参考 postmortem-2024-03 我们如何踩坑的」。这样决策形成「ADR + Postmortem + 新 ADR supersede」的完整回路。
+- **「如果团队决策被认知偏差坑过，ADR 库如何避免重蹈覆辙？」** 答：在 ADR 的 Confirmation 段链接历史 Postmortem 报告——「参考 postmortem-2024-03 我们如何踩坑的」。这样决策形成「ADR + Postmortem + 新 ADR supersede」的完整回路。
 - **「认知偏差能否通过 AI 检测？」** 答：部分可以——LLM 可以识别「Decision Drivers 与 Considered Options 不匹配」「Bad 一栏敷衍」「Pre-Mortem 缺失」等表面信号。但**更深层的偏差（沉没成本、政治因素）AI 检测不到**，必须依赖多元 Reviewer。
 
 **5. 参考资料**

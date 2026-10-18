@@ -122,7 +122,7 @@
 2. **域/产品视角**：把"数据产品"作为一等公民建模——LinkedIn DataHub 引入 Listings / Domains 概念，阿里 DataWorks 把"数据板块（Data Domain）"作为顶层组织维度。
 3. **联邦目录（Federated Catalog）**：每个域独立运维自己的目录后端，跨域查询走联邦层。Databricks Unity Catalog 用 **Catalog → Schema → Table** 的多级目录层级让一个账号/区域服务多个域，本质也是联邦思路的简化形态。
 4. **数据契约（Data Contract）**：作为生产方与消费方的接口协议，目录里要可被建模、可被签发、可被验证（Schema、口径、SLA）。这是 Data Mesh 的核心交付物。
-5. **AI/Agent 就绪的 API**：把目录的元数据暴露为高吞吐、低延迟的 API + 流式订阅，让 Agent 在决策时能"实时发现可用数据"。这是 LinkedIn DataHub 2023 年后改版的重心——把元数据变成"事件总线"。
+5. **AI/Agent 就绪的 API**：把目录的元数据暴露为高吞吐、低延迟的 API + 流式订阅，让 Agent 在决策时能"实时发现可用数据"。这是 LinkedIn DataHub 事件驱动改造的重心——把元数据变成"事件总线"。
 6. **跨域/跨云的元数据治理**：目录要支持跨账号、跨云、跨区域的一致性查询——Lyft Amundsen 后续贡献的跨云联邦能力、Apache Gravitino（2024 年进入 Apache【公开】）的多源联邦，是这一方向的工程化。
 
 **第三层：与传统单体目录的关键区别。**
@@ -313,7 +313,7 @@
 
 - **Apache Atlas**：出身 Hortonworks（2015），最初为 Hadoop 生态设计。架构哲学是「**治理先行 + 强类型模型**」——分类（Classification）与标签（Tag）是头等公民，强调 Tag 沿血缘向下游传播。底层存储依赖 **JanusGraph（图数据库） + HBase / Cassandra / BerkeleyDB**，因此部署运维成本较高。最新版本（2.x）已支持独立存储后端。
 - **Lyft Amundsen**：2019 年开源，主张「**让元数据像 wiki 一样可搜**」——把数据资产的发现做到极致。架构哲学是「**最简搜索 + 最易接入**」——Neo4j 存血缘、Elasticsearch 存索引、MySQL 存元数据、Apache Spark/Flink 等常见源做成开箱即用的 ingestion。**没有分类分级**是它的短板。
-- **LinkedIn DataHub**：2019 年开源（最初叫 WhereHows），2020 年后改版。架构哲学是「**元数据即事件流**」——所有元数据变更都是不可变事件，写到 Kafka（或兼容的事件总线），下游消费者按需订阅。底层是 MySQL + Elasticsearch + Neo4j + Kafka。**流式订阅模型是它最大的架构差异**——让元数据能像数据一样被实时消费。
+- **LinkedIn DataHub**：2019 年开源（前身 WhereHows），2020 年后改版。架构哲学是「**元数据即事件流**」——所有元数据变更都是不可变事件，写到 Kafka（或兼容的事件总线），下游消费者按需订阅。底层是 MySQL + Elasticsearch + Neo4j + Kafka。**流式订阅模型是它最大的架构差异**——让元数据能像数据一样被实时消费。
 
 **第二层：四维结构化对比表。**
 
@@ -327,7 +327,7 @@
 | **血缘深度** | 表级 + 字段级（SQLParser） | 表级（早期）+ 字段级（DAO 后续补） | 表级 + 字段级 + 列级使用频次（最细） |
 | **AI/Agent 接入** | API 支持但偏查询 | API 简单 | 事件流订阅 + GraphQL + MCP（最前沿） |
 | **部署运维成本** | ★★★★★（JanusGraph 集群、HBase / Cassandra 强依赖） | ★★★☆☆（MySQL + Neo4j + ES 三件套） | ★★☆☆☆（MySQL + ES + Neo4j + Kafka，比 Amundsen 多 Kafka） |
-| **License 风险** | Apache 2.0 稳定 | Apache 2.0 稳定 | Apache 2.0 稳定（早期数据集曾用 SSPL，已切换） |
+| **License 风险** | Apache 2.0 稳定 | Apache 2.0 稳定（搜索层依赖 ES，ES 2021 年切换 SSPL / Elastic License） | Apache 2.0 稳定（搜索层依赖 ES，ES 2021 年切换 SSPL / Elastic License） |
 | **社区治理** | Apache 顶级项目，节奏慢 | Linux Foundation 治理，社区维护中 | Linux Foundation（含 LF AI & Data），增长最快 |
 | **典型用户** | Hortonworks / Cloudera 客户、金融/电信强合规场景 | Lyft、Booking.com、Schibsted | LinkedIn、Snowflake、Saxo Bank、Expedia、Wix、哔哩哔哩 |
 | **2024 活跃度** | 中（Apache 大版本发行慢） | 中（路线图以 Bugfix 为主） | 高（月度迭代，AI 集成频繁） |

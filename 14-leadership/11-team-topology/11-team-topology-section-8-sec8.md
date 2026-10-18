@@ -65,7 +65,7 @@
 - 业务多元化、用户分布广 → **Stream-Aligned + Platform**（互联网典型）。
 - 业务单一、专业能力强 → **Stream-Aligned + Enabling**（金融 / 重工业）。
 - 基础设施复杂、技术门槛高 → **Platform + Complicated-Subsystem**（数据库 / 编译器）。
-- AI 平台 / 智能体平台 → **Platform + Enabling + Complicated-Subsystem**（AI 治理成为标配）。
+- AI 平台 / 智能体平台 → **Platform + Enabling + Complicated-Subsystem**（AI 治理作为 Complicated-Subsystem 的候选角色，成熟度 L2）。
 
 **3. 常见陷阱**
 
@@ -79,7 +79,7 @@
 
 - **「Platform Team 的 ROI 怎么衡量？」** 答：三个核心指标——**被消费率**（多少 Stream-Aligned 团队在用）、**认知负荷下降**（业务方从 N 个工具收敛到 1 个自助平台）、**Fast Flow 效率**（业务交付周期变化）。Stripe / 阿里中台通常以季度 NPS 与接入数作为北极星指标。
 - **「业务成熟度低时，怎么选团队拓扑？」** 答：先用单 Stream-Aligned Team 一杆子捅到底（0→1 阶段，避免过早切分造成协调成本），等业务稳定（5-15 人已饱和）再拆出 Platform Team。
-- **「AI 时代四种团队会有什么变化？」** 答：AI 治理成为 Complicated-Subsystem 标配；AI Enabling Team（LLM / RAG / Agent 赋能）成为新 Enabling 类型；AI 平台成为枢纽 Platform Team。
+- **「AI 时代四种团队会有什么变化？」** 答：AI 治理作为 Complicated-Subsystem 的候选角色（成熟度 L2）；AI Enabling Team（LLM / RAG / Agent 赋能）成为新 Enabling 类型；AI 平台成为枢纽 Platform Team。
 - **「Platform Team 做完了没人用，怎么救？」** 答：先做 MVP + 让 1 个 Stream-Aligned Team 优先接入并背书，再逐步开放；绝不能闭门造车。要把"被消费"写进 Platform Team 的 KPI，而不是"交付数"。
 
 **5. 参考资料**
@@ -349,7 +349,7 @@
 - **「Conway's Law 与微服务的关系？」** 答：康威反演是微服务架构的最大推手。如果组织结构不调整为「**每个服务一个团队**」，微服务只会被组织结构"反向消解"为分布式单体。Netflix、Amazon 的成功恰恰是因为他们的组织结构就是「**每个服务一个团队**」。
 - **「组织结构调整的最佳时点？」** 答：项目启动前 1-3 个月。架构完成后调整组织代价 5-10 倍，且往往无效。
 - **「逆康威的代价？」** 答：组织重组的成本包含：人心动荡、短期效率下降、跨团队学习成本、KPI 重设等。新组织结构的真正稳定需要 6-12 个月的磨合。
-- **「AI 时代的 Conway 反演有什么新重点？」** 答：必须为 AI 治理、AI 安全、AI 合规开辟独立的 Complicated-Subsystem Team。否则 AI 系统在规模化后将面临严重的治理失控——这一代价会在 6-12 个月后以"模型事故 / 数据泄露 / 合规罚款"的形式呈现。
+- **「AI 时代的 Conway 反演有什么新重点？」** 答：为 AI 治理、AI 安全、AI 合规识别独立的 Bounded Context；是否为其设常设独立 Complicated-Subsystem Team，按成熟度 L2 的判据决定（先做门禁与留痕的试点，按编制可行性决定）。否则 AI 系统在规模化后将面临严重的治理失控——这一代价会在 6-12 个月后以"模型事故 / 数据泄露 / 合规罚款"的形式呈现。
 
 **5. 参考资料**
 
@@ -482,9 +482,9 @@
 
 **1. 考察点**
 
-- 是否理解 **AI 时代对传统 Team Topologies 的扩展**——AI 治理成为 Complicated-Subsystem 标配；AI Enabling Team 成为赋能主流模式；AI 平台成为枢纽 Platform Team。
+- 是否理解 **AI 时代对传统 Team Topologies 的扩展**——AI 治理作为 Complicated-Subsystem 的候选角色（成熟度 L2，先做门禁与留痕试点，是否设常设独立团队按编制可行性决定）；AI Enabling Team 成为赋能主流模式；AI 平台成为枢纽 Platform Team。
 - 能否说清 **AI 时代的新增认知负荷**——AI 治理、AI 合规、AI 风险，并指出对应的团队类型。
-- 是否知道 **AI 时代 Conway's Law 反演** 的重点——必须为 AI 治理、AI 安全、AI 合规开辟独立的 Complicated-Subsystem Team。
+- 是否知道 **AI 时代 Conway's Law 反演** 的重点——为 AI 治理、AI 安全、AI 合规识别独立的 Bounded Context；是否为其设常设独立 Complicated-Subsystem Team，按成熟度 L2 的判据决定（先做门禁与留痕试点，按编制可行性决定）。
 - 加分项：能讲出 **OpenAI / Anthropic / 阿里通义 / 字节 ByteTech / 华为盘古** 在 AI 时代拓扑上的实践差异。
 
 **2. 参考答案框架**
@@ -540,7 +540,7 @@
 - 退出标准：业务团队已经能独立完成 AI 项目，无需 Enabling Team 介入。
 - 退出方式：Enabling Team 解散或转去赋能新业务领域。
 
-**第五层：AI 治理（Complicated-Subsystem）——成为标配。**
+**第五层：AI 治理（Complicated-Subsystem）——成熟度 L2 的候选角色。**
 
 **职责**：
 
@@ -553,7 +553,7 @@
 
 **组织定位**：
 
-- **独立 Complicated-Subsystem Team**：6-10 人专门负责 AI 治理。
+- **独立 Complicated-Subsystem Team（L2，按需设置）**：是否设常设独立编制按编制可行性决定；若设，6-10 人专门负责 AI 治理。
 - **强制接入**：所有 AI 应用必须经过 AI 治理团队的安全审查。
 - **红线机制**：触发红线（如"模型输出客户隐私数据"）立即熔断。
 
@@ -576,7 +576,7 @@
 
 **3. 常见陷阱**
 
-- **把 AI 治理外包给业务团队。** Stream-Aligned Team 自己治理 AI——结果治理质量参差不齐，事故频发。AI 治理必须是 **独立的 Complicated-Subsystem Team**。
+- **把 AI 治理外包给业务团队。** Stream-Aligned Team 自己治理 AI——结果治理质量参差不齐，事故频发。AI 治理应落在 **独立的 Complicated-Subsystem Team**（成熟度 L2：先做门禁与留痕的试点，是否设常设独立编制按编制可行性决定）。
 - **把 AI Enabling 做成长期团队。** AI Enabling 6-12 个月能力传递后必须退出；不然业务团队依赖，AI 永远不会内化到产品中。
 - **AI 平台不做自服务。** AI 平台还在用"接需求—做需求"的 IT 团队模式——结果业务方接入 LLM 难，业务创新被阻塞。
 - **不做 AI 治理。** 短期看省事，长期必然遭遇数据泄露 / 模型事故 / 合规罚款。AI 治理是**企业级长期投资**，不是"事后补救"。
@@ -588,7 +588,7 @@
 - **「AI 治理团队如何避免阻塞业务创新？」** 答：分级审查——内部 POC / 低风险场景做"轻量审查"（快速通过）；对外 / 高风险场景做"严格审查"（双人复核 + 红线测试）。关键是不为了治理而治理。
 - **「AI Enabling Team 退出机制怎么设计？」** 答：定义明确的"能力成熟度模型"——业务团队达成独立标准（能独立设计 Prompt / 调用 RAG / 上线 AI 功能）后，Enabling Team 退出。
 - **「AI 平台的 ROI 怎么衡量？」** 答：业务方接入数 + 调用量 + Token 成本节省 + 业务方可感知的 AI 应用数量。
-- **「AI 时代需要新增哪种团队类型？」** 答：不新增第五种，仍然是 4 种 + AI 维度的扩展。但「**AI 治理**」成为 Complicated-Subsystem 标配，「**AI Enabling**」成为 Enabling 类型的主流，「**AI 平台**」成为 Platform 类型的枢纽。
+- **「AI 时代需要新增哪种团队类型？」** 答：不新增第五种，仍然是 4 种 + AI 维度的扩展。但「**AI 治理**」作为 Complicated-Subsystem 的候选角色（成熟度 L2，先做门禁与留痕试点，是否设常设独立团队按编制可行性决定），「**AI Enabling**」成为 Enabling 类型的主流，「**AI 平台**」成为 Platform 类型的枢纽。
 - **「AI 治理与 AI 风险的区别？」** 答：治理 = 合规 / 公平 / 可解释（事前预防 + 事中控制）；风险 = 失控 / 事故 / 攻击（事后响应）。两者需要协同，但职责边界清晰。
 
 **5. 参考资料**

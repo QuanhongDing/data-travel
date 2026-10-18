@@ -77,7 +77,7 @@
 - Jack Jones《Measuring and Managing Information Risk: A FAIR Approach》（2014）——FAIR 框架的原始著作，把概率影响矩阵扩展为可量化的损失分布。
 - Google《Site Reliability Engineering》第 4 章与《SRE Workbook》第 5 章——Error Budget 是风险评估在 SLO 场景的工业实践。
 - Netflix《Chaos Engineering: Building Confidence in System Behavior through Experimentation》（Casey Rosenthal 等著，O'Reilly，2017）——Netflix 把"风险→混沌实验"作为风险评估的验证闭环。
-- LinkedIn 工程博客关于 Risk Posture 与年度 GRB（Governance Risk and Compliance）评审的公开材料。
+- LinkedIn 工程博客关于 Risk Posture 与年度 GRC（Governance Risk and Compliance）评审的公开材料。
 - 阿里巴巴《大数据之路：阿里巴巴大数据实践》中关于数据风险与故障演练的章节——阿里双 11 风险分级与 P×I 打分在生产环境的落地实证（该章节的确切名称与编号本节无法核出，引用前请以原书为准）。
 
 > 注：以上参考资料均指向公开出版物或企业公开技术博客；其中凡由公司或机构署名、却未给出文档名 / 年份 / 链接的条目（含以公司署名的白皮书、博客标题条，以及写作「公开材料」「公开研究报告」「公开技术分享」「公开文章」等各式名称的条目），以及各条中的规模量与性能数字（集群规模、演练频次、阈值等），本节均无法给出可核验的具体文档名与链接，属【经验】档表述，引用时请自行查证。精确链接请按条目名称自行检索核验。
@@ -203,7 +203,7 @@
 **1. 考察点**
 
 - 是否理解 FTA 是"**自顶向下的逻辑树**"（用 AND / OR 门反推根因），Bowtie 是"**以核心事件为中心的双向可视化**"（左侧威胁 + 预防控制，右侧后果 + 缓解控制）。
-- 能否说清两者在**出发点、对称性、逻辑门、沟通友好度**四个维度上的差异。
+- 能否说清两者在**出发点、对称性、逻辑门、沟通友好度**等维度上的差异。
 - 能否各举一个数据架构的真实例子（而非泛泛的"数据库宕机"），并说明什么场景选哪个。
 - 加分项：能提出"FTA 算概率 + Bowtie 做沟通"的组合用法，以及二者在事故复盘（Postmortem）中的角色。
 
@@ -213,7 +213,7 @@
 
 **第二层：Bowtie 的定义与结构。** Bowtie（领结分析）起源于 1970 年代英国化工行业的"Shell 领结方法"（Shell Bowtie），在 1988 年 Piper Alpha 平台事故后成为北海油气行业的标准。它以**核心事件（Top Event）**为领结的"结"——左侧列**威胁（Threats）**到核心事件的路径，每条路径上挂**预防控制（Preventive Controls）**；右侧列核心事件到**后果（Consequences）**的路径，每条路径上挂**缓解控制（Mitigative Controls）**。与 FTA 最大的不同是它的**双向对称性**——FTA 只朝"原因"方向下钻，Bowtie 同时朝"原因"与"后果"两个方向展开，因此它天然回答"如何防"和"如何减轻"两个问题。数据架构例子：核心事件 =「客户订单数据泄露」；左侧威胁 = [内部人员越权访问] + [外部 API 漏洞利用] + [第三方 SDK 采集] 三条，每条挂预防控制（最小权限 / API 鉴权 / SDK 审计）；右侧后果 = [客户投诉] + [监管处罚] + [声誉损失] + [业务中断]，每条挂缓解控制（应急响应 / 法律合规 / 公关预案 / 备份恢复）。
 
-**第三层：四个维度的对比。**
+**第三层：六个维度的对比。**
 
 | 维度 | FTA | Bowtie |
 | --- | --- | --- |
@@ -378,7 +378,7 @@
 
 **第三层：可信 AI 的七类别。** AI RMF 把"可信 AI（Trustworthy AI）"拆成若干特征，常见表述包括：**有效且可靠（Valid and Reliable）**——模型在其声明场景下准确稳定；**安全（Safe）**——不产生物理/心理伤害；**安全且具韧性（Secure and Resilient）**——抵抗对抗攻击、故障可恢复；**可问责且透明（Accountable and Transparent）**——决策可追溯、责任明确；**可解释（Explainable and Interpretable）**——人能理解模型为何给出该结果；**保护隐私（Privacy-Enhanced）**——训练与推理阶段保护个人数据；**公平且管控有害偏见（Fair with Harmful Bias Managed）**——不因族群/性别等产生系统性歧视。这七类特征不是并列的评分项，而是"需要在 Govern 的治理框架下被 Map/Measure/Manage 反复覆盖"的目标。
 
-**第四层：相比 ISO 31000 的维度扩展。** ISO 31000 给出的是通用方法论（识别-分析-应对-监控），AI RMF 在其上扩展了四个 AI 特有维度——① **对抗鲁棒性（Adversarial Robustness）**：对抗样本、Prompt 注入、数据投毒——这些在传统 IT 风险里没有对应物；② **数据偏见与公平性**：训练数据的分布偏差会系统性地传导到输出，需要专门的公平性度量（IBM AI Fairness 360、Google What-If Tool）；③ **模型可解释性**：传统软件是确定性的、逻辑可读；ML 模型的"黑箱"需要 SHAP / LIME / 注意力可视化来提供可解释性，这也是监管（EU AI Act 对高风险 AI 的可解释要求）的硬约束；④ **生成式 AI 的特殊风险**（2024 Profile 新增）：幻觉、有害内容、版权侵权、训练数据记忆（membership inference）等。工程落地对应关系——对抗鲁棒性用红队 + 对抗训练、公平性用偏差检测 + 重加权、可解释性用 SHAP/LIME、幻觉用 RAG grounding + 事实核查。**注意 AI RMF 与 ISO/IEC 42001（AI 管理体系标准）、ISO/IEC 23894（AI 风险管理）、EU AI Act 是互补关系**——前者是框架，后两者是管理与法规要求。
+**第四层：相比 ISO 31000 的维度扩展。** ISO 31000 给出的是通用方法论（识别-分析-应对-监控），AI RMF 在其上扩展了四个 AI 特有维度——① **对抗鲁棒性（Adversarial Robustness）**：对抗样本、Prompt 注入、数据投毒——这些在传统 IT 风险里没有对应物；② **数据偏见与公平性**：训练数据的分布偏差会系统性地传导到输出，需要专门的公平性度量（IBM AI Fairness 360、Google What-If Tool）；③ **模型可解释性**：传统软件是确定性的、逻辑可读；ML 模型的"黑箱"需要 SHAP / LIME / 注意力可视化来提供可解释性，这也是监管（EU AI Act 对高风险 AI 的可解释要求）的硬约束；④ **生成式 AI 的特殊风险**（2024 Profile 新增）：幻觉、有害内容、版权侵权、训练数据记忆（membership inference）等。工程落地对应关系——对抗鲁棒性用红队 + 对抗训练、公平性用偏差检测 + 重加权、可解释性用 SHAP/LIME、幻觉用 RAG grounding + 事实核查。**注意 AI RMF 与 ISO/IEC 42001（AI 管理体系标准）、ISO/IEC 23894（AI 风险管理）、EU AI Act 是互补关系**——前者是框架，后三者是管理与法规要求。
 
 **3. 常见陷阱**
 

@@ -395,7 +395,7 @@ RecurrenceRate(incident_type) = Recurrences(90 天内) / TotalIncidents(同类�
 #### 落地实践
 
 - **Google SRE 系列（SRE Book / The Site Reliability Workbook）**：其复盘模板的字段（时间线、根因、Action Items、后续跟进）可直接迁移到 LLM 幻觉、模型衰减这类新型故障的复盘。
-- **Netflix ChAP（Chaos Automation Platform 2024）**：自动化注入 AI 故障（幻觉 / 漂移），验证系统韧性。
+- **Netflix ChAP（Chaos Automation Platform）**：Netflix 公开工程博客中描述的混沌自动化平台，可作为「演练 + AI」方向的参照；此处只登记其存在与方向，不断言其具体功能与效果。
 - **Rootly AI（2024）**：AI 辅助 Incident Response，自动生成 Postmortem 草稿、提取 Action Items。
 - **Incident.io AI（2024）**：AI 自动总结故障、检索相似历史案例。
 - **Datadog Watchdog / New Relic AI（2024）**：AI 异常检测 + 故障预测，提前预警。

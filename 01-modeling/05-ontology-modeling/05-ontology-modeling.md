@@ -109,13 +109,13 @@
 **大数据阶段（2010s–2020）**：
 
 - 2011：Schema.org 由 Google / Bing / Yahoo 联合发布，标志着本体「走出学术、走向 SEO」。
-- 2010s 中：Linked Open Data（LoD）项目爆发，DBpedia、WikiData 成为开放本体典范。
+- 2010s 中：Linked Open Data（LoD）项目爆发，DBpedia、Wikidata 成为开放本体典范。
 - 2017：SHACL（W3C 推荐标准）补齐 RDF 验证的最后一块拼图。
 - 2018–2020：工业级图数据库（Neo4j、Stardog、GraphDB）把 OWL 推理能力下沉到图存储。
 
 **AI 原生阶段（2020+，LLM + Agent 驱动）**：
 
-- 2021–2022：本体与 NLP 结合——LLM 开始辅助本体构建（OntoGPT、DeepOntoff 等）。
+- 2021–2022：本体与 NLP 结合；LLM 辅助本体构建的代表工具（OntoGPT、DeepOnto 等）在 2023–2024 年公开。
 - 2023：LLM 生成的 RDF / OWL 进入实用，但质量参差；SHACL 验证成为必要。
 - 2024：Microsoft GraphRAG 把本体+KG+RAG 推向工业界。
 - 2024–2025：Ontology-driven RAG、Agent-driven KG Construction 涌现。本体不再只是「KR 工具」，而是 RAG 的「**语义索引层**」与 Agent 的「**世界模型**」。
@@ -169,7 +169,7 @@
 - **本体 vs ER 图**：ER 图描述「表结构」，本体描述「语义」。ER 表达 `1:N` 关系是「主外键」，本体表达是 `ObjectProperty + Cardinality Restriction`。本体比 ER 强在「层次推理 / 关系复合 / 不相交约束」。
 - **本体 vs 维度建模**：维度建模以「事实表 + 维度表」为核心，组织查询优化；本体以「概念 + 公理」为核心，组织语义推理。两者可以共存：本体定义 DWD 层的语义契约，维度建模负责物理落地。
 - **本体 vs 知识图谱**：本体是 **schema / TBox**（术语层），知识图谱是 **instances / ABox**（断言层）。没有 schema 的 KG 是「一堆 RDF 节点」，有 schema 的 KG 才是「业务知识」。
-- **本体 vs 主数据模型（MDM）**：MDM 关注「跨系统统一标识」（Gold / Silver / Bronze），本体关注「跨域语义」。本体 + MDM = 完整的「跨域主数据管理」。
+- **本体 vs 主数据模型（MDM）**：MDM 关注「跨系统统一标识」（标识解析与合并 + 黄金记录），本体关注「跨域语义」。本体 + MDM = 完整的「跨域主数据管理」。
 - **本体 vs 大模型知识**：LLM 内化的知识是「隐式 / 概率 / 不可溯源」的，本体是「显式 / 形式化 / 可推理 / 可溯源」的。LLM 适合「快速回答」，本体适合「可靠推理」，两者组合是 Neuro-Symbolic AI 的核心。
 - **本体 vs 词汇表 / 数据字典**：数据字典是被动的「字段说明」，本体是主动的「语义约束生成器」——违反本体约束的数据可以直接被 SHACL 拒绝。
 

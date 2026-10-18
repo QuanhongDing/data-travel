@@ -147,9 +147,9 @@
 - 1986：SQL-86 标准。
 - 2010s：MPP 数据库成熟（Teradata、Snowflake、BigQuery）。
 
-**In-Database ML 阶段（2017-2022）**：
+**In-Database ML 阶段（2018-2022）**：
 
-- 2017：BigQuery ML 发布，SQL 内调机器学习。
+- 2018：BigQuery ML 发布，SQL 内调机器学习。
 - 2018：Microsoft SQL Server 集成 R / Python。
 - 2019：Databricks SQL Analytics。
 - 2020-2022：Apache MADlib（Greenplum）、Snowflake UDFs（用户自定义函数）。

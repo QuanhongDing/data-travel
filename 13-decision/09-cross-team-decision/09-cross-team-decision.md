@@ -79,8 +79,8 @@
 - **1950s-1960s**：组织行为学奠基（McGregor X-Y 理论）。
 - **1960s-1970s**：责任分配矩阵的形式在项目管理实践中成型（RACI 的前身）。
 - **1980s-1990s**：RACI 矩阵广泛应用于项目管理（PMI）。
-- **2000s**：敏捷开发推动轻量级决策（Scrum、SAFe）。
-- **2010s**：开源治理模式（Linux Foundation、CNCF）的跨组织决策实践；决策角色框架的变体成型——RAPID（Bain & Company，原始定义见其 2010 年《Reinventing Decision Making》）与 DACI（由 Atlassian 推广）把「谁推进、谁批准、谁能否决」拆成可分配的角色（见 §3.2.2 / §3.2.3）。
+- **2000s**：敏捷开发推动轻量级决策（Scrum）。
+- **2010s**：开源治理模式（Linux Foundation、CNCF）的跨组织决策实践；规模化敏捷框架（SAFe）出现；决策角色框架的变体成型——RAPID（Bain & Company，原始定义见其 2010 年《Reinventing Decision Making》）与 DACI（由 Atlassian 推广）把「谁推进、谁批准、谁能否决」拆成可分配的角色（见 §3.2.2 / §3.2.3）。
 - **2012**：Spotify 公开 Squad / Tribe / Chapter / Guild 模型（见 §3.2.11）。
 - **2016**：Google《Site Reliability Engineering》一书把「把决策推给最接近问题的人」写成成文原则（书为 2016 年出版；Google 内部的相关实践早于此，但成文与公开以该书为标志）。
 - **2020**：GitHub / GitLab 的 RFC + ADR 流程成为开源 / 互联网公司主流。

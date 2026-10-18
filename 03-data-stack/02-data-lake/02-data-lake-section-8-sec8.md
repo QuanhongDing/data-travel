@@ -41,7 +41,7 @@
 
 **第一层：先说清它们解决的是同一问题的不同侧面。** 四个表格式都跑在「Parquet/ORC 文件 + 对象存储」之上，目标都是给数据湖补上「ACID 事务 + Schema 演进 + 时间旅行 + 隐藏分区」这套表语义。差异在于它们各自的**核心假设**不同：
 
-- **Delta Lake（Databricks，2019 开源）**：假设"读者主要是 Spark"。基于 `_delta_log`（JSON/Checkpoint + Parquet）的**乐观并发控制**，commit 时追加 JSON 协议文件，靠 Spark 的访问模式做了大量优化。与 Spark 深度耦合——Delta 2.0 之后通过 Delta UniForm 协议对外暴露 Iceberg 协议，让 Trino/Flink 也能读同一份 Delta 表。
+- **Delta Lake（Databricks，2019 开源）**：假设"读者主要是 Spark"。基于 `_delta_log`（JSON/Checkpoint + Parquet）的**乐观并发控制**，commit 时追加 JSON 协议文件，靠 Spark 的访问模式做了大量优化。与 Spark 深度耦合——随 Delta Lake 3.0 公布 Delta UniForm 协议对外暴露 Iceberg 协议，让 Trino/Flink 也能读同一份 Delta 表。
 - **Apache Hudi（Uber，2016 立项、2017 开源）**：假设"更新密集场景"。起源于 Uber 的增量 ETL 痛点（每天亿级司机/订单 upsert），内置 **Copy-on-Write（COW）+ Merge-on-Read（MOR）** 两种表类型，时间线（Timeline）由 commit/clean/delta/rollback 四类动作组成，原生支持 upsert、soft delete、CDC 写入。
 - **Apache Iceberg（Netflix / Apple，2018）**：假设"读者是任何引擎、社区中立"。采用**快照隔离（Snapshot Isolation）+ manifest list / manifest file** 的层级元数据，元数据不绑定任何计算引擎。Trino / Spark / Flink / Dremio 都可读。
 - **Apache Paimon（Flink Table Store，2023 年进入 ASF 孵化，2024 年毕业）**：假设"读者主要是 Flink 流批一体"。基于 **LSM Tree** 的流式表格式——内存表 + 排序文件 + 增量文件，天然支持流式 upsert 与高并发写入，是 Flink 生态的事实标准流式湖格式。
@@ -150,7 +150,7 @@
 - **「Iceberg ACID 等于数据库 ACID」陷阱**。 湖上 ACID 是 snapshot 隔离，没有跨表事务，也没有 predicate lock，遇到写写冲突会重试——和 Postgres 的 SERIALIZABLE 不是一回事。
 - **以为 Hudi MOR 不需要清理**。 MOR 表的 log file 必须由 `clean` 动作定期清理，否则 Timeline 越长读越慢；不做配置是常见事故。
 - **把 rename 视为理所当然**。 私有化部署（自建 MinIO / OSS-like）如果 rename 不原子，Iceberg ACID 直接退化成 eventually consistent；上线前必须测一遍。
-- **混淆 Iceberg V1 / V2 / V3**。 V2 才引入 row-level delete，V3 才支持向量类型；版本差异影响功能矩阵。
+- **混淆 Iceberg V1 / V2 / V3**。 V2 才引入 row-level delete，V3 才引入删除向量（deletion vectors）与 Variant 类型；版本差异影响功能矩阵。
 - **忘了并发冲突的处理策略**。 客户端不设 `commit.retry.num-retries` 与 `commit.retry.min-wait-ms`，会导致写入在多 writer 场景下大面积失败。
 
 **4. 追问预测**
@@ -182,7 +182,7 @@
 **1. 考察点**
 
 - 是否理解「**小文件不是性能问题，是稳定性问题**」——NameNode / Hive Metastore 内存压力、对象存储 list QPS、查询 plan 时间都可能因小文件雪崩而击穿。
-- 能否说出典型阈值：单文件 < 1MB、NameNode 内存上限约 60 亿对象、规划器列文件数超 10 万时性能断崖。
+- 能否说出典型阈值：单文件 < 1MB、单个 NameNode 内存上限约数亿对象、规划器列文件数超 10 万时性能断崖【经验】。
 - 是否知道三剑客各自的治理工具：Iceberg 的 `rewrite_data_files`、Hudi 的 `compaction`、Paimon 的自动 compaction。
 - 加分项：能区分**"上游合并"（写入侧控 + 流式表格式自带）和"下游合并"（独立 compaction 作业）**两种思路，并给出在万节点规模的差异。
 
@@ -537,7 +537,7 @@ OLAP（StarRocks / Doris / ClickHouse）+ BI / AI
 - **「Paimon 与 Hudi 怎么选？」** 答：以 Flink 为主要写入引擎选 Paimon（LSM 设计 + 流批原生），以 Spark + CDC upsert 为主选 Hudi MOR，二者都强于 Iceberg 在 CDC 写入。
 - **「MySQL → Paimon 的全量 + 增量如何衔接？」** 答：用 Flink CDC 的 `scan.incremental.snapshot.enabled` + `debezium.snapshot.mode='initial'`；从全量快照读起，再切到 binlog 流；Paimon 用主键 upsert 保证不重复。
 - **「Kafka 在实时湖仓里到底是什么角色？」** 答：流量削峰 + 跨系统解耦 + 灾备重放；不是必须的（可直接 MySQL → Flink → 湖），但生产环境几乎都有，作为缓冲与回放源。
-- **「Iceberg V3 的 row-level delete 改了 CDC 语义吗？」** 答：Iceberg V2 引入了 row-level delete，V3 在此基础上加向量类型并优化行级删除，向 CDC 场景靠拢；但与 Paimon 的 LSM 设计还有差距，写吞吐与流读仍弱于 Paimon。
+- **「Iceberg V3 的 row-level delete 改了 CDC 语义吗？」** 答：Iceberg V2 引入了 row-level delete，V3 在此基础上加入删除向量与 Variant 类型、进一步降低行级删除开销，向 CDC 场景靠拢；但与 Paimon 的 LSM 设计还有差距，写吞吐与流读仍弱于 Paimon。
 
 **5. 参考资料**
 

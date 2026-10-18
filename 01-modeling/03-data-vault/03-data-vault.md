@@ -208,7 +208,7 @@ Data Vault 的 Satellite 本质上是一个**追加写（append-only）**的变�
 - **INSERT**：新业务键首次出现 → 新增 Hub + Sat 一行
 - **UPDATE**：业务键已存在但属性变化 → Satellite 新增一行（旧行保留）
 - **DELETE**：业务键被标记为删除 → Effectivity Satellite 新增一行（T_del = now），原行保留
-- **REPLAY**：数据库为这种情况 → 通过 T_load < 业务时态识别"晚到的真相"
+- **REPLAY**：迟到的变更到达（重放 / 历史批次重跑）→ 通过 T_load < 业务时态识别"晚到的真相"
 
 **与传统 SCD（缓慢变化维）的对比**：
 

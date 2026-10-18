@@ -278,7 +278,7 @@
 
 - **Airflow Sensor 的工作模式**：Worker 启动一个 Sensor 任务，每 `poke_interval`（默认 60s）触发一次检查，最长跑 `timeout`（默认 7 天）。有两种模式：`mode='poke'`（Worker 持续占用、阻塞 Slot）和 `mode='reschedule'`（Worker 释放 Slot、下一轮重新调度，**生产推荐**）。
 - **代价**：① 每个 Sensor 占用一个 Worker Slot，万级 Sensor 时 Worker 压力大；② 频繁轮询对元数据服务（HMS、NameNode）造成持续压力；③ 延迟取决于轮询间隔，**最快也要一个轮询周期**。
-- **优化**：① 加 `mode='reschedule'` 释放 Worker；② 把 `poke_interval` 调到 5-15 分钟（牺牲实时性换 Worker 容量）；③ 用 `SoftMaxActiveRuns` 限制并发 Sensor 数；④ 用 `exponential_backoff` 减少后期轮询频率。
+- **优化**：① 加 `mode='reschedule'` 释放 Worker；② 把 `poke_interval` 调到 5-15 分钟（牺牲实时性换 Worker 容量）；③ 用 `pool` 限制并发 Sensor 数；④ 用 `exponential_backoff` 减少后期轮询频率。
 
 **第三层：事件触发的实现路径。**
 
@@ -312,7 +312,7 @@
 **4. 追问预测**
 
 - **「HivePartitionSensor 在 Hive 3 / Iceberg 上还适用吗？」** 答：HivePartitionSensor 在 Hive 3 上仍可用，但 Iceberg / Hudi 推荐用 Lake commit notification 事件触发——延迟从分钟级降到秒级，且不依赖 HMS 查询。
-- **「怎么避免 Sensor 雪崩？」** 答：四招——① `mode='reschedule'`；② `poke_interval` 5-15 分钟；③ `SoftMaxActiveRuns` 限制并发；④ 把 Sensor 任务独立成 `sensors` DAG，不占业务 Worker。
+- **「怎么避免 Sensor 雪崩？」** 答：四招——① `mode='reschedule'`；② `poke_interval` 5-15 分钟；③ `pool` 限制并发；④ 把 Sensor 任务独立成 `sensors` DAG，不占业务 Worker。
 - **「数据就绪信号链路怎么压测？」** 答：构造"上游延后 5 分钟"的注入故障，验证下游是否正确等待而非超时失败；验证 DQC 任务是否正确捕获"行数偏差 > 30%"。
 - **「Lake 表的 snapshot 通知怎么消费？」** 答：Iceberg 提供 `iceberg-events-listener`，每次 commit 推 Kafka 事件；下游 Flink 消费推进 snapshot 位点。
 
@@ -564,7 +564,7 @@ SLA Miss 不只是"任务超时"，实际生产中至少四类：
 ```
 
 - **跨集群触发**：`TriggerDagRunOperator` 触发下游 Airflow-2 的 DAG，配置 `trigger_dag_id='downstream_dag'`，Airflow-2 通过 webhook 接收触发。
-- **跨集群等待**：下游用 `TriggerDagRunSensor` 等待上游 DAG Run 状态。
+- **跨集群等待**：下游用 `ExternalTaskSensor` 等待上游 DAG Run 状态。
 - **跨集群数据**：上游写数据到对象存储（S3 / OSS），下游读同一对象存储（要求跨集群共享）或独立存储 + 数据同步任务。
 
 **第四层：典型实现方案——Argo 联邦 Workflow。**

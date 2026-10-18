@@ -117,7 +117,7 @@
 
 - 2010：Google 推行 Site Reliability Engineering（SRE）。
 - 2012：Spotify Squad / Tribe / Chapter / Guild 模型公开。
-- 2014：阿里巴巴「**中台战略**」+ Platform Team。
+- 2014：阿里巴巴「**中台战略**」+ Platform Team（本书内该年份口径不一，不锁定具体年份；见 [§3.2.2](11-team-topology-section-3-sec3.md)）。
 - 2017：Team Topologies 提出。
 - 2019：Team Topologies 书籍出版。
 
@@ -148,7 +148,7 @@
 - **Conway's Law**：组织结构决定系统架构。
 - **Conway's Law 反演**：让组织结构反推系统架构。
 - **Team API**：团队间接口，包含：服务清单 / SLA / 责任人 / 交互模式 / 文档入口。
-- **Team Interaction Modes**：4 种交互模式：
+- **Team Interaction Modes**：4 种交互模式（公开材料引述 Team Topologies（2019）时给的是**三种**核心交互模式——Collaboration / X-as-a-Service / Facilitating；下面第 4 种 **Sub-subscribing** 在原书中的具体出处本书未逐字核实，读者可按原书目录自行核验，本书不把它归给该书）：
   - **Collaboration**：紧密协作，共同解决问题。
   - **X-as-a-Service**：平台团队提供服务，业务团队消费。
   - **Facilitating**：Enabling Team 提供辅导。

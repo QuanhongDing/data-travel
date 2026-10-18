@@ -797,7 +797,7 @@
 
 - Lundberg & Lee 2017《A Unified Approach to Interpreting Model Predictions》（NeurIPS）——SHAP 的原始论文。
 - Ribeiro et al. 2016《"Why Should I Trust You?": Explaining the Predictions of Any Classifier》（KDD）——LIME 的原始论文。
-- Lou et al. 2013《Accurate Intelligible Models with Pairwise Interactions》——EBM 的前身 GAMMI。
+- Lou et al. 2013《Accurate Intelligible Models with Pairwise Interactions》——EBM / GA2M 这类本身可解释的加性模型。
 - Caruana et al. 2015《Intelligible Models for HealthCare: Predicting Pneumonia Risk and Hospital 30-day Readmission》——EBM 的奠基论文。
 - Molnar 2022《Interpretable Machine Learning》——可解释 ML 的系统教材。
 - Arrieta et al. 2020《Explainable Artificial Intelligence (XAI): Concepts, Taxonomies, Opportunities and Challenges》——XAI 综述。

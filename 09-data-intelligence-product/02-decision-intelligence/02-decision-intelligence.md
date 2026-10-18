@@ -137,7 +137,7 @@
 
 - 2011-2015：随机森林 / XGBoost 等 ML 模型广泛用于决策（信贷 / 反欺诈）。
 - 2015-2018：深度学习用于推荐 / 排序决策（YouTube DNN、Wide & Deep）。
-- 2017-2020：Real-Time Decisioning（实时决策）兴起——Flink + 规则引擎 + 实时模型（Apache Urule、Easy Rules、Inrule、Spark Streaming）。
+- 2017-2020：Real-Time Decisioning（实时决策）兴起——Flink + 规则引擎 + 实时模型（URule、Easy Rules、Inrule、Spark Streaming）。
 - 2018-2020：因果推断（Causal Inference）成熟——DML、Double Machine Learning、CausalForest。
 
 **AI 原生阶段（2021+，LLM + Agent 驱动）**：
@@ -157,7 +157,7 @@
 ### 2.1 关键概念定义
 
 - **决策引擎（Decision Engine）**：决策智能的核心组件，根据「输入数据 + 规则 + 模型 + 上下文」输出「决策结果」。
-- **规则引擎（Rule Engine）**：基于 if-then-else 规则的决策组件。代表：Drools、Easy Rules、Aviator、QLExpress、Apache Urule、Groovy。
+- **规则引擎（Rule Engine）**：基于 if-then-else 规则的决策组件。代表：Drools、Easy Rules、Aviator、QLExpress、URule、Groovy。
 - **决策表（Decision Table）**：用表格组织规则，列是条件，行是决策结果。优势：业务方易于理解。
 - **决策树（Decision Tree）**：用树形组织规则，从根到叶子逐步匹配。
 - **决策流（Decision Flow / DMN）**：用流程图编排多个决策步骤。代表标准：OMG DMN（Decision Model and Notation）。

@@ -34,7 +34,7 @@
 | 方案 | 定位 | 核心机制（一句话） | 典型使用者 | 许可 / 商业模式 |
 | --- | --- | --- | --- | --- |
 | 阿里 DataWorks 全家桶（DataWorks + MaxCompute + Hologres + Quick BI + PAI + Real-time Compute） | 一体化商业平台 | 粒度与口径作为平台里的登记项，由平台门禁强制 | 阿里云上的中大型互联网、国内传统行业 | 商业订阅（按用量） |
-| 字节生态（DataFinder + ByteHouse + Byteintern） | 一体化商业平台（另一朵云） | 同上，入口与函数名不同 | 火山引擎客户 | 商业订阅 |
+| 字节生态（DataFinder + ByteHouse + DataLeap） | 一体化商业平台（另一朵云） | 同上，入口与函数名不同 | 火山引擎客户 | 商业订阅 |
 | 华为 DAYU / MRS / DWS（DataArts） | 一体化商业平台（政企向） | 同上，叠加信创与合规适配 | 政企 / 金融 | 商业订阅 |
 | 腾讯 WeData + TBDS + CDW | 一体化商业平台 | 同上 | 腾讯云客户 | 商业订阅 |
 | Microsoft Fabric（OneLake + Power BI + 数据工厂 + Spark） | 一体化商业平台（SaaS 形态，Azure 生态） | 湖仓底座与 BI 同属一个 SaaS，共享同一份 OneLake 上的 Delta 数据 | Azure / 微软生态企业 | 商业订阅（按容量档位计费） |

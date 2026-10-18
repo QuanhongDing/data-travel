@@ -59,7 +59,7 @@
 
 最关键的差异是：Data Vault 把"同一 Anchor 的多个属性"放进同一张 Satellite，而 Anchor Modeling **强制**每个属性独立表。这意味着"加一个客户字段"在 Data Vault 里要 `ALTER TABLE customer_satellite ADD COLUMN`，在 Anchor Modeling 里是 `CREATE TABLE customer_xxx_attr`，**不动任何已有表**——这是 Anchor 标榜"零中断演化"的物理基础。
 
-**第四层：与维度建模的边界。** Kimball 星型模型只关心"当前状态"，维度表里几乎没有时态列；Anchor Modeling **原生就是时态的**，每个 Attribute 都有时态三元组。所以两者的适用场景天然不同——**星型用于消费层（ADS / Data Mart），Anchor 用于集成层（DWD 上方）**，再在 Anchor 上方构建反规范化视图给 BI 报表用。
+**第四层：与维度建模的边界。** Kimball 星型模型只关心"当前状态"，维度表里几乎没有时态列；Anchor Modeling **原生就是时态的**，每个 Attribute 都有时态三元组。所以两者的适用场景天然不同——**星型用于消费层（ADS / Data Mart），Anchor 用于集成层（ODS 与 DWD 之间）**，再在 Anchor 上方构建反规范化视图给 BI 报表用。
 
 **3. 常见陷阱**
 

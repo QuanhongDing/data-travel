@@ -134,7 +134,7 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 | **基于 Bloom Filter / Cuckoo Hash** | Pinkas–Schneider CNS 2014 | 快 | 半诚实、有 False Positive | 中 |
 
 工程上主流的两条路径：
-- **KKRT / PSZ OPRF-PSI**（基于不经意传输扩展）：通信量 `O(n)`，计算量 `O(n)`，是当前 **Go（Google Private Join and Compute）**、**SecretFlow PSI** 默认实现的核心。
+- **KKRT / PSZ OPRF-PSI**（基于不经意传输扩展）：通信量 `O(n)`，计算量 `O(n)`，是当前 **Go（Google PSI）**、**SecretFlow PSI** 默认实现的核心。
 - **Circuit-PSI + GMW/ABY 协议**：可抵抗恶意参与方，通信 / 计算开销大 10–100 倍，仅在金融高合规场景使用。
 
 **第三层：工程性能瓶颈——千万级、亿级必须做分布式。**
@@ -173,10 +173,10 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 **5. 参考资料**
 
 - Pinkas, B., Schneider, T. & Tkachenko, O.《Efficient Private Set Intersection Based on OT Extension》, USENIX Security 2019——OT Extension PSI 的代表论文，是工业实现的主要理论基础。
-- Pinkas, B., Schneider, T. & Zohner, M.《Faster Private Set Intersection Based on OT Extension》, PETS 2014——KKRT 协议的原始论文。
+- Pinkas, B., Schneider, T. & Zohner, M.《Faster Private Set Intersection Based on OT Extension》, USENIX Security 2014——基于 OT 扩展的 PSI 代表论文之一。
 - Rindal, P. & Pinkas, B.《A Two-Party Protocol with Batched Oblivious Transfer》, EUROCRYPT 2018——Circuit-PSI 的恶意安全代表实现。
 - Chase, M. & Miao, P.《Private Set Intersection in the Internet Setting from Lightweight Oblivious PRF》, CRYPTO 2020——轻量化 OPRF-PSI 的代表协议。
-- Google Research《Private Join and Compute》开源项目——GO 语言参考实现，是工业集成度最高的 PSI 工程方案。
+- Google Research《Private Join and Compute》开源项目——参考实现，是工业集成度最高的 PSI 工程方案。
 - 蚂蚁集团《SecretFlow 开源白皮书》——SecretFlow PSI 协议的工程封装与对 KKRT/ECDH-PSI 的支持。
 - 微众银行《FATE 联邦学习技术白皮书》——FATE-PSI 与纵向 SecureBoost 协同的工程范式。
 
@@ -386,7 +386,7 @@ PSI 的目标是：**双方各自拿到"自己这一侧"的交集**（Unlabeled 
 
 **第三层：逐环节的关键决策。**
 
-**a) 样本对齐（PSI 阶段）。** 三方 → 三次两两 PSI 取并集，或用三方 OPRF（如 ABY3-PSI）一次性算三交集。
+**a) 样本对齐（PSI 阶段）。** 三方 → 三次两两 PSI 取交集，或用三方 OPRF（如 ABY3-PSI）一次性算三交集。
 - 协议选择：KKRT OPRF-PSI（半诚实模型下性能友好）；若保险方拒绝半诚实假设，需要 Circuit-PSI。
 - 工程优化：ID 基数大时用 LSH 预过滤（如手机号前缀）+ 分桶并行；FATE 公开百万级 ID 整合作业时长。
 - 失败兜底：通信中断必须能断点续传；丢失方协议可重新尝试但要审计。

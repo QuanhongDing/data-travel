@@ -2,7 +2,7 @@
 
 > **一句话定位**：把"治理 / 观测 / 计量 / 演进"这 4 条横切线讲清楚，它们是数据架构师在所有 4 能力域都必须具备的"通用能力"。
 
-> 本文是 data-travel 项目 [序章](../README.md) 的子章节（02-cross-cutting-lines），覆盖 **R3 数据建模** 能力领域中「跨域通用能力」的展开。
+> 本文是 data-travel 项目 [序章](../README.md) 的子章节（02-cross-cutting-lines），覆盖全书「4 能力域 + 4 横线」中 4 条横线（治理 / 观测 / 计量 / 演进）「跨域通用能力」的展开。
 
 ## 0. 本章速读地图
 
@@ -152,7 +152,7 @@ A(r) = 1 - H(r)/H_max
 
 - 可治理：Apache Ranger / OPA / OpenMetadata
 - 可观测：Prometheus / Grafana / Jaeger / OpenTelemetry
-- 可计量：Kubecost / CloudHealth / Apache CloudStack
+- 可计量：Kubecost / CloudHealth / Cloudability
 - 可演进：ArgoCD / Spinnaker / LaunchDarkly
 
 ### 4.4 代码 / 配置示例
@@ -219,8 +219,8 @@ evolution:
 
 ### 6.1 真实案例
 
-- **Netflix SRE**：可观测性 + 故障演练的全球标杆；4 个 Golden Signals 来源。
-- **Google SRE Book**：定义 SLO / Error Budget / 故障复盘，是行业事实标准。
+- **Netflix SRE**：可观测性 + 故障演练的全球标杆。
+- **Google SRE Book**：4 个 Golden Signals（黄金信号）的原始出处；定义 SLO / Error Budget / 故障复盘，是行业事实标准。
 - **Uber 计费体系**：从「按服务」到「按行程 / 按城市 / 按业务」多维归因。
 - **阿里 SRE / 字节 SRE**：国内大厂 SRE 实践 + 混沌工程。
 - **蚂蚁 / 微众 / 平安 / 招行**：金融级可治理 + 监管报送。

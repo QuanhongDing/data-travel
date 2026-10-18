@@ -173,7 +173,7 @@ OverlapHours(team) = Σ overlap(member_i, member_j) for all pairs
 - **Virtual Coffee（虚拟咖啡）**：每周 30 分钟的非正式交流，配对随机化，话题不限。Buffer 把 Virtual Coffee 作为远程文化的标配，目的是复刻「茶水间偶遇」的非正式连接。
 - **Quarterly Offsite（季度线下聚会）**：每年 2-4 次，2-3 天全员聚会。Doist 每年 4 次全球 Offsite，是「建立深度信任」的关键载体。Toptal 每季度举办区域 Offsite。
 - **Buddy 制度**：新人入职配 1 个远程 Buddy（非经理），负责「非工作问题的答疑」——租房子、买保险、找牙医。
-- **Transparent Salaries（透明薪酬）**：Buffer、Sumo、GitLab 等公司把全部员工薪酬 + 公式公开，目的是用「过程透明」换「信任建立」。
+- **Transparent Salaries（透明薪酬）**：Buffer、Sumo 等公司把全部员工薪酬 + 公式公开，目的是用「过程透明」换「信任建立」。
 
 **第三层：透明化作为文化根。** 远程团队的「被信任感」来自「信息对称」。具体做法：
 

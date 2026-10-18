@@ -160,7 +160,7 @@
 
 - 2022：Gartner 把 Data Mesh 列为「数据架构战略科技趋势」。
 - 2022：DataOps.live、Stitch Fix、Intuit 等公开 Data Mesh 实践案例。
-- 2023：Apache Gravitino（数据网格元数据）、Open Data Mesh（开源社区）出现。
+- 2023：Gravitino（数据网格元数据；2024 年进入 Apache）、Open Data Mesh（开源社区）出现。
 
 **AI 原生阶段（2024+，LLM + Agent 驱动）**：
 

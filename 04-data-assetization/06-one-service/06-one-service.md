@@ -118,7 +118,7 @@
 
 **数据中台阶段（2015-2020）**：
 
-- 阿里首次系统化提出「OneData + OneService + OneID」三大方法论。
+- 阿里首次系统化提出 OneData 方法论（含「OneModel + OneID + OneService」三件套）。
 - 指标平台、标签平台、宽表平台出现。
 - 统一服务化成为数据中台标配。
 

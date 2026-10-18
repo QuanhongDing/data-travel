@@ -92,7 +92,7 @@
 - 字节跳动技术博客关于 UID 图匹配体系的相关公开文章——讨论跨端用户打通与概率 ID-Mapping 的工程实现。
 - LinkedIn Engineering Blog 关于会员主数据与跨域实体解析的公开分享——讨论海外会员系生态下的 OneID 抽象与系统化做法。
 - Salesforce Data Cloud Zero-Copy ID Resolution 的产品文档（2024 GA）——云厂商对"客户主数据"的最新抽象与产品形态。
-- **招商银行的客户主数据中台** —— 招商银行零售 + 对公 + 信用卡三条业务线建成统一 OneID 体系后，跨条线重复触达率显著下降，公开材料多次披露其"客户 360 视图"基于统一 OneID 拼接。
+- **招商银行的客户主数据中台** —— 招商银行在零售、对公、信用卡等业务线建成统一 OneID 体系后，跨条线重复触达率显著下降，公开材料多次披露其"客户 360 视图"基于统一 OneID 拼接。
 - **微众银行的客户主键治理** —— 微众银行基于 OneID 把微信生态开放银行用户、APP 用户、API 服务用户打通，其公开口径称跨渠道账户去重覆盖率达到较高水平（常见引用的数字为 90% 以上，【经验】档：本节无法核验该访谈的出处，引用时请自行查证）。
 - **京东数科的四业务线 OneID 平台** —— 京东体系内电商、京东支付、京东物流、京东金融四条业务线共享 OneID 主键，公开技术博客介绍了基于 ULID / UUID v7 的有序主键选型与 10 亿级入库性能经验。
 
@@ -139,7 +139,7 @@
 **第三层：关键模块的设计决策。**
 
 - **OneID 主键选 ULID / UUID v7**，不用 UUID v4（随机 I/O 性能差）。
-- **强匹配 vs 弱匹配的比例**：经验上 80% 的合并来自强匹配，剩余 20% 来自弱匹配。如果一家公司强匹配覆盖率不到 60%，说明上游数据接入不全。
+- **强匹配 vs 非强匹配的比例**：经验上 80% 的合并来自强匹配，剩余 20% 来自非强匹配环节的合计（模糊匹配 + Fellegi-Sunter 约 15%、Embedding/Ditto/ML 模型约 4%、LLM 边界复核约 0.5%-1%）。如果一家公司强匹配覆盖率不到 60%，说明上游数据接入不全。
 - **离线 + 实时双链路**：每日凌晨 Spark 全量重算保证最终一致性；Flink 实时处理增量变更保证查询延迟 < 1s。实时增量必须有版本号，批式重算后实时状态可被覆盖。
 - **冲突检测**：合并时检查生日/性别/地区的强冲突（生日差 > 50 年直接拒绝合并）；模糊冲突记录告警但不阻断。
 - **merge_history 留痕**：每次合并记录 `{from_oneid, to_oneid, confidence, reason, merge_time}`，提供 split 接口可逆向拆分。这是工业 OneID 系统的必备能力。
@@ -375,7 +375,8 @@ class OneIdSplitService:
         # Step 3. 创建新的 OneID（拆分后恢复的 N 个 OneID）
         new_oneids = []
         for from_oneid in merge_event.from_oneids:
-            new_one = self.create_new_oneid(version=merge_event.version + 1)
+            # 版本号取自主表 oneid_main 的当前版本（merge_history 表无 version 列）
+            new_one = self.create_new_oneid(version=self.main_table.get_version(merge_event.to_oneid) + 1)
             self.id_relation.restore(from_oneid, new_one)
             new_oneids.append(new_one)
         
@@ -595,7 +596,7 @@ ATT 之后，移动端跨端识别必须依赖**多模态设备指纹 + 行为�
 
 协议步骤：
 
-Step 1. 客户端生成 RSA 密钥对（e, d, n），公布公钥（e, n）。
+Step 1. 服务端生成 RSA 密钥对（e, d, n），公布公钥（e, n）；私钥 d 由服务端保管。
 
 Step 2. 客户端对每个 ai 用随机因子 ri 盲化：
        blinded_ai = (ai * ri^e) mod n

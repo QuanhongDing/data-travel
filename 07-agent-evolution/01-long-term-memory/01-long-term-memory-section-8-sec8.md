@@ -491,7 +491,7 @@ GET    /v1/memory/{user_id}/audit
 **5. 参考资料**
 
 - 欧盟《General Data Protection Regulation》(GDPR) 第 17、20、22、30 条原文——「**被遗忘权**」「**数据可携权**」「**反对自动化决策**」「**处理活动记录**」的权威定义。
-- 中国《个人信息保护法》第 24、45、47 条——「**自动化决策**」「**个人请求响应**」「**删除权**」「**跨境传输**」的合规基线。
+- 中国《个人信息保护法》第 24、45、47 条——「**自动化决策**」「**个人请求响应**」「**删除权**」的合规基线。
 - Mem0 官方文档《Privacy and Compliance》——给出「**DELETE /memory/{user_id}**」的工程语义与「**embedding 派生数据同步删**」的实现指引，是 LTM 合规工程实现的最完整范本。
 - Anthropic 官方政策《Consumer data deletion》与《Privacy Policy》——Claude Memory API 的删除 SLA（30 天内完成）与审计日志设计。
 - OpenAI 官方文档《How your data is used in ChatGPT》——ChatGPT Memory 关闭与导出的产品形态，是 consumer-grade LTM 合规的标准对照。

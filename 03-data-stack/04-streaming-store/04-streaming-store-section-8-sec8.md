@@ -26,7 +26,7 @@
 
 - 是否真正理解 Kafka「**日志即存储**」的本质——不是"消息队列 + DB"，而是"磁盘上的有序日志文件"。
 - 能否说清顺序写、PageCache、零拷贝、Log Segment 四个核心机制如何协同把磁盘 IO 拉到接近内存的性能。
-- 是否理解**PageCache 不是缓存**——它是操作系统提供的、跨进程共享的、写穿到磁盘的页缓存；这与业务层的 Redis 缓存语义不同。
+- 是否理解**PageCache 不是缓存**——它是操作系统提供的、跨进程共享的、写回到磁盘的页缓存；这与业务层的 Redis 缓存语义不同。
 - 加分项：能给出具体的性能数量级（HDD 顺序写 ~100MB/s、SSD ~500MB/s+、单 Partition 吞吐上限），以及如何用这些数量级反推 Partition 规划。
 
 **2. 参考答案框架**
@@ -36,7 +36,7 @@
 Kafka 的 Producer 把消息追加到 Partition 的尾部，**永远只追加，不修改既有数据**。这个看似简单的约束带来三个连锁收益：
 
 - **磁盘顺序写性能接近内存**：HDD 的顺序写吞吐可达 ~100 MB/s，顺序读 ~150 MB/s；SSD 顺序写可达 500 MB/s+。这彻底颠覆了"磁盘慢"的直觉：**慢的不是磁盘，是随机寻道**。机械盘的随机写只有 ~1 MB/s，而顺序写和随机写的差距是 100 倍量级。
-- **OS PageCache 写穿**：Producer 写入首先落在 OS PageCache（页缓存）即返回成功，**fsync 由后台线程异步刷盘**。这意味着 Producer 不阻塞等磁盘 IO，吞吐由 PageCache 写入速度决定，量级远高于 fsync。
+- **OS PageCache 写回**：Producer 写入首先落在 OS PageCache（页缓存）即返回成功，**fsync 由后台线程异步刷盘**。这意味着 Producer 不阻塞等磁盘 IO，吞吐由 PageCache 写入速度决定，量级远高于 fsync。
 - **批量发送**：Producer 累积一批消息再统一发出（`batch.size`、`linger.ms`），把多次小 IO 合并成大 IO，单次网络往返摊销更多消息。
 
 **第二层：存储结构——Log Segment 文件组织。**
@@ -81,7 +81,7 @@ Consumer 读取消息时，传统路径是「磁盘 → 内核缓冲区 → 用�
 - **把 PageCache 当业务缓存**：PageCache 是 OS 资源，进程崩溃时内容可能丢失（虽然有副本兜底）；业务强一致场景不能依赖 PageCache。
 - **以为"顺序写就够"**：没有零拷贝，Consumer 端 GC 压力会让 JVM 频繁 Full GC，TPS 暴跌。
 - **混用机械盘和 SSD 在同一集群**：延迟长尾会让 P99 SLA 失效。
-- **忘记 Segment 文件关闭条件**：默认 `log.segment.bytes=1GB` + `log.segment.ms=7d`，到了就滚动；不调参会让单个 Segment 文件过大、清理粒度粗。
+- **忘记 Segment 文件关闭条件**：默认 `log.segment.bytes=1GB` + `log.roll.ms=7d`，到了就滚动；不调参会让单个 Segment 文件过大、清理粒度粗。
 
 **4. 追问预测**
 
@@ -121,7 +121,7 @@ Consumer 读取消息时，传统路径是「磁盘 → 内核缓冲区 → 用�
 **第一层：架构层面的本质差异。**
 
 - **Kafka 单体架构**：Broker 节点同时负责"接收写入 + 复制副本 + 服务读取 + 落本地磁盘"。每个 Partition 的 Leader 和 Follower 都在 Broker 进程内，存储就是 Broker 本地文件系统。
-- **Pulsar 计算存储分离**：Broker 是**无状态的计算节点**，只负责接收 Producer 写入和向 Consumer 推送；所有数据写入 **BookKeeper**（Apache 旗下独立存储系统，使用 Ledger + Ackermann 协议）；元数据由 **ZooKeeper** 管理（与 Kafka 旧版相同，新版也在去 ZK 化）。
+- **Pulsar 计算存储分离**：Broker 是**无状态的计算节点**，只负责接收 Producer 写入和向 Consumer 推送；所有数据写入 **BookKeeper**（Apache 旗下独立存储系统，以 Ledger 组织数据、写 quorum 复制）；元数据由 **ZooKeeper** 管理（与 Kafka 旧版相同，新版也在去 ZK 化）。
 - **RocketMQ 单体架构**：Broker + 磁盘，但通过**多副本同步双写**（同步刷盘 + 同步复制）实现强一致，介于 Kafka 与 Pulsar 之间；2022+ 引入 Controller 模式去 NameServer。
 
 **第二层：扩展性。**
@@ -261,7 +261,7 @@ Consumer 读取消息时，传统路径是「磁盘 → 内核缓冲区 → 用�
 **第五层：常见错误与排查要点。**
 
 - **`isolation.level` 没设**：`read_uncommitted` 默认会读到未提交消息，事务失效。
-- **`enable.idempotence` 没开**：只设 `transactional.id` 不开幂等，事务仍可能重复。
+- **`enable.idempotence` 被显式关闭**：事务性 Producer 建基于幂等之上（见上文「事务性 Producer」）——只设 `transactional.id` 时也不要把 `enable.idempotence` 显式关掉。
 - **Flink 没设 `setDeliveryGuarantee(EXACTLY_ONCE)`**：默认是 `AT_LEAST_ONCE`，Sink 会丢 EOS 保证。
 - **事务 ID 没设或重复**：每个 Flink Subtask 需要独立的 `transactional.id` 前缀，否则多并发任务会冲突。
 - **Sink 外部系统不支持事务**：若 Sink 是 MySQL 等关系数据库，需要 2PC 适配或业务层幂等兜底。
@@ -281,7 +281,7 @@ Consumer 读取消息时，传统路径是「磁盘 → 内核缓冲区 → 用�
 - **「Flink 的 Checkpoint Barrier 和 Kafka 事务如何协同？」** 答：Barrier 触发所有算子快照 → Sink 进入预提交 → JobManager 收到所有 ACK → 触发 `commitTransaction()`。若任一算子快照失败 → `abortTransaction()`。这是 Flink 2PC Sink 的标准实现。
 - **「为什么不能直接用 RocketMQ 的事务消息替代 EOS？」** 答：RocketMQ 事务消息解决"业务分布式事务"（本地事务 + 半消息 + 回查），与 Kafka EOS 的"流处理端到端一致"是两个领域，不要混淆。
 - **「EOS 与 CDC 怎么结合？」** 答：Flink CDC 读 MySQL binlog → Flink 处理 → Kafka Sink。整个链路可以开 EOS；CDC 端用 `binlog` 位点 + Flink Checkpoint 保证精确一次。
-- **「为什么 Flink 推荐用 `KafkaSource` 而不是老版 `FlinkKafkaConsumer`？」** 答：新版 `KafkaSource` 原生支持 EOS API，更易用且性能更好；老版基于 `FlinkKafkaConsumer` 的 2PC Sink API 已被弃用。
+- **「为什么 Flink 推荐用 `KafkaSource` 而不是老版 `FlinkKafkaConsumer`？」** 答：新版 `KafkaSource` 原生支持 EOS API，更易用且性能更好；老版基于 `FlinkKafkaProducer` 的 2PC Sink API 已被弃用。
 - **「如何监控 EOS 是否真的生效？」** 答：监控 Kafka 事务状态（`kafka.transactions:aborted-rate` / `committed-rate`）、Flink Checkpoint 成功率、Sink 端的重复率对账。三者联合才能判断端到端 EOS 真的生效。
 
 **5. 参考资料**

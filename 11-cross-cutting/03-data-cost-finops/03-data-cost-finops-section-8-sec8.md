@@ -343,7 +343,7 @@
 
 - AWS S3 官方文档《Storage Classes》与《Lifecycle Configuration》——Lifecycle 自动转储的工业范式。
 - Apache Iceberg 官方文档《Hidden Partitioning》与《Z-Ordering》——湖表隐藏分区与多维排序的标准实现。
-- Alluxio（现名 Starburst Data Cache）官方文档与开源仓库——分布式缓存层与对象存储协同的工程范式。
+- Alluxio 官方文档与开源仓库——分布式缓存层与对象存储协同的工程范式。
 - Netflix Technology Blog 关于 Iceberg + 缓存层降本的公开演讲——头部流媒体公司冷热分层的实战经验。
 - 阿里云 OSS 官方文档关于存储类型与生命周期——国内对象存储分层的成本对照。
 - 字节跳动 DataFinder 公开技术博客——Iceberg hidden partitioning 在 PB 级数据湖上的落地经验。
@@ -737,7 +737,7 @@
 
 - **Google** 在 Borg / Kubernetes 早期就用 ML 预测集群负载（其资源管理方向的公开论文），把平均利用率从约 30% 提到 60% 以上（【经验】档：本节无法核验具体论文篇名与该数字，引用时请自行查证）。
 - **阿里巴巴** 在公开分享中介绍，基于 LSTM + Prophet 的容量预测，把双 11 资源准备时间从一周缩短到 1 天（【经验】档：本节无法核验该分享的出处，引用时请自行查证）。
-- **字节跳动** 在 ML Platform 公开博客中介绍，对推理流量用 Prophet + LSTM 联合预测，结合 P95 延迟 + 排队长度做多目标调度，GPU 利用率从约 30% 提升到约 80%（【经验】档：本节无法核验该博客的出处，引用时请自行查证）。
+- **字节跳动** 在 ML Platform 公开博客中介绍，对推理流量用机器学习模型联合预测（具体模型组合厂商材料口径不一，本节无法核验），结合 P95 延迟 + 排队长度做多目标调度，GPU 利用率从约 30% 提升到约 80%（【经验】档：本节无法核验该博客的出处，引用时请自行查证）。
 - **Microsoft Azure** 在公开论文中描述过 ML-driven autoscaling，把 VM 成本下降约 20-30%（【经验】档：本节无法核验该论文的篇名与数字，引用时请自行查证）。
 
 **3. 常见陷阱**
@@ -945,7 +945,7 @@
 - **离线精度**：MAE / MAPE / RMSE。MAPE < 10% 通常算合格。
 - **在线 SLA**：P95 延迟、错误率、SLA 违约率不增长。
 - **成本节省**：单位业务量成本（元 / 查询、元 / 训练任务）下降 X%。
-- **ROI**：节省的成本 / 模型投入（训练 + 推理 + 维护人力）。
+- **ROI**：（节省的成本 − 模型投入）/ 模型投入，其中模型投入 = 训练 + 推理 + 维护人力。
 
 **第三层：成本优化的工程价值。**
 
@@ -976,7 +976,7 @@ ROI = (800 - 360) / 360 ≈ 122%
 
 - **Google Borg** 用 ML 预测集群负载，平均利用率从约 30% 提到 60% 以上（【经验】档：其公开论文口径，本节无法核验具体篇名与数字）。
 - **阿里巴巴** 在双 11 用 Prophet + LSTM 联合预测资源需求，资源准备时间从一周缩到 1 天（【经验】档：其公开分享口径，本节无法核验该出处，引用时请自行查证）。
-- **字节跳动** 在 ML Platform 上用 XGBoost + LSTM 联合预测，GPU 利用率从约 30% 提升到约 80%（【经验】档：其公开博客口径，本节无法核验该出处，引用时请自行查证）。
+- **字节跳动** 在 ML Platform 上用机器学习模型联合预测（具体模型组合厂商材料口径不一，本节无法核验），GPU 利用率从约 30% 提升到约 80%（【经验】档：其公开博客口径，本节无法核验该出处，引用时请自行查证）。
 - **Databricks** Lakehouse 平台内置 Auto-Scaling + Predictive Optimization，基于 ML 推荐资源规模。
 
 **3. 常见陷阱**
@@ -1246,7 +1246,7 @@ ROI = (800 - 360) / 360 ≈ 122%
 - AWS Karpenter 官方文档与 2024 GA 演讲——K8s 时代节点级弹性 + Spot 的工业范式。
 - Databricks《What is a Lakehouse?》白皮书与 Lakehouse 降本报告——存算分离 + 湖仓的成本优化范式。
 - Snowflake 官方文档《Snowflake Architecture》——三层计费模型 + Auto-Suspend 的工业范式。
-- Alluxio（现 Starburst Data Cache）官方文档——存算分离架构下的分布式缓存层。
+- Alluxio 官方文档——存算分离架构下的分布式缓存层。
 - Apache Iceberg / Hudi / Delta Lake 官方文档——湖表存算分离的工程实现。
 - 阿里云 MaxCompute / DataWorks 公开技术文档——国内存算分离 + 弹性资源组的工程范式。
 - Netflix Tech Blog 关于 Iceberg 与 Karpenter 的公开文章——头部流媒体公司存算分离的弹性实践。

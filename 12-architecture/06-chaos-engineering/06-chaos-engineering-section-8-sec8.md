@@ -76,7 +76,7 @@
 - Netflix《Chaos Engineering Principles》（2014）——混沌工程学科化的奠基文档，定义了五条核心原则。
 - Netflix Tech Blog 关于 Chaos Automation Platform (ChAP) 与 Failure Injection Testing (FIT) 的公开分享——Netflix 内部混沌平台的演进路径。
 - 阿里云 AHAS / ChaosBlade 官方文档——阿里混沌工程在大促保障中的工程实践。
-- Adrian Cockcroft《Chaos Engineering: System Resiliency in Practice》（O'Reilly）——系统性的混沌工程教材。
+- Casey Rosenthal、Nora Jones《Chaos Engineering: System Resiliency in Practice》（O'Reilly）——系统性的混沌工程教材。
 - Casey Rosenthal / Lorin Hochstein 等《Chaos Engineering》（O'Reilly）——Netflix 团队主编，覆盖原理、工具与实践。
 - **Netflix Chaos Monkey** ——从 2011 年随机 kill EC2 实例，到 ChAP 自动化编排、实验化运行的完整演进，是混沌工程起源的标准案例。
 - **阿里 ChaosBlade + AHAS** ——基于阿里电商大促治理的工程实践，覆盖 CPU/内存/网络/磁盘/进程/JVM/容器全维度故障，与阿里云监控/Sentinel 联动形成闭环。
@@ -239,7 +239,7 @@
 **参考资料**
 
 - Netflix《Chaos Engineering Principles》——"Minimize Blast Radius"作为五条原则之一被明确提出。
-- Adrian Cockcroft《Chaos Engineering: System Resiliency in Practice》第 4 章——爆炸半径的形式化定义与渐进式放大策略。
+- Casey Rosenthal、Nora Jones《Chaos Engineering: System Resiliency in Practice》第 4 章——爆炸半径的形式化定义与渐进式放大策略。
 - Casey Rosenthal 等《Chaos Engineering》第 9 章——故障注入测试的实验设计、风险控制、Abort 机制。
 - 阿里云《稳定性保障实践》——大促前的爆炸半径分级方案与审批流程。
 - **Netflix Chaos Monkey 渐进式策略** ——从 1 个实例开始，逐步放大到整个 Cell、整个 Region，是"渐进式爆炸半径"的标准范本。
@@ -316,8 +316,8 @@
 **参考资料**
 
 - Netflix《GameDay》公开演讲与博客——Netflix GameDay 的设计、组织与执行细节。
-- Adrian Cockcroft《Chaos Engineering》第 11 章——GameDay 的全流程组织方法。
-- Google SRE Book 第 14 章"灾难恢复"与第 17 章"故障应急"——SRE 文化下的演练组织。
+- Casey Rosenthal 等《Chaos Engineering》第 11 章——GameDay 的全流程组织方法。
+- Google SRE Book 第 13 章"Emergency Response"与第 17 章"Testing for Reliability"——SRE 文化下的演练组织。
 - 阿里云《双 11 大促保障白皮书》——大促前的全链路 GameDay 组织方式。
 - **Netflix GameDay** ——Netflix 每季度一次的全公司级 GameDay，跨 AWS、CDN、播放、推荐、用户系统多团队联合演练。
 - **阿里双 11 大促 GameDay** ——阿里每年双 11 前 1-2 周的全链路 GameDay，覆盖交易、支付、物流、广告、推荐等所有核心链路，参与人数上千，是国内最大规模的 GameDay 实践。
@@ -602,7 +602,7 @@ LitmusChaos 适合**标准化实验**（直接引用 ChaosHub 模板）场景，
 **参考资料**
 
 - Casey Rosenthal 等《Chaos Engineering》第 10 章"AI / ML 系统的混沌工程"——AI 系统混沌设计的最新章节。
-- Adrian Cockcroft《Chaos Engineering: System Resiliency in Practice》第 8 章"云原生与 AI 系统的韧性"。
+- Casey Rosenthal、Nora Jones《Chaos Engineering: System Resiliency in Practice》第 8 章"云原生与 AI 系统的韧性"。
 - NeurIPS 2024 / USENIX ATC 2024 / KDD 2024 论文中关于"Resilient AI Pipelines"与"Causal Chaos Analysis"的研究。
 - vLLM / Triton Inference Server / TensorRT Serving 官方文档——推理服务的故障模式与压测方法。
 - LangChain / LlamaIndex / AutoGPT 官方文档——Agent 框架的错误处理与重试机制。

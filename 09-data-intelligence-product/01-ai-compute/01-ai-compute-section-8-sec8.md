@@ -261,7 +261,7 @@
 
 **5. 参考资料**
 
-- vLLM 官方论文《PagedAttention: Virtual Memory for LLM Serving》（SOSP 2023）——PagedAttention 与 Continuous Batching 的原始论文。
+- vLLM 官方论文《Efficient Memory Management for Large Language Model Serving with PagedAttention》（SOSP 2023）——PagedAttention 与 Continuous Batching 的原始论文。
 - Tri Dao《FlashAttention》系列论文——FlashAttention / FlashAttention-2 / FlashAttention-3 的原始论文与算子优化。
 - Yaniv Leviathan 等《Speculative Decoding》论文——投机解码的原始论文。
 - NVIDIA TensorRT-LLM 官方文档——FP8 + 算子融合的工业实现。

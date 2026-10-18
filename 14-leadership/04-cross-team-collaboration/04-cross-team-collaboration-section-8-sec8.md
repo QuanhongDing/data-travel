@@ -265,8 +265,8 @@ InfluenceScore = Persuasion × Credibility × Coalition × Timing
 
 **第五层：对不同 Stakeholder 用不同技巧。**
 
-- **高权力 / 高利益**（CTO、合规 Lead）→ Sponsor Support + Data-Driven Persuasion + Coalition（拉为同盟）。
-- **高权力 / 低利益**（CFO）→ Data-Driven Persuasion（成本节省）+ Information Power（不出事故的隐性收益）。
+- **高权力 / 高利益**（合规 Lead）→ Sponsor Support + Data-Driven Persuasion + Coalition（拉为同盟）。
+- **高权力 / 低利益**（CFO）与**高权力 / 中利益**（CTO）→ 同属 Keep Satisfied：Data-Driven Persuasion（成本节省）+ Information Power（不出事故的隐性收益）。
 - **低权力 / 高利益**（各 BU 数据 Lead）→ Coalition + Coalition of the Willing + Relational Power。
 - **低权力 / 低利益**（边缘业务）→ Relational Power（建立存在感）+ 最小努力。
 
@@ -330,7 +330,7 @@ InfluenceScore = Persuasion × Credibility × Coalition × Timing
 
 **第二层：四象限策略的准确含义（高频易答错点）**：
 
-- **高权力 + 高利益 → Manage Closely（重点管理）**：最关键的少数。深度参与、频繁沟通、共同决策。典型——CTO、业务一号位、合规负责人。
+- **高权力 + 高利益 → Manage Closely（重点管理）**：最关键的少数。深度参与、频繁沟通、共同决策。典型——业务一号位、合规负责人。
 - **高权力 + 低利益 → Keep Satisfied（保持满意）**：他们能否决但不关心细节。**精简汇报、给结论不给过程、尊重其否决权**，别用细节轰炸他们。典型——CFO、非合规类决策中的法务。
 - **低权力 + 高利益 → Keep Informed（保持告知 / 参与）**：受影响但没有决定权的执行者。**充分告知 + 收集反馈 + 让他们参与执行**，否则会消极抵抗。典型——一线工程师、边缘业务方。
 - **低权力 + 低利益 → Monitor（最小努力）**：监控即可，不要浪费沟通预算。

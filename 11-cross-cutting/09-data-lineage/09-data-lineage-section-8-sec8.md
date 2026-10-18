@@ -82,7 +82,7 @@
 
 **5. 参考资料**
 
-- OpenLineage 项目官方规范与 Marquez 实现（Linux Foundation 项目）——OpenLineage 1.5 之后引入 Federated Facets，定义跨系统血缘事件的标准格式，是业界事实标准。
+- OpenLineage 项目官方规范与 Marquez 实现（Linux Foundation 项目）——OpenLineage 定义跨系统血缘事件的标准格式，Marquez 是其参考实现，已被广泛采用为业界标准；不写死版本号，以项目当前文档为准。
 - LinkedIn 团队公开的 WhereHows 论文（SIGMOD 2015，《Whereabouts: The Data Web Series》）——最早把"自动采集 + 人工补全"做成元数据平台的工业实践，是本题最早的工业范本。
 - LinkedIn DataHub 官方文档关于 Lineage Ingestion 的章节——运行时监听 + 静态解析双路径的具体实现。
 - Uber Engineering 关于数据血缘平台 Blood 的公开博客——Uber 如何用"自动采集 + 断链人工补"提升跨域血缘覆盖率（具体幅度以原博客为准，本节无法给出可核验链接）。

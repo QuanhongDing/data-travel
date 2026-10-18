@@ -14,7 +14,7 @@
 | 四大表格式（Delta / Iceberg / Hudi / Paimon）怎么选？ | §3.1、§7.1 |
 | ACID / Schema Evolution / Time Travel 的原理？ | §2.1、§2.3 |
 | 湖仓一体怎么落地？关键步骤是什么？ | §4.1 |
-| Iceberg V3 / Paimon 1.0 有哪些 2024-2025 新特性？ | §5.3 |
+| Iceberg V3 / Paimon 1.0 有哪些 2024-2025 新特性？ | §5.1 表、§5.4 |
 
 ---
 

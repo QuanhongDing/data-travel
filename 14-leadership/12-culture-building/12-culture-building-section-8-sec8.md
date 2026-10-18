@@ -37,7 +37,7 @@
 1. **高管示范**：CEO / 高管公开承认自己的错误。Reed Hastings 在 Netflix 的内部分享中多次强调「**坦诚是 Netflix 文化的基石**」；Bridgewater 的「**Radical Transparency**」（Dalio《Principles》2017）要求员工可以直接挑战 CEO——前提是就事论事、不人身攻击。
 2. **Blameless Postmortem**：故障复盘的核心是「**系统问题 vs 个人问题**」——找根因、不找人。Etsy 在 2012 年率先公开实践 Blameless Postmortem，后被 Netflix、Amazon、Google 全面采纳。文化层面的含义是：**失败是学习的素材，不是惩罚的理由**。
 3. **Feedback 文化**：Kim Scott 的「**Radical Candor**」（2017）——直接关心式反馈，要求管理者「**个人层面真心关心 + 工作层面直接挑战**」。与之对立的是「**Ruinous Empathy**」（毁灭性同理心：只关心不挑战，会让员工原地踏步）和「**Obnoxious Aggression**」（冒犯性攻击：只挑战不关心，会让人感到羞辱）。
-4. **试错空间**：Amazon 在 14 条领导力准则中明确「**Bias for Action**」——「**大多数决策应该可以 70% 的信心做出**」，本质是为试错留出空间。Meta 的「**Hacker Way**」更进一步鼓励「**Move Fast and Break Things**」，把试错写入工程师价值观。
+4. **试错空间**：Amazon 的「**Bias for Action**」准则鼓励快速行动；「**大多数决策应该可以 70% 的信心做出**」这一判据出自 Amazon 致股东信（与 14 条领导力准则同为公开文本），本质是为试错留出空间。Meta 的「**Hacker Way**」更进一步鼓励「**Move Fast and Break Things**」，把试错写入工程师价值观。
 5. **多元包容**：不同声音被听见。Pixar 的「**Braintrust**」（Ed Catmull《Creativity, Inc.》2014）是经典实践——一群跨角色的人在不干涉导演创作的前提下，定期对未完成作品提出坦诚反馈，关键是**「反馈者不指挥，但必须坦诚」**。
 
 **第三层：识别心理安全缺失的信号。**
@@ -183,7 +183,7 @@
 1. **Customer Focus（客户至上）**：工程师为客户价值工作，不为技术而技术。Amazon 14 条领导力准则的第一条「**Customer Obsession**」明确要求「**从客户反向推导**」——任何技术决策都要回答「**这对客户有什么价值？**」。Jeff Bezos 在 2015 年致股东信中提出「**逆向工作法**」（Working Backwards）：先写新闻稿、再写 FAQ、最后写代码。
 2. **Ownership（主动担当）**：亚马逊「**Ownership**」准则原文是「**Leaders are owners. They think long term and don't sacrifice long-term value for short-term results.**」——主动把事情揽下来，不甩锅、不踢皮球。Meta 的「**Hacker Way**」也强调「**Code Wins Arguments**」——用代码 / 数据说话，不靠资历 / 头衔。
 3. **Excellence（追求卓越）**：工程师对代码质量、技术债务、系统可观测性的态度。Google 的「**Code Review 文化**」「**Testing Culture**」「**Blameless Postmortem**」是 Excellence 的标准动作——但 Excellence 不等于「**完美主义**」，而等于「**持续改进 + 接受不完美但不让它停留**」。
-4. **Speed（速度）**：亚马逊「**Bias for Action**」明确「**大多数决策可以 70% 的信心做出**」；Meta 的「**Move Fast**」是 Hacker Way 的第一原则——但 Speed 必须配 Reliability，否则会变成「**快速产生 Bug**」。Netflix 的「**No Rules Rules**」也是 Speed 的极致表达。
+4. **Speed（速度）**：亚马逊「**Bias for Action**」准则鼓励快速行动；「**大多数决策可以 70% 的信心做出**」这一判据出自亚马逊致股东信（与 14 条领导力准则同为公开文本）；Meta 的「**Move Fast**」是 Hacker Way 的第一原则——但 Speed 必须配 Reliability，否则会变成「**快速产生 Bug**」。Netflix 的「**No Rules Rules**」也是 Speed 的极致表达。
 5. **Continuous Learning（持续学习）**：工程师必须把学习当作工作的一部分。Google 的「**20% Time**」、华为的「**工程师日**」、字节的「**技术分享会**」都是具体机制。但 Continuous Learning 不是「**赶时髦学新技术**」，而是「**在真实问题驱动下学习**」。
 
 **第二层：与相邻文化的区分。**

@@ -98,7 +98,7 @@
 - **「K-Means 对初始化敏感，工程上怎么缓解？」** 答：K-Means++ 初始化 + 多次 `n_init=10` 取目标函数最小的结果；极端场景用 Canopy 粗聚类给出更好初始化；如果数据量大，Mini-Batch 本质上就缓解了初始化问题。
 - **「DBSCAN 的 ε 怎么选？」** 答：常用 k-distance 图（计算每个点到第 k 近邻的距离画图，找拐点作为 ε），或者用 HDBSCAN 完全绕开这个参数。
 - **「GMM 的协方差矩阵选什么类型？」** 答：工业上几乎只用 `'full'`（全协方差）或 `'diag'`（对角协方差），`'spherical'` 等价于 K-Means 几乎不用；模型选择靠 BIC / AIC。
-- **「谱聚类 vs 图神经网络社区检测？」** 答：谱聚类是图分割的线性代数解，Louvain / Leiden 是模块度优化的迭代解——Louvain 在亿级图上更快、更稳，是大规模图聚类的工业首选。
+- **「谱聚类 vs 图神经网络社区检测？」** 答：谱聚类是图分割的线性代数解，Louvain / Leiden 是模块度优化的迭代解——两者都能上亿级图，但模块度这一路的**当前工业首选是 Leiden**（它解决了 Louvain 的「分辨率极限」问题，能发现被 Louvain 合并掉的小社区）。
 - **「我有一个 1 亿条数据的用户表，怎么聚类？」** 答：先分层（先 Canopy 粗聚类到 1 万 Canopy，再每 Canopy 内 K-Means 到 100 簇）；或者用 Faiss 的 GPU K-Means；或者直接 Spark MLlib 分布式 K-Means；**绝不要**把 1 亿条数据直接灌进 scikit-learn。
 
 **5. 参考资料**
@@ -511,7 +511,7 @@ LLM 时代走"Embedding + 降维 + HDBSCAN"路线，**核心优势**：
 - Campello 等《Hierarchical Density Estimates for Data Clustering, Visualization, and Outlier Detection》（TKDD 2015）——HDBSCAN 的原始论文。
 - Grootendorst《BERTopic: Neural Topic Modeling with Class-based TF-IDF》（2022）——BERTopic 的原始论文，当前文本主题聚类的工业标杆。
 - BGE / E5 / M3E / Cohere 各模型的官方文档与基准测试——不同 Embedding 模型在不同语言 / 任务上的效果对比。
-- OpenAI text-embedding-3 / Anthropic Claude Embeddings 的官方 API 文档。
+- OpenAI text-embedding-3 / Google Gemini Embedding 的官方 API 文档。
 - **字节跳动 BERTopic + LLM 命名** —— 亿级内容自动发现 1 万+ 主题，是 LLM 时代文本聚类的头部实践。
 - **阿里商品类目自动发现** —— Embedding 聚类自动归类新商品，显著减少人工类目编辑工作量（具体比例本节无法给出可核验的出处，此处按【经验】档处理）。
 - **Notion AI 文档主题文件夹** —— Embedding + HDBSCAN + LLM 命名的端到端，是 SaaS 工具的成熟落地。

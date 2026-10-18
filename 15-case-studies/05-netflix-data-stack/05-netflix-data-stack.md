@@ -26,7 +26,7 @@
 
 ### 1.1 公司 / 业务 / 时间
 
-Netflix 成立于 1997 年（从 DVD 租赁起步），2007 年推出流媒体服务，至今 28 年。数据栈演进的关键时间节点：
+Netflix 成立于 1997 年（从 DVD 租赁起步），2007 年推出流媒体服务，至今 29 年。数据栈演进的关键时间节点：
 
 - **2007–2012：流媒体起步**。从 Oracle + Hadoop 起步，S3 + EMR + Hive 为主。
 - **2013：Netflix OSS 开源**。开始对外开源工具（Spinnaker、Chaos Monkey 等；Chaos Monkey / Simian Army 一类组件自 2011 年起陆续对外开源，见本仓 [§7.1](05-netflix-data-stack-section-7-sec7.md) 与 [12-architecture/06-chaos-engineering](../../12-architecture/06-chaos-engineering/06-chaos-engineering.md) §1.4）。

@@ -48,7 +48,7 @@
 
 **第三层：典型适用场景。**
 
-- **RBO 适用**：表非常小（统计信息没意义）、规则确定能赢（如列裁剪）、统计信息不可获得（外部数据源、NoSQL、半结构化 JSON）、或者作为兜底——当 CBO 因为代价估算偏差选错计划时，回退到 RBO 的 plan 是常见兜底策略。**典型引擎**：旧版 Hive（0.13 之前）、早期 MySQL、Calcite 默认的 HepPlanner（启发式）。
+- **RBO 适用**：表非常小（统计信息没意义）、规则确定能赢（如列裁剪）、统计信息不可获得（外部数据源、NoSQL、半结构化 JSON）、或者作为兜底——当 CBO 因为代价估算偏差选错计划时，回退到 RBO 的 plan 是常见兜底策略。**典型引擎**：旧版 Hive（0.13 之前）、早期 MySQL、Calcite 的 HepPlanner（启发式）。
 - **CBO 适用**：表达到一定规模、行数与数据分布对计划选择有决定性影响、需要选择 Join 顺序与 Join 算法。**典型引擎**：Spark 3.x（Catalyst + CBO）、Trino 420+、StarRocks 3.x、ClickHouse 24.x、Impala 3.x、PrestoDB、TiDB、CockroachDB、AWS Redshift、Snowflake、Google BigQuery、Databricks Photon。
 
 **第四层：真实工业中的混合形态。**
@@ -473,7 +473,7 @@
 **2. 参考答案框架**
 
 **第一层：MV 改写的核心问题。** 给定用户查询 Q（如 `SELECT user_id, SUM(amount) FROM orders WHERE dt BETWEEN '2024-01-01' AND '2024-01-31' GROUP BY user_id`）与一组已创建的 MV（如 `MV1: SELECT user_id, SUM(amount) FROM orders WHERE dt >= '2024-01-01' GROUP BY user_id`），改写器需要回答三个问题：
-1. **包含关系**：MV 的输出是否是 Q 的输出的**超集或子集**？这里 MV1 是 Q 的**超集**（MV1 包含更长的时间范围与更细的粒度）。
+1. **包含关系**：MV 的输出是否是 Q 的输出的**超集或子集**？这里 MV1 是 Q 的**超集**（MV1 的时间范围更长，覆盖了 Q 的全部时间范围）。
 2. **改写方法**：如何从 MV1 计算 Q 的结果？这里需要 `WHERE dt <= '2024-01-31'` 的二次过滤。
 3. **代价权衡**：改写后的执行是否比原始 Q 更优？这里原始 Q 需要扫描一月分区 + GROUP BY，改写后只需要 Scan MV1 + 过滤 + GROUP BY。
 
@@ -497,7 +497,7 @@ Calcite 的实现是基于 **视图定义查询的 AST** 与 **用户查询的 A
 **第四层：MV 改写的关键算法——查询包含。** 给定 MV 的查询 Q_MV 与用户查询 Q，查询包含的判定有两个核心概念：
 
 - **包含映射（Containment Mapping）**：从 Q_MV 的输出属性到 Q 的输出属性的映射。如 `MV.user_id → Q.user_id`、`MV.SUM(amount) → Q.SUM(amount)`。
-- **必要条件**：Q_MV ⊇ Q 的充分条件是——Q 的每个 Tuple t ∈ Q_MV 都满足 Q 的选择条件与聚合定义。具体判定依赖于 SQL 的语义（外连接、聚合、嵌套等）。
+- **必要条件**：Q_MV ⊇ Q 的必要条件是——Q 的每个 Tuple t 都能在 Q_MV 的输出中找到对应 Tuple，且该对应 Tuple 满足 Q 的选择条件与聚合定义。具体判定依赖于 SQL 的语义（外连接、聚合、嵌套等）。
 
 Calcite 提供了 `MaterializedViewRule.deriveJoinRowCount` 等工具函数做包含关系判定。
 

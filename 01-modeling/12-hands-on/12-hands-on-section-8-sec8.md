@@ -277,7 +277,7 @@ Kafka (Source)
 
 - **关联维表**（流处理的核心难题）：
   - **静态小维表**（< 100 MB）：用 `broadcast(dim)` 直接 broadcast，关联延迟最低，**但维度更新需要重启作业**。
-  - **动态大维表**（亿级）：用 **异步 Lookup Join**（Spark 3.5+ 内置，或 HBase / Redis 做 KV 查询）。每条流记录都去 KV 取一次维度值，**但有网络 RTT 代价**。
+  - **动态大维表**（亿级）：**异步查询外部 KV 维表**（HBase / Redis）。Spark Structured Streaming 没有开箱的 Lookup Join，需自行实现；每条流记录都去 KV 取一次维度值，**但有网络 RTT 代价**。
   - **状态化 Join**（Stream-Stream）：把维度也做成流，两条流做 stateful join，**代价是状态后端膨胀**。
   - **TTL 设计**：维表快照有"何时过期"问题（"昨天看到的 user_id，今天查不到就是过期用户"），需要在 ETL 里加 `last_seen_ts` 字段控制。
 
@@ -311,14 +311,14 @@ Kafka (Source)
 - **不设 watermark。** 状态无限增长 → OOM。
 - **checkpoint 在本地磁盘。** 节点重启 = 状态丢失。
 - **微批间隔过小。** 1 秒的 trigger 在数据量大时只会增加调度开销，**真实延迟由 Shuffle 与 Sink 决定，不是 trigger 间隔**。
-- **Broadcast 维表更新靠重启。** 大生产场景下重启作业意味着分钟级数据断流——必须用 Lookup Join 或双流 Join。
+- **Broadcast 维表更新靠重启。** 大生产场景下重启作业意味着分钟级数据断流——必须改用双流 Join 或外部 KV 维表查询。
 - **乱序不处理。** 事件时间乱序 10 分钟的数据如果直接落 OLAP，会被"较新的数据"覆盖"较旧的数据"——必须用 `version` 列或 Hudi 的 precombine 字段。
 - **Kafka offset 与业务提交混在一起。** Kafka offset 应由 checkpoint 管理，业务结果由 sink 幂等保证；混在一起会出现"重复消费 + 数据重复写入"。
 
 **4. 追问预测**
 
 - **「Spark Structured Streaming vs Flink，选哪个？」** 答：**Flink 是流处理首选**——事件时间、watermark、状态后端、双流 Join 都是一等公民，Exactly-Once 语义更扎实。Spark Structured Streaming 优势在**与 Spark 离线作业共享代码与目录**，适合"实时增量 + 离线全量"的混合场景。Netflix 与 Uber 在大规模生产中倾向 Flink；LinkedIn 部分场景用 Structured Streaming 与批作业共享 UDF（这几家公司的选型比例与依据本节无法给出可核验出处，此处按【经验】档处理，引用时请自行查证）。
-- **「Broadcast 维表大小限制是多少？」** 答：默认 10 MB（`spark.sql.autoBroadcastJoinThreshold`）；实际生产中 100 MB 也常工作，但 driver 内存要 ≥ 4 GB。**超过 1 GB 必须用 Lookup Join**。
+- **「Broadcast 维表大小限制是多少？」** 答：默认 10 MB（`spark.sql.autoBroadcastJoinThreshold`）；实际生产中 100 MB 也常工作，但 driver 内存要 ≥ 4 GB。**超过 1 GB 必须改用外部 KV 维表查询**。
 - **「Hologres 与 Doris 怎么选？」** 答：Hologres 与阿里生态深度集成（DataWorks / MaxCompute），PG 协议兼容；Doris 在国内互联网选型更多，社区活跃。**两者都能做实时 OLAP upsert**，性能差异更多在部署成本与运维成熟度。
 - **「怎么保证 Exactly-Once？」** 答：四道防线——① Kafka Source 端 offset 由 checkpoint 管理；② Sink 端使用幂等写入（主键 upsert / Hudi precombine）；③ 状态后端做 Checkpoint（Spark 默认 HDFSBackedStateStore，大状态生产上切 RocksDB）；④ 业务侧接受"端到端 at-least-once + sink 幂等 = 端到端 exactly-once"的工程组合。**单靠 Kafka 事务不能保证 Exactly-Once**，因为 sink 失败重试时仍可能重复。
 

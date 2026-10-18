@@ -105,7 +105,7 @@
 
 **向量湖阶段（2023-2025）**：
 
-- **2023**：Microsoft DiskANN 开源，SSD 上的十亿级向量。
+- **DiskANN（Microsoft，论文 NeurIPS 2019）**：SSD 上的十亿级向量，是向量湖「SSD 承载十亿级」路线的算法基础；参考实现已开源，开源时间以其公开仓库为准。
 - **2023-2024**：Milvus 2.x 分布式 + 存算分离。
 - **2024**：Pinecone Serverless（基于 DiskANN）。
 - **2024**：LanceDB 列式向量库 + DuckDB 集成。
@@ -130,8 +130,8 @@
 - **IVF（Inverted File Index）**：倒排聚类索引。
 - **PQ（Product Quantization）**：向量量化压缩，省内存 8-32 倍（见 §2.2 压缩比表）。
 - **Scalar Quantization（SQ）**：标量量化（int8 / int4）。
-- **DiskANN（Microsoft 2023）**：SSD 上的十亿级 ANN，Vamana 算法。
-- **SPANN（Microsoft 2023）**：基于 SSD 的近似最近邻。
+- **DiskANN（Microsoft，论文 NeurIPS 2019）**：SSD 上的十亿级 ANN，Vamana 算法。
+- **SPANN（Microsoft，论文 NeurIPS 2021）**：基于 SSD 的近似最近邻。
 - **向量压缩（Vector Compression）**：PQ / SQ / RaBitQ。
 - **Sharding**：向量分片（按 ID / 按向量聚类）。
 - **Replication**：副本（读写分离 / 多副本）。
@@ -250,7 +250,7 @@ DiskANN（Vamana 算法）在 SSD 上构建图索引，每个节点保存邻居 
 - **向量湖 vs 特征平台**：特征平台存机器学习特征，向量湖存 Embedding。两者可互通。
 - **向量湖 vs 搜索引擎**：搜索引擎偏关键词，向量湖偏语义。
 
-> 💡 **思考锚点**：把你现在的向量规模与召回要求代进 §2.3 那张 ANN 表——百万级暴力搜索就能到 100%，千万级 HNSW 99%+，亿级要落 IVF + PQ（90%+）或 HNSW + SQ（98%+），越出内存 + 量化的容纳线（约 1 亿，口径见 §7.5）就轮到 DiskANN / SPANN 走 SSD。再叠加 §2.2 的压缩比—召回损失表：你为省内存选的那一档（PQ m=8 是 16-32× 却丢 5-10%，RaBitQ 是 16-32× 丢 <1%）——省的这点内存值不值那 3-5% 的召回？
+> 💡 **思考锚点**：把你现在的向量规模与召回要求代进 §2.3 那张 ANN 表——百万级暴力搜索就能到 100%，千万级 HNSW 99%+，亿级要落 IVF + PQ（90%+）或 HNSW + SQ（98%+），越出内存 + 量化的容纳线（约 1 亿，口径见 §7.5）就轮到 DiskANN / SPANN 走 SSD。再叠加 §2.2 的压缩比—召回损失表：你为省内存选的那一档（PQ m=8 是 16-32× 却丢 5-10%，RaBitQ 是 16-32× 丢 <1%）——省的这点内存值不值那 5-10% 的召回？
 
 ---
 

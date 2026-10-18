@@ -519,7 +519,7 @@ Paimon 本质是**把 LSM 树结构搬到了湖表**：写入先入 memtable，f
 - **路径 A：向量外挂**——湖仓存结构化，向量库（Milvus / LanceDB / Pinecone）存 Embedding。**代价**：双存储、双写入、双删除。
 - **路径 B：Iceberg V3 Variant 类型 / 向量进表方向**——Iceberg V3 在 2024 引入 Variant 类型；把 Embedding 作为向量列与原数据放在同一份表，是这一方向的延伸，**规范里有没有向量类型须回规范的类型章节核对**。**目前**（截至 2025）尚在早期阶段，但方向明确。
 - **路径 C：LanceDB 模式**——LanceDB 设计为「AI 原生列式存储」，结构化 + 向量 + 文本统一在一份文件里。与 Iceberg / Delta 互补，常作为湖仓的「向量旁路」。
-- **路径 D：Delta Vector Search**——Databricks Unity Catalog 内置向量检索能力，背后是 Lance + 高效 ANN 索引；这是当前最商业落地的方案。
+- **路径 D：Delta Vector Search**——Databricks Unity Catalog 内置向量检索能力，背后是 Delta 表 + 高效 ANN 索引；这是当前最商业落地的方案。
 
 **第四层：RAG 链路上的 Lakehouse 位置。**
 

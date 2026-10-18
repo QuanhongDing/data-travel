@@ -107,7 +107,7 @@ DIN（阿里 2018）的核心洞察是 **用户兴趣是 multi-interest 的、�
 #### 3. 工程实现
 - **LocalActivationUnit**：输入维度 $4 \times \text{embed\_dim}$（concat），MLP 输出 1 个注意力分数。  
 - **训练技巧**：DIN 历史序列 padding 到 50-100，DIEN 训练时把兴趣状态序列一起传入 MLP。  
-- **在线服务**：DIN 推理需要拉历史行为（Redis / Velox / 自研 KV），P99 控制在 30 ms 以内。  
+- **在线服务**：DIN 推理需要拉历史行为（Redis / 自研 KV），P99 控制在 30 ms 以内。  
 - **长序列优化**：SIM / ETA 把 1000+ 行为压缩到 50-100，再做注意力，降低线上 KV 读取带宽。
 
 #### 4. 行业实践

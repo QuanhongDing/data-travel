@@ -183,7 +183,7 @@ Step 5: 校准与季度迭代
 
 ## BAR 锚点（系统设计维度）
 - 1 分：能描述模块功能，无法拆解依赖
-- 3 分：能拆解 3-5 个核心组件，但说不清 trade-off
+- 3 分：能拆解 3-5 个核心组件，能说清一处 trade-off
 - 5 分：能拆解 10+ 组件、明确说出 trade-off、给出 2-3 种备选方案、量化性能指标
 
 ## 反 AI 作弊机制
@@ -632,11 +632,11 @@ Step 4: 48 小时决策窗口（不拖 + 体验 ≥ 结果）
 
 **锚定常识**：
 
-- **Netflix 自由 + 责任文化**：核心是"**人才密度 × 坦诚文化 × 减少管控**"，9 条价值观 + Keeper Test。
+- **Netflix 自由 + 责任文化**：核心是"**人才密度 × 坦诚文化 × 减少管控**"，7 条价值观 + Keeper Test。
 - **Amazon 14 Leadership Principles**（LP）："Customer Obsession"、"Ownership"、"Bias for Action"、"Have Backbone" 等 14 条，每条有可观察行为，写入面试评估表。
 - **Google "10 Things" + Project Oxygen**：10 条价值观中"Focus on the user"、"Ship fast"、"Excellence" 等有具体行为锚点。
 - **阿里"六脉神剑"**：客户第一 / 团队协作 / 拥抱变化 / 诚信 / 激情 / 敬业，每条有 P 序列行为标准。
-- **字节"**ByteStyle**"**：始终创业 / 多元包容 / 务实敢为 / 开放谦逊 / 始终坦诚 / 共同成长。
+- **字节"**ByteStyle**"**：务实敢为 / 坦诚清晰 / 追求极致 / 始终创业。
 - **微软"Growth Mindset"**：Satya Nadella 上任后核心文化转向"Sense of urgency + Growth mindset"。
 - **Meta "**Hacking & Shipping**" + Move Fast**：核心是"Move Fast + Be Bold + Be Open + Build Social Value"。
 - **苹果"**Secret**"**：设计 + 简洁 + 用户体验，招聘强调"与 Steve Jobs 价值观对齐"。
@@ -707,7 +707,7 @@ Step 4: 48 小时决策窗口（不拖 + 体验 ≥ 结果）
 **案例参照**：
 
 - **Amazon 14 LP**：每条 LP 都有可观察行为 + 反面例子 + 面试评估锚点，被全公司用于招聘 + 绩效 + 晋升。Bar Raiser 在面试中专门评估 LP 行为。
-- **Netflix "Keeper Test" + 高人才密度**：9 条价值观中"**Freedom & Responsibility**"是核心，行为锚点是"自驱 + 不需管控"。
+- **Netflix "Keeper Test" + 高人才密度**：7 条价值观中"**Freedom & Responsibility**"是核心，行为锚点是"自驱 + 不需管控"。
 - **阿里"六脉神剑"+ P 序列绑定**：六脉神剑每条对应 P 序列行为标准，从 P5 到 P9 逐级递进。
 - **字节 ByteStyle + 双月 OKR**：价值观写入晋升标准，**每双月 OKR 中"文化"权重 10%**（该考核口径属【经验】档表述，本书无法给出可核验的公开出处）。
 - **微软 Growth Mindset + Loop Interview**：Satya Nadella 把"Growth Mindset"写入招聘面试（Loop 面试考察学习力）。

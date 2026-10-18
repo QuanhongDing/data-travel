@@ -192,8 +192,8 @@ Netflix 2015 年的真实故障：Hive 表 partition 数到**百万级**后，`S
 
 **第三层：Schema 演进与 Schema Registry。** Netflix 用 Apache Avro 做消息序列化，所有 topic 在 Schema Registry 注册。契约级别分三档：
 
-- **BACKWARD**：新 schema 可读旧数据（删除字段不影响旧消费者）。**Kafka topic 默认级别**——只允许删除字段或加可选字段。
-- **FORWARD**：旧 schema 可读新数据（增加字段不影响旧消费者）。用于「下游先升级」的迁移期。
+- **BACKWARD**：新 schema 可读旧数据（新读端读旧数据时，忽略旧数据里多出的字段、缺失的新字段按默认值补齐）。**Kafka topic 默认级别**——只允许删除字段或加可选字段。
+- **FORWARD**：旧 schema 可读新数据（增加字段不影响旧消费者）。用于「上游（生产者）先升级」的迁移期。
 - **FULL**：双向兼容（增加可选字段、删除可选字段）。最严，但保证了双向可读性。
 
 大流量下的真实故障模式：上游 schema 突然加了必填字段（违反 BACKWARD），所有 Flink 作业反序列化失败，整个管道停摆。Netflix 内部通过「**CI 卡点**」——任何 schema 变更必须跑兼容性测试，**强制 BACKWARD 兼容**，并把 Schema Registry 与 CI / CD 流水线绑定。

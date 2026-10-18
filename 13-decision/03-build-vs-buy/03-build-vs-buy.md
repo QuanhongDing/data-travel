@@ -22,7 +22,7 @@
 
 ### 1.1 是什么
 
-**学术定义**：自研 vs 采购（Make or Buy）决策是企业战略管理的经典问题。它源于 Williamson 的交易成本理论（Transaction Cost Economics, TCE）——企业决定是「自己生产」还是「从市场购买」某项产品 / 服务。Vladimir Protsenko（1960s）首次在企业战略层系统化该问题，Rein Peterson（1970s）提出 TCO（Total Cost of Ownership）框架。
+**学术定义**：自研 vs 采购（Make or Buy）决策是企业战略管理的经典问题。它的理论根是 Williamson 的交易成本理论（Transaction Cost Economics, TCE）——企业决定是「自己生产」还是「从市场购买」某项产品 / 服务；把 TCO（Total Cost of Ownership）作为评估框架用于 IT 采购的方法，其系统化推广通常归于 Gartner（【经验】1980 年代末，无单一可引原始文献）。
 
 **工程定义**：在数据架构师手里，自研 vs 采购决策是一套**「在『掌控感』与『效率』之间找平衡」的方法集**，包含五个核心要素：
 
@@ -78,9 +78,8 @@
 
 ### 1.4 演进历程
 
-- **1960s**：Vladimir Protsenko 提出 Make or Buy 决策。
-- **1970s**：TCO（Total Cost of Ownership）框架（Rein Peterson）。
-- **1980s**：Williamson 的交易成本理论（TCE）。
+- **1960s–1970s**：Make or Buy（自研 vs 采购）作为企业战略管理的经典问题被系统讨论（首次提出者无单一可引原始文献）。
+- **1980s**：Williamson 的交易成本理论（TCE）成为该决策的理论根；TCO（Total Cost of Ownership）在 IT 采购评估中的系统化推广通常归于 Gartner（【经验】1980 年代末，无单一可引原始文献）。
 - **1990s**：企业 IT 领域 Make or Buy 决策普及（ERP / CRM 选型）。
 - **2000s**：SaaS 兴起（Salesforce / Workday），「采购 vs 自研」再次升温。
 - **2010s**：开源 vs 自研 vs SaaS 三方对比。

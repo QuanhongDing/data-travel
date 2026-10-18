@@ -102,8 +102,8 @@
 **传统聚类阶段（1960s–2000s）**：
 
 - 1967：MacQueen 提出 **K-Means** 算法，至今仍是工业界最常用。
-- 1975：Hartigan & Wong 提出 K-Means 的高效实现。
-- 1979：Ruspini 提出 **模糊 C-Means**（Fuzzy Clustering）。
+- 1970s：Ruspini 开启 **模糊聚类（Fuzzy Clustering）**方向，模糊 C-Means 为其代表方法。
+- 1979：Hartigan & Wong 提出 K-Means 的高效实现。
 - 1996：Ester 等提出 **DBSCAN**（Density-Based Spatial Clustering），可发现任意形状簇。
 - 1996：Zhang 等提出 **BIRCH**（Balanced Iterative Reducing and Clustering using Hierarchies），大数据聚类。
 - 2001：Ng / Jordan / Weiss 提出 **谱聚类**（Spectral Clustering），处理图结构数据。

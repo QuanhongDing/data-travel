@@ -496,7 +496,7 @@
 - OpenAI《Preparedness Framework》——AI 风险评估的方法论，是 AI 评审"概率性失败"维度的原始参考。
 - Anthropic《Constitutional AI: Harmlessness from AI Feedback》（2022）——Constitutional AI 的原始论文。
 - Google DeepMind 关于 Sparrow 对话模型安全的公开材料——Constitutional AI 在对话系统的实现。
-- Microsoft《PyRIT: Open Risk Identification Toolkit for LLMs》——AI 红队工具链的工业实现。
+- Microsoft PyRIT（Python Risk Identification Toolkit）——AI 红队工具链的工业实现。
 - Meta《Llama Guard: LLM-based Input-Output Safeguard》——AI 内容安全分类器的工业范本。
 - NIST《AI Risk Management Framework（AI RMF 1.0）》——AI 系统治理的国际标准框架。
 
@@ -572,7 +572,7 @@ AI 系统的失败模式有"长尾 + 概率性"特性，传统 Pre-Mortem 框架
 **4. 追问预测**
 
 - **「Pre-Mortem 的最佳参与人数？」** 答：5–8 人——少于 5 人视角不全，多于 8 人协调成本上升。关键角色：架构师 + 安全 + SRE + 业务 + AI 专家（涉及 AI 系统时）。
-- **「Pre-Mortem 与 ATAM 的关系？」** 答：Pre-Mortem 可作为 ATAM 的补充步骤——在 ATAM 的"头脑风暴场景"之前先做 Pre-Mortem，能更全面暴露风险。SEI 在 ATAM 的后续版本中已纳入 Pre-Mortem 步骤。
+- **「Pre-Mortem 与 ATAM 的关系？」** 答：Pre-Mortem **可作为** ATAM 的补充步骤——在 ATAM 的"头脑风暴场景"之前先做 Pre-Mortem，能更全面暴露风险。本主题 §7.2 把两者并列为「分析族」里两个独立、可叠加的方法；至于 SEI 是否已把 Pre-Mortem 纳入 ATAM 流程，本书未核到公开材料，故不作事实陈述。
 - **「AI 系统的 Pre-Mortem 如何避免'假想风险'？」** 答：① 风险必须可度量（"幻觉率 > 10%"而非"幻觉可能增加"）；② 风险必须有历史先例（"GPT-4 发布后曾出现类似问题"）；③ 风险必须有缓解方案（不能只列风险不给解法）。
 - **「Pre-Mortem 结论如何纳入 ADR？」** 答：ADR 增加「Risks and Trade-offs」段落——Top 5 失败原因 + 风险评分 + 可预防性评估 + 缓解措施。ADR 读者未来回溯时能立即看到"我们当时担心什么"。
 
@@ -580,7 +580,7 @@ AI 系统的失败模式有"长尾 + 概率性"特性，传统 Pre-Mortem 框架
 
 - Gary Klein《Performing a Project Premortem》（Harvard Business Review, 2007）——Pre-Mortem 的原始出处。
 - Gary Klein《The Power of Intuition》——直觉决策与 Pre-Mortem 心理学的深度论述。
-- SEI / Carnegie Mellon 关于 ATAM 及 Pre-Mortem 补充步骤的公开材料——Pre-Mortem 已纳入架构评审流程。
+- SEI / Carnegie Mellon 关于 ATAM 的公开材料——ATAM 的标准流程与效用树方法（Pre-Mortem 为本书建议的可叠加补充步骤，其是否已被 SEI 纳入 ATAM 流程本书未核到公开证据）。
 - Amazon 关于 Working Backwards 方法论的公开材料——Pre-Mortem 的"成功版本"。
 - Anthropic《Responsible Scaling Policy》——AI 系统 Pre-Mortem 的工业实现。
 - OpenAI《Preparedness Framework》——AI 系统 Pre-Mortem 的方法论框架。

@@ -452,7 +452,7 @@ Cache-Aside 模式下的**经典不一致场景**：
 **第三层：常见 SQL 反模式与改写。**
 
 1. **`SELECT *`**：查不需要的列浪费 IO + 内存，且无法走覆盖索引。**必改**：SELECT 具体列。
-2. **深度分页**：`LIMIT 1000000, 20` 会扫描 10000 020 行——改为游标分页（`WHERE id > X LIMIT 20`）或延迟关联（先查 ID 再 JOIN）。
+2. **深度分页**：`LIMIT 1000000, 20` 会扫描 1 000 020 行（offset 1 000 000 + 取回 20 行）——改为游标分页（`WHERE id > X LIMIT 20`）或延迟关联（先查 ID 再 JOIN）。
 3. **大 IN 列表**：`WHERE id IN (1,2,3,...,10000)` 会让优化器放弃索引——拆成多次查询或用临时表。
 4. **JOIN 顺序错误**：A JOIN B WHERE B.x = ?，如果 A 很大而 B.x 索引缺失，应该先过滤 B 再 JOIN。**用 `STRAIGHT_JOIN` 强制顺序**是 MySQL 专属解法。
 5. **未命中的 ORDER BY**：`ORDER BY create_time DESC` 不带 WHERE 条件——必须建 `(create_time DESC)` 索引，否则走 filesort。
@@ -519,7 +519,7 @@ Cache-Aside 模式下的**经典不一致场景**：
 - 是否理解**GC 调优不是"调参数"，而是"先理解应用内存特征，再选 GC，再调参数"**。
 - 能否说清 G1 / ZGC / Shenandoah 的**核心差异**——G1 是"分区 + 增量回收"、ZGC / Shenandoah 是"并发 + 着色指针 / 转发指针"。
 - 是否知道**GC 调优的常见目标**：降低 STW 时长、控制 Young / Old GC 频率、避免 Full GC、降低内存占用。
-- 加分项：能结合**Java 21 的分代 ZGC**、**GraalVM Native Image**（无 GC）等新方向谈演进。
+- 加分项：能结合**Java 21 的分代 ZGC**、**GraalVM Native Image**（AOT 本地编译）等新方向谈演进。
 
 **2. 参考答案框架**
 
@@ -559,7 +559,7 @@ GC 类型：
 
 - `-Xms / -Xmx`：堆大小。建议**设相等**（避免运行时扩容带来的 STW），如 `-Xms8g -Xmx8g`。
 - `-XX:MaxGCPauseMillis=200`：目标最大暂停时间，默认 200ms。**G1 会尽量满足，但代价是吞吐降低**——不要无脑设 50ms。
-- `-XX:G1HeapRegionSize`：Region 大小，1-32 MB，建议 16 MB（堆 < 16GB）。
+- `-XX:G1HeapRegionSize`：Region 大小，1-32 MB，建议由堆大小自动估算——手动设时以让 Region 数落在 2048–4096 区间为准（堆 8GB 时约 4 MB，堆 64GB 时约 32 MB）。
 - `-XX:InitiatingHeapOccupancyPercent=45`：触发并发标记的堆占用阈值，默认 45%。
 - `-XX:+G1UseAdaptiveIHOP`：自适应 IHOP，建议开启。
 - `-XX:+UseStringDeduplication`：字符串去重，降低 Old 区占用。
@@ -601,7 +601,7 @@ GC 类型：
 
 **第四层：未来方向——GraalVM Native Image 与分代 ZGC。**
 
-- **GraalVM Native Image**：把 Java 代码 AOT 编译为本地二进制，**无 JVM、无 GC**——启动时间 < 100ms，内存占用 < 50MB。代价是不支持反射（需配置）、运行期无法生成类。Serverless 场景（AWS Lambda、阿里云函数计算）首选。
+- **GraalVM Native Image**：把 Java 代码 AOT 编译为本地二进制、无需独立 JVM，**但其自带运行时仍有垃圾回收（并非"无 GC"，仍有 GC 与 STW 停顿）**——启动时间 < 100ms，内存占用 < 50MB。代价是不支持反射（需配置）、运行期无法生成类。Serverless 场景（AWS Lambda、阿里云函数计算）首选。
 - **分代 ZGC（Java 21+）**：在并发 ZGC 基础上引入分代假设（多数对象朝生夕死），GC 频率与平均停顿都有下降（幅度随应用内存特征而异，本节无法给出可核验数字），停顿目标仍在 1ms 以内（这是 ZGC 的设计目标，不是每个应用都能达到）。**JDK 21 LTS 已提供分代 ZGC，但默认 GC 仍是 G1，需显式开启。**
 - **Lilliput（OpenJDK 实验）**：把对象头压缩到 64 bit 以下，减少 GC 扫描开销。
 

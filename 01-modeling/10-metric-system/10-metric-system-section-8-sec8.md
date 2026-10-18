@@ -302,7 +302,7 @@ WHERE status = 'paid'
 
 **第一层：dbt Semantic Layer 的核心数据模型。** dbt 在 2023 GA 的 Semantic Layer 引入了**Semantic Model**（语义模型）作为指标定义的载体。Semantic Model 由四个核心组件构成：
 
-- **Metric（指标）**：分三类——`simple`（单一度量列 + 聚合函数）、`ratio`（分子分母两个指标）、`cumulative`（累计窗口）。每个 Metric 有 `name`、`description`、`type_params`、`filter`、`agg_time_dimension`。
+- **Metric（指标）**：分四类——`simple`（单一度量列 + 聚合函数）、`ratio`（分子分母两个指标）、`cumulative`（累计窗口）、`derived`（由其他指标运算组合的复合指标）。每个 Metric 有 `name`、`description`、`type_params`、`filter`、`agg_time_dimension`。
 - **Dimension（维度）**：分两类——`categorical`（分类维度，如 `channel`、`user_type`）和 `time`（时间维度，如 `order_dt`）。每个 Dimension 映射到底层表的具体列。
 - **Entity（实体）**：语义模型之间的**关联键**（类似外键，但更通用），用于跨事实表的指标拼装。例：`order.user_id` 是 Entity，可以把它和 `user` 表的 Entity 关联。
 - **Filter（过滤器）**：指标的**预定义过滤条件**，与维度的运行时过滤不同——Filter 是指标定义的一部分。

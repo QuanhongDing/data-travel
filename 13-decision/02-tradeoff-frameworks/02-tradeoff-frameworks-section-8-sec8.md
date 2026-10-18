@@ -163,7 +163,7 @@
 - AWS Well-Architected Framework（官方文档，2015 年首版、其后持续修订）——5 根支柱 / 6 支柱（Sustainability）的原始定义，是云架构选型维度体系的行业标杆。
 - Google Cloud Architecture Framework（官方文档）——与 AWS Well-Architected 对齐的设计原则集合。
 - Microsoft Azure Well-Architected Framework（官方文档）——微软版 5 根支柱，是跨云选型的参考基线。
-- Ralph L. Keeney & Howard Raiffa《Decisions with Multiple Objectives》（1976，剑桥大学出版社）——多属性效用理论的奠基著作。
+- Ralph L. Keeney & Howard Raiffa《Decisions with Multiple Objectives》（1976）——多属性效用理论的奠基著作。
 - Thomas L. Saaty《The Analytic Hierarchy Process》（1980，McGraw-Hill）——AHP 的原始著作。
 
 > 注：以上参考资料均指向公开出版物、官方文档或行业标准。精确链接请按条目名称自行检索核验。

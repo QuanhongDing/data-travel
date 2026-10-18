@@ -35,7 +35,7 @@
 **1. 考察点**
 
 - 是否理解「AI 原生数据库」是**面向 AI 使用者重新设计**的系统,而不是「传统数据库 + LLM 调用接口」的拼凑。
-- 能否识别 AI 原生数据库的 5 个判断维度:数据形态、查询接口、一致性语义、治理对象、可调用粒度。
+- 能否识别 AI 原生数据库的 5 个判断维度:数据形态、查询接口、一致性语义、治理对象、计费口径。
 - 是否具备**对当前产业形态的判断力**——能区分概念包装与真实落地(避免把 PG 加个 embedding 列就称为 AI 原生)。
 - 加分项:能结合具体产品(Snowflake Cortex、Databricks Mosaic AI、阿里通义百炼、Milvus、字节豆包数据栈)给出真实形态对照。
 
@@ -560,7 +560,7 @@
 - Google Federated Learning / TensorFlow Privacy 官方文档——联邦学习与差分隐私的工业实现。
 - Microsoft InterpretML / Counterfit / Azure Confidential Computing 官方文档——可解释 AI 与 TEE 的工程案例。
 - 《Weapons of Math Destruction》(Cathy O'Neil)——《The Age of Surveillance Capitalism》(Shoshana Zuboff)——AI 伦理与社会影响。
-- 《Data Ethics》(Kord Davis)——数据与 AI 治理的方法论。
+- 《Ethics of Big Data》(Kord Davis)——数据与 AI 治理的方法论。
 - **阿里 DataTrust + 安全多方计算平台** 公开材料——金融场景隐私计算的产业实践。
 - **蚂蚁集团** 联邦学习与安全多方计算的公开技术分享——跨机构金融风控的隐私计算范本。
 - **字节安全 / 火山引擎安全计算** 公开博客——大流量场景下的数据安全治理。
@@ -804,7 +804,7 @@
 - EU AI Act 官方文本与执行细则——风险分级思路的参照。
 - 《生成式人工智能服务管理暂行办法》(部分资料中简称"生成式 AI 服务管理办法")与信通院 AI 治理相关公开报告——国内监管与行业视角,引用前请核对官方发布文本。
 - 本章 §5——AI 治理与监管的展开,含国内合规背景。
-- 《Data Ethics》(Kord Davis)——数据与 AI 治理的方法论。
+- 《Ethics of Big Data》(Kord Davis)——数据与 AI 治理的方法论。
 
 > 注:精确链接请按条目名称自行检索核验。
 

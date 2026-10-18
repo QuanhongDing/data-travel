@@ -86,7 +86,7 @@
 **第一阶段：传统 OLAP（1993-2010）**
 
 - 1993：E.F. Codd 提出 OLAP 概念。
-- 1995：Oracle Express、IBM Essbase。
+- 1995：Oracle Express、Essbase。
 - 2000s：Microsoft Analysis Services（SSAS）、SAP BW。
 
 **第二阶段：MPP 数据库（2010-2015）**

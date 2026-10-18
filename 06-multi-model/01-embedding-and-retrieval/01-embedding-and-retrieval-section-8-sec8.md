@@ -193,7 +193,7 @@
 | 架构 | 分布式（存算分离） | 单节点 / 分布式 | 全托管 Serverless | 分布式 | Postgres 扩展 |
 | 部署 | 自托管 / 云（Zilliz、阿里云） | 自托管 / 云 | 纯 SaaS | 自托管 / 云 | 自托管 / 云（各 PG 厂商） |
 | 适用规模 | **千万–亿级+** | 千万–亿级 | 亿级（透明扩展） | 千万级 | 百万级 |
-| 索引类型 | HNSW / IVF / PQ / GPU (CAGRA) | HNSW（Rust 实现） | 内部 ANN（基于 ScaNN） | HNSW | HNSW（0.7+） |
+| 索引类型 | HNSW / IVF / PQ / GPU (CAGRA) | HNSW（Rust 实现） | 内部 ANN（基于 ScaNN） | HNSW | HNSW（0.5+） |
 | Hybrid | 需自配 BM25 | 内置（payload filter） | Hybrid（含 Sparse-Dense） | **内置 Hybrid** | 需配合 ES / tsvector |
 | 运维成本 | 中–高 | 中 | **零** | 中 | **极低**（复用 PG 运维） |
 | 国产化 | 是（Zilliz 国产 + 信创） | 否 | 否 | 否 | 是（如 OpenGauss） |
@@ -243,7 +243,7 @@
 - **「Milvus 单集群能撑多大？」** 答：生产案例能到亿级百亿级，但单集群分片与副本管理复杂；更大规模用 Multiple Cluster + Federated Query。
 - **「Pinecone 和 Milvus 哪个贵？」** 答：Pinecone 按 `read_units` 计费，规模到亿级时年成本在数万至数十万美元量级；Milvus 自托管主要承担 K8s 计算成本，同规模下是数十万 RMB / 年 / 集群的量级（两边数字都随规模、区域与 SLA 大幅浮动，本书无法给出可溯源的统一数字，此处按【经验】档处理）。
 - **「向量库迁移成本高吗？」** 答：HNSW / IVF 索引不能直接迁移——需要重建。Pinecone 与 Milvus 的 metadata schema 也不同。迁移要预留 2–4 周时间（含重建 + A/B 验证 + 回滚预案）。
-- **「pgvector 0.7 之后的改进值得升级吗？」** 答：0.7+ 引入 HNSW + 二值化 + 标量过滤，相比 0.5 时代的 IVFFlat 路线有量级级别的性能提升（幅度随规模与参数而异，本书无法给出可溯源的统一数字，此处按【经验】档处理）；如果是百万级且不想引入新组件，pgvector 是合理选择。
+- **「pgvector 0.7 之后的改进值得升级吗？」** 答：0.7+ 的改进主要是 halfvec 与 bit（二值化）类型，HNSW 早在 0.5 就已引入；相比更早的 IVFFlat 路线，HNSW + 标量过滤带来量级级别的性能提升（幅度随规模与参数而异，本书无法给出可溯源的统一数字，此处按【经验】档处理）；如果是百万级且不想引入新组件，pgvector 是合理选择。
 
 **5. 参考资料**
 
@@ -251,7 +251,7 @@
 - Qdrant 官方工程博客（2024）——Rust 实现与 Hybrid 检索的工业案例。
 - Pinecone 官方《Vector Database for RAG》（2024）——Serverless 模型、计费方式与 RAG 适用性。
 - Weaviate 模块化架构文档（2024）——reranker-cohere / reranker-jina 模块集成与 Hybrid 默认行为。
-- pgvector 官方文档（0.7+）——HNSW 索引与生产部署案例。
+- pgvector 官方文档——HNSW 索引（0.5+）与生产部署案例。
 - 阿里云《VectorDB: A Cloud-native Vector Database》（2024）——国产云原生向量库的工程实现。
 - 字节火山引擎 VectorDB 公开案例——亿级电商向量化与 GPU 加速。
 - **网易雷火 / 米哈游在游戏内容检索上选型 Milvus 或自研向量库** —— 游戏剧情 / 角色 / 装备向量化检索需要 Hybrid + 多模态 + 数据可控，体现分布式向量库在游戏行业的落地形态。
@@ -468,7 +468,7 @@ $$\text{score}(d) = \alpha \cdot \text{vec\_norm}(d) + (1-\alpha) \cdot \text{bm
 
 | 层级 | 数据来源 | 评测目标 | 工具 |
 | --- | --- | --- | --- |
-| **通用层（MTEB）** | HuggingFace MTEB（56 数据集、112 任务）+ C-MTEB | 跨任务 / 跨领域通用性 | MTEB Leaderboard、C-MTEB（智源） |
+| **通用层（MTEB）** | HuggingFace MTEB（56 数据集、112 语言）+ C-MTEB | 跨任务 / 跨领域通用性 | MTEB Leaderboard、C-MTEB（智源） |
 | **业务层（内部集）** | 历史高质量 query-doc 标注对 | 召回率 / 准确率 / NDCG@10 | 离线脚本、Langfuse Evaluations |
 | **用户层（在线反馈）** | 用户点赞 / 点踩 / 人工标注 | 端到端体验 | Langfuse / Phoenix trace、产品反馈 |
 

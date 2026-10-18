@@ -221,9 +221,8 @@ CREATE TABLE dwd_orders (
   product_id BIGINT,  -- OneID
   amount DECIMAL(18, 2),
   coupon_amount DECIMAL(18, 2),
-  order_time TIMESTAMP,
-  dt DATE
-) PARTITIONED BY (dt);
+  order_time TIMESTAMP
+) PARTITIONED BY (dt DATE);
 
 -- DWS 层（主题汇总）
 CREATE TABLE dws_user_daily_orders (

@@ -154,7 +154,7 @@
 
 | 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
 | --- | --- | --- | --- |
-| 规则引擎与决策表 | Drools、Easy Rules、Aviator、QLExpress、Groovy、Apache Urule、Camunda、IBM ODM；决策表标准侧的 OMG DMN 与其实现 Camunda DMN / Drools DMN / IBM ODM DMN | 判据是「规则由谁改、要不要逐条举证」：业务方自己要改口径就选带决策表的 BRMS；规则不到百条【经验：随条件维度的交织程度与变更频率变，维度交织的表格要比条数更早换引擎】、改动由工程师做，轻量引擎足够 | 用重型 BRMS 跑几十条规则，运维成本高于收益；反过来用轻量库扛强合规举证，规则的版本与审批没地方挂 |
+| 规则引擎与决策表 | Drools、Easy Rules、Aviator、QLExpress、Groovy、URule、Camunda、IBM ODM；决策表标准侧的 OMG DMN 与其实现 Camunda DMN / Drools DMN / IBM ODM DMN | 判据是「规则由谁改、要不要逐条举证」：业务方自己要改口径就选带决策表的 BRMS；规则不到百条【经验：随条件维度的交织程度与变更频率变，维度交织的表格要比条数更早换引擎】、改动由工程师做，轻量引擎足够 | 用重型 BRMS 跑几十条规则，运维成本高于收益；反过来用轻量库扛强合规举证，规则的版本与审批没地方挂 |
 | 决策智能平台（整包） | Diwo、Aera Technology、Tellius、Pecan AI、Quantiphi、Databricks AI/BI、DataRobot、Domino Data Lab、SAS Decision Manager、阿里云决策引擎、字节智能决策、蚂蚁决策大脑、平安智慧决策 | 判据是「决策点、频率、可解释性要求是否已写成判据」：写清了再谈平台，平台带来的是集成度而不是决策能力；自研只在特征 / 模型服务 / 调度这些组件已可复用时才划算 | 约束没写清就整包采购，等于把「决策长什么样」交给产品的默认形态决定，上线后改不动 |
 | 模型服务与推理 | Triton（多框架）、TorchServe（PyTorch）、vLLM（LLM）、TensorRT-LLM（NVIDIA 推理优化）、自研 | 判据是框架形态与延迟预算：多框架共存选 Triton，纯 PyTorch 且想少一层依赖选 TorchServe，LLM 长文本走 vLLM，只有延迟实在压不下去才上 TensorRT-LLM（编译与调优成本高） | 直接用框架自带的服务上线，等到要按版本灰度、要统一多模型入口时，才发现没有可独立回滚的模型单元 |
 | 实时计算 / 消息 / 在线状态 | Apache Flink（含 Flink SQL 与 Flink CEP）、Apache Kafka、Apache Pulsar、Spark Streaming / Structured Streaming、Materialize、RisingWave、Redis / HBase（在线特征与状态存储） | 判据是延迟预算与事件量：预算在百毫秒内、要逐事件处理就选流式；分钟级可接受时，微批的运维成本更低 | 用微批扛毫秒预算，峰值时会在队列里排队，表现为超时率与降级率同时上升 |

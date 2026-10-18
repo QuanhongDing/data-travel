@@ -27,7 +27,7 @@
 
 | 方案 | 定位 | 核心机制（一句话） | 代表实现 / 应用形态或行业使用者 | 许可 / 商业模式 |
 | --- | --- | --- | --- | --- |
-| 规则引擎 / 决策表 / DMN | 确定性决策 | 事实与规则的增量模式匹配，命中即输出 | Drools、Camunda DMN、IBM ODM、Apache Urule、QLExpress、Aviator、Easy Rules、Groovy | 开源为主，企业版商业 |
+| 规则引擎 / 决策表 / DMN | 确定性决策 | 事实与规则的增量模式匹配，命中即输出 | Drools、Camunda DMN、IBM ODM、URule、QLExpress、Aviator、Easy Rules、Groovy | 开源为主，企业版商业 |
 | BI / DSS | 人做决策的辅助 | 聚合与可视化，决策权留在人手里 | 报表体系、Cognos、BO、MSTR 等 | 商业软件 |
 | ML 模型决策 | 统计拟合决策 | 用参数化函数拟合标签分布 | 信贷评分卡、CTR 预估、反欺诈 | 自研 / 云 AI 平台 |
 | 实时决策（RTD） | 秒到毫秒级决策 | 流式特征与在线推理在同一条流水线上 | Flink + 实时规则 + 在线模型（FTRL 系） | 开源 + 自研 |

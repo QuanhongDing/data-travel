@@ -151,7 +151,7 @@
 
 **5. 参考资料**
 
-- DAMA《DMBOK 2.0》第 9 章「元数据管理」——技术元数据 vs 业务元数据的标准定义、治理角色与成熟度模型。
+- DAMA《DMBOK 2.0》——技术元数据 vs 业务元数据的标准定义、治理角色与成熟度模型。
 - LinkedIn 工程团队《DataHub: Popular Metadata Architectures》（GitHub 公开技术决策文档）——Entity-Aspect 模型如何把技术元数据与业务元数据统一在同一个抽象里，是头部工业实践的范本。
 - 阿里《大数据之路：阿里巴巴大数据实践》——OneData 体系下「业务元数据 + 技术元数据 + 管理元数据」三类资产的整合方式，国内最完整的对照材料。
 - Collibra、Alation、Atlan 的官方产品文档——业务术语表（Business Glossary）的工业实现，以及与 Tableau / PowerBI 等消费工具的双向同步。
@@ -325,7 +325,7 @@
 
 **5. 参考资料**
 
-- DAMA《DMBOK 2.0》第 9 章「元数据管理」——元数据在大数据治理中的核心地位、关键能力与成熟度模型。
+- DAMA《DMBOK 2.0》——元数据在大数据治理中的核心地位、关键能力与成熟度模型。
 - LinkedIn Engineering Blog《DataHub: A Generalized Metadata Search & Discovery Tool》与 SIGMOD 2019 论文——Entity-Aspect 模型、变更事件总线、AI 增强的工业实践。
 - 阿里《大数据之路：阿里巴巴大数据实践》——OneData 体系下元数据如何支撑「指标即资产」「资产即估值」的完整链路。
 - 财政部《企业数据资源相关会计处理暂行规定》（2023 发布 / 2024-01-01 施行）——中国数据资产入表的政策依据，明确元数据在「可识别、可计量」中的支撑作用。
@@ -754,7 +754,7 @@ Netflix、Uber、阿里等头部企业公开分享过类似的「双 Catalog 并
 
 **5. 参考资料**
 
-- DAMA《DMBOK 2.0》第 10 章「数据血缘与数据地图」——血缘与地图的定义、关系、治理角色。
+- DAMA《DMBOK 2.0》——血缘与地图的定义、关系、治理角色。
 - LinkedIn Engineering Blog《DataHub: Data Lineage》与 SIGMOD 2019 论文——头部互联网企业血缘系统的完整工业实现，含图存储、变更传播、可视化。
 - Apache Atlas 官方文档——Hadoop 生态血缘的事实标准，与 Hive / Spark / Sqoop / Kafka 的集成。
 - 阿里《大数据之路》——OneData 体系下 OneTrace 血缘系统的设计，与 DataWorks、MaxCompute、Flink 的集成。
@@ -915,7 +915,7 @@ Netflix、Uber、阿里等头部企业公开分享过类似的「双 Catalog 并
 
 - **LinkedIn DataHub**：Entity-Aspect 模型 + AI 助手（自动生成业务描述、推荐 Owner）+ DataHub Actions（智能化策略触发）。
 - **阿里云侧（产品名各材料不一）**：通义千问驱动的 AI 资产盘点、智能取数、自动合规分类能力，覆盖 50+ 行业。
-- **Atlan AI**：自然语言资产查询 + AI 驱动协作推荐 + 自动分类分级；2024 GA 后被多家头部 SaaS 企业采用。
+- **Atlan AI**：自然语言资产查询 + AI 驱动协作推荐 + 自动分类分级；以上属厂商材料口径，本节无法核验第三方（非厂商）生产采用案例。
 - **Collibra AI**：AI 驱动的数据治理助手——自动识别合规风险、智能建议策略。
 - **字节 DataFinder AI**：基于豆包大模型的内部资产盘点 + 推荐系统。
 - **Microsoft Purview**：与 Microsoft Copilot 集成，智能化元数据 + AI 治理。
@@ -937,7 +937,7 @@ Netflix、Uber、阿里等头部企业公开分享过类似的「双 Catalog 并
 
 **5. 参考资料**
 
-- DAMA《DMBOK 2.0》第 9 章「元数据管理」与 2024 增补的「AI 增强元数据」内容——智能化元数据的标准定义与治理框架。
+- DAMA《DMBOK 2.0》与 2024 增补的「AI 增强元数据」内容——智能化元数据的标准定义与治理框架。
 - LinkedIn Engineering Blog 关于 DataHub AI 助手的公开文章——头部企业 AI 增强元数据的工业实践。
 - 阿里云侧（产品名各材料不一）的公开技术文档与白皮书——通义千问驱动的 AI 资产盘点、智能取数、自动合规完整方案。
 - Atlan 官方白皮书《AI-Powered Data Catalog》——自然语言资产查询 + AI 协作推荐的产品化范本。
@@ -1023,7 +1023,7 @@ DAMA 在 DMBOK 2.0 中定义了数据治理的**五个核心目标**，每个目
 
 **5. 参考资料**
 
-- DAMA《DMBOK 2.0》第 10 章「数据血缘与数据治理」——血缘在治理体系中的核心地位与四个关键价值。
+- DAMA《DMBOK 2.0》——血缘在治理体系中的核心地位与四个关键价值。
 - LinkedIn Engineering Blog《DataHub: Data Lineage for Impact Analysis》——头部企业血缘如何支撑变更控制与事故定位。
 - 阿里《大数据之路》——OneData 体系下 OneTrace 血缘系统与资产化（估值 / 入表）的集成。
 - Apache Atlas 官方文档——Hadoop 生态血缘的事实标准，与 Hive / Spark / Flink 的深度集成。

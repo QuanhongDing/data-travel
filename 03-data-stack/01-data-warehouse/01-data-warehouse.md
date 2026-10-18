@@ -103,7 +103,7 @@
 **第一阶段：传统数仓（1990-2010）**
 
 - 1990：Bill Inmon 提出"数据仓库"概念，定义 4 大特征。
-- 1992：Ralph Kimball 提出"维度建模"（星型模型），与 Inmon 的"企业级范式建模"形成两大流派。
+- 1996：Ralph Kimball 提出"维度建模"（星型模型），与 Inmon 的"企业级范式建模"形成两大流派。
 - 1996：Teradata 成为 MPP 数仓霸主，主导电信、金融行业。
 - 2000s：IBM DB2、Oracle Exadata、Greenplum、GCP 内部 Dremel（BigQuery 前身）出现。
 - 2008：Hive 出现（Hadoop 上的 SQL 数仓），开启"低成本大数据数仓"时代。
@@ -119,7 +119,7 @@
 **第三阶段：实时 + Lakehouse 融合（2020-至今）**
 
 - 2020：Databricks 提出 Lakehouse 概念，湖仓形态成熟。
-- 2021：Apache Doris 1.0、StarRocks 2.0 走向成熟，国产实时数仓崛起。
+- 2021：Apache Doris 1.0、StarRocks 2.0 走向成熟（该年份本书内两处口径不一：另一处记 Doris 1.0 于 2020、StarRocks 2.x 于 2022，以官方发布说明为准），国产实时数仓崛起。
 - 2022：Iceberg / Hudi / Paimon 三大表格式并立，Lakehouse 成为事实标准。
 - 2023-2024：LLM 与数仓结合——自然语言查询（Text-to-SQL）、指标语义层（Metric Layer）、AI 驱动的自动建模。
 - 2025：向量数仓（Vector-Native DW）出现，把 Embedding 视为第一公民；DuckDB 内嵌 OLAP 成为新趋势。

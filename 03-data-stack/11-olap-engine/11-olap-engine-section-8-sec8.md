@@ -325,7 +325,7 @@ MV 的设计哲学是"**按需预计算**"——只对真正被查询的聚合�
 - **Netflix Penelope 物化视图平台** —— Netflix 的统一 MV 平台支撑全公司的报表预计算，对应"MV 平台化"的工业代表。
 - **Databricks Delta Live Tables + Materialized View** —— Delta Live Tables 提供声明式 ETL + 自动 MV 维护，是云原生 MV 的代表。
 - **阿里 OneData 的 DWS 层预聚合** —— 阿里 DWS 层本质上是大宽表化的预聚合，与 MV 思想一致但更激进，是国内最完整的预聚合实践。
-- **Uber Minerva 物化视图** —— Uber 的统一指标平台 Minerva 内部依赖 OLAP 物化视图做指标预计算，是出行行业 MV 的代表。
+- **Airbnb Minerva 物化视图** —— Airbnb 的统一指标平台 Minerva 内部依赖 OLAP 物化视图做指标预计算，是出行行业 MV 的代表。
 
 > 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
 
