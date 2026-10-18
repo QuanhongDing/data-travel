@@ -11,7 +11,7 @@
 | KPI vs OKR 怎么选？数据团队适合哪个？ | §1.1、§3.1、§7.1 |
 | 9 宫格怎么用？怎么识别高潜 / 末位？ | §2.1、§4.2 |
 | 绩效面谈怎么做？ | §4.5、§6.2 |
-| 末位淘汰怎么谈？怎么避免「淘汰好人」？ | §3.3、§6.1 |
+| 末位淘汰怎么谈？怎么避免「淘汰好人」？ | §3.3、§8.2 |
 | 激励组合怎么设计？物质 + 精神？ | §3.2、§4.2 |
 | AI 时代怎么用 AI 辅助绩效？ | §5.1、§5.3 |
 
@@ -308,7 +308,6 @@ KR4：Q4 用户满意度 ≥ 4.5/5，月活 ≥ 10 万
 2. 协作：跨团队满意度 4.7/5
 3. 学习：每周分享 1 次新技术
 
-- [§3. 改进点（具体 + 行为 + 例子）](03-performance-management-section-3-sec3.md)
 - [§9. 改进计划（IDP）](03-performance-management-section-9-sec9.md)
 - [§10. 激励兑现](03-performance-management-section-10-sec10.md)
 - [§5. 前沿演进（AI 时代）](03-performance-management-section-5-ai.md)
@@ -322,14 +321,5 @@ KR4：Q4 用户满意度 ≥ 4.5/5，月活 ≥ 10 万
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
-- [§3. 设计模式与范式](03-performance-management-section-3-sec3.md)
-- [§4. 工程实现](03-performance-management-section-4-sec4.md)
-- [§3. 改进点（具体 + 行为 + 例子）](03-performance-management-section-3-sec3.md)
-- [§9. 改进计划（IDP）](03-performance-management-section-9-sec9.md)
-- [§10. 激励兑现](03-performance-management-section-10-sec10.md)
-- [§5. 前沿演进（AI 时代）](03-performance-management-section-5-ai.md)
-- [§6. 落地实践](03-performance-management-section-6-sec6.md)
-- [§7. 与其他方法对比](03-performance-management-section-7-sec7.md)
-- [§8. 面试真题集](03-performance-management-section-8-sec8.md)
 
 ---

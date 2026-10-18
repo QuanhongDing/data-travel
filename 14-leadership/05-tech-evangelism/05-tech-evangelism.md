@@ -12,7 +12,7 @@
 | 内部分享怎么运营？ | §4.1、§4.2 |
 | Conference 演讲怎么准备？ | §3.2.2、§4.5 |
 | 技术博客怎么写才有传播力？ | §4.5、§5.1 |
-| 开源项目怎么运营？ | §3.1、§6.2 |
+| 开源项目怎么运营？ | §3.1、§6 案例 5.2 |
 | AI 时代的技术布道怎么演进？ | §5.1、§5.3 |
 
 ---
@@ -274,8 +274,6 @@ RecruitingROI = (Influencer_Hire × Years) / Investment
 - 人工评估 1000+ 问题
 - 自动评估：BLEU、ROUGE、LLM Judge
 
-- [§3. 结果](05-tech-evangelism-section-3-sec3.md)
-- [§4. 工程实现](05-tech-evangelism-section-4-sec4.md)
 ## 1. 开场故事（3 分钟）
 - 1 个真实案例 / 故事
 - 吸引听众
@@ -284,8 +282,6 @@ RecruitingROI = (Influencer_Hire × Years) / Investment
 - 业务痛点 / 技术挑战
 - 为什么重要
 
-- [§3. 技术方案（20 分钟）](05-tech-evangelism-section-3-sec3.md)
-- [§4. 工程实现](05-tech-evangelism-section-4-sec4.md)
 - [§9. 总结 + 升华（2 分钟）](05-tech-evangelism-section-9-sec9.md)
 - [§5. 前沿演进（AI 时代）](05-tech-evangelism-section-5-ai.md)
 - [§6. 落地实践](05-tech-evangelism-section-6-sec6.md)
@@ -298,16 +294,5 @@ RecruitingROI = (Influencer_Hire × Years) / Investment
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
-- [§3. 设计模式与范式](05-tech-evangelism-section-3-sec3.md)
-- [§4. 工程实现](05-tech-evangelism-section-4-sec4.md)
-- [§3. 结果](05-tech-evangelism-section-3-sec3.md)
-- [§4. 工程实现](05-tech-evangelism-section-4-sec4.md)
-- [§3. 技术方案（20 分钟）](05-tech-evangelism-section-3-sec3.md)
-- [§4. 工程实现](05-tech-evangelism-section-4-sec4.md)
-- [§9. 总结 + 升华（2 分钟）](05-tech-evangelism-section-9-sec9.md)
-- [§5. 前沿演进（AI 时代）](05-tech-evangelism-section-5-ai.md)
-- [§6. 落地实践](05-tech-evangelism-section-6-sec6.md)
-- [§7. 与其他方法对比](05-tech-evangelism-section-7-sec7.md)
-- [§8. 面试真题集](05-tech-evangelism-section-8-sec8.md)
 
 ---

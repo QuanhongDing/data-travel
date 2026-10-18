@@ -274,8 +274,6 @@ Layer3: Basic Assumptions（深层假设）：潜意识、信仰
 - 失败后的反应是批评还是学习？
 - 评分：{1-5}
 
-- [§3. 多样性](12-culture-building-section-3-sec3.md)
-- [§4. 工程实现](12-culture-building-section-4-sec4.md)
 - [§9. 改进措施](12-culture-building-section-9-sec9.md)
 ## 1. 行为 1：定期与客户对话
 - 每月 ≥ 1 次客户访谈
@@ -287,7 +285,6 @@ Layer3: Basic Assumptions（深层假设）：潜意识、信仰
 - 拒绝纯技术导向
 - 输出：决策的客户价值论证
 
-- [§3. 行为 3：客户反馈闭环](12-culture-building-section-3-sec3.md)
 - [§5. 前沿演进（AI 时代）](12-culture-building-section-5-ai.md)
 - [§6. 落地实践](12-culture-building-section-6-sec6.md)
 - [§7. 与其他方法对比](12-culture-building-section-7-sec7.md)
@@ -299,14 +296,5 @@ Layer3: Basic Assumptions（深层假设）：潜意识、信仰
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
-- [§3. 设计模式与范式](12-culture-building-section-3-sec3.md)
-- [§4. 工程实现](12-culture-building-section-4-sec4.md)
-- [§3. 多样性](12-culture-building-section-3-sec3.md)
-- [§9. 改进措施](12-culture-building-section-9-sec9.md)
-- [§3. 行为 3：客户反馈闭环](12-culture-building-section-3-sec3.md)
-- [§5. 前沿演进（AI 时代）](12-culture-building-section-5-ai.md)
-- [§6. 落地实践](12-culture-building-section-6-sec6.md)
-- [§7. 与其他方法对比](12-culture-building-section-7-sec7.md)
-- [§8. 面试真题集](12-culture-building-section-8-sec8.md)
 
 ---

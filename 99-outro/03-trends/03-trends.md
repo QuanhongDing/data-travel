@@ -19,7 +19,7 @@
 | 组织变革的方向是什么？ | §7 |
 | 文化变革的方向是什么？ | §8 |
 | 推荐阅读 / 行动清单 | §9 |
-| 面试真题集 | §10 |
+| 面试真题集 | §8（原 §10 占位文件已并入 §8） |
 
 ---
 
@@ -181,9 +181,7 @@
 - [§5. AI 治理与监管](03-trends-section-5-ai.md)
 - [§6. LLM + 业务深度融合](03-trends-section-6-llm.md)
 - [§7. 组织变革](03-trends-section-7-sec7.md)
-- [§8. 文化变革](03-trends-section-8-sec8.md)
 - [§9. 推荐阅读 / 行动清单](03-trends-section-9-sec9.md)
-- [§10. 面试真题集](03-trends-section-10-sec10.md)
 - [§8. 面试真题集](03-trends-section-8-sec8.md)
 
 ---
@@ -192,14 +190,5 @@
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
-- [§3. AGI 与数据架构师的未来](03-trends-section-3-agi.md)
-- [§4. AI Agent 与人类：取代 / 增强 / 共生](03-trends-section-4-ai-agent.md)
-- [§5. AI 治理与监管](03-trends-section-5-ai.md)
-- [§6. LLM + 业务深度融合](03-trends-section-6-llm.md)
-- [§7. 组织变革](03-trends-section-7-sec7.md)
-- [§8. 文化变革](03-trends-section-8-sec8.md)
-- [§9. 推荐阅读 / 行动清单](03-trends-section-9-sec9.md)
-- [§10. 面试真题集](03-trends-section-10-sec10.md)
-- [§8. 面试真题集](03-trends-section-8-sec8.md)
 
 ---
