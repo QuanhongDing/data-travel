@@ -333,7 +333,7 @@ Databricks Unity Catalog、AWS Lake Formation 在产品形态上对应 Ranger �
 **4. 追问预测**
 
 - **「Cassandra 怎么接入统一权限？」** 答：用 LDAP + Cassandra 原生 RBAC；或用 Privacera 桥接到 Ranger；或自研 Ranger Cassandra Plugin。
-- **「多集群怎么统一？」** 答：用一个 Ranger Admin + 多个 Plugin；或每个集群独立 Ranger Admin，跨集群策略用同步机制（Kafka 推送）。
+- **「多集群怎么统一？」** 答：用一个 Ranger Admin + 多个 Plugin；或每个集群独立 Ranger Admin，跨集群策略靠一套自己选定的同步机制对齐——**Ranger 不自带跨 Admin 的推送**，具体用什么同步要按你的 Admin 部署与官方文档核验，不要假设它自带实时推送。
 
 **5. 参考资料**
 

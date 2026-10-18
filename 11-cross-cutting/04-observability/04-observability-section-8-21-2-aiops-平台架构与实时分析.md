@@ -561,7 +561,6 @@ iostat                温度 / 延迟 / 错误率       LSTM-AE / Prophet      >
 - **通知 Owner**：通知对应团队 oncall。
 
 **第六层：工业案例。**
-- **Uber Marmaray**：基于血缘的端到端 RCA；
 - **阿里根因分析系统**：双 11 场景下根因定位准确率 70%+；
 - **Microsoft Azure RCA**：跨服务的依赖分析与故障定位；
 - **LinkedIn**：基于 Liyue 的服务依赖图与 RCA 集成。

@@ -204,7 +204,7 @@
 
 **第三层：性能与一致性权衡。**
 
-- **Ranger**：每次 SQL 评估触发 Plugin RPC（缓存命中则本地判，未命中才 RPC）；策略更新即时生效；但依赖 Ranger Admin 可用性。
+- **Ranger**：每次 SQL 评估由 Plugin 在本地缓存里判定，**未命中才多一次到 Ranger Admin 的 RPC**（评估本身不产生 RPC）；策略更新即时生效；但依赖 Ranger Admin 可用性。
 - **Sentry**：策略在 HiveServer2 启动时加载到内存；无 RPC 开销（内存判）；但策略更新必须重启 HS2 才能生效。
 
 **第四层：典型迁移路径。** Cloudera CDH 5.x 时代默认 Sentry；CDH 6.x 后转向 Ranger；很多老客户正在做 Sentry → Ranger 迁移。迁移的难点不是数据（策略可以重新导入），而是组织——团队需要重新培训 Ranger 的概念。
