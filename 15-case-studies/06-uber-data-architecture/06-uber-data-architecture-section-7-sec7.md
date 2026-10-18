@@ -59,7 +59,7 @@
 | 调度 | Airflow 系 + 自研编排 | Maestro（2022 公开） | Airflow（自研起源，2014 起） | 自研（Dolphin，名称以官方材料核验） | 【公开】（Airflow 见 Apache Airflow 项目页（年份以该页为准）；Maestro 见 Netflix 技术博客 2022；美团一栏未核到公开来源） |
 | ML 平台 | Michelangelo（2017 公开） | Metaflow（2019 开源） | Bighead（[Airbnb 案例 § 4.5](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md)） | PAI（名称以官方材料核验） | 【公开】（Michelangelo 见 Uber 工程博客 2017；Metaflow 见 Netflix 技术博客 2019；Bighead 见本仓库 Airbnb 案例 § 4.5。MLflow 见下注） |
 
-> 逐条核验路径：[Uber 案例](06-uber-data-architecture-section-3-sec3.md) § 3.4 的链路是 `Kafka → Flink → Hudi`；[Netflix 案例](../05-netflix-data-stack/05-netflix-data-stack-section-3-sec3.md) § 3.3 是 `Kafka → Flink → Iceberg`；[Airbnb 案例](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md) § 4.4.2 是 `Kafka → Flink / Spark Streaming`；[美团案例](../04-meituan-feature-store/04-meituan-feature-store-section-4-sec4.md) § 4.2 是 `Kafka → Flink → Redis / 自研 KV`。**工具名相同不代表架构相同**——同一批组件装出四种不同的平台，原因在下面四个维度里。
+> 逐条核验路径：[Uber 案例](06-uber-data-architecture-section-3-sec3.md) § 3.4 的链路是 `Kafka → Flink → Hudi`；[Netflix 案例](../05-netflix-data-stack/05-netflix-data-stack-section-3-sec3.md) § 3.2.3 是 `Kafka → Flink → Iceberg`；[Airbnb 案例](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md) § 4.4.2 是 `Kafka → Flink / Spark Streaming`；[美团案例](../04-meituan-feature-store/04-meituan-feature-store-section-4-sec4.md) § 4.2 是 `Kafka → Flink → Redis / 自研 KV`。**工具名相同不代表架构相同**——同一批组件装出四种不同的平台，原因在下面四个维度里。
 >
 > ML 平台一行有一处**口径**需要说明：本仓库 [Airbnb 案例 § 4.5](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md) 把 Airbnb 自研的 ML 平台记为 **Bighead**（其演进时间线记作 2022 年的 ML Platform V3）。MLflow 是 Databricks 发起的开源项目，在本仓库 [Uber 案例 § 5](06-uber-data-architecture-section-5-sec5.md)、[§ 8](06-uber-data-architecture-section-8-sec8.md) 中被记为 Michelangelo 引入的组件——两者不是同一个平台，因此本章按 Bighead 记，MLflow 作为独立候选保留在 7.4 的 ML 平台一行。
 
@@ -146,7 +146,7 @@
 - **对读者的意义**：自研内核的**前置判断条件**是两条：该问题在开源生态中确实无可用解；以及你有能力长期维护一个内核级项目。任一不满足，就应当消费开源。
 - **失效条件**：组织规模收缩、或该问题已被开源成熟方案覆盖之后，自研内核从资产变成负债——因为此时它的差异化价值消失，只剩维护与人才获取成本。
 
-**一个反向的观察**：四家里有两家（Netflix、Airbnb）的自研内核后来成了行业标准，而 Uber 的自研存储（Schemaless / Docstore）没有。差别不在技术质量，而在**问题是否被足够多的人共享**：表格式与调度是每家做数据都要面对的问题，而「基于 MySQL 做一个自动分片的 KV」是少数超大规模交易型业务的专属问题。**这提示了一条判断规则：自研能不能外溢，取决于问题有多通用，而不是你的实现有多好。**
+**一个反向的观察**：四家里有三家（Uber 的 Hudi、Netflix 的 Iceberg、Airbnb 的 Airflow）的自研内核后来成了行业标准，而 Uber 的自研存储（Schemaless / Docstore）没有。差别不在技术质量，而在**问题是否被足够多的人共享**：表格式与调度是每家做数据都要面对的问题，而「基于 MySQL 做一个自动分片的 KV」是少数超大规模交易型业务的专属问题。**这提示了一条判断规则：自研能不能外溢，取决于问题有多通用，而不是你的实现有多好。**
 
 **批流混合路线的额外代价**：当一家公司的数据既有更新型又有事件型（美团这类场景常见），看起来「两种格式都要」能两边讨好，实际是两条成本曲线叠加：既要维护 upsert 链路与 compaction，又要维护面向多引擎的开放读路径，而且**两条路径之间还需要一层一致性保证**（同一份事实在两条路径上的口径必须一致）。因此混合路线的正确形态不是「两种格式都用」，而是**用一条路径服务在线（更新型），用另一条服务分析（事件型），并明确谁是唯一事实来源**——否则同一个数字会在两条路径上给出两个答案。
 

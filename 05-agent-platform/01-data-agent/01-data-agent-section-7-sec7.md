@@ -46,7 +46,7 @@
 
 分族的操作结论只有一句：**选族只看一个问题——你要回答的问题能不能事先枚举。**能枚举，预定义族的成本最低、准确率最稳、可解释性最好；不能枚举，才进入开放生成族，并立刻面对「生成空间约束在哪一层」这个第二问（7.3.2）。这一条也是 7.5 决策树 Q2 的判据来源。
 
-本表列出四列候选——传统 BI（Tableau / Power BI）、ChatBI / NL2BI（QuickBI / ThoughtSpot）、Copilot（Excel Copilot / Office Copilot）与 Data Agent，以及具名产品（OneMetric、RAG / GraphRAG、BI 工具、Python 沙箱 / Code Interpreter、Multi-Agent 协同），并增补了四个候选：裸 Text2SQL、Code Interpreter、Multi-Agent Data Analyst、RAG 问答。增补的理由是——**把 Python 沙箱、Multi-Agent 与 RAG / GraphRAG 留在「组合」而不放进「候选」，会让 7.3 的机制比较缺对象**：只有把它们当作独立候选，才能看出「用代码算」与「生成 SQL」在纠错信号上的差别。
+本表列出四类基础候选——传统 BI（Tableau / Power BI）、ChatBI / NL2BI（QuickBI / ThoughtSpot）、Copilot（Excel Copilot / Office Copilot）与 Data Agent，并增补了四个候选：裸 Text2SQL、Code Interpreter、Multi-Agent Data Analyst、RAG 问答。增补的理由是——**把 Python 沙箱、Multi-Agent 与 RAG / GraphRAG 留在「组合」而不放进「候选」，会让 7.3 的机制比较缺对象**：只有把它们当作独立候选，才能看出「用代码算」与「生成 SQL」在纠错信号上的差别。
 
 关于最后一行（RAG 问答）需要单独说明：它**不是本章候选的替代品**。RAG 擅长「文本里有没有写」这类问题，无法回答「本月 GMV 是多少」——后者需要聚合与口径，而这两件事只能由 SQL 侧的语义层提供。把它列进候选表，是为了让 7.5 的 Q6 有落点：当同一批问题里两类同时出现时，缺的不是更强的候选，而是一次**可观测的意图分流**。
 

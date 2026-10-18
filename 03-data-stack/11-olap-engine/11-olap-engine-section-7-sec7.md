@@ -204,7 +204,7 @@
 │    → StarRocks / Doris 一族（自带存储的分布式列存 MPP）
 │      前置判据：最大的那张 join 的构建侧能否被对齐分布或放进内存
 ├─ 数据散在多个源、不能搬动，需要统一查询入口
-│    → Trino（联邦查询引擎；同类主题见 [13-query-engine](../13-query-engine/13-query-engine.md) 的 §7）
+│    → Trino（联邦查询引擎；同类主题见 [13-query-engine §7](../13-query-engine/13-query-engine-section-7-sec7.md)）
 │      代价：每次查询付一次跨网络读取
 ├─ 数据在本地文件、单机放得下，使用者是个人或单个进程
 │    → DuckDB（进程内库）

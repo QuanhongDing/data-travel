@@ -85,11 +85,11 @@ Set<StructLike> matchingPartitions = pred literals();
 **Z-Order 原理**：用**位交错**（bit-interleaving）把多维坐标映射到一维：
 
 ```
-2D 点 (x=0b10110, y=0b01101) Z-Order = 0b0101111001
-       1  0  1  1  0         0  1  1  0  1
-       0  1  1  0  1   →     0  1  1  0  1
-         ↑ ↑ ↑ ↑ ↑             ↑ ↑ ↑ ↑ ↑
-        bit-level interleaving
+2D 点 (x=0b10110, y=0b01101)
+x:  1  0  1  1  0
+y:  0  1  1  0  1
+    ↓ bit-level interleaving（从高位起把 x、y 的位交替排列）
+Z:  1  0  0  1  1  1  1  0  0  1   →   Z-Order = 0b1001111001
 ```
 
 **几何意义**：Z-Order 曲线**保持局部性**——空间中相邻的点，Z-Order 值也接近。这意味着：

@@ -183,7 +183,7 @@
 | 决策依据 | AB 实验 | 统一口径报表 | 业务与履约指标复盘 | 内容与观看指标 + 实验 | 【经验】由各家公开定位归纳，非单一官方原文 |
 | 定义权归属 | 指标集中定义 + 业务自治 | 中台集中 | 平台化 + 业务定义目标 | 领域自治 | 【经验】同上 |
 | 对外出口 | 火山引擎（差异化定位在应用与平台层；基础层按标准云产品供给） | 阿里云（全栈） | 对内为主 + 窄口径 ToB（美团零售 / 美团企业版） | 开源（Iceberg / Metaflow / Maestro） | 【公开】火山引擎产品目录见本仓 [§ 3.2.5](03-byte-data-architecture-section-3-sec3.md)（V5.0 火山引擎商业化，2019–2024 时间线）；Iceberg 于 2020-05 成为 Apache 顶级项目、Metaflow 于 2019 年开源；美团 ToB 自 2022 年起，见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md) §1.1 |
-| AI 侧投入 | 豆包大模型 + 扣子（Coze）智能体平台 + 一站式 AI 服务 | 通义千问 + 百炼平台 | 美团大模型（未查到可核验的具名产品，本章不据此断言）【经验】 | Netflix Maia（其能力边界本章不做断言，可自行核验 Netflix 技术博客）【经验】 | 【公开】字节侧见本仓 [§ 3.2.6](03-byte-data-architecture-section-3-sec3.md)（V6.0 AI Native 数据栈，2023–2025）与 [§ 4.2](03-byte-data-architecture-section-4-sec4.md)（大模型 + 数据中台）；阿里侧见本仓 [01-alibaba-data-middle-platform §4.6](../01-alibaba-data-middle-platform/01-alibaba-data-middle-platform-section-4-sec4.md)（AI 中台，2020–2024）；美团与 Netflix 两格本章未核到公开来源 |
+| AI 侧投入 | 豆包大模型 + 扣子（Coze）智能体平台 + 一站式 AI 服务 | 通义千问 + 百炼平台 | 美团大模型（未查到可核验的具名产品，本章不据此断言）【经验】 | Netflix Maia（其能力边界本章不做断言，可自行核验 Netflix 技术博客）【经验】 | 【公开】字节侧见本仓 [§ 3.2.6](03-byte-data-architecture-section-3-sec3.md)（V6.0 AI Native 数据栈，2023–2025）与 [§ 4.2](03-byte-data-architecture-section-4-sec4.md)（大模型 + 数据中台）；阿里侧见本仓 [01-alibaba-data-middle-platform §4.1 Step 7](../01-alibaba-data-middle-platform/01-alibaba-data-middle-platform-section-4-sec4.md)（AI 中台，2020–2024）；美团与 Netflix 两格本章未核到公开来源 |
 | 编制归属 | 平台团队 + 业务数据团队 | 中台 + BU 数据团队 | 平台化 + 业务团队 | 中央平台 + 领域团队 | 【经验】公开材料中的组织描述归纳 |
 | 数据链路形态 | 开发 / 调度 / 血缘 / 质量 / 指标在同一元数据上 | 集成 / 开发 / 治理 / 服务一体化 | 平台能力 + 业务链路 | 领域链路 + 中央基础设施 | 【经验】同上 |
 
