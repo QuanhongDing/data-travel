@@ -1,6 +1,6 @@
-> 本文件是 **03-performance-management.md** 的子文件（§5. 激励兑现）。完整章节请回到 [index](03-performance-management.md)。
+> 本文件是 **03-performance-management.md** 的子文件（§10. 激励兑现）。完整章节请回到 [index](03-performance-management.md)。
 
-## 5. 激励兑现
+## 10. 激励兑现
 - 加薪：10%
 - 晋升：P6 → P7（待答辩）
 - 奖金：2 个月

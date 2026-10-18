@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★★☆ |
 | 章节 | [14-leadership](../README.md) |
 | 主文件 | [11-team-topology.md](11-team-topology.md) |
 

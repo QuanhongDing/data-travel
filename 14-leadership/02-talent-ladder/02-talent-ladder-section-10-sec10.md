@@ -1,6 +1,6 @@
-> 本文件是 **02-talent-ladder.md** 的子文件（§5. 资源）。完整章节请回到 [index](02-talent-ladder.md)。
+> 本文件是 **02-talent-ladder.md** 的子文件（§10. 资源）。完整章节请回到 [index](02-talent-ladder.md)。
 
-## 5. 资源
+## 10. 资源
 - 导师：{资深架构师}
 - 预算：5000 元学习 / Conference 经费
 - 时间：每周 4 小时学习时间

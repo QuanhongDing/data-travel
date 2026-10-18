@@ -8,10 +8,10 @@
 
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
-| Daily Standup 怎么开？ | §2.1、§4.1 |
+| Daily Standup 怎么开？ | §2.1、§4.2 |
 | Weekly Sync 怎么设计？ | §4.2、§6.1 |
-| Monthly / Quarterly Review 怎么做？ | §4.3、§4.4 |
-| Annual Offsite / Team Retreat 怎么设计？ | §4.4、§6.2 |
+| Monthly / Quarterly Review 怎么做？ | §4.2、§4.5 |
+| Annual Offsite / Team Retreat 怎么设计？ | §4.2、§6.2 |
 | Standup 反模式怎么破？ | §3.3、§6.2 |
 | AI 时代的会议节奏怎么演进？ | §5.1、§5.3 |
 

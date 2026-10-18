@@ -1,6 +1,6 @@
-> 本文件是 **03-performance-management.md** 的子文件（§4. 改进计划（IDP））。本节讲绩效评估闭环的最后一环：怎么把「哪里不够」变成一份能被复核、能被跟进的书面计划。处置机制的约束、代价与失效点见 [§3 设计模式与范式](03-performance-management-section-3-sec3.md)，并与主文件 [§2 核心原理](03-performance-management.md) 的末位淘汰五步法配套阅读。完整章节请回到 [index](03-performance-management.md)。
+> 本文件是 **03-performance-management.md** 的子文件（§9. 改进计划（IDP））。本节讲绩效评估闭环的最后一环：怎么把「哪里不够」变成一份能被复核、能被跟进的书面计划。处置机制的约束、代价与失效点见 [§3 设计模式与范式](03-performance-management-section-3-sec3.md)，并与主文件 [§2 核心原理](03-performance-management.md) 的末位淘汰五步法配套阅读。完整章节请回到 [index](03-performance-management.md)。
 
-## 4. 改进计划（IDP）
+## 9. 改进计划（IDP）
 
 ### 4.1 先把两件常被混在一起的事分开
 

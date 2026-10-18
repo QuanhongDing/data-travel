@@ -1,6 +1,6 @@
-> 本文件是 **12-culture-building.md** 的子文件（§5. 改进措施）。完整章节请回到 [index](12-culture-building.md)。
+> 本文件是 **12-culture-building.md** 的子文件（§9. 改进措施）。完整章节请回到 [index](12-culture-building.md)。
 
-## 5. 改进措施
+## 9. 改进措施
 1. ______
 2. ______
 ```
