@@ -236,7 +236,7 @@ atomic_source: dwd_trade_order_paid.paid_amount
 time_window: 7d
 time_field: paid_at
 modifiers: [{channel: all}]        # 业务修饰
-filters: [order_status IN ('paid','completed')]   # 业务限定
+filters: ["order_status IN ('paid','completed')"]   # 业务限定
 owner: data_team_trade             # 具体到人，不是团队名
 reviewer: business_team_trade      # 业务复核人：不占 4.1 的三类 Owner，口径 / 业务限定变更时签字
 version: v3                        # 由定义中心生成，不手写

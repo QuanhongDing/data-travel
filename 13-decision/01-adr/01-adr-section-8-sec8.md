@@ -549,7 +549,7 @@ public class TimelineStore {
 timeline_storage:
   implementation: cassandra
   decision_record: ADR-0007
-  enforced_by: @数据平台组
+  enforced_by: "@数据平台组"
 ```
 
 机制 3：**运行时元数据法**——在线服务的 feature flag 启动器加字段，记录「做出的 ADR 编号」「决策者」。当 ADR supersede 时可通过 metadata 找到所有受影响的运行时实例。

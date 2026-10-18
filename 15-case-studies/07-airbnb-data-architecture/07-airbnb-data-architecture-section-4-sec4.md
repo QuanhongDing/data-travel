@@ -54,7 +54,7 @@ filters:     [order_status = 'PAID']  # 过滤
 dimensions:  [date, market, listing_type, device]
 granularity: [1d]
 source_table: dwd_trade_order         # 数据来源（到表与字段）
-owner:       @marketplace-analytics   # 具体到人，不写团队名
+owner:       "@marketplace-analytics"   # 具体到人，不写团队名
 version:     3
 status:      prod                     # draft / canary / prod / retired
 ```

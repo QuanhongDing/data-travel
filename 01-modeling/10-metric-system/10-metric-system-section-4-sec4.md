@@ -206,7 +206,9 @@ metric:
   dimensions: [dt, channel, user_type, city]
   owner: {business: zhang.san, data: li.si, contact: biz-metric-owner@example.com}   # business / data 填名册里的具体人，不填部门或团队
   refresh: {frequency: daily, cron: "0 1 * * *", sla: "T+1 09:00 前完成"}
-  version: v2.3, valid_from: 2025-01-01, status: active   # active / deprecated / experimental
+  version: v2.3
+  valid_from: 2025-01-01
+  status: active                          # active / deprecated / experimental
 ```
 **怎么用**：`oscar` 与 `dimensions` 两格必须由业务方确认，其余字段数据团队填；`business` 与 `data` 两格填名册里的具体人——写部门名或团队名等于无人负责（判据见 Step 4）；`${date_minus_7}` 这类占位符换成你调度器的模板语法；`contact` 填组邮箱而不是个人邮箱（人一离职这个字段就失效）；`version` / `valid_from` / `status` 三格不要照抄成常量——它们是 §4.2.7 版本化的落点，第一次口径变更就要用到。
 #### 4.5.2 dbt Semantic Layer 指标定义（YAML）

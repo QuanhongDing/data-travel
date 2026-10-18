@@ -59,11 +59,11 @@ R 原子指标   计数 / 求和 / 平均
 ```yaml
 # 口径即代码：写入端唯一，由编译引擎生成 SQL（YAML 语法以各实现为准）
 metric: trade_order_paid_amount
-  measure: order.payment_amount
-  aggregation: SUM
-  filters: [order.status = 'PAID']
-  time_dimension: order.dt
-  dimensions: [channel, user_type]
+measure: order.payment_amount
+aggregation: SUM
+filters: [order.status = 'PAID']
+time_dimension: order.dt
+dimensions: [channel, user_type]
 ---
 # 消费端只提交「指标 + 维度 + 时间范围」，不提交 SQL
 query: { metric: trade_order_paid_amount, group_by: [channel],
@@ -191,16 +191,16 @@ GROUP  BY dt, channel, user_type; -- 维度组合在此刻被写死
 
 ```yaml
 metric: gmv
-  version: 1
-  valid_from: 2024-01-01
-  formula: "SUM(order.payment_amount)"
-  status: retired
+version: 1
+valid_from: 2024-01-01
+formula: "SUM(order.payment_amount)"
+status: retired
 ---
 metric: gmv
-  version: 2
-  valid_from: 2025-01-01
-  formula: "SUM(order.payment_amount) - SUM(order.refund_amount)"
-  status: active
+version: 2
+valid_from: 2025-01-01
+formula: "SUM(order.payment_amount) - SUM(order.refund_amount)"
+status: active
 # 查询必须显式声明版本（或时间点）；不声明即视为取「查询时点生效」的那一版
 ```
 

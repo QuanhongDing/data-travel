@@ -38,8 +38,8 @@ out_of_scope:  信贷 / 医疗等场景    # 边界比能力更重要
 training_data: ds-rec-2024q1      # 数据集标识 + 哈希（可寻址，不是描述）
 metrics:       {overall: …, by_group: …}   # 总量指标 + 分群指标
 limitations:   冷启动商品表现存在偏差
-owner:         @algo-rec          # 具体到人
-review:        {assessment_id: ra-2024-11, approver: @ai-governance}
+owner:         "@algo-rec"          # 具体到人
+review:        {assessment_id: ra-2024-11, approver: "@ai-governance"}
 ```
 
 - **为什么这样设计有效**：因为卡片把「模型能不能用」从一次口头询问变成一份**可对比、可归档的判定输入**，所以每次评估不必重新问一遍作者；又因为 `intended_use` 与 `out_of_scope` 是必填项，风险等级（模式 5）才有一个输入而不用猜。

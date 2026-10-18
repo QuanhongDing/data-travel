@@ -223,7 +223,7 @@ Kimball 维度建模的**5 大核心组件**：
        - name: author_id
          type: string
      scd: 2                               # 属性变更保留历史版本
-     ────────────────────────────────────
+     ---
      # 指标声明：口径唯一，四业务自动同源
      metric: dau
      owner: growth-analytics
