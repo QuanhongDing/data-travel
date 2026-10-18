@@ -377,7 +377,7 @@ Guava RateLimiter 是令牌桶实现，Sentinel 默认是滑动窗口（同时�
 
 **第四层：存储环节优化。**
 
-- **OLAP 选型**：阿里用 Hologres（基于 PostgreSQL 的实时 OLAP），美团用 ClickHouse，京东用自研的 JDT（基于 Druid / Pinot 改造），字节用 StarRocks 或 ClickHouse。**关键能力**：实时写入可见性（写入后毫秒级可查）+ 高并发查询（千级 QPS）+ 列存压缩。
+- **OLAP 选型**：阿里用 Hologres（基于 PostgreSQL 的实时 OLAP），美团用 ClickHouse，京东**多套并存**（自研 JDT 基于 Druid / Pinot 改造；另有公开材料提到广告侧用 Doris、数仓侧用 StarRocks——本书内这三种说法并存且都无具名出处，故此处不锁定单一一款），字节用 StarRocks 或 ClickHouse。**关键能力**：实时写入可见性（写入后毫秒级可查）+ 高并发查询（千级 QPS）+ 列存压缩。
 - **预聚合表（物化视图）**：大屏查询往往只关心"GMV / 订单数 / 支付率"几个固定指标，与其实时算全量，不如把指标预聚合成单独表，写入时只更新聚合表。这是大屏延迟优化的最关键一招。
 - **写入可见性**：OLAP 的写入从"提交"到"可查"通常有 ms 级延迟。Hologres / ClickHouse / StarRocks 都在这一项上有专门优化。避免用需要"合并"（如 LSM-Tree 的 minor compaction）的引擎，合并期间的查询可能不可见。
 - **冷热分层**：大屏只关心最近 N 小时 / N 天的数据，历史数据走冷存储（OSS / S3 + Parquet）。OLAP 表按时间分区 + TTL 自动清理。
