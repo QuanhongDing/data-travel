@@ -12,8 +12,8 @@
 | --- | --- |
 | Anchor Modeling 是什么、解决什么问题 | §1.1、§1.2 |
 | Anchors / Attrtributes / Ties / Knots 怎么设计 | §2.1、§3.2 |
-| 如何把 3NF / Kimball 迁移到 Anchor Modeling | §4.1、§6 的「真实落地路径」 |
-| bitemporal 时态建模如何落地 | §2.2、§3.2.4「Knot 共享模式」 |
+| 如何把 3NF / Kimball 迁移到 Anchor Modeling | §4.1、§4.4 存量迁移 |
+| bitemporal 时态建模如何落地 | §2.2、§4.2「Attribute DDL 规范（bitemporal）」/「Bitemporal CDC」 |
 | Anchor Modeling 在 AI 时代的新角色 | §5.1—§5.4 |
 | 决策树：我的业务该用 Anchor、Data Vault 还是 Kimball | §7.5 |
 
@@ -40,7 +40,7 @@
 | 加属性成本 | 加 Satellite | 加 Attribute 表 |
 | 修改属性类型 | 加新 Satellite + 旧 Satellite 失效 | 加新 Attribute 表 + 旧表失效 |
 | 时态支持 | 双时态（bitemporal） | 双时态（bitemporal，原生） |
-| 工具支持 | 成熟（dbtvault、Informatica） | 较少（开源仅 anchor_modeling gem） |
+| 工具支持 | 成熟（dbtvault、Informatica） | 较少（开源有 anchor_modeling（Ruby）、anchor-python（Python）等） |
 | 适用场景 | 多源 DW 集成 | 极致演化 + 时态分析 |
 
 **核心问题**：解决"业务变化最频繁 + 时态分析要求最高 + 极致规范化"的根本矛盾——比 Data Vault 还要极致，比 3NF 还要灵活。
@@ -201,7 +201,7 @@ $$
 
 #### 2.2.2 Bitemporal 时态扩展
 
-每个 Anchor / Attribute / Tie 都有 4 个时态字段：
+每个 Attribute / Tie 都有 3 个时态字段（`deleted_at` 为可选的第 4 个）：
 
 | 字段 | 含义 | 工程意义 |
 |---|---|---|
