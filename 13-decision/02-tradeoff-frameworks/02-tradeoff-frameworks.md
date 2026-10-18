@@ -35,7 +35,7 @@
 **业务 / 工程痛点**：
 
 - **「为什么选 Kafka 不选 Pulsar？」——答不上来**——选型依据主观。
-- **「CTO 喜欢 Go，所有系统都迁 Java」**——权威偏误（详见 §08）。
+- **「CTO 喜欢 Go，所有系统都迁 Go」**——权威偏误（详见 §08）。
 - **「6 个团队各选一个消息队列，结果 5 种消息总线」**——缺乏组织级选型框架。
 - **「选了一个性能最好的工具，团队不会用，半途而废」**——忽略「团队匹配度」维度。
 - **「选了一个便宜的方案，但维护成本是 TCO 的 10 倍」**——只看初始成本，不看 TCO。
@@ -78,10 +78,10 @@
 
 - **1950s-1960s**：Simon 的「有限理性」+「满意即可」理论奠基。
 - **1970s-1980s**：Saaty 提出 AHP（层次分析法）；Von Winterfeldt 发展 MCDA。
-- **1980s-1990s**：CAP 定理（Eric Brewer 1998-1999）成为分布式系统选型基础。
+- **1990s-2000s**：CAP 定理（Eric Brewer 2000）成为分布式系统选型基础。
 - **2000s**：Cost-Benefit Analysis 在企业 IT 决策中普及；TOGAF / Zachman 框架推广。
 - **2010s**：Tech Radar（ThoughtWorks 2010+）成为组织级选型指南；敏捷决策推动轻量化框架。
-- **2014**：AWS Well-Architected Framework 5 根支柱（Operational Excellence / Security / Reliability / Performance Efficiency / Sustainability）成为云架构选型标准。
+- **2015**：AWS Well-Architected Framework 5 根支柱（Operational Excellence / Security / Reliability / Performance Efficiency / Cost Optimization）+ 2021 年新增的 Sustainability 成为云架构选型标准。
 - **2020-2024**：AI / ML 选型（模型、向量库、Agent 框架）催生新决策维度（幻觉率、合规、成本）；**2022** 年 Decision Intelligence 进入 Gartner 顶级战略技术趋势（以当年清单原文为准），AI 辅助选型。
 
 ---

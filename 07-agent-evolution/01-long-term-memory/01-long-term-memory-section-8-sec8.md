@@ -73,7 +73,7 @@
 
 **5. 参考资料**
 
-- MemGPT 论文《MemGPT: Towards LLMs as Operating Systems》，UC Berkeley，2023-12——明确给出 WM 与 LTM 的分层与「分页换出」机制，是本题概念框架的原始出处。
+- MemGPT 论文《MemGPT: Towards LLMs as Operating Systems》，UC Berkeley，2023——明确给出 WM 与 LTM 的分层与「分页换出」机制，是本题概念框架的原始出处。
 - Mem0 论文（arXiv 2504.19413，2025-04；产品开源 2024-10）——在公开的 `LOCOMO` 基准上对比「full-context / RAG / Mem0」等方案，报告提取式 LTM 在长对话个性化任务上取得约 26% 的准确率提升（论文自述的相对提升，不是 26 个百分点；对照方案与评分口径由 Mem0 作者设定，本节无法核验其具体对照对象），是「事实三元组 vs 全文检索」的工业实证。
 - Anthropic 官方文档《Memory and context》——Claude 2025-05 上线的 Memory API 的工程视图，包含「项目级」与「系统级」双层记忆的官方定义，是 WM / LTM 边界最干净的工业样本。
 - OpenAI 官方博客《Memory and new controls for ChatGPT》，2025-04——ChatGPT Memory 的产品公告，强调「用户可控 + 可关闭 + 显式指令」的写入主体约束。
@@ -91,7 +91,7 @@
 
 **1. 考察点**
 
-- 是否真正读过 MemGPT 论文（arxiv 2312.08194）——能讲清「Core Memory in-context + Archival Memory out-of-context + Recall Memory tool call」三件套，而不只是复述「分页」二字。
+- 是否真正读过 MemGPT 论文（题名《MemGPT: Towards LLMs as Operating Systems》）——能讲清「Core Memory in-context + Archival Memory out-of-context + Recall Memory tool call」三件套，而不只是复述「分页」二字。
 - 是否能从「**类比 OS 虚拟内存**」的核心灵感出发，说清二者相同点（层级化、换入换出、对外透明）与不同点（**决策主体**不同：硬件触发 vs LLM 触发；**粒度**不同：固定 4KB vs 语义块；**失败模式**不同：silent corruption vs 语义污染）。
 - 是否知道 Letta（前身 MemGPT 团队）2024-11 公司化后的工程演进，以及 Anthropic 的 prompt caching 与该机制的关系。
 - 加分项：能进一步指出「**未来 LangGraph Checkpointer 与 MemGPT 的差异**」——前者是状态持久化，后者是语义分页。
@@ -139,7 +139,7 @@ LLM 通过 `function_call` 自己决定「什么时候把哪段从 Core Memory �
 
 - **只说「类比 OS」不说差异**：会显得只读了三分钟介绍，没真正看完论文。
 - **把 MemGPT 等同于「长上下文」**：Claude 1M / Gemini 2M 上下文不是 MemGPT，它是「**物理扩展**」而非「**分页扩展**」。MemGPT 是在 8K 模型上也能跑长程任务。
-- **忽略 Letta 工程化进展**：停在 2023-12 论文，没跟进 2024-11 公司化与 2025 工程版本。
+- **忽略 Letta 工程化进展**：停在 2023 论文，没跟进 2024-11 公司化与 2025 工程版本。
 - **混淆 Letta 与 LangGraph 的 Checkpoint**：前者是「**语义分页**」，后者是「**图状态快照**」，二者可组合但不可互替。
 - **把 Anthropic prompt caching 当成 MemGPT 等价物**：前者是 KV cache 复用（无 LLM 决策），后者是 LLM 主动换页（带 LLM 决策）。
 
@@ -152,7 +152,7 @@ LLM 通过 `function_call` 自己决定「什么时候把哪段从 Core Memory �
 
 **5. 参考资料**
 
-- MemGPT 论文《MemGPT: Towards LLMs as Operating Systems》，UC Berkeley，2023-12，arxiv 2312.08194——本题的标准出处，明确给出三件套架构与 OS 虚拟内存类比。
+- MemGPT 论文《MemGPT: Towards LLMs as Operating Systems》，UC Berkeley，2023——本题的标准出处，明确给出三件套架构与 OS 虚拟内存类比。
 - Letta 官方文档与博客（2024-11 公司化后）——MemGPT 工程化平台的开源实现，包含 `core_memory_limit` / `archival_memory` API 与多 Agent `Memory Block` 抽象的最新进展。
 - Anthropic 官方文档《Prompt caching》——Claude 平台对重复 system prompt 段落的 KV cache 命中机制，与 MemGPT 是「**底层技术不同但优化哲学相近**」的工业对照。
 - LangGraph 官方文档 `Checkpointers` 章节——提供 `PostgresSaver` / `SqliteSaver` 等图状态持久化实现，与 MemGPT 的语义分页形成清晰对照，是「**state 持久化 vs 语义分页**」边界的标准定义。

@@ -214,8 +214,6 @@ Answer = LocalSearch(q, KG) ∨ GlobalSearch(q, Summaries)
 | OpenAI text-embedding-3-large | 3072 | 通用、性能强 | 英文为主 |
 | BGE-M3（BAAI 2024） | 1024 | 多语言 / 多功能 / 多粒度 | 中文 + 多语言首选 |
 | M3E | 1024 | 中文优化 | 中文场景 |
-| BGE-reranker-large | - | 精排 | 召回后精排 |
-| Cohere Rerank 3 | - | 商业精排 | 多语言 |
 | CLIP | 512 / 768 | 图文对齐 | 多模态 RAG |
 | OpenCLIP | 512 / 1024 | 开源 CLIP | 多模态 |
 | Qwen-VL Embedding | - | 中文图文 | 国内多模态 |

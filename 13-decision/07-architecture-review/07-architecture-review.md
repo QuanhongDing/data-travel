@@ -84,9 +84,9 @@
 - **2000**：ATAM（SEI）成为架构评审标准方法。
 - **2000 年前后**：ARID（Active Reviews for Intermediate Designs）出现（公开年份在可查材料中不统一，故不注具体年份）。
 - **2010s**：架构评审纳入敏捷 / DevOps 实践（Continuous Review）。
-- **2014**：AWS Well-Architected Review 成为云架构评审标杆。
-- **2018**：CNCF TAG App Delivery 推动跨团队架构评审标准化。
+- **2015**：AWS Well-Architected Review 成为云架构评审标杆。
 - **2020-2024**：AI / 智能体架构评审成熟（LLM 引入评审）。
+- **2022**：CNCF TAG App Delivery 推动跨团队架构评审标准化。
 - **2024-2025**：AI 辅助架构评审（GitHub Copilot / Claude / 智能体辅助）成为新趋势。
 
 ---

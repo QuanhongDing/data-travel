@@ -30,7 +30,7 @@
 - **ACID 事务**：跨引擎的强一致性，避免数据湖的"小文件 / 部分写"问题。
 - **Schema Evolution**：列增删改不断链，下游兼容。
 - **Time Travel**：快照回溯，可查询任意历史时刻。
-- **Hidden Partitioning**：用户不感知分区细节，自动剪裁。
+- **Hidden Partitioning**：用户不感知分区细节，自动剪裁（Iceberg 特性；Hudi / Delta 用显式分区列，无等价物）。
 - **开放存储**：数据存 OSS / S3 / COS，不被厂商锁定。
 
 ### 1.2 为什么需要
@@ -127,7 +127,7 @@
 
 **Schema Evolution**：列增删改时不影响已有数据，下游读取自动适配。
 
-**Hidden Partitioning**：用户用业务字段（如 `order_time`）查询时，表格式自动按底层分区（如 `days(order_time)`）剪裁文件，用户无需感知。
+**Hidden Partitioning**：Iceberg 中，用户用业务字段（如 `order_time`）查询时，表格式自动按底层分区（如 `days(order_time)`）剪裁文件，用户无需感知（这是 Iceberg 的特性，Hudi / Delta 无等价物）。
 
 **Time Travel**：通过 `snapshot-id` 或 `AS OF timestamp` 查询历史状态。
 

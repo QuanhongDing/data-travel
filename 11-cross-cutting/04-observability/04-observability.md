@@ -175,7 +175,7 @@
 - 2020：Monte Carlo A 轮 1500 万美元；Bigeye 成立。
 - 2021：Anomalo、Mona 成立；DataDog 收购 Data Observability 公司。
 - 2022：Gartner 将 Data Observability 列入 Hype Cycle。
-- 2023：OpenLineage 1.0 发布（统一血缘规范）；Databricks 收购 Datafold。
+- 2023：OpenLineage 1.0 发布（统一血缘规范）。
 - 2024：Snowflake 推出 Native Observability；Mona 推出 AI Quality Copilot；Anomalo 推出 Autonomous 模式。
 - 2025：LLM-AIOps 成为新趋势，可观测性 Agent 开始试点。
 

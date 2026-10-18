@@ -152,7 +152,7 @@ DataWorks 是阿里云数据中台的"事实标准"，在数据架构中处于"�
 | **阿里云生态** | DataWorks + MaxCompute + Hologres + Quick BI + PAI |
 | **字节生态** | DataFinder + ByteHouse + Byteintern + LLM 大模型 |
 | **美团生态** | 数据中台 + Smq + 猫眼 BI + 自研 ETL |
-| **华为云** | DAYU + MRS + DWS + DataArts（原 FusionInsight） |
+| **华为云** | DAYU + MRS + DWS（DataArts） |
 | **腾讯云** | WeData + TBDS + CDW |
 | **海外云** | dbt + Snowflake / BigQuery + Databricks + Airflow |
 | **自建开源** | dbt + Airflow + DataHub + Apache Griffin + Iceberg |

@@ -175,9 +175,11 @@
 
 **CAP 定理的工程权衡**：
 
-- Lambda：牺牲 C（一致性），保证 A + P（实时性 + 分区容错）。
-- Kappa：保证 C（端到端 EOS）+ A，但牺牲 P 弱。
-- Lakehouse：三者兼顾，但工程复杂。
+前提：网络分区（P）必然发生，是分布式系统的前提而非可选项；分区发生时只能在 C（一致性）与 A（可用性）之间二选一（不是「三选二」）。据此对照：
+
+- Lambda：批层 T+1 全量准确、速度层实时近似，服务层按窗口合并——以放宽 C（一致性）换实时可用。
+- Kappa：流层端到端 EOS，重放历史 + checkpoint 状态重建——单链路，代价是历史计算能力弱、强依赖流引擎。
+- Lakehouse：表格式 ACID（单表事务给 C）+ 跨引擎 MVCC（跨引擎最终一致）——并非「三者兼顾」。
 
 ### 2.3 关键算法 / 方法
 
@@ -194,9 +196,12 @@ def get_view(query):
 **2. Kappa 状态重建**：
 
 ```java
-// Flink 从指定 offset 重新消费
+// Flink 从指定时间点重新消费（回溯）
 StreamExecutionEnvironment env = ...;
-env.setStartTime(Instant.parse("2025-01-01T00:00:00Z"));  // 重置启动时间
+KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
+    .setStartingOffsets(OffsetsInitializer.timestamp(
+        Instant.parse("2025-01-01T00:00:00Z").toEpochMilli()))  // 指定起始时间点
+    .build();
 env.fromSource(kafkaSource, ...).process(...).sinkTo(...);
 ```
 
@@ -273,7 +278,7 @@ tEnv.executeSql("""
 - 数据仓库：结构化、强治理、高成本。
 - Lakehouse：开放、灵活、低成本。
 
-> 💡 **思考锚点**：把你当前架构按 §2.2 的 CAP 三行对一遍——你为了保实时（A）牺牲的是哪一层的一致性（C）？如果你选的是 Lambda，服务层那个 `merge(..., window=batch_window)` 里的窗口具体是多久，它直接决定了你的"近似值"要漂多久才被批层收敛掉。
+> 💡 **思考锚点**：把你当前架构按 §2.2 的 CAP 三行对一遍——你为了保实时（分区时取 A）牺牲的是哪一层的一致性（C）？如果你选的是 Lambda，服务层那个 `merge(..., window=batch_window)` 里的窗口具体是多久，它直接决定了你的"近似值"要漂多久才被批层收敛掉。
 
 ---
 

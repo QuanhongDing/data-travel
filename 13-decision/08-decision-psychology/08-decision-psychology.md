@@ -77,7 +77,7 @@
 
 ### 1.4 演进历程
 
-- **1950s-1960s**：von Neumann & Morgenstern 的期望效用理论奠基。
+- **1940s**：von Neumann & Morgenstern 的期望效用理论奠基。
 - **1970s-1980s**：Tversky & Kahneman 提出启发式与偏误（Anchoring、Availability、Representativeness）。
 - **1979**：Kahneman & Tversky 提出 Prospect Theory（前景理论）。
 - **1990s**：行为经济学爆发（Thaler、Sunstein）。

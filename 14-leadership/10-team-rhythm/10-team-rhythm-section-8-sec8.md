@@ -87,7 +87,7 @@
 - Meta Engineering 关于「**No Meeting Wednesday**」与 Async-First 的公开分享——远程优先团队的会议治理范式。
 - GitLab Handbook v4 远程节奏章节——Async Standup + Weekly Video Sync + Monthly Issue Review + Quarterly OKR + Annual Offsite 的完整五层节奏。
 - Netflix Engineering Culture 公开 deck（Patty McCord《Powerful》）——「**高绩效 + 高自由度**」文化下会议节奏的设计原则（少会议、强决策、可取消）。
-- **字节跳动「**双月 OKR + Weekly OKR**」** —— 2017 年起强制双月绩效 + 周一全公司同步 OKR，是国内互联网节奏最快的工程实践之一。
+- **字节跳动「**双月 OKR + Weekly OKR**」** —— 2019 年起强制双月绩效 + 周一全公司同步 OKR，是国内互联网节奏最快的工程实践之一。
 - **美团周会机制** —— 周一 / 周五晨会 + 周三无会议日，零售 + 配送体系的运营节奏范式。
 - **腾讯 BG 例会** —— 每周 / 每月 BG 级例会，跨事业群对齐的层级化节奏实践。
 

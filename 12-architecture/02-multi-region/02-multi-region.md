@@ -88,7 +88,7 @@
 
 **传统阶段（2000s-2010s）**：
 
-- 2005：Google 论文《BigTable》《MapReduce》开启大数据时代。
+- 2005：Google 论文《BigTable》《MapReduce》开启大数据时代（论文发表年份本书内各节口径不一，不锁定，以 Google 公开论文为准）。
 - 2007：Amazon Dynamo 引入最终一致性，启发了 NoSQL 运动。
 - 2012：Google **Spanner** 论文发布，引入 TrueTime API，实现全球强一致的分布式数据库。
 - 阿里启动"异地多活"项目（启动年份本书内各节口径不一，不锁定，以阿里公开材料为准）。

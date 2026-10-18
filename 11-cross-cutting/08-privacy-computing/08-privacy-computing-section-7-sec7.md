@@ -76,7 +76,7 @@
 
 **由此必然导出的性质**：因为横向联邦跨域流动的只有更新量，所以单轮通信量由**模型参数量**决定而不由样本量决定——样本越多、本地步数越多，通信相对计算越不占主导，这是它能在设备侧跑起来的机制；代价是收敛依赖参与方在轮次间不中途退出，且数据分布非 IID 时「按样本量加权平均」的落点不一定在任何一方自己的分布上，表现为联合模型在某一方数据上还不如只用自己数据训练。因为 MPC 的明文从不出现、安全性来自数学假设而非运营方自觉，所以「某一家被攻破」不构成泄露，这是所有路线里唯一不依赖「信任某台机器或某家机构」的一支；代价是成本由参与方数与乘法深度主导，跨机构网络的往返延迟直接锁死单次计算的下限。因为 TEE 的信任锚是硬件声明加远程证明，所以「运营方不可信」这件事第一次可以在架构上被检验而不是靠合同；代价是信任没有消失只是换了对象——芯片、固件、证明服务任何一环的漏洞都直接落在你的数据上，且证明覆盖不到的那一层既不能被证明也不能被否认。
 
-**公开证据**：安全两方计算的起点是 Yao, "Protocols for Secure Computations", FOCS 1982【公开】；门限秘密分享的出处是 Shamir, "How to Share a Secret", CACM 1979【公开】（注意 [§1.4](08-privacy-computing.md) 把这条记为 1986 年，可核验的出处是 1979 年的论文）。针对 SGX 的瞬态执行类攻击在 2018 年前后被公开（Foreshadow 一类）【公开】，它印证的不是「TEE 不可用」，而是「信任锚换了对象」这句判断。各家机密计算产品的能力与版本，以 Azure Confidential Computing 文档的 Confidential VM / Attestation 章节、各家 Confidential VM 文档、NVIDIA Confidential Computing 文档的当前版本为准。
+**公开证据**：安全两方计算的起点是 Yao, "Protocols for Secure Computations", FOCS 1982【公开】；门限秘密分享的出处是 Shamir, "How to Share a Secret", CACM 1979【公开】（本章 [§1.4](08-privacy-computing.md) 记的年份与此一致，可核验的出处是 1979 年的论文）。针对 SGX 的瞬态执行类攻击在 2018 年前后被公开（Foreshadow 一类）【公开】，它印证的不是「TEE 不可用」，而是「信任锚换了对象」这句判断。各家机密计算产品的能力与版本，以 Azure Confidential Computing 文档的 Confidential VM / Attestation 章节、各家 Confidential VM 文档、NVIDIA Confidential Computing 文档的当前版本为准。
 
 **失效条件**：当业务所在行业把「明文进第三方 enclave」算作一次数据出域时，选 TEE 就不是性能取舍而是**方案作废**——无论结果是否加密返回，[§3.3](08-privacy-computing-section-3-sec3.md) 末尾把这一对误选（TEE 与 FL）单独点出来，理由正在这里：FL 的前提是数据不出域，TEE 的前提是数据出域但不被看到，两者在选型表上都能写「性能接近明文」，约束却相反。
 

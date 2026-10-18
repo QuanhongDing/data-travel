@@ -197,6 +197,7 @@ Schedule = CronExpression | EventTrigger | ManualTrigger
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from datetime import datetime, timedelta
 
 default_args = {
@@ -291,6 +292,8 @@ wait_for_partition >> transform
 **5. 失败重试 + 告警**
 
 ```python
+import requests
+
 default_args = {
     'retries': 3,
     'retry_delay': timedelta(minutes=5),

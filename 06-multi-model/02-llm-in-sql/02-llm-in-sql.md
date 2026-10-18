@@ -163,7 +163,7 @@
 - 2024-06：阿里云 PolarDB AI Function 发布，含 ai_generate / ai_embed。
 - 2025-01：PostgreSQL pgai（pgvector 团队）发布，把任意 LLM 嵌入 SQL。
 - 2025-03：Databricks Genie（NL2SQL + AI Functions 融合）。
-- 2025-05：Snowflake Cortex 2.0，集成 Claude 4 / GPT-5。
+- 2025-05：Snowflake Cortex 版本迭代（具体版本号与集成的模型以官方 release note 为准，不在此锚定型号）。
 
 **一句话总结**：**LLM in SQL 从「传统 SQL → In-Database ML → In-Database LLM」三阶段演进，今天正处于 In-Database LLM 的爆发期——数据库厂商正在把 SQL 重新定义为 AI 一等公民**。
 
@@ -219,16 +219,17 @@ WHERE product_id = 'P001';
 
 **AI 算子的代价模型**：
 
-给定 AI 算子 $f$，其代价为：
+给定 AI 算子 $f$，它在 $n$ 行上的**金额成本**与**延迟**随行数增长、并同被缓存命中率折减：
 
-$$\text{Cost}(f, n) = n \times \text{TokenCost}(f) + \text{NetworkCost}(f) + \text{CacheHit}(f)$$
+$$\text{Cost}(f, n) = \bigl(1 - \text{CacheHit}(f)\bigr) \times n \times \text{TokenCost}(f)$$
+$$\text{Latency}(f, n) = \bigl(1 - \text{CacheHit}(f)\bigr) \times n \times \text{NetworkCost}(f)$$
 
 其中：
 
 - $n$ 是行数。
-- $\text{TokenCost}(f)$ 是单次调用的 token 成本。
-- $\text{NetworkCost}(f)$ 是 LLM 推理的网络 / 推理延迟。
-- $\text{CacheHit}(f)$ 是缓存命中率。
+- $\text{TokenCost}(f)$ 是单次调用的 token 成本（金额量纲）。
+- $\text{NetworkCost}(f)$ 是单次调用的网络 / 推理延迟（时间量纲）——它进延迟预算、不进金额成本，所以单列 $\text{Latency}$，不与金额项相加。
+- $\text{CacheHit}(f)$ 是缓存命中率（0–1 的比例）：命中缓存的行直接返回、不发起调用，只有 $\bigl(1 - \text{CacheHit}(f)\bigr)$ 比例的行真正落到 LLM，因此它同时压低金额成本与延迟。
 
 **向量检索的形式化**：
 
@@ -301,7 +302,7 @@ $$\text{TopK}(q, T) = \arg\min_{v_i \in T} \text{Distance}(q, v_i)$$
 - **LLM in SQL vs 向量数据库（专用）**：LLM in SQL 内嵌向量检索；专用向量数据库（Pinecone / Milvus）专注向量。前者一体化，后者极致性能。
 - **LLM in SQL vs ETL + 外部 AI**：前者数据不出仓、链路短；后者灵活、可任意模型组合。
 
-> 💡 **思考锚点**：用 2.2 的代价模型 Cost(f, n) = n × TokenCost(f) + NetworkCost(f) + CacheHit(f) 套一遍你自己那个批处理 AI 算子：把行数 n、单次 token 成本和 batch=32 的合并填进去，你的调用次数与 token 支出落在哪一档？如果谓词下推先过滤不能把 n 砍下来、缓存命中又接近零，这个算子还值不值得放进 SQL 查询里。
+> 💡 **思考锚点**：用 2.2 的代价模型 Cost(f, n) = (1 − CacheHit(f)) × n × TokenCost(f) 套一遍你自己那个批处理 AI 算子：把行数 n、单次 token 成本和 batch=32 的合并填进去，你的调用次数与 token 支出落在哪一档？如果谓词下推先过滤不能把 n 砍下来、缓存命中又接近零，这个算子还值不值得放进 SQL 查询里。
 
 ---
 

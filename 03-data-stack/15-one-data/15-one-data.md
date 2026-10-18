@@ -142,7 +142,7 @@
 
 - 一次定义指标、多处复用。
 - 指标语义层（Metric Layer）。
-- 工具：阿里云指标平台、Apache Doris Cube、MetricFlow。
+- 工具：阿里云指标平台、MetricFlow、Cube、Apache Doris。
 
 **DataWorks**：
 

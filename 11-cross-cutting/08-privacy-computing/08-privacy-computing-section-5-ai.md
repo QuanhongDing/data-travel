@@ -183,7 +183,7 @@
 **论文（可核验）**
 
 - Yao, "Protocols for Secure Computations", FOCS 1982——百万富翁问题与安全两方计算的起点，是本章 [§1.1](08-privacy-computing.md) 记的 MPC 源头。
-- Shamir, "How to Share a Secret", CACM 1979——门限秘密分享，MPC 与协作计算的基础构件（本章 [§2.2](08-privacy-computing.md) 给出其形式化表述；**注意本章 [§1.4](08-privacy-computing.md) 把这条记为 1986 年，而可核验的出处是 1979 年的 CACM 论文，判定入口是论文本身**）。
+- Shamir, "How to Share a Secret", CACM 1979——门限秘密分享，MPC 与协作计算的基础构件（本章 [§2.2](08-privacy-computing.md) 给出其形式化表述；**可核验的出处是 1979 年的 CACM 论文，判定入口是论文本身**）。
 - Dwork, McSherry, Nissim, Smith, "Calibrating Noise to Sensitivity in Private Data Analysis", TCC 2006——差分隐私 (ε, δ) 的形式化定义，是本节"ε 可陈述"这条约定唯一的理论依据。
 - Gentry, "Fully Homomorphic Encryption Using Ideal Lattices", STOC 2009——全同态加密的可行性证明；注意它证明的是**可行性**，不是**可用性**（§5.5 第三条）。
 - Abadi et al., "Deep Learning with Differential Privacy", CCS 2016——DP-SGD 与隐私预算记账，是"DP 训练原语"这一 L1 判断的机制依据。

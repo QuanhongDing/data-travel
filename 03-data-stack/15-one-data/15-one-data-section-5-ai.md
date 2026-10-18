@@ -59,7 +59,7 @@
 | 通义数智（阿里云） | AI 驱动的指标生成 / 自然语言查询 | 以阿里云官方产品页当前版本为准；名称与版本 §7.3.4 已列为待复核 |
 | Databricks Genie | 自然语言查询 | 查该产品文档中文本转 SQL 功能的当前状态与评测条件（数据集、schema 规模、是否允许澄清） |
 | Snowflake Cortex | 自然语言查询 | 注意 Cortex 是托管 AI 函数族的产品名，取数是其中某个组件的能力；查该组件的文档状态 |
-| 阿里云指标平台 / Doris Cube（主文件 §2.1 补充）/ MetricFlow | 指标生成与复用的既有承载（不是 AI 方向） | 查各自 release note 与官方语义层文档 |
+| 阿里云指标平台 / MetricFlow / Cube / Apache Doris（主文件 §2.1 补充） | 指标生成与复用的既有承载（不是 AI 方向） | 查各自 release note 与官方语义层文档 |
 | LanceDB | OneData + 向量库 / RAG；多模态数据中台 | 查其版本发布说明与检索接口；多模态一侧要另查它是否把非结构化字段（图像 / 音视频 / 文本）与结构化列放进同一张表，以及联合查询走不走同一个索引 |
 | Neo4j | OneData + GraphRAG | 查图查询与语义层 / SQL 的联合执行是否有标准接口 |
 | MCP | Agent 经统一 API 访问 OneData | 查它声明的规范版本号（该协议由 Anthropic 于 2024 年 11 月首次公开） |

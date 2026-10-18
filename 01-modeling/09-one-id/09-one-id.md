@@ -110,9 +110,9 @@ OneID 的发展大致可分为五个阶段，每个阶段对应一种技术栈�
 
 **阶段 3 · 2012-2018：大数据 OneID（互联网方法）**
 
-- 阿里、字节、美团等互联网公司进入"跨域打通"时代，沉淀出 **OneID 中台** 模式。
+- 阿里等互联网公司进入"跨域打通"时代，沉淀出 **OneID 中台** 模式。
 - 引入设备指纹、概率匹配、图计算（GraphX / Neo4j）解决弱匹配。
-- 关键产品：阿里 OneID（基于设备指纹 + 手机号三要素）、字节 UID（图匹配 + 概率 ID-Mapping）、美团 UserID（图数据库 + 规则引擎）。
+- 关键产品：阿里 OneID（基于设备指纹 + 手机号三要素）。
 
 **阶段 4 · 2018-2023：算法化 ID-Mapping（Graph + ML）**
 
@@ -120,6 +120,7 @@ OneID 的发展大致可分为五个阶段，每个阶段对应一种技术栈�
 - 引入基于图嵌入（Graph Embedding）的 ID 匹配（DeepMatch、GraphER、GCN-based ER）。
 - 引入基于 Blocking + 排序学习（LTR）的端到端实体解析（DeepER、Ditto、HierMatcher）。
 - 关键论文：DeepER (VLDB 2018)、Ditto（Yuliang Li 等，2020）、HierMatcher (NeurIPS 2021)。
+- 关键产品：字节 UID（图匹配 + 概率 ID-Mapping，2019 起）、美团 UserID（图数据库 + 规则引擎，2020 起）。
 
 **阶段 5 · 2023-2025：LLM 增强实体解析（Generative ER）**
 

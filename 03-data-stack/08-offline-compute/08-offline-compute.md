@@ -85,7 +85,7 @@
 
 **第一阶段：MapReduce（2006-2014）**
 
-- 2006：Google 发表 MapReduce 论文。
+- 2006：Google 发表 MapReduce 论文（论文发表年份本节口径与别处不一，不锁定，以 Google 公开论文为准）。
 - 2008：Hadoop 1.0 开源。
 - 2010：Hive 出现（SQL-on-Hadoop）。
 - 2012-2014：MapReduce 主导，资源调度 YARN。

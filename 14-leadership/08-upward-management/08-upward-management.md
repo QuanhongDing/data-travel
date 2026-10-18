@@ -21,7 +21,7 @@
 
 ### 1.1 是什么
 
-**学术定义：向上管理（Managing Up）研究下属如何与上级建立「高效、专业、双赢」的工作关系。理论基础源于 Peter Drucker《The Effective Executive》（1967）、John Gabarro & John Kotter《Managing Up》（1980 HBR）、Keith Ferrazzi《Who's Got Your Back》（2005）、**Michael Lopp《Managing Humans》（2012）》。
+**学术定义：向上管理（Managing Up）研究下属如何与上级建立「高效、专业、双赢」的工作关系。理论基础源于 Peter Drucker《The Effective Executive》（1967）、John Gabarro & John Kotter《Managing Up》（1980 HBR）、Keith Ferrazzi《Who's Got Your Back》（2009）、**Michael Lopp《Managing Humans》（2012）》。
 
 **工程定义**：在数据架构师语境下，**向上管理 = 期望管理 × 沟通节奏 × 汇报技巧 × 资源争取 × Win-Win × 跨级协作 × 危机管理** 的体系。它解决的核心问题是：
 

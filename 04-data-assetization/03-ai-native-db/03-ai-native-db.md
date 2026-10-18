@@ -86,10 +86,10 @@
 
 ### 1.4 演进历程
 
-**PostgreSQL + 向量扩展（2017-2023）**：
+**PostgreSQL + 向量扩展（2020-2023）**：
 
-- **2017**：pgvector 0.1（开源 PostgreSQL 向量扩展）。
 - **2020**：Weaviate + PostgreSQL 集成。
+- **2021**：pgvector 0.1（开源 PostgreSQL 向量扩展）。
 - **2022**：Supabase + pgvector 流行。
 
 **数据库厂商拥抱 AI（2023-2024）**：

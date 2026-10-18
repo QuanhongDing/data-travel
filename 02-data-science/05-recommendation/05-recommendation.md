@@ -102,19 +102,19 @@
 
 ### 1.4 演进历程
 
-**传统推荐阶段（1990s–2010）**：
+**传统推荐阶段（1990s–2014）**：
 
 - 1992：Xerox PARC 提出**协同过滤**（Collaborative Filtering）思想。
 - 1994：GroupLens 提出**基于用户的协同过滤**（UserCF）。
 - 2003：Amazon 提出**基于物品的协同过滤**（ItemCF）并商业化。
 - 2006：Netflix Prize 推动**矩阵分解**（Matrix Factorization, MF / SVD / SVD++）。
-- 2009：Facebook 提出**GBDT + LR** 组合。
+- 2014：Facebook 提出**GBDT + LR** 组合。
 
 **深度学习阶段（2015–2020）**：
 
 - 2016：Google 提出 **Wide & Deep**——记忆 + 泛化。
 - 2016：Microsoft 提出 **DeepCrossing**——深度交叉网络。
-- 2017：Google / Stanford 提出 **DeepFM**——FM + DNN。
+- 2017：华为提出 **DeepFM**——FM + DNN。
 - 2017：Google 提出 **双塔模型**（Two-Tower）——召回专用。
 - 2018：阿里巴巴提出 **DIN**（Deep Interest Network）——注意力机制。
 - 2019：阿里巴巴提出 **DIEN**（Deep Interest Evolution Network）——兴趣进化。
@@ -123,8 +123,8 @@
 **多任务 / 强化学习阶段（2018–2022）**：
 
 - 2018：**MMoE**（Multi-gate Mixture-of-Experts）——多任务。
-- 2019：**PLE**（Progressive Layered Extraction）——多任务 SOTA。
-- 2020：**ESSM**（Entire Space Multi-task Model）——全空间多任务。
+- 2018：**ESSM**（Entire Space Multi-task Model）——全空间多任务。
+- 2020：**PLE**（Progressive Layered Extraction）——多任务 SOTA。
 - 2020：**RL-based 推荐**——长期价值优化。
 - 2021：**图神经网络推荐**（GraphRec / LightGCN）。
 
@@ -301,8 +301,8 @@ $$P(\text{next\_id} \mid \text{history\_ids}) = \text{Transformer}(\text{history
 
 24. **Shared-Bottom**——多任务共享底层。
 25. **MMoE / OMoE**（2018）——多专家多门控。
-26. **PLE**（2019）——分层多任务。
-27. **ESSM**（2020）——全空间多任务。
+26. **ESSM**（2018）——全空间多任务。
+27. **PLE**（2020）——分层多任务。
 28. **AITM**（2021）——自适应信息迁移多任务。
 
 **图神经网络推荐**：

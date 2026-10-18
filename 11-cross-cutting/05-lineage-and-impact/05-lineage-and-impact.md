@@ -207,7 +207,7 @@ $$
 D = \{v \in V : \text{hasPath}(u, v)\}
 $$
 
-可用 **BFS / DFS** 反向遍历血缘图。
+可用 **BFS / DFS** 沿 source→target 边正向遍历血缘图（沿 target→source 边的反向遍历用于根因分析，见 §2.3 第 4 条）。
 
 **根因分析算法**：
 
@@ -262,7 +262,7 @@ def extract_column_lineage(sql: str) -> dict:
 
 **3. 影响分析算法**：
 
-- **BFS 反向遍历**：从变更节点出发，反向 BFS 找到所有下游。
+- **BFS 正向遍历**：从变更节点出发，沿 source→target 边 BFS 找到所有下游（沿 target→source 边的反向遍历用于根因分析，见下文第 4 条）。
 - **依赖图算法**：Tarjan 算法找强连通分量，避免循环依赖。
 - **剪枝优化**：基于团队 / 域剪枝，减少遍历范围。
 

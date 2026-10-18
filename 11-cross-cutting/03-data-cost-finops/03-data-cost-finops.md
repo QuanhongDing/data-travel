@@ -154,8 +154,8 @@
 **云时代（2010–2020）**：
 
 - 2013：Snowflake 概念（计算与存储分离）。
-- 2015：AWS 推出 Reserved Instance（预留实例）。
-- 2017：AWS 推出 Spot Instance 成熟。
+- Reserved Instance（预留实例）成为承诺折扣的常规采购形态（1–3 年承诺换折扣）。
+- Spot 实例（AWS/Azure 的空闲容量拍卖实例，自 2009 年起提供【公开】）成为可中断负载的成熟降本形态。
 - 2019：FinOps 基金会成立（FinOps Framework 于 2020 年发布）。
 - 2020：Cloudability、CloudHealth 等 FinOps 工具爆发。
 
@@ -204,14 +204,14 @@ C_{\text{storage}} = \sum_{i} V_i \cdot P_i^{\text{storage}}
 $$
 
 $$
-C_{\text{compute}} = \sum_{j} T_j \cdot P_j^{\text{compute}} \cdot U_j
+C_{\text{compute}} = \sum_{j} \frac{T_j \cdot P_j^{\text{compute}}}{U_j}
 $$
 
 $$
 C_{\text{query}} = \sum_{k} S_k \cdot P_k^{\text{scan}}
 $$
 
-其中 $V_i$ 是第 $i$ 类数据量（GB），$P_i^{\text{storage}}$ 是存储单价，$T_j$ 是第 $j$ 类计算时长（小时），$U_j$ 是利用率（0-1），$S_k$ 是第 $k$ 次查询扫描字节数，$P_k^{\text{scan}}$ 是扫描单价。
+其中 $V_i$ 是第 $i$ 类数据量（GB），$P_i^{\text{storage}}$ 是存储单价，$T_j$ 是第 $j$ 类计算时长（小时），$U_j$ 是资源利用率（0-1）——利用率越低、为完成同一计算量付出的成本越高，$S_k$ 是第 $k$ 次查询扫描字节数，$P_k^{\text{scan}}$ 是扫描单价。
 
 **成本归因模型**：
 
@@ -268,7 +268,7 @@ $$
 - **vs 数据治理（Data Governance）**：治理是顶层框架，成本治理是其中一个领域。
 - **vs 可观测性（Observability）**：可观测性是"系统状态可见性"，成本可观测性是其子集。
 
-> 💡 **思考锚点**：把你上个月的账单按 2.2 的 TCO 五项拆一次——你的计算成本里的利用率 U_j 落在哪一档？若 U_j 只有三成，按「降本 ROI =（ΣΔC − C_实施）/ ΣΔC」算，Right-Sizing 与冷热分层哪一项的实施成本能在一个季度内收回？
+> 💡 **思考锚点**：把你上个月的账单按 2.2 的 TCO 五项拆一次——你的计算成本里的利用率 U_j 落在哪一档？若 U_j 只有三成（利用率越低、为完成同一计算量付出的成本越高），按「降本 ROI =（ΣΔC − C_实施）/ ΣΔC」算，Right-Sizing 与冷热分层哪一项的实施成本能在一个季度内收回？
 
 ---
 

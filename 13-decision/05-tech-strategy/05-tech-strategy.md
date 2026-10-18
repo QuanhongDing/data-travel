@@ -86,9 +86,10 @@
 - **1990s**：Christensen《The Innovator's Dilemma》（1997）——颠覆性创新理论。
 - **2000s**：Gartner 技术成熟度曲线（Hype Cycle）成为技术战略标准工具。
 - **2010**：ThoughtWorks Tech Radar 发布，每半年更新。
-- **2010-2014**：Gartner Magic Quadrant 普及；AWS Well-Architected Framework 发布。
-- **2018**：CNCF TAG App Delivery 把技术战略纳入云原生治理。
+- **2010-2014**：Gartner Magic Quadrant 普及。
+- **2015**：AWS Well-Architected Framework 发布。
 - **2020**：AI / 机器学习工程化（MLOps）成为技术战略新主题。
+- **2022**：CNCF TAG App Delivery 把技术战略纳入云原生治理。
 - **2022**：Decision Intelligence 被 Gartner 列入《Top Strategic Technology Trends 2022》顶级战略技术趋势。
 - **2023-2025**：生成式 AI（LLM / Agent）成为技术战略最热门话题。
 - **2024-2025**：AI 技术战略 / AI Governance 标准化。

@@ -85,7 +85,7 @@
 - **2000s**：ISO 31000 风险管理标准发布；现行版本为 **ISO 31000:2018《Risk management — Guidelines》**（版本沿革以 ISO 官方发布为准）。
 - **2010s**：DevOps / SRE 引入风险评估（Error Budget、SLO）。
 - **2012**：NIST SP 800-30 Rev.1《Guide for Conducting Risk Assessments》。
-- **2020s**：AI / ML 风险评估（AI RMF, 2023 NIST 100-1）。
+- **2020s**：AI / ML 风险评估（AI RMF, 2023 NIST AI 100-1）。
 - **2024-2025**：LLM 风险评估（幻觉、数据泄露、模型滥用）、AI 辅助 FMEA、量子风险评估。
 
 ---

@@ -228,12 +228,13 @@ Cost(plan) = α × I/O + β × CPU + γ × Network
 ```cpp
 // 向量化加法（伪代码）
 void vectorized_add(int* a, int* b, int* result, int n) {
-    for (int i = 0; i < n; i += 1024) {
-        // SIMD 处理 1024 个元素
-        __m256i va = _mm256_load_si256((__m256i*)(a + i));
-        __m256i vb = _mm256_load_si256((__m256i*)(b + i));
-        __m256i vr = _mm256_add_epi32(va, vb);
-        _mm256_store_si256((__m256i*)(result + i), vr);
+    for (int i = 0; i < n; i += 1024) {                    // 每批 1024 行（N=1024-8192 的批大小）
+        for (int j = i; j < i + 1024 && j < n; j += 8) {   // 批内：一条 SIMD 指令处理 8 个 int32（256 bit）
+            __m256i va = _mm256_load_si256((__m256i*)(a + j));
+            __m256i vb = _mm256_load_si256((__m256i*)(b + j));
+            __m256i vr = _mm256_add_epi32(va, vb);
+            _mm256_store_si256((__m256i*)(result + j), vr);
+        }
     }
 }
 ```

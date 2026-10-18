@@ -107,14 +107,14 @@
 
 - 1986：丰田生产方式引入 Standup。
 - 1995：Scrum 推广（Sprint、Review、Retrospective）。
-- 2003：Google 推行 OKR 季度 Review。
-- 2008：Spotify Squad Rituals 兴起。
+- 1999：Google 推行 OKR 季度 Review。
+- 2012：Spotify Squad Rituals 兴起。
 
 **互联网阶段（2010-2020）**：
 
 - 2010：Scrum 在互联网普及。
 - 2014：阿里巴巴「**361 + 双月绩效**」节奏。
-- 2017：字节跳动「**双月绩效 + Weekly OKR**」节奏。
+- 2019：字节跳动「**双月绩效 + Weekly OKR**」节奏。
 - 2019：远程 / 异步节奏标准化。
 
 **AI 原生阶段（2020+，LLM + Agent 驱动）**：

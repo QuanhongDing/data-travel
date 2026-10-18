@@ -113,12 +113,12 @@
 - 1990s：互联网公司把 A/B 测试标准化（Google / Amazon / Microsoft）。
 - 2000s：**方差缩减**、**多重比较校正**（Bonferroni / FDR）。
 
-**ML 评估普及（2010–2018）**：
+**ML 评估普及（2008–2018）**：
 
+- 2008：**Interleaving** 方法（Yahoo / Microsoft）解决 A/B 测试慢问题。
 - 2010：Netflix Prize 让 RMSE / NDCG 成为推荐系统标准指标。
+- 2010：**Google Overlapping Experiment** 框架支持多变量实验。
 - 2012：Kaggle 推动 GBDT 评估指标标准化（LogLoss / AUC）。
-- 2014：**Interleaving** 方法（Yahoo / Microsoft）解决 A/B 测试慢问题。
-- 2016：**Google Overlapping Experiment** 框架支持多变量实验。
 
 **因果推断阶段（2018+）**：
 

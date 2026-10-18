@@ -142,8 +142,8 @@
 - **Status**：Open / In Progress / Done / Blocked。
 - **闭环（Close the Loop）**：Action Items 完成后验证、归档。
 - **Time to Detect（TTD）**：故障发生到检测的时间。
-- **Time to Mitigate（TTM）**：故障发生到缓解的时间。
-- **Time to Resolve（TTR）**：故障发生到完全恢复的时间。
+- **Time to Mitigate（TTM）**：检测到缓解的时间。
+- **Time to Resolve（TTR）**：缓解到完全恢复的时间。
 - **Root Cause Analysis（RCA）**：根因分析。
 - **Contributing Factors（CF）**：促成因素（多个）。
 - **Trigger**：直接触发因素。
@@ -166,10 +166,10 @@
 **故障响应的 MTTR 模型**：
 
 ```
-MTTR（Mean Time To Resolve）= TTD + TTM + TTR
-  - TTD: Time to Detect
-  - TTM: Time to Mitigate
-  - TTR: Time to Resolve
+MTTR（Mean Time To Resolve）= TTD + TTM + TTR   # 三段依次衔接、互不重叠
+  - TTD: Time to Detect（故障发生 → 检测）
+  - TTM: Time to Mitigate（检测 → 缓解）
+  - TTR: Time to Resolve（缓解 → 完全恢复）
 
 健康标准：
   - P0: MTTR < 1 小时

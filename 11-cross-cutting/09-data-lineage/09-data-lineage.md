@@ -206,10 +206,10 @@ $$
 **跨域血缘桥接**：
 
 $$
-G_{\text{federated}} = \{(u, v) : \exists i, j, u \in G_i, v \in G_j, \text{bridge}(u, v)\}
+E_{\text{bridge}} = \{(u, v) : \exists i, j, u \in G_i, v \in G_j, \text{bridge}(u, v)\}
 $$
 
-其中 $\text{bridge}(u, v)$ 是跨域桥接关系。
+其中 $\text{bridge}(u, v)$ 是跨域桥接关系，$E_{\text{bridge}}$ 是跨域桥接边集；联邦血缘图等于各系统图的并再并入桥接边，即 $G_{\text{federated}} = \left(\bigcup_{i=1}^{n} G_i\right) \cup E_{\text{bridge}}$。
 
 **端到端血缘路径**：
 

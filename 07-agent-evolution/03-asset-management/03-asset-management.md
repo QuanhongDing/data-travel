@@ -74,7 +74,7 @@
 | 2023-06 | LangChain Hub | Prompt 模板仓库 |
 | 2023-11 | Dust.tt | Prompt Library + 协作 |
 | 2024-01 | PromptLayer | Prompt 监控 + 版本 |
-| 2024-11 | OpenAI GPT Store | C 端 Prompt 市场 |
+| 2024-01 | OpenAI GPT Store | C 端 Prompt 市场 |
 | 2024-12 | 字节扣子 Coze 开源 | B 端 Agent 平台 |
 | 2025-04 | Salesforce Agentforce | 企业级 Agent 平台 |
 | 2025-05 | OpenAI AgentKit | Agent 开发套件 |

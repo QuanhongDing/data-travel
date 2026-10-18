@@ -141,7 +141,7 @@
 - 2024：**CATE Foundation Models**——基础模型驱动的因果回归。
 - 2025：**LLM + 回归融合**——LLM 作为特征生成器 + GBDT 作为回归器。
 
-**一句话总结**：**回归从"最小二乘"到"正则化"到"集成学习"到"深度学习"到"因果推断"五阶段演进，今天的 AI 时代是"深度学习 + GBDT + 因果回归 + LLM 辅助"的混合架构。**
+**一句话总结**：**回归从"最小二乘 / 正则化"到"集成学习"到"深度学习"到"因果推断"四阶段演进，今天的 AI 时代是"深度学习 + GBDT + 因果回归 + LLM 辅助"的混合架构。**
 
 ---
 
@@ -162,7 +162,7 @@
 - **MAE（Mean Absolute Error）**：$\frac{1}{N}\sum |y - \hat{y}|$，对异常值鲁棒。
 - **RMSE（Root Mean Squared Error）**：$\sqrt{MSE}$，与 y 同尺度。
 - **MAPE（Mean Absolute Percentage Error）**：$\frac{100\%}{N}\sum |y - \hat{y}|/|y|$，相对误差，但 y=0 时失效。
-- **R²（Coefficient of Determination）**：$1 - \frac{\sum(y-\hat{y})^2}{\sum(y-\bar{y})^2}$，解释方差比例，0~1 越大越好。
+- **R²（Coefficient of Determination）**：$1 - \frac{\sum(y-\hat{y})^2}{\sum(y-\bar{y})^2}$，解释方差比例，越接近 1 越好；取值可在 0~1 之外，为负表示模型比"用均值预测"还差。
 - **Huber Loss**：MSE + MAE 的混合，对异常值鲁棒且可微。
 - **分位数回归（Quantile Regression）**：预测 y 的中位数 / 分位数（如 90 分位），而非均值。
 - **贝叶斯回归（Bayesian Regression）**：参数有先验分布，输出后验分布（不确定性估计）。

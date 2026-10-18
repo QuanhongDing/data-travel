@@ -200,7 +200,7 @@ Phase 1 (Prepare)：
 - Coordinator 向所有参与者发送 Prepare
 - 参与者写入 undo / redo 日志，返回 Yes/No
 
-Phase 2 (Commit/Rollback）：
+Phase 2 (Commit/Rollback)：
 - Coordinator 收集所有响应
 - 全 Yes → 发送 Commit
 - 任一 No → 发送 Rollback

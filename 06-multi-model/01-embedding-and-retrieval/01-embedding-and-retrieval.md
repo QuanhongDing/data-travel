@@ -19,7 +19,7 @@
 | 工具链：Milvus / Qdrant / pgvector / Pinecone 怎么选？ | §4.3 |
 | 代码示例（OpenAI / BGE-M3 / Cohere / ColBERT / Cohere Rerank） | §4.5 |
 | 长文本 / 多语言 / Late Interaction 前沿演进 | §5 |
-| 2024-2025 学术工业进展（Snowflake Arctic / Nomic Embed / ColBERT v2 / Cohere Rerank 3） | §5.4 |
+| 2024-2025 学术工业进展（Snowflake Arctic / Nomic Embed / ColPali / Cohere Rerank 3） | §5.4 |
 | 真实案例与踩坑经验 | §6 落地实践 §6.1–§6.4、§6.6 |
 | 0→1 / 1→10 / 10→100 落地路径 | §6 落地实践 §6.5 |
 | ROI 评估（检索准确率 vs 成本） | §6 落地实践 §6.7 |
@@ -140,6 +140,7 @@
 
 - 2022：OpenAI text-embedding-ada-002（1536 维）。
 - 2022：Cohere Embed v2。
+- 2022：ColBERT v2（Late Interaction 多向量检索的残差压缩）。
 - 2023：BGE（BAAI）系列——中文 SOTA。
 
 **前沿阶段（2024+，当前）**：
@@ -149,7 +150,7 @@
 - 2024：Cohere Embed v3（多语言 + Matryoshka 损失）。
 - 2024：Snowflake Arctic Embed（SOTA 检索模型）。
 - 2024：Nomic Embed Text v1.5（长上下文 8192）。
-- 2024：ColBERT v2 / ColPali（Late Interaction 复兴）。
+- 2024：ColPali（Late Interaction 复兴）。
 - 2024：Cohere Rerank 3 / BGE Reranker v2-m3（重排模型主流化）。
 - 2024：Jina Embeddings v3（任务特定向量）、MixedBread Embed（多任务）。
 
@@ -266,7 +267,7 @@ $$s_i = g_\theta(q, d_i)$$
 
 **6. 评测基准**：
 
-- **MTEB**（Massive Text Embedding Benchmark）：2022 起，涵盖 56 个数据集、112 种任务，是事实标准。
+- **MTEB**（Massive Text Embedding Benchmark）：2022 起，涵盖 56 个数据集，把检索与分类、聚类、重排等任务放进同一评测体系，是事实标准。
 - **BEIR**（Benchmarking IR）：18 个检索数据集。
 - **C-MTEB**（Chinese MTEB）：中文 Embedding 评测。
 - **MMMU**（多模态评测）。

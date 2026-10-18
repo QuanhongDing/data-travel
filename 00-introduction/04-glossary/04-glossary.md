@@ -58,7 +58,7 @@
 | **DWS** | Data Warehouse Summary | 汇总层，主题聚合 |
 | **ADS** | Application Data Store | 应用层，面向消费 |
 | **SCD** | Slowly Changing Dimension | 缓慢变化维 |
-| **OneData / OneModel / OneID / OneService** | 阿里 OneData 四件套 | 大数据治理方法论 |
+| **OneData（OneModel / OneID / OneService）** | 阿里 OneData 三件套 | 大数据治理方法论 |
 | **Data Vault** | — | 敏捷数仓建模方法 |
 | **Anchor Modeling** | — | 时序建模，6NF 极端范式 |
 | **Entity-Relationship** | E-R | 实体关系模型 |

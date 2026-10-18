@@ -23,7 +23,7 @@
 
 ### 1.1 是什么
 
-**学术定义**：本体（Ontology）在信息科学语境下源自 Tom Gruber 1993 年的定义——「**某领域内共享概念化的形式化规范说明**」（a formal specification of a shared conceptualization）。其本质是四件事：**概念（Class）、关系（Property）、公理（Axiom）、个体（Individual）**。W3C 通过 RDF / RDFS / OWL 三层标准把它落到工程实践。
+**学术定义**：本体（Ontology）在信息科学语境下源自 Tom Gruber 1993 年的定义——「**概念化的一个显式规范说明**」（an explicit specification of a conceptualization）；后来 Borst 把它表述为更广为人引用的「**某领域内共享概念化的形式化规范说明**」（a formal specification of a shared conceptualization）。其本质是四件事：**概念（Class）、关系（Property）、公理（Axiom）、个体（Individual）**。W3C 通过 RDF / RDFS / OWL 三层标准把它落到工程实践。
 
 **工程定义**：本体在数据架构师手里，是**一份可被机器推理、可被多源数据对齐的语义契约**。它告诉你：业务里的「客户」「账户」「订单」是不是同一类东西；「客户-下单-订单」这个三元关系是不是合法的；一个客户的身份证号是否可以同时属于另一个客户（基数约束 / 不相交约束）。
 

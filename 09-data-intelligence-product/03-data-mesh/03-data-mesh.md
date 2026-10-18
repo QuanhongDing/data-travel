@@ -147,7 +147,7 @@
 
 **概念萌芽（2019）**：
 
-- 2019 年 6 月：Zhamak Dehghani 在 Thinkers360 发表 "How to Move Beyond a Monolithic Data Lake to a Distributed Data Mesh"。
+- 2019 年 6 月：Zhamak Dehghani 在 ThoughtWorks 发表 "How to Move Beyond a Monolithic Data Lake to a Distributed Data Mesh"。
 - 2019 年 9 月：Zhamak 在 O'Reilly 发表 "Data Mesh Principles and Logical Architecture"。
 
 **体系化（2020-2021）**：

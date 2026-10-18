@@ -71,7 +71,7 @@
 | 2022 | ReAct | 推理 + 行动 |
 | 2023 | AutoGPT | 自动任务分解 |
 | 2023 | Reflexion | 自我反思 + Skill 积累 |
-| 2023-11 | Voyager（Minecraft） | 自动技能库发现 |
+| 2023 | Voyager（Minecraft） | 自动技能库发现 |
 | 2024 | Self-Play RL | 自我博弈生成训练数据 |
 | 2024-06 | Auto-Skill（学界） | LLM 自动生成 Skill |
 | 2024-08 | Cursor Composer | IDE 中的 Skill 编排 |

@@ -124,13 +124,13 @@
 - 2017：Great Expectations 开源（当时叫 Data Validation Engine）。
 - 2018：Deequ（AWS 开源，基于 Spark）发布。
 - 2019：Soda Core 出现（Python-first 配置化 DQ）。
-- 2020：Monte Carlo Data 获得 B 轮融资 6000 万美元，"Data Observability"概念正式诞生。
+- 2020：Monte Carlo Data 获得融资，"Data Observability"概念正式诞生。
 
 **AI 时代（2020–2025）**：
 
 - 2021：Monte Carlo 提出 "Data Reliability" 概念，挑战传统 DQ 边界。
-- 2022：Anomalo、Mona、Bigeye 三家 AI-first 数据质量平台融资过亿。
-- 2023：数据契约（Data Contract）由 Monte Carlo、Bytecode 推动成为业界共识；Gartner 将 "Data Observability" 列入 Hype Cycle。
+- 2022：Anomalo、Mona、Bigeye 三家 AI-first 数据质量平台融资过亿；Gartner 将 "Data Observability" 列入 Hype Cycle。
+- 2023：数据契约（Data Contract）由 Monte Carlo、Bytecode 推动成为业界共识。
 - 2024：LLM 介入 DQ 规则生成（自然语言生成规则）、异常归因解释；Mona 推出"AI Quality Copilot"。
 - 2025：数据质量与 LLM/RAG 深度融合——RAG 输出质量自动评估、训练数据漂移自动检测成为新场景。
 

@@ -101,14 +101,14 @@
 - **Debt Interest（债务利息）**：持续付出的维护 / 修复成本。
 - **Deliberate Tech Debt（刻意技术债）**：知情下产生的技术债（如 MVP 妥协）。
 - **Inadvertent Tech Debt（无意技术债）**：不知情下产生的技术债（如当时不知道更好方案）。
-- **Reckless Tech Debt（鲁莽技术债）**：明知故犯（如「没时间测试」）。
+- **Reckless Tech Debt（鲁莽技术债）**：不加考量、不顾后果（与 Prudent 相对；刻意与无意皆可，如「没时间测试」）。
 - **Prudent Tech Debt（谨慎技术债）**：知情权衡（如 MVP 妥协 + 还债计划）。
 - **Tech Debt Backlog（技术债 Backlog）**：所有技术债的列表。
 - **Tech Debt Map（技术债地图）**：可视化技术债分布（按模块 / 类型）。
 - **Tech Debt Quantification（技术债量化）**：用成本 / 时间度量技术债。
 - **Tech Debt Budget（技术债预算）**：组织允许的技术债「总额」。
 - **Tech Debt Sprint（技术债 Sprint）**：专门还债的 Sprint。
-- **Tech Debt Ratio（技术债比率）**：还债成本 / 重写成本（SonarQube 指标）。
+- **Tech Debt Ratio（技术债比率）**：还债成本 / 开发成本（SonarQube 指标）。
 - **Code Churn（代码变更率）**：代码变更频繁度——技术债的代理指标。
 - **Cyclomatic Complexity（圈复杂度）**：代码复杂度——技术债的代理指标。
 - **Coverage（覆盖率）**：测试覆盖率——技术债的代理指标。

@@ -24,7 +24,7 @@
 
 ### 1.1 是什么
 
-**学术定义**：多模态 AI（Multimodal AI）是「**能同时处理、理解、生成多种模态（文本 / 图像 / 音频 / 视频 / 3D / 传感器）信息的 AI 系统**」，是通用人工智能（AGI）的核心能力之一。2024-2025 年，多模态 AI 进入「大模型时代」——GPT-4o / Claude 3.5 Sonnet / Gemini 1.5 / Qwen2-VL / InternVL2 / LLaVA-OneVision 等模型支持原生多模态（文本 + 图像 + 音频 + 视频）。
+**学术定义**：多模态 AI（Multimodal AI）是「**能同时处理、理解、生成多种模态（文本 / 图像 / 音频 / 视频 / 3D / 传感器）信息的 AI 系统**」，是通用人工智能（AGI）的核心能力之一。2024-2025 年，多模态 AI 进入「大模型时代」——GPT-4o / Claude 3.5 Sonnet / Gemini 1.5 / Qwen2-VL / InternVL2 / LLaVA-OneVision 等模型相继具备多模态理解能力；其中 GPT-4o / Gemini 1.5 为原生多模态（单一 Transformer），Qwen2-VL / InternVL2 / LLaVA-OneVision 等则属「视觉编码器 + 投影层 + LLM」架构（见 §2.3）。
 
 **工程定义**：多模态 AI 在数据架构师手里，是一份由 **6 层 + 8 能力域** 组成的能力矩阵：
 

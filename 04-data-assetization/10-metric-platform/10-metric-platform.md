@@ -160,22 +160,17 @@
 **MetricFlow / dbt 的 YAML 定义**：
 
 ```yaml
-metric:
-  name: new_user_gmv
-  type: derived
-  type_params:
-    expr: order_amount
-    metrics:
-      - name: order_amount
-    filter: |
-      {{ Dimension('order__is_new_user') }} = true
-  filter: |
-    {{ TimeDimension('metric_time', 'day') }} >= '2025-10-01'
-  agg: sum
-  agg_time_dimension: metric_time
-  dimensions:
-    - city
-    - user_segment
+metrics:
+  - name: new_user_gmv
+    type: derived
+    type_params:
+      expr: order_amount
+      metrics:
+        - name: order_amount
+    filter: "{{ Dimension('order__is_new_user') }} = true AND {{ TimeDimension('metric_time', 'day') }} >= '2025-10-01'"
+    dimensions:
+      - city
+      - user_segment
 ```
 
 **Cube.js 的 JavaScript 定义**：

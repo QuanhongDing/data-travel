@@ -255,8 +255,8 @@ SELECT * FROM orders WHERE _hoodie_commit_time = '20250115100000';
 ```
 
 **兼容性检查**：
-- 删字段：必须有默认值（Backward）。
-- 加字段：新字段必须有默认值（Forward）。
+- 删字段：必须有默认值（Forward）。
+- 加字段：新字段必须有默认值（Backward）。
 
 ### 2.4 与相邻概念的关系
 

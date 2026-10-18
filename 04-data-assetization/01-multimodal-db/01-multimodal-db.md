@@ -110,7 +110,7 @@
 
 - **2023**：Weaviate 多模态模块化（CLIP / Bark / ViT）。
 - **2024**：Qwen-VL（通义）、GPT-4V（OpenAI）、Claude 3.5 Vision（Anthropic）。
-- **2024**：SurrealDB 多模态、TigerData 多模态、Aerokog。
+- **2024**：SurrealDB 多模态、TigerData 多模态、Aerokog（待核，见 §4.3）。
 - **2025**：多模态 RAG 工业化（图文问答、视频检索、3D 检索）。
 
 ---
