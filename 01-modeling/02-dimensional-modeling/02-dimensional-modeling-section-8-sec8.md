@@ -1044,7 +1044,7 @@ Kafka (ODS) → Flink (清洗 + 关联维度) → Iceberg/Hudi (DWD 明细)
 
 - **「Watermark 怎么生成？」** 答：两种方式——周期型（`WatermarkStrategy.forMonotonousTimestamps()` / `forBoundedOutOfOrderness(duration)`）和标记型（在事件流里携带 watermark 字段）。生产上**周期型 + bounded out-of-orderness**最常见。
 - **「状态后端怎么选？」** 答：内存型 `HashMapStateBackend` 适合小状态（< 几 GB），`RocksDBStateBackend` 适合大状态（GB–TB）。代价是 RocksDB 读写慢，吞吐低。
-- **「反压定位具体怎么做？」** 答：Flink Web UI → 选中反压算子 → 看各 subtask 的 buffer 队列与忙时,记下最慢的 subtask,逐层往上游找。
+- **「反压定位具体怎么做？」** 答：Flink Web UI → 选中反压算子 → 看各 subtask 的 buffer 队列与忙时，记下最慢的 subtask，逐层往上游找。
 - **「exactly-once 与 at-least-once 在生产里怎么选？」** 答：**at-least-once + 幂等 sink** 几乎是默认选择。2PC 只在金融等强一致场景使用，代价是吞吐明显下降、恢复复杂（幅度随事务规模与状态后端而异，本书无法给出可溯源的统一数字，此处按【经验】档处理）。
 
 **5. 参考资料**
