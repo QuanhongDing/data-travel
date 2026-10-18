@@ -1,6 +1,7 @@
 > 本文件是 **07-architecture-review.md** 的子文件（§6. 落地实践），与主文件 [§ 2 核心原理](07-architecture-review.md) 配套阅读。本节按「**背景 → 触发点 → 详细做法 → 具体数字 → 失败教训**」5 段结构组织 4 个深度架构评审案例。
 >
 > 说明：本节聚焦「**评审这件事如何被组织**」——评审材料、角色分工、闸门位置、产出物与闭环、如何避免形式化；评审所依据的框架（支柱、风险定级等）见 [02-tradeoff-frameworks](../02-tradeoff-frameworks/02-tradeoff-frameworks-section-6-sec6.md) 与 [04-risk-assessment](../04-risk-assessment/04-risk-assessment-section-6-sec6.md)。
+> 方括号内是**来源类型 + 年份**（如「Netflix 公开材料 2018-2024」），不是可指名的文档；这类材料属**建设方自述**，按 §5 判据②不构成第三方生产案例，读者需按其官方材料自行核验。
 
 ## 6. 落地实践
 

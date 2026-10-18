@@ -1,6 +1,7 @@
 > 本文件是 **01-alibaba-data-middle-platform.md** 的子文件（§6. 落地实践），与主文件 [01-alibaba-data-middle-platform.md](01-alibaba-data-middle-platform.md) 配套阅读。本节按「**背景 → 触发点 → 详细做法 → 具体数字 → 失败教训**」5 段结构组织 4 个深度阿里巴巴数据中台案例。
 >
 > 说明：本节聚焦「**数据中台在阿里内部与外部的落地形态**」；中台作为组织形态的编制与职责划分见 [14-leadership/11-team-topology](../../14-leadership/11-team-topology/11-team-topology-section-6-sec6.md)。
+> 方括号内是**来源类型 + 年份**（如「Netflix 公开材料 2018-2024」），不是可指名的文档；这类材料属**建设方自述**，按 §5 判据②不构成第三方生产案例，读者需按其官方材料自行核验。
 
 ## 6. 落地实践
 

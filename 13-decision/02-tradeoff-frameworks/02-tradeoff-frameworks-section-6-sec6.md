@@ -1,6 +1,7 @@
 > 本文件是 **02-tradeoff-frameworks.md** 的子文件（§6. 落地实践），与主文件 [§ 2 核心原理](02-tradeoff-frameworks.md) 配套阅读。本节按「**背景 → 触发点 → 详细做法 → 具体数字 → 失败教训**」5 段结构组织 4 个深度权衡框架案例。
 >
 > 说明：本节聚焦「**权衡框架本身**」——如何把"稳与快""成本与性能""可靠性与投入"这类取舍结构化表达、量化并落到决策规则上；相关机制的工程实现细节见 [11-cross-cutting/04-observability](../../11-cross-cutting/04-observability/04-observability-section-6-sec6.md) 与 [12-architecture/06-chaos-engineering](../../12-architecture/06-chaos-engineering/06-chaos-engineering-section-6-sec6.md)。
+> 方括号内是**来源类型 + 年份**（如「Netflix 公开材料 2018-2024」），不是可指名的文档；这类材料属**建设方自述**，按 §5 判据②不构成第三方生产案例，读者需按其官方材料自行核验。
 
 ## 6. 落地实践
 
