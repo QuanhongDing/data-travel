@@ -37,7 +37,7 @@ AP 系统的一致性收敛靠三条机制：
 跨地域（即跨 Region / 跨 AZ）AP 系统的工程挑战：
 - **延迟**：跨地域同步复制 RTT 几十到几百 ms，AP 系统必须**异步复制**，写入立即返回。
 - **冲突解决**：异步复制意味着同一 key 在多个 Region 被并发修改会产生冲突。常见解决：
-  - **LWW（Last-Write-Wins）**：用时间戳决定谁覆盖谁（Amazon Dynamo 默认行为）。
+  - **LWW（Last-Write-Wins）**：用时间戳决定谁覆盖谁（Amazon DynamoDB 默认行为）。
   - **向量时钟**：记录因果关系，让业务侧决定冲突解决（Riak 默认）。
   - **CRDT**：数学保证可合并的数据结构，冲突自动收敛（Cassandra 的 `counter` 类型）。
   - **应用层解决**：业务读时检测冲突，提示用户选择（购物车场景）。
@@ -75,7 +75,7 @@ AP 系统的一致性收敛靠三条机制：
 - Werner Vogels（Amazon CTO）的公开文章《Eventually Consistent》——最终一致性的工程含义。
 - 《Designing Data-Intensive Applications》第 9 章——最终一致性的系统化论述。
 - **Amazon DynamoDB 的全球表（Global Tables）跨 Region 一致性** —— DynamoDB Global Tables 用异步复制实现跨 Region 最终一致，是头部云厂商 AP 系统的标杆。
-- **Uber 的 Cassandra 跨 Region 部署** —— Uber 用 Cassandra 跨 Region 存储订单、行程、用户画像，AP 系统 + 最终一致，是出行行业 AP 落地的代表。
+- **Uber 的 Cassandra 跨 Region 部署** —— Uber 用 Cassandra 跨 Region 存储订单轨迹、行程、用户画像等数据（订单核心走 CockroachDB 强一致），AP 系统 + 最终一致，是出行行业 AP 落地的代表。
 - **Netflix 的 Cassandra 全球部署** —— Netflix 在 AWS 多 Region 部署 Cassandra，存储观看历史、用户偏好，是头部流媒体公司 AP 系统的标杆。
 - **字节跳动基于 Cassandra 的用户画像** —— 字节内部用自研兼容 Cassandra 的 KV 系统支撑推荐与广告，是国内大厂 AP 系统的规模化使用。
 - **美团基于 Cassandra 的订单轨迹** —— 美团外卖订单轨迹、骑手位置走 Cassandra，跨 Region 最终一致，是 OTHO 系外卖业务的 AP 落地。
@@ -298,7 +298,7 @@ OLTP Database (Region A)                  Analysis Lakehouse (Region B)
 - **OceanBase 在蚂蚁集团的跨 Region 强一致** —— 蚂蚁集团用 OceanBase 跨 Region 强一致支撑支付、资金、账务，是国内金融场景一致性的标杆。
 - **OceanBase 在招行的核心账务跨 Region 强一致** —— 招商银行核心账务系统用 OceanBase 跨 Region 强一致模式，是国内大型银行一致性的标杆。
 - **TiDB 在字节跳动 / 美团的跨 Region 部署** —— TiDB 在字节、美团跨 Region 部署，Placement Rules 配置灵活，是国内分布式数据库的代表。
-- **Cassandra 在 Uber / Netflix 的跨 Region 最终一致** —— Uber 订单、Netflix 用户行为走 Cassandra 跨 Region 最终一致，是头部出行 / 流媒体公司的 AP 实践。
+- **Cassandra 在 Uber / Netflix 的跨 Region 最终一致** —— Uber 订单轨迹、Netflix 用户行为走 Cassandra 跨 Region 最终一致，是头部出行 / 流媒体公司的 AP 实践。
 - **Amazon DynamoDB Global Tables 的跨 Region 最终一致** —— DynamoDB Global Tables 用异步复制实现跨 Region 最终一致，是头部云厂商 AP 系统的标杆。
 - **Apache Kafka MirrorMaker 2 在字节 / 美团的跨 Region 同步** —— 字节、美团用 MirrorMaker 2 做跨 Region Kafka 同步，支撑实时链路最终一致，是国内大厂 Kafka 跨 Region 的代表。
 - **阿里 DTX 在淘宝 / 支付宝的分布式事务** —— 阿里 DTX 在淘宝、支付宝跨 Region 业务上保障分布式事务强一致，是国内电商强一致的代表。

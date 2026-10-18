@@ -59,7 +59,7 @@
 
 - Apache Kafka 官方文档 KIP-98（Exactly-Once Delivery and Transactional Messaging）——Kafka EOS 的原始设计文档。
 - Apache Flink 官方文档「Fault Tolerance via Stateful Stream Processing」与「Two-Phase Commit Sink」章节——Flink EOS 的实现原理与 connector 要求。
-- 《Designing Data-Intensive Applications》（Martin Kleppmann）第 12 章——三种消息语义的工程含义与"端到端"视角。
+- 《Designing Data-Intensive Applications》（Martin Kleppmann）第 11 章——三种消息语义的工程含义与"端到端"视角。
 - Jay Kreps（LinkedIn）在 2017 年的公开文章《Exactly-Once Semantics Are Possible: Here's How Apache Kafka Does It》——Kafka EOS 的设计思想与权衡。
 - **Apache Kafka 自身在 LinkedIn 的 exactly-once 实践** —— LinkedIn 内部用 Kafka EOS 支撑数百万 QPS 的用户行为流水线，是 EOS 在 PB 级流量下的真实落地。
 - **Uber 的 Exactly-Once 实时支付风控** —— 订单、支付、风控事件走 Kafka + Flink EOS 链路，强保证"同一笔交易事件只触发一次风控决策"，是出行行业金融化场景 EOS 的标准实现。
@@ -131,7 +131,7 @@ Snapshot (n)  ──→ Manifest List (avro) ──→ Manifest File ──→ D
 
 **第四层：写时复制（COW）vs 读时合并（MOR）。**
 - **COW (Copy-on-Write)**：每次写入都重写受影响的文件。读端最简单（只读最新文件），写延迟高（重写文件贵）。Iceberg 默认 COW。
-- **MOR (Merge-on-Read)**：写入追加新文件（insert + delete file），读端合并 base + delta。写延迟低，compaction 调度更复杂。Hudi 默认 MOR。
+- **MOR (Merge-on-Read)**：写入追加新文件（insert + delete file），读端合并 base + delta。写延迟低，compaction 调度更复杂。Hudi 的默认表类型其实是 COW（与 Iceberg 一致），MOR 需显式切换。
 - Delta Lake 介于两者之间，按需选择 `dataChange=true/false`。
 - **一致性影响**：COW 下读直接取 commit 后的完整文件；MOR 下读需要把 base 文件与 delete 文件在读取时合并——合并结果仍是 commit 后的快照（一致性由快照隔离保证，不取决于 compaction 跑到哪一步），代价是读取路径更复杂、未合并的 delta 越多读越慢。
 
@@ -274,7 +274,7 @@ Flink 的 Chandy-Lamport 分布式快照协议是这一切的核心：
 
 **2. 参考答案框架**
 
-**第一层：Structured Streaming 的定位。** Spark Structured Streaming 把流处理抽象成"**无界的 DataFrame / Dataset**"——同一套 DataFrame API 既能跑批也能跑流，逻辑统一。它的执行引擎是**微批（Micro-Batch）模型**：每个 trigger interval（默认 100ms）启动一个 Spark Job，处理这一窗口内的数据。
+**第一层：Structured Streaming 的定位。** Spark Structured Streaming 把流处理抽象成"**无界的 DataFrame / Dataset**"——同一套 DataFrame API 既能跑批也能跑流，逻辑统一。它的执行引擎是**微批（Micro-Batch）模型**：每个 trigger interval 启动一个 Spark Job，处理这一窗口内的数据；未显式设置 trigger 时，默认在上一微批结束后尽快启动下一批。
 
 **第二层：Checkpoint 的三个角色。**
 
@@ -304,14 +304,14 @@ Spark Structured Streaming 的 Checkpoint 写在可靠的分布式存储（HDFS 
 
 | 局限性 | 说明 |
 | --- | --- |
-| **微批延迟** | 默认 trigger interval 100ms，最小延迟受 Spark Job 调度影响，比 Flink 真正流处理高 |
+| **微批延迟** | 未显式设置 trigger 时默认尽快触发下一批（不设固定间隔），最小延迟受 Spark Job 调度影响，比 Flink 真正流处理高 |
 | **Continuous Trigger 的工程状态** | Spark 2.3 引入的 `continuous trigger`（低延迟流模式）长期处于 experimental，社区已不再主推 |
 | **foreach 没有 EOS** | 必须用 foreachBatch + idempotent sink 才能拿到 EOS |
 | **跨多个 Sink 的原子性** | 没有 2PC 支持，跨 Sink 写入不原子 |
 | **State Store 性能** | 状态依赖 Checkpoint 存储（HDFS），高 QPS 场景下 IO 压力大 |
 | **Schema 演进限制** | 流的 Schema 不能任意变更，部分变更需要重启 |
 
-**与 Flink 的对比**：Flink 的真正流处理 + 2PC Sink + 可插拔状态后端（RockDB / HDFS）在延迟与状态规模上优于 Spark Structured Streaming；但 Spark 在**与批处理统一 API、SQL 表达力、生态成熟度**上仍占优。
+**与 Flink 的对比**：Flink 的真正流处理 + 2PC Sink + 可插拔状态后端（RocksDB / HDFS）在延迟与状态规模上优于 Spark Structured Streaming；但 Spark 在**与批处理统一 API、SQL 表达力、生态成熟度**上仍占优。
 
 **3. 常见陷阱**
 
@@ -378,7 +378,7 @@ Spark Structured Streaming 的 Checkpoint 写在可靠的分布式存储（HDFS 
 
 **第四层：计算层——EOS 与状态对齐。**
 - **统一 EOS**：所有流计算作业必须配 EOS（Kafka transactional + Flink 2PC Sink / Spark foreachBatch + 幂等 Sink）。
-- **状态后端选型**：大状态作业（GB+ 状态）用 RockDB State Backend；小状态走 memory state backend。
+- **状态后端选型**：大状态作业（GB+ 状态）用 RocksDB State Backend；小状态走 memory state backend。
 - **Checkpoint 间隔**：按 SLA 反推——分钟级延迟设 30 秒，秒级延迟设 1–5 秒，毫秒级设亚秒（但代价巨大）。这组取值是工程经验值，随状态规模、状态后端与集群负载而异，本书无法给出可溯源的统一数字，此处按【经验】档处理。
 - **批流口径对齐**：把"指标口径"作为一等公民管理——OneData 体系的"指标口径先于物理实现"在这里同样适用；任何批流逻辑分歧都必须在 CI / CD 阶段被发现。
 - **血缘追踪**：所有作业必须有全链路血缘（输入表 / 中间表 / 输出表），无血缘的作业不允许上线。
@@ -408,7 +408,7 @@ Spark Structured Streaming 的 Checkpoint 写在可靠的分布式存储（HDFS 
 
 - **「跨 Region 的一致性怎么处理？」** 答：参考 §8.3 的 §20.2.3 题（Google Spanner / CockroachDB / OceanBase）；核心是 TrueTime / HLC 全局排序 + Paxos / Raft 跨 Region 复制 + 2PC 跨 Region 强一致。Region 内强一致、Region 间最终一致是常见的折中。
 - **「万节点下的 Iceberg commit 性能怎么保证？」** 答：① 用 REST Catalog（如 Polaris / Nessie）做缓存与负载均衡；② 把高频小写入合并成批提交；③ 用分区裁剪减少每次 commit 涉及的 manifest 数量；④ 对超大表用 Iceberg Partitioning + Bucketing 把 commit 影响范围缩小。
-- **「Schema 演进怎么做到零停机？」** 答：用 Iceberg / Delta 的 Schema 演进（`add column` / `rename`），下游用 Schema Registry 监听变更并自动升级 Reader 的 Schema；禁止用 `DROP COLUMN` / `RENAME COLUMN` 在下游生产环境中使用。
+- **「Schema 演进怎么做到零停机？」** 答：用 Iceberg / Delta 的 Schema 演进（`add column`），下游用 Schema Registry 监听变更并自动升级 Reader 的 Schema；禁止用 `DROP COLUMN` / `RENAME COLUMN` 在下游生产环境中使用。
 - **「批流对账具体怎么做？」** 答：每天抽样一批事件同时走批链路（离线重算）和流链路（实时计算），对比结果差异；阈值超限则报警；定期人工 review 差异原因，更新口径定义。
 
 **5. 参考资料**
@@ -561,7 +561,7 @@ Barrier 是 Flink 在数据流里插入的特殊事件（不携带业务数据�
 **第三层：Checkpoint 的实现细节。**
 
 Flink 用 **Chandy-Lamport 分布式快照协议**实现全局一致快照：
-- 每个算子维护自己的本地状态（内存 / RockDB / HDFS）。
+- 每个算子维护自己的本地状态（内存 / RocksDB / HDFS）。
 - 收到 Barrier 后，对本地状态做一次**异步快照**（写入 state backend）。
 - 当所有算子的快照都完成后，JobManager 通知所有算子"checkpoint N 完成"。
 - 此时 Source offset + 算子状态 + Sink 的 preCommit 结果**三者对齐**——这是 EOS 的不变量。
@@ -584,7 +584,7 @@ Flink 用 **Chandy-Lamport 分布式快照协议**实现全局一致快照：
 | Source | 能与 Checkpoint 协同（Kafka / Pulsar / MySQL CDC 等） |
 | 算子 | 所有状态必须可序列化、可恢复 |
 | Sink | 必须实现 TwoPhaseCommitSink（Kafka transactional / Pulsar transaction / MySQL 2PC 等） |
-| State Backend | 必须能异步快照（memory / RockDB / HDFS） |
+| State Backend | 必须能异步快照（memory / RocksDB / HDFS） |
 
 **任一组件不支持，EOS 就会降级**——例如 Elasticsearch Sink 没有 2PC，Flink 只能做到"内部精确一次 + Sink 至少一次 + 业务幂等"。
 
@@ -595,7 +595,7 @@ Flink 用 **Chandy-Lamport 分布式快照协议**实现全局一致快照：
 | 架构 | 真正的流处理 | 微批架构 |
 | EOS 实现 | 2PC Sink + Checkpoint Barrier | foreachBatch + 幂等 Sink |
 | 延迟 | 毫秒级 | 百毫秒到秒级 |
-| 状态规模 | RockDB 可支撑 TB 级 | Checkpoint 存储受限 |
+| 状态规模 | RocksDB 可支撑 TB 级 | Checkpoint 存储受限 |
 | SQL 表达力 | 持续追赶 | 更成熟 |
 
 **3. 常见陷阱**
@@ -610,7 +610,7 @@ Flink 用 **Chandy-Lamport 分布式快照协议**实现全局一致快照：
 
 - **「Barrier 对齐模式下，算子会有多少延迟？」** 答：取决于**最慢的输入通道**——Barrier 必须等所有输入通道都到达才能继续。典型场景下对齐延迟是秒级；如果某个 channel 数据稀疏（背压），延迟可能更大。
 - **「非对齐 Checkpoint 怎么工作？」** 答：在 Flink 1.11+ 引入（`AlignedCheckpoint` vs `UnalignedCheckpoint`），允许 Barrier 不对齐就快照——把所有输入通道的缓存状态一起快照。代价是**快照体积变大**，但延迟显著下降。适合"反压严重 + 状态小"的场景。
-- **「Checkpoint 失败了怎么处理？」** 答：Flink 不会自动重启，而是按配置的策略（默认是 fail）终止 Job。需要设计为"Checkpoint 失败时回退到上次成功的 Checkpoint 重启"。
+- **「Checkpoint 失败了怎么处理？」** 答：Flink 按配置的重启策略（`restart-strategy`：fixed-delay / failure-rate / exponential 等）自动重启，并从最近的 completed checkpoint 恢复；开启 checkpoint 时默认即会自动重启，而非终止 Job。需要设计为"Checkpoint 失败时回退到上次成功的 Checkpoint 重启"。
 - **「为什么 Checkpoint 完成后才能 commit，不能 commit 之后才 Checkpoint？」** 答：因为 Checkpoint 是"状态可恢复"的承诺——一旦 commit，对应的状态已经"对外生效"，必须能被 Checkpoint 重建；如果 commit 后 Checkpoint 失败，重启时无法恢复那个已 commit 的状态，相当于丢失了数据。
 
 **5. 参考资料**

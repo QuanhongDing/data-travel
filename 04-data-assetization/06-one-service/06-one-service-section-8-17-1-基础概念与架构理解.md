@@ -26,7 +26,7 @@
 | --- | --- | --- |
 | 代码 | 批 + 流两份 | 一份 |
 | 存储 | 批表 + 实时表 | 单张湖表 |
-| 维护 | 口径对账、合并 | 无需对账 |
+| 维护 | 口径对账、合并 | 无两套代码/表；批流时点差异仍需口径对账 |
 | 延迟 | 批 T+1 + 流秒级 | 取决于配置（秒 / 分 / 时 / 天） |
 | 适用 | 强准确 + 强实时 | 多数业务 |
 
@@ -66,7 +66,7 @@
 **4. 追问预测**
 
 - **「如何改造 Lambda 到批流一体？」** 答：① 评估业务可改造性；② 选引擎（Flink / Spark）；③ 用湖格式统一存储；④ 业务 SQL 化改写；⑤ 灰度上线。
-- **「批流一体的延迟能做到多少？」** 答：Flink 可到秒级（取决于 trigger）；Spark Structured Streaming 可到 100ms（micro-batch）。
+- **「批流一体的延迟能做到多少？」** 答：Flink 可到毫秒～秒级（取决于 trigger）；Spark Structured Streaming 可到 100ms（micro-batch）。
 
 **5. 参考资料**
 
@@ -246,7 +246,7 @@
 - 阿里云 Flink CDC 与湖仓一体白皮书。
 - Apache Flink / Delta / Iceberg 官方文档。
 - **Shein 在 PB 级订单数据上做湖仓迁移** —— 公开案例描述了分阶段推进避免一次性切换风险的工程经验。
-- **京东物流 Flink + 湖仓落地后状态后端从 HashMap 迁到 RocksDB** —— 公开材料描述了状态容量从 GB 级扩到 TB 级的实践。
+- **阿里 Flink + MaxCompute 湖仓一体落地后状态后端从 HashMap 迁到 RocksDB** —— 公开材料描述了状态容量从 GB 级扩到 TB 级的实践。
 - **米哈游游戏运营指标从 Lambda 迁到湖仓一体** —— 公开技术分享描述了口径治理与状态管理的联合改造。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
@@ -364,7 +364,7 @@
 | 流处理模型 | Native Streaming | Micro-batch | Native Streaming | Native Streaming |
 | 延迟 | ms~s | 100ms~s | ms | ms |
 | API | DataStream + Table/SQL | DataFrame / SQL | SQL | SQL + PG 兼容 |
-| 状态后端 | RocksDB / HashMap | 无（依赖 checkpoint） | 内存 + 持久化 | RocksDB |
+| 状态后端 | RocksDB / HashMap | HDFSBackedStateStore / RocksDB | 内存 + 持久化 | RocksDB |
 | 生态 | 流为主，OLAP 弱 | 与 Spark 生态完全打通 | 流数据库 | 云原生流数据库 |
 | 适用 | 复杂流处理、CEP | 批为主 + 简单流 | 流式物化视图 | 云上实时数仓 |
 

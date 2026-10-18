@@ -279,7 +279,7 @@
 
 - **作业级归因**：把 YARN / Spark 资源消耗按 ApplicationID 拆；Uber 的 `Cost Attribution Service` 公开过这套机制（本节无法给出该分享的文档名与年份）。
 - **业务线归因**：在调度系统（Airflow / DolphinScheduler / DataWorks）给每个作业打"业务线"标签，按业务线汇总。
-- **跨周期对比**：上周 vs 上周、上月 vs 上月、按工作日 vs 周末看波动是否与业务周期吻合。
+- **跨周期对比**：本周 vs 上周、本月 vs 上月、按工作日 vs 周末看波动是否与业务周期吻合。
 
 **第三层：优化（Optimization）—— 怎么省。** 按 ROI 排序：
 

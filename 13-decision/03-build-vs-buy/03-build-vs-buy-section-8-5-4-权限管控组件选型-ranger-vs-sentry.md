@@ -36,7 +36,7 @@
 
 **4. 追问预测**
 
-- **「Ranger plugin 挂了会怎样？」** 答：Plugin 短时挂掉会回退到"允许访问"的兜底策略（fail-open 默认配置），存在合规风险——必须在生产环境显式配置为 fail-closed，并通过监控 plugin 心跳发现。
+- **「Ranger plugin 挂了会怎样？」** 答：挂掉时的行为取决于失效策略配置——若配成 fail-open，就会回退到"允许访问"的兜底策略，存在合规风险——必须在生产环境显式配置为 fail-closed，并通过监控 plugin 心跳发现。
 - **「Ranger 的策略成千上万条，性能会不会塌？」** 答：会。Ranger 的策略评估在 plugin 内本地缓存（轮询拉取），策略数量增长会拖慢 plugin 启动；大集群必须做"分环境 / 分业务域"的多 Ranger 实例，或用策略分层（组继承）。
 - **「Sentry 模型与 RBAC 的关系？」** 答：Sentry 的 role 接近 RBAC 角色（privilege 的集合），group 是 user 的集合，role 授给 group——即 privilege → role → group 三层；在大企业组织架构下，role 与 group 的映射随组织变化持续增长，管理成本高。
 - **「假如我未来要上 Iceberg + 湖仓一体，Ranger 怎么适配？」** 答：Iceberg 没有 Ranger plugin（开源社区起步阶段），通常做法是"数据访问走 Trino/Presto，权限在 Trino 层做（Cloudera 的 SQL 引擎集成）"或"用 Lake Formation 之类的整合层"。
@@ -161,7 +161,7 @@
 
 **第二层：与云原生的兼容性挑战。** ① Ranger Admin 是传统 Java Web 服务，部署在 K8s 上没问题但**没有 sidecar / agent 模式**，给每个 Pod 装 plugin 是侵入式。② 对象存储（S3 / OSS / GCS）的 file-level 权限 Ranger 管不到，需要用 Lake Formation 之类的云原生权限层。③ Spark/Flink on K8s 的 Ranger plugin 兼容性矩阵滞后于引擎版本——这是当前**社区最大的瓶颈**。
 
-**第三层：OPA 的对照视角。** Open Policy Agent（OPA）由 Styra 发起的 CNCF 沙箱项目，**用 Rego DSL 写策略**，可以在 K8s admission、API 网关、微服务、SQL 引擎多场景复用同一份策略——这是"通用策略引擎"对"大数据专用策略引擎"的代际差。但 OPA 不带 Hive / HDFS plugin，要落在大数据侧仍需要配合 plugin/agent（如 Trino 的 `opa-authorizer`）。**结论**：如果在 K8s / 微服务为主的新平台，OPA 优势显著；如果仍以 Hadoop / Hive / Kafka 为主，Ranger 仍是更省心的选择。
+**第三层：OPA 的对照视角。** Open Policy Agent（OPA）由 Styra 发起的 CNCF 毕业项目，**用 Rego DSL 写策略**，可以在 K8s admission、API 网关、微服务、SQL 引擎多场景复用同一份策略——这是"通用策略引擎"对"大数据专用策略引擎"的代际差。但 OPA 不带 Hive / HDFS plugin，要落在大数据侧仍需要配合 plugin/agent（如 Trino 的 `opa-authorizer`）。**结论**：如果在 K8s / 微服务为主的新平台，OPA 优势显著；如果仍以 Hadoop / Hive / Kafka 为主，Ranger 仍是更省心的选择。
 
 **第四层：三种场景下的判断。** ① **"我现在 Hadoop 为主、未来 3 年仍以 Hadoop 为核心"** ——选 Ranger，理由是 plugin 生态成熟、案例多（Uber / LinkedIn / 美团 / 阿里 EMR 均有大规模落地）。② **"我要做云原生数据平台 + 多语言微服务 + S3 / 对象存储"** ——选 OPA + 数据侧用 Lake Formation；不选 Ranger，因为 Ranger 对 S3 / 多语言 SDK 支持弱。③ **"我有 100+ 团队 / 强合规 / 多租户"** ——选 Ranger + 二开（阿里 / 美团做法，把 Ranger 包装成平台级权限中心），因为 OPA 在企业级权限审计、审批流、细粒度脱敏上需要大量二次开发。
 

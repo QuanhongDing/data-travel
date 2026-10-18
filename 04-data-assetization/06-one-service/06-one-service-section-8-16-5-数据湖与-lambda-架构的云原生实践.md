@@ -237,7 +237,7 @@ Lambda 出现的根因是「**准确性**与**新鲜度**不可同时满足」�
 
 - **StatefulSet 用 PodDisruptionBudget=0**。会让节点维护时永远无法滚动升级。
 - **Spark executor 用 Deployment**。executor 应该是 Job / Pod，由 Spark Driver 动态创建。
-- **Kafka 跑在 K8s 内**。除非有强云原生需求，建议用托管 Kafka（Confluent Cloud / 阿里云 Kafka）。
+- **Kafka 跑在 K8s 内**。K8s 上跑 Kafka 有稳定性挑战（磁盘 IO、GC、网络）；本节设计用 Strimzi Operator 托管，若无强云原生需求，可改用托管 Kafka（Confluent Cloud / 阿里云 Kafka）。
 - **Operator 不备份 CRD**。Operator 故障时 CRD 配置丢失，需要 etcd 备份 + GitOps。
 
 **4. 追问预测**
@@ -477,7 +477,7 @@ Operator 自动创建 Deployment + Service + HPA。
 
 **第三层：典型问题与解法。**
 
-- **Driver UI 端口**：用 NodePort / Ingress 暴露 4040 端口；K8s 默认 30s 超时需要单独配置。
+- **Driver UI 端口**：用 Ingress 暴露 4040 端口；大集群上 NodePort 端口冲突频繁，应用 HostPort + 固定端口（见 §16.5.1）。K8s 默认 30s 超时需要单独配置。
 - **Spark Shuffle Service**：用 External Shuffle Service Pod + NodePort 暴露，避免 executor 重建后 shuffle 文件丢失。
 - **Flink Checkpoint**：用 S3 / OSS 作为 state backend，避免依赖本地盘。
 - **Operator 升级**：CRD v1beta1 → v1 时需要 conversion webhook。

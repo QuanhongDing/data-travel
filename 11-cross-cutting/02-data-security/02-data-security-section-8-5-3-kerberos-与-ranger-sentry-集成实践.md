@@ -188,7 +188,7 @@
 | 身份消费 | Ranger Plugin 读 Kerberos principal | Sentry 读 HS2 的 Kerberos 身份 |
 | 集成方式 | 在 HiveServer2 嵌入 Ranger Hive Plugin | 在 HiveServer2 嵌入 Sentry Binding |
 | 复杂度 | 中（需部署 Ranger Admin） | 低（只需 Sentry 服务） |
-| 故障隔离 | Ranger Admin 故障影响所有组件评估 | Sentry 故障只影响 Hive |
+| 故障隔离 | Ranger Admin 故障影响所有组件的策略下发/管理 | Sentry 故障只影响 Hive |
 
 **第四层：选型决策树。**
 

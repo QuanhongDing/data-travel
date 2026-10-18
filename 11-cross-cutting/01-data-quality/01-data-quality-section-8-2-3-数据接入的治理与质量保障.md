@@ -49,7 +49,7 @@ Uber 在他们的实时数据平台公开分享中提到，他们对 Kafka 链�
 
 - **只讲 Avro / Protobuf 的字段类型，不讲流程。** Schema 治理的绝大部分工作是流程问题，技术只占一小部分。
 - **混淆"Schema 演化"与"Schema 漂移"。** 一个是规划内的有序变更，一个是规划外的无序漂移，处置手段不同。
-- **不提兼容性策略的取舍。** 直接说"用 full compatibility"会被认为没做过——full 太严，会让加列都过不了。
+- **不提兼容性策略的取舍。** 直接说"用 full compatibility"会被认为没做过——full 是双向兼容、三档里最严格的一档，它要求一次变更在 Backward 与 Forward 两个方向上同时成立，而不是像 Backward 那样只需单方向成立；正因门槛高，它更适合金融 / 合规这类对双向兼容有硬要求的场景，不宜不加论证就默认套用。
 - **忽略 Schema Registry 的可用性。** Registry 挂了 = 全链路 schema 校验停摆，必须独立部署、多副本。
 - **只答"用工具"不答"如何推广"。** 上线容易，让所有团队都用起来才是真正的工作——通常需要把 Registry 接入 CI / CD，不接入不让生产发布。
 
@@ -57,7 +57,7 @@ Uber 在他们的实时数据平台公开分享中提到，他们对 Kafka 链�
 
 - **「下游强制了 backward compatibility，但业务方一定要加一个 NOT NULL 字段，怎么办？」** 答：用「**双阶段写入**」——第一阶段先加 nullable 字段并写入默认值；第二阶段在确认所有下游消费完旧数据后，把字段改为 NOT NULL。也可以用 view 做兼容层，把字段映射到下游需要的名字。
 - **「外部数据源没有 Schema Registry，怎么治理？」** 答：用 **Schema-on-read + 元数据补全**——先把数据落成宽表（JSON / struct），再用 LLM 推断字段类型，最后把推断出的 Schema 注册到 Registry。Apache Griffin 的 eBay 实践就是这种"先入库、后治理"的思路。
-- **「Schema 变了，Kafka 消费者报错怎么处理？」** 答：消费者侧设置 `auto.schema.upgrade` 策略；做不到就双写 topic，让老消费者消费老 topic、新消费者消费新 topic，过渡期后下掉老 topic。
+- **「Schema 变了，Kafka 消费者报错怎么处理？」** 答：消费者侧改用按消息内嵌的 schema 版本取回写者 schema 再解析的反序列化方式；做不到就双写 topic，让老消费者消费老 topic、新消费者消费新 topic，过渡期后下掉老 topic。
 - **「怎么衡量 Schema 治理的成熟度？」** 答：看三个数——已注册 Schema 数 / 总表数（覆盖率）、强制 CI 卡点的 pipeline 数（执行率）、变更平均提前通知时长（协作效率）。Databricks Unity Catalog 把这些数做成了内置指标看板。
 
 **5. 参考资料**

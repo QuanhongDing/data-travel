@@ -168,7 +168,7 @@ spec:
 
 **4. 追问预测**
 
-- **「K8s 上 Kafka 的 KRaft 模式怎么部署？」** 答：1 个 Controller Pod + 3 个 Broker Pod；Controller 也用 StatefulSet；KRaft 元数据走 PVC。
+- **「K8s 上 Kafka 的 KRaft 模式怎么部署？」** 答：Controller 要取**奇数个（≥ 3，如 3 个）**组成 quorum——3 个控制器容忍 1 个失效，单个控制器没有容错（quorum 失去多数派时集群不可变更）；Controller 可与 Broker 混部（`process.roles=broker,controller`）；Controller 也用 StatefulSet；KRaft 元数据走 PVC。
 - **「PVC 数据如何备份？」** 答：云盘快照（EBS Snapshot / 云盘 snapshot）；备份到对象存储。
 - **「K8s 上 ZooKeeper 性能调优？」** 答：JVM 堆调大；FDLimit；fsync 频率；磁盘 IOPS。
 

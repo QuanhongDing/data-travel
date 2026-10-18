@@ -23,7 +23,7 @@
 - **Quality**：每分钟百万级采样（如每个 Job 抽样 10 个指标）；
 - **运行时统计**：每分钟数百万条 metric。
 
-汇总：高峰期约 1-5M events/min。
+汇总：高峰期总量约数百万~数千万 events/min（Lineage 主导）；取高值端（数十万 Job × 数十~数百 column lineage）可达数千万~数亿/min。
 
 **第二层：架构选型。**
 

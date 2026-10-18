@@ -264,7 +264,7 @@
 
 **第一层：诊断阶段。**
 
-- **指标采集**：通过 Cloudera Manager / Ambari / 自研监控抓取每台 DN 的 `dfs.datanode.StorageTypeRemaining`、`DfsUsed` 与 `Capacity`。LinkedIn 用 `burrow` + Kafka 把 DN 磁盘指标上报到统一时序库（本节未附其文档名与链接，按【经验】档处理）。
+- **指标采集**：通过 Cloudera Manager / Ambari / 自研监控抓取每台 DN 的 `dfs.datanode.StorageTypeRemaining`、`DfsUsed` 与 `Capacity`，并汇总到统一时序库。
 - **分层归因**：磁盘满的原因分四类——
   1. **真实数据增长**：HDFS 总容量增长跟不上数据写入；
   2. **临时文件积压**：MapReduce / Spark 的 `ContainerLocal` 文件（如 shuffle spill、scratch dir）；

@@ -170,7 +170,7 @@
 
 **第二层：转化为 OneService 的收益。**
 
-- **查询性能**：min/max 索引让 `WHERE event_dt BETWEEN ... AND ...` 走分区裁剪；列存压缩让冷查询的扫描 IO 明显下降（【经验】档：幅度随列存编码、压缩算法与查询涉及的列宽而异，本节无法给出可溯源的统一倍数）。Databricks 的 Photon 引擎在 Delta 上能进一步利用这些统计信息。
+- **查询性能**：min/max 索引让 `WHERE event_dt BETWEEN ... AND ...` 走文件级谓词下推（利用文件 min/max 区间跳过不命中的文件）；列存压缩让冷查询的扫描 IO 明显下降（【经验】档：幅度随列存编码、压缩算法与查询涉及的列宽而异，本节无法给出可溯源的统一倍数）。Databricks 的 Photon 引擎在 Delta 上能进一步利用这些统计信息。
 - **一致性**：ACID 让 API 服务层不必担心"读到一半被写入"——尤其是指标重算与实时 upsert 并发时。
 - **可治理**：每个版本都有快照，OneService 的指标血缘、回溯查询、问题定位都能精确到 snapshot id。
 

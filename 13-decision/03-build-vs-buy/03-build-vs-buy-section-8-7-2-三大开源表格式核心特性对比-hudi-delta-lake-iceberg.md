@@ -16,7 +16,7 @@
 
 **第一层：底层抽象。** ① **Delta Lake**：把每次写操作作为一个 `_delta_log` JSON 文件追加，事务用乐观锁 + Spark 上的 conflict 检测（最近的 Delta 3.x 引入 Conflict-Resolved Concurrency）。**Upsert** 通过 `MERGE INTO` 实现，本质是 join 后改写。② **Iceberg**：把表拆成 **manifest list → manifest files → data files** 三层元数据，写时通过 snapshot 机制做版本管理；删除有两种：**Equality Delete**（按字段值匹配删除，物理删除在读时过滤）与 **Position Delete**（记录被删文件的 row position，读时跳过）。③ **Hudi**：通过**记录级索引（record-level index）+ 文件级元数据（commit timeline）**实现 upsert；提供 CoW（写时复制）与 MoR（写时增量、读时合并列存 + 增量文件）两种表类型，可由用户选。
 
-**第二层：Delete 的工程差异。** ① **Delta Lake**：早期只支持 copy-on-delete（即删除也重写整个文件）；2.0+ 引入 **Deletion Vector**（用位图标记删除），并通过 `_delta_log` 中的 `remove` 操作物理清理。② **Iceberg**：把 row-level delete 与 compaction 分离；**Position Delete** 文件对查询引擎透明，Puffin + Bitmap 可以高效定位。③ **Hudi**：MoR 表类型在写入时只追加 base file + delta log（avro 格式），读时通过 HoodieLogFileReader 合并——更新延迟低但读放大；CoW 表类型直接重写文件，读快但写放大。
+**第二层：Delete 的工程差异。** ① **Delta Lake**：早期只支持 copy-on-delete（即删除也重写整个文件）；3.0 起引入 **Deletion Vector**（用位图标记删除，3.0 起默认开启；预览形态出现在更早版本），并通过 `_delta_log` 中的 `remove` 操作物理清理。② **Iceberg**：把 row-level delete 与 compaction 分离；**Position Delete** 文件对查询引擎透明，Puffin + Bitmap 可以高效定位。③ **Hudi**：MoR 表类型在写入时只追加 base file + delta log（avro 格式），读时通过 HoodieLogFileReader 合并——更新延迟低但读放大；CoW 表类型直接重写文件，读快但写放大。
 
 **第三层：并发更新的不同表现。** ① **Delta Lake**：依靠乐观并发控制 + Conflict-Resolved（条件匹配）；不适合**大量并发小事务**，适合"批量 + 少数合并"场景。② **Iceberg**：依靠 snapshot 隔离（每个 writer 拿到一个 snapshot id，互相不可见），并发写通过 **optimistic / serializable-isolation** 模式调度——天然支持"多个上游并发写一份表"，冲突时回退到现有 snapshot 并重试。③ **Hudi**：依靠 **HoodieMultiWriter** / **Zookeeper-based / Timeline-based** 锁；MoR 表的并发更适合 CDC 场景——多 producer 并发写，consumer 通过 timeline 增量读。
 
@@ -44,7 +44,7 @@
 - **「compaction 策略怎么定？」** 答：按文件大小 + 老化时间双指标触发；推荐异步 compaction 作业 + 限制并发；Hudi 的 Cleaner、Iceberg 的 `expire_snapshots` / `rewrite_data_files`、Delta 的 `OPTIMIZE` 需在调度上串行错峰。
 - **「存算分离架构下，snapshot metadata 放哪里？」** 答：放对象存储（S3 / OSS）+ 配 Iceberg REST Catalog / Unity Catalog / Hive Metastore（HMS + Raft 化的 Glue）；metadata 也在 S3，靠 caching 加速。
 - **「两个作业同时 MERGE 一张表，会冲突吗？」** 答：默认会——乐观锁冲突时后者抛 ConcurrentAppendException，需要重试。Iceberg 可走 `serializable-isolation` 但代价是重试率上升。
-- **「Deletion Vector 与 Position Delete 的本质区别？」** 答：DV 是 bitmap 按 row offset 标记（Oracle-style 物理位图），Position Delete 是文件 + position 列表。DV 占用更小，但只在 Delta Lake 内可用。
+- **「Deletion Vector 与 Position Delete 的本质区别？」** 答：DV 是 bitmap 按 row offset 标记（Oracle-style 物理位图），Position Delete 是文件 + position 列表。DV 占用更小；它不只在 Delta Lake 内可用——Iceberg V3 规范（2024）也引入了删除向量。
 - **「Hudi 的 timeline 模式与 Iceberg snapshot 的差异？」** 答：timeline 是 commit 时间线 + 状态机，snapshot 是 immutable 版本树；timeline 强调"过程"，snapshot 强调"版本"——Hudi 更适合做流式，Iceberg 更适合做版本管理。
 
 **5. 参考资料**
@@ -153,7 +153,7 @@
 
 **② Iceberg**：用 **column ID** 作为 schema 字段的稳定标识（每个字段分配一个不变 ID，如 `id=1, name="user_id", type=string`）；元数据 JSON 引用 ID 而不是字段名。**列的重命名不会让数据失效**，因为旧文件仍然指向 `id=5`。代价是 reader 必须通过 column ID 解析字段，对 schema-less 格式的兼容性更好。
 
-**③ Hudi**：早期版本（0.x）使用 Avro schema 的 in-commit 元数据；0.9+ 起支持 column ID（与 Iceberg 类似）。变更通过 `hoodie.table.column.stats.index` 等机制追踪；表类型不同（CoW vs MoR）也会影响 schema 演进的可执行操作。
+**③ Hudi**：早期版本（0.x）使用 Avro schema 的 in-commit 元数据；列的物理身份建立在**名字**之上，schema 随 commit 记录——「读某个历史版本」与「拿到那时的 schema」天然配套，改名由 commit 记录新的 schema 版本承担。表类型不同（CoW vs MoR）也会影响 schema 演进的可执行操作。
 
 **第三层：实际生产差异。**
 
@@ -179,7 +179,7 @@
 **4. 追问预测**
 
 - **「把分区列从 dt 改成 region_dt，需要做什么？」** 答：需新建一张表 + 数据迁移 + 应用层切换 schema；Iceberg 的 hidden partition 可用 partition spec 变更但需 optimizer 兼容。
-- **「column ID 在大宽表上爆炸怎么办？」** 答：Iceberg 用 long ID（连续递增），Hudi 用 UUID；都支持专门压缩但通常不影响性能。
+- **「column ID 在大宽表上爆炸怎么办？」** 答：Iceberg 用 long ID（连续递增），大宽表下需专门做 ID 压缩但通常不影响性能；Hudi 的列身份建立在名字与 commit 元数据之上，没有 column ID 这一维度。
 - **「schema 严格 vs schema 宽松的取舍？」** 答：严格能挡脏数据但拖慢迭代；宽松需要下游做容错。头部企业通常**写严读宽**——写入严格，读取宽松允许缺失。
 - **「分区列 type 从 int 改 string 怎么破？」** 答：都需重写。三者都不允许 partition spec 类型变更。
 - **「Iceberg 的 column ID 是全局唯一的吗？」** 答：是全局唯一，但 snapshot 中以 ID 引用——snapshot 之间 ID 复用要被特别处理。

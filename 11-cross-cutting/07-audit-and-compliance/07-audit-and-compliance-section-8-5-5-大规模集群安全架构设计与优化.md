@@ -22,7 +22,7 @@
 - **策略模型**：Ranger 支持基于资源 + 标签 + 用户的细粒度策略，支持 deny/allow 规则、条件表达式（如 `accessType`、`ipAddress`、时间窗口）、基于 Apache Atlas 标签的动态授权。Sentry 是 RBAC 风格，权限 = 主体 + 动作，更简单但灵活性差。
 - **插件生态**：Ranger 支持的组件覆盖 Hive、HDFS、HBase、Kafka、Spark、Storm、Atlas、Kylin、Presto、Trino、NiFi、Kudu 等，官方插件超过 20 个。Sentry 主要覆盖 Hive、Impala、HDFS、Solr，新组件接入需要自行扩展。
 - **审计**：Ranger 内置审计收集器，所有授权决策（allow / deny）会被记录到 HDFS / Solr / Elasticsearch，便于 GDPR / HIPAA 等合规追溯。Sentry 早期版本需要单独接入审计，且覆盖组件有限。
-- **性能**：Ranger 插件每次访问会拉取策略并评估，存在 LRU 缓存和增量同步机制；策略数到万级时遍历判定开销会成为瓶颈（详见 §5.5.2）。Sentry 因为模型简单，单次授权开销略低。
+- **性能**：Ranger 插件在启动或策略变更时把策略拉取到本地缓存（LRU 缓存 + 增量同步），访问时基于本地缓存评估；策略规模放大后，策略同步 / 拉取链路与本地匹配的成本都会上升，需配合策略索引与标签分层（详见 §5.5.2）。Sentry 因为模型简单，单次授权开销略低。
 
 **第三层：选型建议。**
 
@@ -69,7 +69,7 @@
 
 **2. 参考答案框架**
 
-**第一层：先立边界——Ranger 的评估链路。** Ranger 的授权判断由四步构成：① 业务请求到达引擎（如 HiveServer2）；② 引擎的 Ranger 插件向 Admin Server 拉取相关策略；③ 在插件端按资源、用户、动作匹配规则；④ 返回 allow/deny 并记录审计。每一步都有性能开销，万级策略下三层都会出问题。
+**第一层：先立边界——Ranger 的评估链路。** Ranger 的授权判断由四步构成：① 业务请求到达引擎（如 HiveServer2）；② 引擎的 Ranger 插件从本地缓存的策略副本中取用相关策略（该缓存在插件启动或策略变更时从 Admin Server 增量同步）；③ 在插件端按资源、用户、动作匹配规则；④ 返回 allow/deny 并记录审计。每一步都有性能开销，万级策略下三层都会出问题。
 
 **第二层：三层瓶颈的具体表现。**
 

@@ -138,7 +138,7 @@
 
 - **故障现象**：Kafka Broker 磁盘使用率持续攀升，触发告警后人工介入清理。
 - **痛点**：夜间告警响应慢，导致 Kafka 抖动；人工操作易错。
-- **自愈方案**：① Prometheus 监控 Kafka Broker 磁盘水位（`kafka.log.disk.usage`）；② 当水位 > 80% 触发自愈脚本：自动清理老 log segment + 通知 Owner；③ 当水位 > 90% 触发 P0 告警 + 自动把该 Broker 排除出集群（避免写入失败扩散）；④ 自愈动作写入审计日志。
+- **自愈方案**：① Prometheus 监控 Kafka Broker 磁盘水位（node-exporter 的 `node_filesystem_avail_bytes`）；② 当水位 > 80% 触发自愈脚本：自动清理老 log segment + 通知 Owner；③ 当水位 > 90% 触发 P0 告警 + 自动把该 Broker 排除出集群（避免写入失败扩散）；④ 自愈动作写入审计日志。
 - **技术选型**：Prometheus + AlertManager + 自愈 Executor（Ansible / 自研 K8s Job）+ Kafka Admin Client API。
 - **收益**：磁盘满故障从月均 5 次降到月均 0 次；夜间人工介入归零。
 
@@ -146,7 +146,7 @@
 
 - **故障现象**：某个 Flink Job 每隔几小时重启一次，重启时间过长触发业务延迟。
 - **排查**：用 Telemetry / CloudWatch 看 TaskManager 日志，发现是 GC 时间过长（老年代被状态数据撑爆）。
-- **自愈方案**：① 监控 `flink_taskmanager_jvm_gc_time_total`；② 当 GC 时间占比 > 30% 触发自愈：自动扩大 TaskManager 内存（K8s VPA）；③ 持续高 GC 触发 P0 告警，通知 Owner 检查状态数据规模。
+- **自愈方案**：① 监控 `flink_taskmanager_Status_JVM_GarbageCollector_<GC>_Time`；② 当 GC 时间占比 > 30% 触发自愈：自动扩大 TaskManager 内存（K8s VPA）；③ 持续高 GC 触发 P0 告警，通知 Owner 检查状态数据规模。
 - **技术选型**：Flink Metrics + Prometheus + K8s VPA + 自愈脚本。
 - **收益**：Flink Job 重启频率从月均 30 次降到月均 3 次；故障平均定位时间从 30 分钟降到 5 分钟。
 
@@ -207,7 +207,7 @@
 - **第一步：识别异常类型**。是延迟（lag）问题、质量问题、还是可用性问题？监控指标：Flink Kafka Consumer Lag / Flink Checkpoint Duration / 数据质量分数（行数、字段值）。
 - **第二步：定位层**。是 Kafka 写入慢、Flink 处理慢、还是 ClickHouse 写入慢？用端到端 Trace（OpenTelemetry / Zipkin）追请求。
 - **第三步：查根因**。常见根因：① Kafka rebalance 触发的 lag；② Flink 反压（backpressure）；③ 数据倾斜（hot key）；④ Checkpoint 失败 / 慢；⑤ 状态后端 IO 慢；⑥ ClickHouse 写入瓶颈（part 过多 / 合并慢）。
-- **第四步：止血**。① 反压——降 parallelism 或扩 TaskManager；② 倾斜——加盐或拆分 hot key；③ Kafka——减分区或加 Broker；④ ClickHouse——optimize 表 / 降写入并发。
+- **第四步：止血**。① 反压——降 parallelism 或扩 TaskManager；② 倾斜——加盐或拆分 hot key；③ Kafka——扩分区或加 Broker；④ ClickHouse——optimize 表 / 降写入并发。
 - **第五步：修复 + 复盘**。① 修复代码 / 配置；② 必要时从 checkpoint 恢复；③ 写事故 Runbook；④ 补监控；⑤ 演练同类故障。
 
 **第三层：典型故障——Flink 反压（Backpressure）。**

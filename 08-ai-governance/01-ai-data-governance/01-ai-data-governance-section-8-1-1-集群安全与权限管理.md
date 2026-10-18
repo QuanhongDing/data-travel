@@ -170,7 +170,7 @@
 
 **4. 追问预测**
 
-- **「Ranger Plugin 缓存失效，Spark 作业会被拒绝吗？」** 答：默认 fail-closed，安全模式拒绝；可以调成 fail-open 但绝不推荐生产。
+- **「Ranger Plugin 缓存失效，Spark 作业会被拒绝吗？」** 答：取决于 Plugin 失效策略的配置——安全模式下应配 fail-closed（拒绝），也可配 fail-open（放行）；生产必须显式定为 fail-closed，绝不推荐 fail-open。
 - **「怎么做列级权限与行级权限的组合？」** 答：列级 mask + row-level filter，分别属于两条策略，Ranger 在执行计划中组合应用：filter 在最底层先 reduce 流量，mask 在 select 阶段重写。
 - **「Ranger 是否支持对象存储？」** 答：通过 OzoneFS / S3 / ABFS 的 Plugin，支持路径级和前缀级授权；更细粒度依赖对象存储的原生能力（IAM + Bucket Policy）。
 
@@ -282,7 +282,7 @@
 - **服务 principal**：每个 NameNode / DataNode / NodeManager 都注册自己的 principal（如 `nn/<hostname>@REALM`），keytab 由运维统一管理；
 - **认证插件**：Hadoop 的 `AuthenticationFilter` 是 Web（REST / HUE / Zeppelin）的入口。
 
-**第四层：长任务下的关键设计——续签。** Hadoop 任务往往跑数小时甚至数天，Kerberos TGT 默认 24 小时，Delegation Token 默认 7 天。AM 必须用后台线程**周期性续签**，否则在第 8 天整个作业会因 token 失效而失败。
+**第四层：长任务下的关键设计——续签。** Hadoop 任务往往跑数小时甚至数天，Kerberos TGT 默认 10 小时（可续到 7 天），Delegation Token 默认 7 天。AM 必须用后台线程**周期性续签**，否则在第 8 天整个作业会因 token 失效而失败。
 
 **3. 常见陷阱**
 

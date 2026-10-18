@@ -372,7 +372,7 @@
 
 - 是否具备万节点规模下的工程直觉——瓶颈常常在「**元数据自身**」而不是血缘本身。
 - 能否把「**高可用 / 可扩展 / 低延迟**」三维度拆开来回答，并把每维度的具体技术栈给到。
-- 是否能给出实际的数量级指标（亿级节点 / 千万级边 / 秒级查询）。
+- 是否能给出实际的数量级指标（亿级节点 / 十亿级边 / 秒级查询）。
 - 加分项：能把「**写多读少 / 时序性 / 时间旅行**」这些血缘系统的特点纳入设计。
 
 **2. 参考答案框架**
@@ -453,7 +453,7 @@
 **5. 参考资料**
 
 - LinkedIn DataHub 官方文档与公开演讲中关于 GMS、Pegasus、Kafka、MAE/MCL 架构的章节——大规模血缘系统的事实标准架构。
-- Apache JanusGraph / NebulaGraph 官方文档——大规模图存储的工业参考。
+- JanusGraph（Linux Foundation）/ NebulaGraph 官方文档——大规模图存储的工业参考。
 - Apache Kafka 与 Apache Pulsar 官方文档关于跨 region Mirror / 持久化的章节——事件主干在多活架构下的设计基础。
 - Apache Iceberg / Delta Lake 官方文档关于 snapshot 模式的章节——元数据时间旅行的工业实现。
 - Databricks Unity Catalog 关于多区域 / 多云联邦元数据的设计文档——商业血缘产品在多活架构下的工业实践。

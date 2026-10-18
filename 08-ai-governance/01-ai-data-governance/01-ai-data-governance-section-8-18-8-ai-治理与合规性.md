@@ -137,7 +137,7 @@
 - SageMaker / Vertex AI / Databricks Unity Catalog 商业平台官方文档。
 - LinkedIn / Netflix 关于「AI Model Lifecycle Governance」的公开演讲。
 - Mitchell et al.《Model Cards》。
-- Mitchell et al.《Datasheets for Datasets》。
+- Gebru et al.《Datasheets for Datasets》。
 - 阿里 PAI / 字节 PIE 关于「全生命周期治理」的公开技术分享。
 - **招商银行的风控模型全生命周期治理** —— 特征 → 训练 → 评估 → 部署 → 推理 → 退役接入 MLflow + DVC，监管要求下审计可重放。
 - **美的的工业 AI 模型治理** —— 在工业质检模型上落地特征 Store + Model Card + 退役清权，跨工厂复用同一治理规范。
@@ -336,7 +336,7 @@
 - DataHub / Unity Catalog 官方文档。
 - Apache Atlas 官方文档。
 - LinkedIn / Uber / Netflix 关于「Data Lineage 在 AI 治理」的公开演讲。
-- Mitchell et al.《Model Cards / Datasheets for Datasets》。
+- Mitchell et al.《Model Cards》；Gebru et al.《Datasheets for Datasets》。
 - **蚂蚁集团的 AI 决策链路血缘** —— 把信贷决策从特征 → 模型 → 输出 → 审计拉成完整血缘链，监管侧可一键还原任一决策。
 - **微众银行的信贷决策可追溯** —— 用 OpenLineage + DataHub 把模型版本 / 特征快照 / 审批链路完整记录，自动决策透明。
 - **京东的推荐系统血缘贯通** —— 在电商推荐链路里把数据 → 特征 → 模型 → 输出做成端到端血缘，A/B 实验可重放。

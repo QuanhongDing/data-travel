@@ -132,7 +132,7 @@
 | `node_network_receive_bytes_total` | node-exporter | 累计收字节 | 监控趋势 |
 | `node_network_transmit_bytes_total` | node-exporter | 累计发字节 | 监控趋势 |
 | `node_network_mtu_bytes` | node-exporter | MTU | 配置异常 |
-| `node_netstat_Tcp_Retrans_Segments` | node-exporter | TCP 重传 | > 1% 是网络质量差 |
+| `node_netstat_Tcp_RetransSegs` | node-exporter | TCP 重传 | > 1% 是网络质量差 |
 | `node_netstat_Tcp_CurrEstab` | node-exporter | 当前 ESTABLISHED 连接数 | 异常增长是连接泄漏 |
 | `node_sockstat_TCP_alloc` | node-exporter | TCP socket 分配数 | > 80% socket 上限是 FD 耗尽 |
 
@@ -453,7 +453,7 @@ Metrics
 **第十层：成本与容量。**
 - **Kafka 容量**：10K 节点 × 200 指标 ÷ 15s ≈ 13 万样本/s；按每样本 1KB 未压缩计约 130 MB/s，压缩（snappy / zstd）后落到 MB/s 量级；
 - **Flink 容量**：10 worker × 16 GB（状态）；checkpoints 100GB+；
-- **TSDB 容量**：原始 7 天 × 10M series（15s 采样 ≈ 4 万样本/序列，合计约 4×10¹¹ 个样本）：按压缩后每样本 1-2 字节计落盘约 0.4-0.8 TB，即亚 TB–TB 级；按未压缩 1KB/样本计约 400 TB，比压缩后高约两个半到三个数量级（【经验】档：实际随压缩算法、标签基数与保留策略而异）；
+- **TSDB 容量**：原始 7 天 × 2M series（15s 采样 ≈ 4 万样本/序列，合计约 8×10¹⁰ 个样本）：按压缩后每样本 1-2 字节计落盘约 0.08-0.16 TB，即百 GB 级；按未压缩 1KB/样本计约 80 TB，比压缩后高约两个半到三个数量级（【经验】档：实际随压缩算法、标签基数与保留策略而异）；
 - **存储成本**：月度数万美元量级（云上；【经验】档：随对象存储与 SSD 配比、保留策略与云厂商价目而异）；自建可大幅降低。
 
 **3. 常见陷阱**

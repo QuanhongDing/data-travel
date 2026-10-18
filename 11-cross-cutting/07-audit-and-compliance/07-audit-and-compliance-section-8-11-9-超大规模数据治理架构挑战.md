@@ -235,7 +235,7 @@
 
 - **故障切换**：用 Keepalived / Pacemaker / Raft 协议做主从自动切换；切换时元数据 API 返回「**重试**」而不是「**错误**」。
 - **脑裂防护**：用多数派（Raft / Paxos）保证同一时刻只有一个 leader；用 fencing token 防止双主。
-- **跨地域复制**：全球部署的元数据服务用跨地域异步复制（如 Spanner 的 TrueTime / Aurora Global Database）；本地读 + 异步写跨地域。
+- **跨地域复制**：全球部署的元数据服务用跨地域异步复制（如 Aurora Global Database）；本地读 + 异步写跨地域。
 - **多活 + 流量调度**：Databricks Unity Catalog 用「**Metastore 联邦**」实现多区域多活。
 
 **第四层：工业实践。** AWS Glue Data Catalog 把元数据存放在「**Glue 内部数据库**」，跨 Region 通过「**跨区域复制**」同步，对外承诺高可用（具体 SLA 数值以 AWS 官方 SLA 文档为准，本节未核验）。Databricks Unity Catalog 用云原生 DB 存元数据，Raft 协议保证一致性，是湖仓时代元数据服务的工业对标。阿里云 DataWorks 的元数据存储用「**自研 DB + 缓存 + 跨 Region 复制**」三层，以高可用为目标（具体 SLA 数值以阿里云官方 SLA 文档为准，本节未核验）。Google 在其内部 BigQuery 元数据中用 Spanner 提供全球强一致的元数据服务（本节无法给出可核验的出处，按【经验】档处理），是「**强一致 + 全球可用**」的最强工业案例。LinkedIn DataHub 的 MySQL + Neo4j + ES 三层各做主从 + 缓存 + 事件总线，是「**最终一致性 + 高可用**」的典型范式。
@@ -290,7 +290,7 @@
 **第二层：架构层面的预防机制。**
 
 - **共识协议（Raft / Paxos / Zab）**：用多数派保证同一时刻只有一个 leader。Zookeeper 用 Zab，etcd 用 Raft，Consul 用 Raft，Databricks 自研用 Raft 变体。
-- **Lease + Fencing Token**：leader 持有「**租约**」（带版本号），每次写入必须附租约版本；旧 leader 写入会被自动拒绝。Google Chubby 与 AWS S3 都用 Lease + Fencing Token。
+- **Lease + Fencing Token**：leader 持有「**租约**」（带版本号），每次写入必须附租约版本；旧 leader 写入会被自动拒绝。Google Chubby 用 Lease + Fencing Token。
 - **心跳 + 超时双保险**：心跳不仅是「**我活着**」，还附带「**我还可以写入**」的状态；超时判断必须看心跳 + 上次持久化时间。
 - **写入仲裁（Quorum Write）**：写入必须获得多数副本确认才返回成功；任何单节点写入立即失败。
 - **读仲裁（Quorum Read）**：读取必须从多数副本读取，避免读到旧 leader。

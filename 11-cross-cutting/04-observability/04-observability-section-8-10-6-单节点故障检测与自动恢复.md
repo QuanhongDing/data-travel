@@ -35,9 +35,9 @@ Container = 物理进程，由 YARN NodeManager（NM）管控；Executor 是 Spa
 - **Executor 自身**：用 `BlockManager` 做连接保活。
 
 **第四层：故障恢复动作。**
-- **Task 重试**：`spark.task.maxFailures`（默认 4）控制 Task 重试次数；重试失败的 Stage 可设置 `spark.stage.maxFailedTasksPerStage`（默认 4）。
+- **Task 重试**：`spark.task.maxFailures`（默认 4）控制 Task 重试次数；重试失败的 Stage 由 `spark.stage.maxConsecutiveAttempts`（默认 4，连续 Stage 尝试上限）控制。
 - **Executor 重启**：AM 收到 Executor 失联 → 触发 `SchedulerBackend.killExecutor` → 申请新 Container → 重启 Executor。
-- **Stage 重试**：`spark.scheduler.maxRegisteredResourcesWaitingTime`（默认 30s）控制等待资源上限；超过则 Stage 失败。
+- **调度启动等待**：`spark.scheduler.maxRegisteredResourcesWaitingTime`（默认 30s）控制开始调度前等待 Executor 注册的时间上限；超时后 Spark 以已注册资源开始调度，并不会让 Stage 失败。
 - **Application 重试**：`yarn.resourcemanager.am.max-attempts`（默认 2）控制 AM 重试；Driver 重启后从 checkpoint 恢复（Structured Streaming）或从头开始（DStream）。
 
 **第五层：磁盘损坏的特别处理。** NM 健康检查发现磁盘损坏：
@@ -111,7 +111,7 @@ Container = 物理进程，由 YARN NodeManager（NM）管控；Executor 是 Spa
   - 任务幂等（同一份逻辑重跑结果一致）。
 - **断点续传**：
   - 实时任务 Savepoint 定期；
-  - 离线任务从中间结果恢复（`spark.sql.shuffle.partitions` 持久的中间结果）。
+  - 离线任务从中间结果恢复（对过长血缘做 `checkpoint` 切断，避免恢复时间过长）。
 
 **第四层：监控与告警。**
 - **节点健康度主动告警**：`nm_healthcheck_failed` 立即告警。

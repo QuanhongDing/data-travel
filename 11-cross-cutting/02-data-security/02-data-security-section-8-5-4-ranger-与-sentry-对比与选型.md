@@ -60,7 +60,7 @@
 **1. 考察点**
 
 - 是否能从**拦截时机 / 评估位置 / 同步机制**三个角度说清差异。
-- 能否说清两者的性能权衡（Ranger 一次 RPC + 缓存 vs Sentry 内存判）。
+- 能否说清两者的性能权衡（Ranger 缓存本地求值 vs Sentry 内存判；单次评估都不引入 RPC，差异在策略生效时延）。
 - 是否知道 Sentry 的"冷加载"代价（重启 HiveServer2 才能生效）。
 - 加分项：能讲清 Hive Hook 拦截时机对功能扩展性的影响。
 
@@ -73,19 +73,19 @@
 
 **第二层：评估位置差异。**
 
-- **Ranger**：评估发生在各组件的 Plugin（HS2 内的 Ranger Hive Plugin），调用 Ranger Admin RPC（缓存命中则本地判）。
+- **Ranger**：评估发生在各组件的 Plugin（HS2 内的 Ranger Hive Plugin），对本地缓存中的策略副本在插件内求值；单次评估不产生到 Ranger Admin 的 RPC。
 - **Sentry**：评估发生在 HS2 启动时加载的 Sentry Binding，直接读内存中的策略副本。
 
 **第三层：同步机制差异。**
 
-- **Ranger**：策略变更由 Ranger Admin 异步推送到各 Plugin 的本地缓存（默认 30 秒内生效）；Plugin 启动时全量拉。
+- **Ranger**：各 Plugin 按默认 30 秒周期从 Ranger Admin 拉取（pull）策略到本地缓存（即变更默认 30 秒内生效）；Plugin 启动时全量拉。
 - **Sentry**：策略变更在 Sentry 服务持久化；HS2 启动时全量拉，重启才生效。
 
 **第四层：性能对比。**
 
 | 维度 | Ranger | Sentry |
 | --- | --- | --- |
-| 单次评估开销 | 缓存命中 < 1ms；未命中一次 RPC（数 ms） | 内存判 < 1ms |
+| 单次评估开销 | 插件内求值 < 1ms（评估不产生 RPC；到 Admin 的 RPC 数 ms 只发生在周期刷新策略时） | 内存判 < 1ms |
 | 策略变更延迟 | 30 秒（可调短） | 重启 HS2（分钟级） |
 | 集群重启开销 | Plugin 重启 + 重拉策略 | HS2 重启 + 重启 Hive Metastore |
 
@@ -94,7 +94,7 @@
 **3. 常见陷阱**
 
 - **以为"两者差不多"。** 热加载 vs 冷加载在生产是巨大差异——Sentry 改一条策略要重启整个 HS2。
-- **混淆"评估位置"与"同步机制"。** Ranger 是"Plugin 评估 + Admin 推送"；Sentry 是"HS2 内存评估 + 启动同步"。
+- **混淆"评估位置"与"同步机制"。** Ranger 是“Plugin 本地评估 + 周期拉取”；Sentry 是“HS2 内存评估 + 启动同步”。
 
 **4. 追问预测**
 

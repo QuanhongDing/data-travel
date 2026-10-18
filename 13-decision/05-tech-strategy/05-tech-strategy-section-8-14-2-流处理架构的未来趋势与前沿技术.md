@@ -264,7 +264,7 @@
 
 - **Confluent Cloud** 提供跨 Region Kafka 集群 + Cluster Linking 做跨云复制。
 - **Google Cloud Dataflow** 的跨 Region 部署是 Serverless 多云的参考。
-- **Netflix** 的跨区域数据同步（Spinnaker / Hollow）是流媒体行业标杆。
+- **Netflix** 的跨区域数据同步（Hollow）是流媒体行业标杆。
 - **阿里云**的"两地三中心"方案是国内多云流处理的实践。
 
 **3. 常见陷阱**

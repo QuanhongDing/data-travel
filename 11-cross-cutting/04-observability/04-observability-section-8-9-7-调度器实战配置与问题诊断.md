@@ -146,8 +146,6 @@
 - Apache Hadoop 官方文档中 YARN Scheduler 配置章节——核心参数的权威出处。
 - Apache Hadoop JIRA 上 YARN-9572 等异步调度相关 issue——异步调度的演进状态。
 - LinkedIn / Uber 关于 YARN 调度器性能优化的公开文章——头部企业的真实瓶颈与调优经验。
-- **滴滴** —— 滴滴实时订单与司机画像——万级 Flink 作业 + Iceberg 增量读下的冲突与 compaction 治理。
-- **货拉拉** —— 货拉拉城配实时调度——Flink 实时订单分发 + Spark 离线对账 + 路径优化。
 
 > 注：以上参考资料均指向公开出版物或企业公开技术博客。精确链接请按条目名称自行检索核验。
 
@@ -325,14 +323,14 @@ root
 
 **第二层：诊断步骤。**
 1. **看 PendingApplications**：队列有未分配的 application，但 `AvailableMB` 接近 0，说明调度失败。
-2. **看 max-capacity**：队列 capacity 设得过大但 max-capacity=容量，过低导致"想用用不了"。
+2. **看 max-capacity**：若 `maximum-capacity` 等于 `capacity`，队列不能借用集群空闲资源，需求上来时会"想用用不了"。
 3. **看抢占历史**：被抢占次数 > 0，且抢占来自高优队列。
 4. **看 application 分布**：队列内 application 数 vs 提交频率；很少提交说明需求低。
 
 **第三层：诊断 —— Capacity Scheduler。**
 - **`capacity` vs `maximum-capacity`**：如果 `maximum-capacity` = `capacity`，队列不能借资源。
 - **`minimum-user-limit-percent`**：单用户最低保证。
-- **`disable-preemption`**：被抢占时优先被回收。
+- **`disable-preemption`**：是否禁止本队列被抢占（true = 保护不被抢）。
 - **`.ordering-policy`**：FIFO / Fair / FairShare（决定队列内分配）。
 
 **第四层：诊断 —— Fair Scheduler。**

@@ -390,7 +390,7 @@
 
 **第三层：应对策略——联邦化治理（Federated Governance）。**
 
-- **统一语义层（Semantic Layer）**：定义全局「**业务术语表（Business Glossary）**」作为「**唯一事实源**」，各域用同一术语定义自己的数据资产。LinkedIn DataHub 的 Glossary、Uber DataHub / Databook 的 Domain 都走这条路。
+- **统一语义层（Semantic Layer）**：定义全局「**业务术语表（Business Glossary）**」作为「**唯一事实源**」，各域用同一术语定义自己的数据资产。LinkedIn DataHub 的 Glossary、Uber Databook 的 Domain 都走这条路。
 - **联邦目录（Federated Catalog）**：每个域有自己的目录，平台提供跨域联邦查询入口。Apache Polaris（incubating）就是「**多区域 Iceberg REST Catalog**」的代表。Databricks Unity Catalog 用「**Metastore 联邦**」让多个 Catalog 协同。
 - **自助式平台（Self-serve Platform）**：平台提供统一采集、存储、查询、血缘、质量工具，域自助使用；平台不做内容审核，只做能力下沉。LinkedIn DataHub、OpenMetadata 都走「**Platform + Domain**」架构。
 - **联邦合规（Federated Compliance）**：合规策略（GDPR / HIPAA）由平台集中管理，删除 / 导出 / 审计请求自动分发到各域执行；用「**合规即代码（Compliance-as-Code）**」+「**策略中心（OPA / Cedar）**」实现。

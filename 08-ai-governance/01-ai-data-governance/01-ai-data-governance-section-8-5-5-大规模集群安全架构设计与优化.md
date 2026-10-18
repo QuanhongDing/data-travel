@@ -17,8 +17,8 @@
 
 **第一层：两者的设计原点。**
 
-- **Sentry**：Cloudera 在 2014 年左右开源，定位为「**嵌入到 SQL 引擎内部的 RBAC 库**」——它自己定义角色、资源、操作模型，与 Hive/Impala 强耦合。没有独立的策略中心，策略分散在 Hive Metastore 上，跨组件一致性差。
-- **Ranger**：早期 Hortonworks 在 2015 年主导开源，定位为「**独立策略中心 + 组件插件拦截**」——Admin 服务独立，策略统一存储（MySQL/Postgres），通过 Ranger Plugin 同步给 Hive/HDFS/HBase/Kafka 等引擎。Audit 完整、跨组件统一。
+- **Sentry**：Cloudera 在 2013 年左右开源，定位为「**嵌入到 SQL 引擎内部的 RBAC 库**」——它自己定义角色、资源、操作模型，与 Hive/Impala 强耦合。没有独立的策略中心，策略分散在 Hive Metastore 上，跨组件一致性差。
+- **Ranger**：早期 Hortonworks 在 2014 年主导开源，定位为「**独立策略中心 + 组件插件拦截**」——Admin 服务独立，策略统一存储（MySQL/Postgres），通过 Ranger Plugin 同步给 Hive/HDFS/HBase/Kafka 等引擎。Audit 完整、跨组件统一。
 
 **第二层：能力维度的对比。**
 
@@ -224,13 +224,13 @@
 **第二层：拓扑设计的核心原则。**
 
 - **分层部署**：KDC 与 Ranger Admin 放核心安全域（受防火墙保护、权限最低的镜像节点），不与业务集群同节点。
-- **跨机房**：KDC 主从 + kprop 同步；Ranger Admin 主从（同 MySQL MGR），Admin 故障时 Plugin 走缓存（fail-closed 模式拒绝，保证安全优先）。
+- **跨机房**：KDC 主从 + kprop 同步；Ranger Admin 主从（同 MySQL MGR），Admin 故障时 Plugin 走缓存并配置为 fail-closed（拒绝，保证安全优先）。
 - **审计异步**：审计事件直接走 Kafka，不要让 HiveServer2 / Plugin 写 HDFS 或写 Admin DB。任何「同步审计」会反过来成为性能瓶颈。
 - **审计冷热分层**：热数据 → ClickHouse 或 StarRocks（实时查询）；冷数据 → S3 / OSS + Parquet，按月归档，保留 6 个月 - 3 年。
 
 **第三层：容量预估。** 给几个常见的万节点经验值：
 
-- **KDC**：峰值 TGS 请求约 5w QPS（按每分钟 1k 个作业上线 + 续签 + 短期查询估算），主节点建议 4 核 8GB 起，从节点建议 2 核 4GB 起。
+- **KDC**：峰值 TGS 请求约百 QPS 量级（按万节点、5-10 万 principal 的票据按寿命摊薄得稳态约 14-28 次 TGS-REQ/s，续签风暴使峰值达稳态的数倍），主节点建议 4 核 8GB 起，从节点建议 2 核 4GB 起。
 - **Ranger Admin**：策略量 5w-20w 条，DB 连接池 ≥ 50，JVM 堆 ≥ 8GB；Plugin 缓存大小按策略条数 × 平均条目大小估算（一般 256MB 就够，但热集群用 JVM OFF-HEAP 缓存 2GB）。
 - **Audit Pipeline**：每天事件数十亿级（万节点集群上每毫秒数百次访问）。Kafka 集群容量按保留 72h 估算；ClickHouse 集群按 30 天热数据存。
 - **IAM 同步**：SCIM / 自研同步走消息队列，不要直接 KDC ↔ IdP 互连。
@@ -238,13 +238,13 @@
 **第四层：极端情况的兜底。**
 
 - **KDC 全不可用**：所有 Kerberos 认证降级到 token-only 模式（依赖缓存），且只读不写。LinkedIn 在《Cobra》中描述过「KDC 短暂不可用 → 让长任务用机器证书短期继续运行」的 fallback 模式。
-- **Ranger Admin 全不可用**：Plugin 默认 fail-closed（拒绝），但部分公司会调成 fail-open（放行）以维持业务；这里有安全与可用性的权衡。
+- **Ranger Admin 全不可用**：Plugin 的失效策略决定行为——配 fail-closed 则拒绝、配 fail-open 则放行；部分公司会调成 fail-open 以维持业务，这里有安全与可用性的权衡。
 - **Audit Pipeline 故障**：业务依然运行，事件进入磁盘 ring buffer，重启后回流 Kafka。绝不能因为审计故障让业务不可用。
 
 **3. 常见陷阱**
 
 - **KDC 与 Ranger Admin 共部署**——KDC 故障炸穿整个集群。
-- **Plugin fail-open 默认**——安全违规门槛过低。
+- **Plugin 未显式配 fail-closed、放任 fail-open 兜底**——安全违规门槛过低。
 - **Audit 同步写**——审计故障变成主流程故障。
 - **审计不加密传输**——审计本身包含敏感访问模式，必须 TLS。
 - **没有演练过故障恢复路径**——任何 HA 拓扑不演练等于没有。
