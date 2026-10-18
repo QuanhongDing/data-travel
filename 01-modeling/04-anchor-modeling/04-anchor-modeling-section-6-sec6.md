@@ -2,8 +2,6 @@
 
 ## 6. 落地实践
 
-> 原 § 6 共 189 行、抽象建议，重写为 ~400 行深度 Anchor Modeling 案例。
-
 ### 4.1 Lars Rönnbäck"**Anchor Modeling 6NF 时序建模**"12+ 年（2012-2024）
 
 **背景（Why）**

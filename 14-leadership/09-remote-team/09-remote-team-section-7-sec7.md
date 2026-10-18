@@ -2,8 +2,6 @@
 
 ## 7. 与其他方法对比
 
-> 原 § 7 共 40 行、为打分表 + 决策树，缺少机制解释与可溯源证据，重写为 305 行对比与选型工程。
-
 ### 7.1 先立判据：为什么打分表会误导
 
 原文件把 Remote-First、Async-First、Hybrid、Office-First、AI 增强放进同一张 5 分制表。第一个问题是**这五个候选不在同一个决策层级上**：Office-First / Hybrid / Remote-First 回答的是「人在哪里」；Async-First 回答的是「默认用什么介质沟通」；AI 增强回答的是「用什么工具承接协作」。前三个**互斥**，后两个是**叠加层**——你可以是 Remote-First + Async-First + AI 增强，也可以是 Hybrid + Async-First + AI 增强。把它们并列打分，制造出「选了 Async-First 就不能要文化建设」这种根本不存在的取舍。

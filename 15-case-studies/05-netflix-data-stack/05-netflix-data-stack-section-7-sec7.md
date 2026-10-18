@@ -2,8 +2,6 @@
 
 ## 7. 与同类案例对比
 
-> 原 § 7 共 30 行、为「对比维度 + 取舍」式要点罗列，缺少可比性论证与可溯源数据，重写为 ~320 行同类案例对比。
-
 ### 7.1 先解决「可比性」
 
 横向比数据栈，最容易犯的错是把差异归给「能力」：Netflix 有 Iceberg、Maestro、Metaflow，Databricks 有 Delta Lake、Unity Catalog、Databricks Workflows、MLflow，Uber 有 Hudi、Michelangelo，Airbnb 有 Minerva、Airflow 生态；再往下还有一层谁都在用的**引擎与消息**候选——Kafka、Flink、Spark、Spark Structured Streaming。把这些组件列成一张表，结论必然是「谁更全」。但真正的差异几乎都来自**约束**：Netflix 的栈是**自己长出来的**（对外开源的工程传统可追溯到 2011–2012 年的 Chaos Monkey / Simian Army、Eureka、Hystrix 等基础设施组件【公开：Netflix 开源项目历史】），Databricks 的栈是**作为产品卖出去的**，Uber 与 Airbnb 的栈是**内部平台 + 开源输出**。这三种身份决定了它们在同一技术问题上必须给出不同答案。

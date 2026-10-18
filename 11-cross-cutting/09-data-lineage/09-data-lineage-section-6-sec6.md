@@ -2,7 +2,6 @@
 
 ## 6. 落地实践
 
-> 原 § 6 共 140 行、2 个公司提及，重写为 ~400 行深度数据血缘案例。
 >
 > 说明：本节聚焦「**血缘作为一种图基础设施，如何被构建与查询**」；与之配套的「如何用血缘做变更影响面评估与门禁阻断」见 [05-lineage-and-impact-section-6-sec6.md](../05-lineage-and-impact/05-lineage-and-impact-section-6-sec6.md)。
 

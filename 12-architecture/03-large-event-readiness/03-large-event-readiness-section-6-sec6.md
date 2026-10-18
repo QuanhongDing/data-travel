@@ -2,7 +2,6 @@
 
 ## 6. 落地实践
 
-> 原 § 6 共 151 行、3 个公司提及，重写为 ~400 行深度大促备战案例。
 >
 > 说明：本节聚焦「**备战工程方法论**」——节奏怎么排、容量怎么算、压测与演练怎么做、组织怎么协同；大促当天的具体故障处理见 [15-case-studies/02-double-11-stability](../../15-case-studies/02-double-11-stability/02-double-11-stability-section-6-sec6.md)。
 
