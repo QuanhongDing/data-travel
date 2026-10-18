@@ -167,7 +167,7 @@ flowchart TB
 
 ## 辅助资源
 
-- [docs/career/](docs/career/) — P7→P8→资深架构师 成长路径与能力模型（按新画像改写中）
+- [docs/career/](docs/career/) — P7→P8→资深架构师 成长路径与能力模型
 - [docs/interview/](docs/interview/) — 资深架构师 / 智能体架构师面试题库（系统设计、选型决策、案例分析）
 - [docs/superpowers/specs/](docs/superpowers/specs/) — 项目设计文档
   - [2026-10-08-data-architect-restructure.md](docs/superpowers/specs/2026-10-08-data-architect-restructure.md) — 本次目录重组的现行规格（CURRENT）
