@@ -104,7 +104,7 @@
 - 华为公司公开的 IPD（Integrated Product Development）方法论材料——PDT / IPMT / PMO 三层治理结构在国内大型科技企业的落地形态。
 - 亚马逊公开的领导力准则与「Single Threaded Leader」相关材料——项目集负责人独立决策权与 Two-Pizza Team 协同的工程文化基础。
 - McKinsey 关于「大型组织 PMO 失效模式」的研究材料——橡皮图章化与过度集权化的常见表现与对策。
-- **阿里中台战略** —— 阿里巴巴 2015 年起的中台战略——抽离各 BU 共性能力建立共享中台（数据中台 / 业务中台 / AI 中台），其内部「中台 PMO」承担跨 BU 协调、方法论沉淀与项目集复盘职责，是国内大型企业 PMO 落地的代表。
+- **阿里中台战略** —— 阿里巴巴 2014 年起的中台战略——抽离各 BU 共性能力建立共享中台（数据中台 / 业务中台 / AI 中台），其内部「中台 PMO」承担跨 BU 协调、方法论沉淀与项目集复盘职责，是国内大型企业 PMO 落地的代表。
 - **华为 IPD 体系** —— 华为 IPD 中的 IPMT / PDT / PMO 分工——投资决策委员会管战略、项目开发团队管交付、PMO 管方法论与跨项目协调，是大型硬科技企业 PMO 治理的典型形态。
 - **腾讯跨 BG 协同的 PMO 实践** —— 腾讯跨 BG（微信 / 互娱 / 影业 / 云）的项目协同 PMO——负责跨 BG 项目集的立项审批、资源仲裁与文化对齐，是国内互联网「联邦制 + 跨 BG 协同」的代表。
 
@@ -202,7 +202,7 @@ InfluenceScore = Persuasion × Credibility × Coalition × Timing
 - French & Raven 关于权力基础理论（French & Raven's Bases of Power）的公开学术材料——区分 Expert Power / Information Power / Referent Power / Coercive Power 等 5–6 种权力基础，是 IWA 的理论基础。
 - Keith Ferrazzi 等关于 Coalition Building 的公开著作——「先找意愿的同盟、再扩规模」的联盟建设方法论。
 - 亚马逊领导力准则中「Have Backbone, Disagree and Commit」与「Earn Trust」相关材料——公开表达不同意见、赢得信任的跨团队沟通基础。
-- **阿里中台战略中的横向推动** —— 阿里 2015 年起的中台战略——通过「业务一号位轮值 + 中台 PMO 推动 + 共享 KPI 试点」让各 BU 接入中台，是国内大型企业 IWA 实践的代表。
+- **阿里中台战略中的横向推动** —— 阿里 2014 年起的中台战略——通过「业务一号位轮值 + 中台 PMO 推动 + 共享 KPI 试点」让各 BU 接入中台，是国内大型企业 IWA 实践的代表。
 - **字节横向项目的「飞书项目」协同** —— 字节跳动的飞书项目工具——支持跨 BU 项目集的可视化、跨团队会议节奏管理与 Action Items 跟踪，是国内互联网「工具 + IWA」结合的代表。
 - **美团业务 BP 制度** —— 美团各 BU 的业务 BP（Business Partner）——深入业务一线、横向连接中台 / 平台 / 数据 / 工程团队，是「业务 + 横向能力」协作的国内代表。
 - **华为 IPD 中的跨产品线协同** —— 华为 IPD 中的 PDT 协同——跨产品线项目由 IPMT 仲裁 + Sponsor 站台 + 跨 PDT 联盟推动，是国内硬科技企业 IWA 实践的代表。
