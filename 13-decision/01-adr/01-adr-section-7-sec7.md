@@ -85,7 +85,7 @@
 
 **由此必然导出的性质**：**因为 RFC 是「提案 + 反馈窗口」，所以它天然把延迟写进了流程——反馈窗口多长，决策就慢多久，换来的是约束在拍板前被暴露；因为 ADR 是归档，所以它几乎不消耗决策周期，但也无法在决策前暴露异议。代价是这两者不能互相替代：想用 ADR 达到「对齐」的效果是做不到的，想用 RFC 达到「可追溯」的效果也不够——RFC 讨论完就冻结，后续决策的变更不会自动回写到 RFC 上。** 组织里最常见的错配，正是用其中一种去代替另一种。
 
-**公开证据**：【公开】本章主文件 §1.1 记录 ADR 概念由 Michael Nygard 在 2011 年的《Documenting Architecture Decisions》中系统化；【公开】本章主文件 §2.1 记录其 Status 的取值为 Proposed / Accepted / Deprecated / Superseded by ADR-XXXX；【公开】本章主文件 §1.4 记录 MADR 于 2017 年发布，其字段结构见本章 §3.2.2（在 Nygard 四段之上增加 Decision Drivers、Considered Options 与 Confirmation 段）。**具体模板字段请以 MADR 官方模板与所用工具的当前版本为准，本节不对第三方产品的流程细节作断言。**
+**公开证据**：【公开】本章主文件 §1.1 记录 ADR 概念由 Michael Nygard 在 2011 年的《Documenting Architecture Decisions》中系统化；【公开】本章主文件 §2.1 记录其 Status 的取值为 Proposed / Accepted / Rejected / Deprecated / Superseded by ADR-XXXX；【公开】本章主文件 §1.4 记录 MADR 于 2017 年发布，其字段结构见本章 §3.2.2（在 Nygard 四段之上增加 Decision Drivers、Considered Options 与 Confirmation 段）。**具体模板字段请以 MADR 官方模板与所用工具的当前版本为准，本节不对第三方产品的流程细节作断言。**
 
 **失效条件**：决策频率高、单个决策影响面小时，在决策前加一层反馈窗口是纯延迟——此时真正的瓶颈不是「对齐不够」，而是「决策太多，每一个都不值得对齐」。
 
@@ -128,7 +128,7 @@
 
 **由此必然导出的性质**：**因为 ADR 不可变且用显式关系字段连接新旧记录，所以「为什么变了」本身就是可读内容，检索时也能靠状态字段把过期结论过滤掉；代价是读一个主题要沿链读多份文档，而且这条链一旦断掉——有人直接改了实现却没写新 ADR——就会出现「实现与记录不一致」的静默腐坏，它比「根本没有记录」更难发现，因为库里看起来什么都写了。** 这也是为什么 supersede 必须与代码评审挂钩（本章 §3.5 反模式 6「永不 supersede」）：链的完整性靠约定维持不住。
 
-**公开证据**：【公开】Superseded 是 Nygard 2011 模板 Status 段的合法取值（本章主文件 §2.1 记录其取值为 Proposed / Accepted / Deprecated / Superseded by ADR-XXXX）；【公开】MADR 用 status 的取值（如 `Superseded by ADR-0123`）表达同一语义，其模板字段里没有独立的 supersede 关系字段（字段清单见本章 §3.2.2，本章 §5.4 对 MADR 的判断与此一致）。**在检索场景下这条差别会被放大**：没有状态链的库，检索器会把过期决策以更高的置信度答出来——本章 §5.2.2 的原话是「没人读的过期 ADR 是无害的，被检索出来的过期 ADR 是误导」，原因是它带着「据我们所记录」的权威语气。
+**公开证据**：【公开】Superseded 是 Nygard 2011 模板 Status 段的合法取值（本章主文件 §2.1 记录其取值为 Proposed / Accepted / Rejected / Deprecated / Superseded by ADR-XXXX）；【公开】MADR 用 status 的取值（如 `Superseded by ADR-0123`）表达同一语义，其模板字段里没有独立的 supersede 关系字段（字段清单见本章 §3.2.2，本章 §5.4 对 MADR 的判断与此一致）。**在检索场景下这条差别会被放大**：没有状态链的库，检索器会把过期决策以更高的置信度答出来——本章 §5.2.2 的原话是「没人读的过期 ADR 是无害的，被检索出来的过期 ADR 是误导」，原因是它带着「据我们所记录」的权威语气。
 
 **失效条件**：决策的变更频率高于撰写与评审能承受的频率时，supersede 链会断裂。此时更安全的做法不是放弃记录，而是换更轻的形态（Y-statement 一句式），**因为「轻而完整」比「重而断链」可用**。
 

@@ -592,7 +592,7 @@
 
 ADR 是 Michael Nygard 在 2011 年提出的架构决策文档化方法论，核心要素包括：
 
-- **状态（Status）**：Proposed / Accepted / Deprecated / Superseded。
+- **状态（Status）**：Proposed / Accepted / Rejected / Deprecated / Superseded。
 - **背景（Context）**：业务诉求 + 技术约束 + 团队能力 + 时间窗口。
 - **决策（Decision）**：选了什么方案 + 关键参数 + 责任人。
 - **备选方案（Alternatives）**：至少 2 个备选方案 + 优缺点对比。

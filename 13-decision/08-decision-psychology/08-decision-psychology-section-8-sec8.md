@@ -706,7 +706,7 @@ Janis 研究的原始案例是美国外交政策的历史失误——猪湾事�
 **第一层：ADR 的定位与本体的结构。** ADR（Architecture Decision Record）由 Michael Nygard 在 2011 年的文章《Documenting Architecture Decisions》中提出，核心是用一份**轻量、可版本化**的文档记录每一个重要架构决策：
 
 - **Title**：决策标题（如 ADR-0015: 选用 Flink 作为流处理引擎）。
-- **Status**：Proposed / Accepted / Deprecated / Superseded。
+- **Status**：Proposed / Accepted / Rejected / Deprecated / Superseded。
 - **Context**：决策的背景与约束（业务目标、现有系统、团队能力、监管要求）。
 - **Decision**：决定了什么。
 - **Consequences**：决定了之后的后果（正面、负面、中性）。

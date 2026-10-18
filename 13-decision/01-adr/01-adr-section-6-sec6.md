@@ -35,7 +35,7 @@ ADR 实践的**5 大核心组件**：
                      · 数据量量级、团队规模、交付时间、既有技术栈
                      · 这些约束是"当时"的，会变 —— 所以要写清楚
        Decision      最终选了什么；一句话说清
-       Status        Proposed / Accepted / Deprecated / Superseded by ADR-XXX
+       Status        Proposed / Accepted / Rejected / Deprecated / Superseded by ADR-XXX
        Consequences  带来什么好处 + 付出什么代价
                      · 代价必须写：运维复杂度、团队学习成本、能力边界
                      · 只写好处 = 决策记录变成宣传稿，失去价值
