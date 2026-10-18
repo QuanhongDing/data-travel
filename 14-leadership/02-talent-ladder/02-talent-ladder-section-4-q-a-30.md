@@ -1,7 +1,6 @@
 > 本文件是 **02-talent-ladder.md** 的子文件（§4. Q&A（30 分钟））。完整章节请回到 [index](02-talent-ladder.md)。
 
 ## 4. Q&A（30 分钟）
-```
 
 **示例 2：AI 辅助 IDP 生成 Prompt**
 

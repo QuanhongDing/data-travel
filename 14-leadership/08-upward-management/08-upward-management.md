@@ -237,77 +237,17 @@ ROI = (Benefits - Costs) / Costs
 | 数据质量 | < 0.1% 问题率 | 0.08% | -0.02% |
 | 业务响应时间 | < 5 天 | 4 天 | -1 天 |
 | AI 能力场景数 | +10 | +12 | +2 |
+```
 
-- [§3. 关键项目进展](08-upward-management-section-3-sec3.md)
-- [§4. 风险与挑战](08-upward-management-section-4-sec4.md)
-- [§5. Q4 计划](08-upward-management-section-5-q4.md)
 - [§3. 设计模式与范式](08-upward-management-section-3-sec3.md)
 - [§4. 工程实现](08-upward-management-section-4-sec4.md)
-## 1. 30 秒电梯演讲
-- RAG 系统上线，准确率达 85%
-- 数据治理覆盖 80% 业务线
-- 培养 2 个 P7 候选人
-
-## 2. 关键指标
-| 指标 | 目标 | 实际 | 偏差 |
-| --- | --- | --- | --- |
-
-- [§3. 关键项目](08-upward-management-section-3-sec3.md)
-- [§4. 风险与挑战](08-upward-management-section-4-sec4.md)
-- [§5. 资源需求](08-upward-management-section-5-sec5.md)
-- [§7. 讨论](08-upward-management-section-7-sec7.md)
-## 1. 现状
-- 当前团队 15 人，人均产出 X
-- 业务增长 50% YoY
-- 团队高负荷（Overtime > 20%）
-
-## 2. 痛点
-- HC 不足，关键项目延期
-- 算力紧张，新业务无法支持
-- 团队流失率上升（25%）
-
-- [§3. 资源需求](08-upward-management-section-3-sec3.md)
 - [§4. 预期 ROI](08-upward-management-section-4-roi.md)
-- [§5. 不投入的风险](08-upward-management-section-5-sec5.md)
-- [§6. 推荐方案](08-upward-management-section-6-sec6.md)
 - [§5. 前沿演进（AI 时代）](08-upward-management-section-5-ai.md)
+- [§5. Q4 计划](08-upward-management-section-5-q4.md)
+- [§5. 双向输入（2 分钟）](08-upward-management-section-5-sec5.md)
 - [§6. 落地实践](08-upward-management-section-6-sec6.md)
 - [§7. 与其他方法对比](08-upward-management-section-7-sec7.md)
 - [§8. 面试真题集](08-upward-management-section-8-sec8.md)
-## 1. 开场（3 分钟）
-- 感谢时间、简短寒暄（不谄媚）
-- 议程确认（提前 24h 发议程给双方）
-
-## 2. 业务影响（10 分钟）
-- 过去一个季度团队的 3 大业务成果（用数据说话）
-- 1 个关键的客户 / 业务改进故事（Storytelling）
-- 这些成果对 +2 / +3 团队目标的支撑
-
-- [§3. 战略方向（10 分钟）](08-upward-management-section-3-sec3.md)
-- [§4. 资源 / 风险（5 分钟）](08-upward-management-section-4-sec4.md)
-- [§5. 双向输入（2 分钟）](08-upward-management-section-5-sec5.md)
-## 1. 30 秒电梯演讲（2 分钟）
-- 结论 1：RAG 系统上线，准确率 85%（目标 80%）
-- 结论 2：数据治理覆盖 80% 业务线
-- 结论 3：培养 2 个 P7 候选人
-
-## 2. 业务结果（10 分钟）
-### 2.1 关键指标表
-| 指标 | 目标 | 实际 | 偏差 |
-| --- | --- | --- | --- |
-| 系统可用性 | 99.9% | 99.95% | +0.05% |
-| 数据质量 | < 0.1% 问题率 | 0.08% | -0.02% |
-| 业务响应时间 | < 5 天 | 4 天 | -1 天 |
-| AI 能力场景数 | +10 | +12 | +2 |
-
-### 2.2 3 大关键成果（SCQA + Story）
-- **RAG 系统**：S（场景：业务侧有大量重复问答） → C（冲突：人工响应慢 / 不一致） → Q（问题：如何自动化？） → A（答案）：0→1 上线，P95 < 500ms，准确率 85%。
-- **数据治理**：S（跨 BU 数据口径不一致） → C（合规 + 财务双线压力） → Q（如何一致化？） → A：跨 BU 治理委员会 + 词根词典。
-- **人才培养**：S（团队梯度单薄） → C（关键项目依赖单点英雄） → Q（如何梯度化？） → A：2 个 P7 通过晋升答辩 + 1 个梯队建设。
-
-- [§3. 团队与组织（5 分钟）](08-upward-management-section-3-sec3.md)
-- [§4. 风险与挑战（5 分钟）](08-upward-management-section-4-sec4.md)
-- [§6. 讨论（3 分钟）](08-upward-management-section-6-sec6.md)
 
 ---
 
@@ -315,28 +255,14 @@ ROI = (Benefits - Costs) / Costs
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
-- [§3. 关键项目进展](08-upward-management-section-3-sec3.md)
-- [§4. 风险与挑战](08-upward-management-section-4-sec4.md)
-- [§5. Q4 计划](08-upward-management-section-5-q4.md)
 - [§3. 设计模式与范式](08-upward-management-section-3-sec3.md)
 - [§4. 工程实现](08-upward-management-section-4-sec4.md)
-- [§3. 关键项目](08-upward-management-section-3-sec3.md)
-- [§4. 风险与挑战](08-upward-management-section-4-sec4.md)
-- [§5. 资源需求](08-upward-management-section-5-sec5.md)
-- [§7. 讨论](08-upward-management-section-7-sec7.md)
-- [§3. 资源需求](08-upward-management-section-3-sec3.md)
 - [§4. 预期 ROI](08-upward-management-section-4-roi.md)
-- [§5. 不投入的风险](08-upward-management-section-5-sec5.md)
-- [§6. 推荐方案](08-upward-management-section-6-sec6.md)
 - [§5. 前沿演进（AI 时代）](08-upward-management-section-5-ai.md)
+- [§5. Q4 计划](08-upward-management-section-5-q4.md)
+- [§5. 双向输入（2 分钟）](08-upward-management-section-5-sec5.md)
 - [§6. 落地实践](08-upward-management-section-6-sec6.md)
 - [§7. 与其他方法对比](08-upward-management-section-7-sec7.md)
 - [§8. 面试真题集](08-upward-management-section-8-sec8.md)
-- [§3. 战略方向（10 分钟）](08-upward-management-section-3-sec3.md)
-- [§4. 资源 / 风险（5 分钟）](08-upward-management-section-4-sec4.md)
-- [§5. 双向输入（2 分钟）](08-upward-management-section-5-sec5.md)
-- [§3. 团队与组织（5 分钟）](08-upward-management-section-3-sec3.md)
-- [§4. 风险与挑战（5 分钟）](08-upward-management-section-4-sec4.md)
-- [§6. 讨论（3 分钟）](08-upward-management-section-6-sec6.md)
 
 ---
