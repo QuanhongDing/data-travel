@@ -82,11 +82,11 @@
 **环境四件套：模拟器 / Domain Randomization / Sim-to-Real / 环境并行化**
 
 - **做法**：模拟器优先；对无法精确建模的参数做随机化；从仿真迁移到真实时先在受限条件下验证；用多环境并行采样提高吞吐。
-- **机制**：因为并行采样把"数据生产"从单进程串行变成 N 个环境同时推进，所以同一段 wall-clock 能产出约 N 倍 rollout——这条只在采集确实是瓶颈时才成立。
+- **机制**：因为并行采样把"数据生产"从单进程串行变成 N 个环境同时推进，采集能力就从一行代码变成了**要申请的资源**——环境进程数与 GPU 卡数的配比要写进训练任务的资源申请单，超配会被配额挡回，于是"把采样调快"在组织里表现为一次配额变更与一条成本线位移。这条只在采集确实是瓶颈时才成立。
 - **失效条件**：**当并行度超过 CPU/GPU 配比后**，采集不再是瓶颈，更新与策略前向成为瓶颈，继续加环境的边际收益归零。症状写在训练吞吐面板上：环境步数/秒不再随并行度上升，而 GPU 利用率掉下来——第一个发现它的是盯吞吐曲线的值班人，不是算法负责人。
 - **档位**：【经验：并行度上限随单个仿真步的 CPU 成本与 batch 大小变】。
 
-**经验复用：Replay Buffer / Target Network / PER / N-Step Return**
+**经验复用：Replay Buffer / Target Network / Prioritized Experience Replay（PER）/ N-Step Return**
 
 - **做法**：经验落表（`state / action / reward / next_state / done / behavior_policy_version`）；Target Network 定期同步；PER 按 TD 误差采样；N-Step Return 平衡偏差方差。
 - **机制**：因为经验是以"带版本号的表"入库，而不是留在内存队列里，所以训练可以中断续跑、可以反查"这条经验是哪一版策略产生的"——这决定了事后能不能做 off-policy 修正。
@@ -100,7 +100,7 @@
 - **失效条件**：**当团队用"换随机种子就好了"结案时**，这套护栏实际上已经失效——不是某一条被调坏，而是没有人知道真实分布。症状：issue 里同一配置两次结果差异巨大，复盘结论是"再跑一次看看"；观测信号是同配置三次运行的评估曲线分位数宽度。
 - **档位**：【经验：clip 上界与 warmup 步数随 batch 大小和模型规模变】。
 
-**LLM 偏好对齐链路：RLHF Pipeline（SFT → RM → PPO）/ DPO / GRPO / PRM**
+**LLM 偏好对齐链路：RLHF Pipeline（SFT → RM → PPO）/ DPO / GRPO / Process Reward Model（PRM）**
 
 - **做法**：PPO 路线四模型驻留（policy / reference / reward / critic）；DPO 去掉 RM 与 critic；GRPO 去掉 critic，用同 prompt 组内相对得分；PRM 在步骤级给奖励。显存账见 [§ 3.2.9](06-rl-section-3-sec3.md)。
 - **机制**：因为 reference 权重在整条链路里必须冻结，所以它一旦被误覆盖，KL 与偏好胜率会同时单向漂移**而不会报任何错**——这条链路的正确性靠版本固定维持，不靠报错。
@@ -132,7 +132,7 @@
 | Offline RL | d3rlpy / CORL / RLtools | 要在工业代码里跑标准离线算法（CQL / IQL / TD3+BC），选 d3rlpy；要横向复现多个算法对照论文，选 CORL；嵌入式或实时控制这类 C++ 环境，选 RLtools | 用在线框架改造成离线：采样与环境依赖被保留下来，而离线最需要的保守项与评估口径反而要自己补 |
 | 策略服务与低延迟推理 | TF Serving / Triton / Ray Serve / vLLM | 策略是常规数值网络、要低延迟同步打分，选 TF Serving 或 Triton（批合并成熟）；已有 Ray 集群、训练与推理想同一套运维，选 Ray Serve；策略是 LLM 且推理开销主要在生成，选 vLLM 一类高吞吐推理服务 | 把策略的推理塞进训练脚本：没有批合并与超时控制，延迟抖动会在业务高峰被放大成可用性问题 |
 | 训练平台与实验管理 | Weights & Biases / MLflow（+ Ray）/ 阿里云 PAI / AWS DeepRacer / Google Vertex AI（RL 相关能力的当前状态以官方文档为准） | 看指标曲线与超参对比选 W&B；已有自建 MLflow 且要打通模型注册表，选 MLflow + Ray；受合规与网络约束选云厂商托管训练平台（PAI 一类）；DeepRacer 只适合教学与小规模演示，不是生产训练平台 | 用笔记本目录管理实验：三个月后没人能说清哪条曲线对应哪份数据与哪版奖励函数 |
-| 前沿算法与新模型（2024–2025） | GRPO（DeepSeek 2024）/ OpenAI o1 与 o3（2024）/ Anthropic Constitutional AI（2022–2024）/ Agent Q（2024）/ Reflexion（2023–2024）/ Voyager（NVIDIA 2023）/ DeepSeek-R1（2025）/ Qwen2.5 的 RL 后训练（阿里 2024）/ MAVIS（2024）/ RStar-Math（Microsoft 2024） | 这一行不是"工具"，是可对照的**实现与方法**：要看实现就去对应官方仓库看当前状态，要看方法就去读公开技术报告。把它当"可直接引入的组件"之前，先确认许可、维护状态与是否与你的训练栈同版本 | 把公开报告里的方法名当成"拿来即用组件"：论文里的采样规模与奖励设计往往不在同一页，直接照搬会得到一条跑得通但不收敛的训练脚本 |
+| 前沿算法与新模型（2024–2025） | GRPO（DeepSeek 2024）/ OpenAI o1 与 o3（2024）/ Anthropic Constitutional AI（2022–2024）/ Agent Q（2024）/ Reflexion（2023–2024）/ Voyager（NVIDIA 2023）/ DeepSeek-R1（2025）/ Qwen2.5 的 RL 后训练（阿里 2024）/ MAVIS（2024）/ RStar-Math（Microsoft 2024） | 这一行不是"工具"，是可对照的**实现与方法**：表中括号里的年份是该成果公开出现的时间【公开：以各发布方/机构的官方技术报告、模型卡与仓库发布说明为准，请以当前版本核对】。要看实现就去对应官方仓库看当前状态，要看方法就去读公开技术报告。把它当"可直接引入的组件"之前，先确认许可、维护状态与是否与你的训练栈同版本 | 把公开报告里的方法名当成"拿来即用组件"：论文里的采样规模与奖励设计往往不在同一页，直接照搬会得到一条跑得通但不收敛的训练脚本 |
 
 表里最容易被误选的是**训练平台**那一行里的 AWS DeepRacer：它面向教学与竞赛，把"能跑起来"当成目标，而生产要的是可复现、可审计、能与既有模型注册表打通。误选它的典型后果是团队第一次要做"三个月前那次实验用的是哪份数据"时答不出来。
 
@@ -216,15 +216,16 @@ for ep in range(500):
 
 ```python
 # 只留最容易写错的两段：GAE 与 clip 目标
-gae, next_v = 0, 0
+gae, next_v, advantages = 0, 0, []
 for t in reversed(range(len(rewards))):
     if dones[t]: gae, next_v = 0, 0
     delta = rewards[t] + GAMMA * next_v - values[t]
     gae = delta + GAMMA * LAMBDA * gae            # LAMBDA 是平滑因子
     advantages.insert(0, gae); next_v = values[t]
-adv = (adv - adv.mean()) / (adv.std() + 1e-8)     # 优势归一化，不要删
+advantages = torch.tensor(advantages, dtype=torch.float32)   # 先转张量，列表没有 .mean()
+advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)   # 优势归一化，不要删
 ratio = torch.exp(new_logp - old_logp)
-loss = -torch.min(ratio * adv, torch.clamp(ratio, 0.8, 1.2) * adv).mean()
+loss = -torch.min(ratio * advantages, torch.clamp(ratio, 0.8, 1.2) * advantages).mean()
 ```
 
 **怎么用**：`GAMMA` / `LAMBDA` / clip 区间（0.8–1.2 对应 ε=0.2）三格照抄；**优势归一化那一行不要删**，删了会表现为训练后期突然发散，而且换种子后时有时无，最难定位。K epochs 设 3–10【经验：随 batch 大小与任务方差变】——调大它是在拿 on-policy 的假设换样本效率，取舍见 [§ 3.2.3](06-rl-section-3-sec3.md)。
@@ -242,7 +243,7 @@ trainer = DPOTrainer(model=model, ref_model=ref, args=config,
 trainer.train()
 ```
 
-**怎么用**：`REF_CKPT` 必须是一个**写死的、不会再被训练的**路径——这是全段最要紧的一格，机制与症状见 4.2。「偏好对齐链路」；`beta` 与学习率照抄区间后按你的偏好数据量调整。字段与参数名随该库版本变动，接到自有训练栈之前以当前官方文档为准。
+**怎么用**：`REF_CKPT` 必须是一个**写死的、不会再被训练的**路径——这是全段最要紧的一格，机制与症状见 4.2 的「LLM 偏好对齐链路」一条；`beta` 与学习率照抄区间后按你的偏好数据量调整。字段与参数名随该库版本变动，接到自有训练栈之前以当前官方文档为准。
 
 **示例 5：GRPO（DeepSeek-R1 风格）**
 
