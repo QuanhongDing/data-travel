@@ -26,8 +26,8 @@
 | **流处理引擎** | Flink / Spark Streaming / Kafka Streams | [Ch03 实时计算](../../03-data-stack/09-realtime-compute/09-realtime-compute.md) |
 | **消息队列** | Kafka / Pulsar / RocketMQ | [Ch03 流式存储](../../03-data-stack/04-streaming-store/04-streaming-store.md) |
 | **向量库** | Milvus / Qdrant / Weaviate / pgvector | [Ch04 向量湖](../../04-data-assetization/02-vector-lake/02-vector-lake.md) |
-| **AI 原生数据库** | Databricks Mosaic AI / Snowflake Cortex / 阿里 PAI | [Ch04 AI 原生数据库](../../04-data-assetization/03-ai-native-db/03-ai-native-db.md) |
-| **Agent 框架** | LangChain / AutoGen / OpenClaw / CrewAI | [Ch05 智能体平台](../../05-agent-platform/01-data-agent/01-data-agent.md) |
+| **AI 原生数据库** | PostgreSQL + pgvector / SurrealDB / TigerData / Oracle 23ai / TiDB Vector | [Ch04 AI 原生数据库](../../04-data-assetization/03-ai-native-db/03-ai-native-db.md) |
+| **Agent 框架** | LangChain / LangGraph / AutoGen / CrewAI | [Ch05 智能体平台](../../05-agent-platform/01-data-agent/01-data-agent.md) |
 
 ## 决策矩阵模板
 

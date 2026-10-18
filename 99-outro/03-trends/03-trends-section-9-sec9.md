@@ -24,7 +24,7 @@
 #### 知识图谱 / 本体类
 
 - 《Knowledge Graphs》（Aidan Hogan 等）
-- 《Ontology Engineering》（Robert Stevens）
+- 《Ontology Engineering》（Robert Stevens；作者署名另见 [Ch1 书单](../../01-modeling/README.md) 作 Valentina Presutti，两处不一致，以版权页为准）
 - 《Graph Databases》（Ian Robinson 等）
 
 #### 治理与监管类

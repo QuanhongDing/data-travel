@@ -59,7 +59,7 @@
 ## 参考资料
 
 - 《Site Reliability Engineering》（Google SRE Book）—— 故障复盘圣经
-- 《Postmortem Culture》（Atlassian）—— blameless 实践
+- 「Postmortem Culture: Learning from Failure」（Google SRE Book 中的一节）—— blameless 实践的公开范本
 - 《How Complex Systems Fail》（Richard Cook）—— 复杂系统故障认知
 - [Ch14 故障复盘文化](../../14-leadership/06-postmortem-culture/06-postmortem-culture.md) —— blameless 5 步法 + 5 Whys
 - [Ch12 混沌工程](../../12-architecture/06-chaos-engineering/06-chaos-engineering.md) —— 故障演练

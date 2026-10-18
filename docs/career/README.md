@@ -27,7 +27,7 @@
 
 ## 数据架构师能力对照表
 
-> 下表 P7 / P8 两列与 [01-competency-model.md](01-competency-model.md) 口径一致（团队规模一列同时与 [14-leadership/README.md](../14-leadership/README.md) 的画像表取齐），数据架构师列按 [03-p8-to-architect.md](03-p8-to-architect.md) 的目标口径。团队规模一列是**量级参考**，各家职级体系的带宽不同，不要拿它当硬门槛。
+> 下表 P7 / P8 两列与 [01-competency-model.md](01-competency-model.md) 口径一致（团队规模一列同时与 [14-leadership/README.md](../../14-leadership/README.md) 的画像表取齐），数据架构师列按 [03-p8-to-architect.md](03-p8-to-architect.md) 的目标口径。团队规模一列是**量级参考**，各家职级体系的带宽不同，不要拿它当硬门槛。
 
 | 能力 | P7 | P8 | 数据架构师 |
 | --- | --- | --- | --- |

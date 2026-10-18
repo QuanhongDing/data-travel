@@ -254,7 +254,7 @@ data-travel/
 >
 > 初版 spec 描述「总论 + 6 章主体 + 后记」结构（数仓 / 数据湖 / 多模态 / 向量湖 / 数据服务平台 / DataAgent），按技术演进时间线组织。
 >
-> 2026-10-08 重构（commit `f1aa559`：`refactor!: restructure to 数据架构师-aligned 10-chapter layout with team management`）改为「总论 + 10 章主体 + 后记」按 数据架构师能力分层组织，新增 Ch7 架构与高可用、Ch8 决策与权衡、Ch9 团队管理与领导力、Ch10 案例库。
+> 2026-10-08 重构（commit `f1aa559`：`refactor!: restructure to P9-aligned 10-chapter layout with team management`）改为「总论 + 10 章主体 + 后记」按 数据架构师能力分层组织，新增 Ch7 架构与高可用、Ch8 决策与权衡、Ch9 团队管理与领导力、Ch10 案例库。
 >
 > 本次 spec 同步更新以反映新结构。
 

@@ -71,7 +71,7 @@
 
 | 材料 | 从哪来（候选，能力与在售状态以厂商官方文档当前版本为准） | 缺了会怎样 |
 | --- | --- | --- |
-| eNPS 原始分布 + 回收率 | 调研平台：Culture Amp、Microsoft Viva Glint、Glint、Officevibe、飞书 People 一类 | 只有一个总分时，无法区分「一批人这次没答」和「答的人变了」 |
+| eNPS 原始分布 + 回收率 | 调研平台：Culture Amp、Microsoft Viva Glint、Officevibe、飞书 People 一类 | 只有一个总分时，无法区分「一批人这次没答」和「答的人变了」 |
 | 开放题逐字原句（脱敏但逐字，不改写） | 平台原样导出；聚类与排序可用 Humu、Lattice AI 或通用 LLM（ChatGPT Enterprise、Claude for HR 一类） | 用模型给的「主题分布」替代原句，动作会全部落在抽象层 |
 | 上一轮动作清单 + 关闭情况 | 文档库：Notion / Confluence（每条带版本号与修改人） | 对方一句「上次那两条做了吗」就能绕开你全部论点 |
 | 本期的反向指标 | 复盘记录与协作系统：坏消息从发生到进入复盘的天数、跨团队接口写明责任人与 SLA 的比例 | 只有自陈分数时，改进前后无法做一次独立于问卷的对比 |

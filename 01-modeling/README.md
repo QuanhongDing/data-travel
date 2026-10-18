@@ -78,6 +78,8 @@
 | *Graph Neural Networks: Foundations, Frontiers, and Applications* | Wu et al. | 全书 | GNN 综述（中文版亦有） |
 | *Designing Data-Intensive Applications* | Martin Kleppmann | Ch.2–5 | 不在 Ch1 但建模底层思想互补 |
 
+> 注：上表 *Ontology Engineering* 的作者署名与趋势章节的 §9 书单（[03-trends-section-9-sec9.md](../99-outro/03-trends/03-trends-section-9-sec9.md)）不一致——本节作 Valentina Presutti，§9 作 Robert Stevens；两处均以版权页为准。
+
 ### 工业白皮书 / 公开资料
 
 - *《阿里大数据之路》*（阿里数据团队，2017 / 2021 修订版）：OneData / OneID / OneService 的工业化范式
