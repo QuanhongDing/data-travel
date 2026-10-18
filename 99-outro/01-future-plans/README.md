@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★☆☆☆ |
 | 章节 | [99-outro](../README.md) |
 | 主文件 | [01-future-plans.md](01-future-plans.md) |
 

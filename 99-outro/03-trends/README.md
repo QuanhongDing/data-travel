@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★☆☆☆ |
 | 章节 | [99-outro](../README.md) |
 | 主文件 | [03-trends.md](03-trends.md) |
 
@@ -10,7 +10,6 @@
 
 | 小节 | 文件 |
 | --- | --- |
-| 10. 面试真题集 | [03-trends-section-10-sec10.md](03-trends-section-10-sec10.md) |
 | 3. AGI 与数据架构师的未来 | [03-trends-section-3-agi.md](03-trends-section-3-agi.md) |
 | 4. AI Agent 与人类：取代 / 增强 / 共生 | [03-trends-section-4-ai-agent.md](03-trends-section-4-ai-agent.md) |
 | 5. AI 治理与监管 | [03-trends-section-5-ai.md](03-trends-section-5-ai.md) |

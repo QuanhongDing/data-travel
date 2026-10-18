@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★☆☆☆ |
 | 章节 | [99-outro](../README.md) |
 | 主文件 | [02-growth-advice.md](02-growth-advice.md) |
 
@@ -16,7 +16,6 @@
 | 6. 人脉经营 | [02-growth-advice-section-6-sec6.md](02-growth-advice-section-6-sec6.md) |
 | 7. AI 时代的"反脆弱" | [02-growth-advice-section-7-ai.md](02-growth-advice-section-7-ai.md) |
 | 8. 面试真题集 | [02-growth-advice-section-8-sec8.md](02-growth-advice-section-8-sec8.md) |
-| 9. 面试真题集 | [02-growth-advice-section-9-sec9.md](02-growth-advice-section-9-sec9.md) |
 
 ## 返回
 
