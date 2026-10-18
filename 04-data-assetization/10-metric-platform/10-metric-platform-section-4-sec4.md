@@ -151,7 +151,7 @@
 | 开源指标平台 | dbt Semantic Layer + MetricFlow / Cube.js（Cube）/ Airbnb Minerva / 字节 OSCAR | 定义要与数据模型同仓库、团队用 Git 协作 → dbt；指标要嵌进产品、消费方是前端 → Cube；需要一份可读的「定义 + 查询」参考实现 → Minerva；要看定义驱动执行的开源实现 → OSCAR | 定义与模型分家后出现「仓库之外的第二个真相」；日后收回仓库要重录全部指标 |
 | 云厂商指标平台 | Snowflake Cortex Analyst / Databricks Genie / AWS QuickSight Q / Google Cloud Looker（LookML） | 数据已落在某个云数仓且要自然语言入口 → 优先同云方案，避免跨云取数；已有 Looker 语义模型沉淀 → LookML（换引擎意味着语义模型重写） | 跨云要额外搭一条同步链路，新鲜度与成本同时变差 |
 | 商业指标平台 | Transform / Supermetrics / Alation Metric Studio | 营销类指标口径主要来自外部渠道 → 营销向工具；已有数据目录且指标要挂进目录 → 目录厂商的指标模块 | 把「目录 + 指标」当成指标计算引擎用，结果是没有统一的物化与对账链路 |
-| 国内指标平台 | 阿里 DataWorks 指标平台（OneMetric）/ 字节 DataFinder 指标平台 / 美团指标平台 / 腾讯 WeData 指标平台 / 网易严选指标平台 / Quick BI 智能问答 | 已在对应云上 → 优先同厂方案减少集成；自研记录（美团、网易严选）宜作参考架构而非产品选型；OSCAR 的归属（书内两处记录不一致）在 §3.2.6 与 [§ 7.3](10-metric-platform-section-7-sec7.md) 另有讨论，本节不裁定 | 自建一套与云厂重复的能力，长期维护成本落在自己身上 |
+| 国内指标平台 | 阿里 DataWorks 指标平台（OneMetric）/ 字节 DataFinder 指标平台 / 美团指标平台 / 腾讯 WeData 指标平台 / 网易严选指标平台 / Quick BI 智能问答 | 已在对应云上 → 优先同厂方案减少集成；自研记录（美团、网易严选）宜作参考架构而非产品选型；OSCAR 一类开源记录的归属属书内二手来源，按【经验】参考（讨论见 §3.2.6 与 [§ 7.3](10-metric-platform-section-7-sec7.md)） | 自建一套与云厂重复的能力，长期维护成本落在自己身上 |
 | OLAP 引擎 | ClickHouse / Apache Doris / StarRocks / Snowflake / BigQuery / Redshift | 宽表、高并发点式聚合 → 实时列存 OLAP；已上云且要托管 → 云数仓；不要拿实时 OLAP 去替数仓做批量变换 | 用计算引擎做批量变换，会同时得到更高的成本与更弱的表达能力 |
 
 表里最容易被误选的是**商业指标平台**，尤其是把数据目录厂商的指标模块当成指标平台。目录的机制是「登记与检索元数据」，它不生成执行计划、不物化结果、不提供对账链路；误选的典型后果是组织以为口径已经统一，而每个报表仍在各自计算，「统一」只体现在名字上。第二个高频误选是**自研**（判据见 §3.3 的对照表：自研的门槛不在开发，而在长期维护与未来迁移）。另外，产品能力与版本、产品线归属绑定得很紧，`Transform`、`Alation Metric Studio` 这类名称会随收购与产品线调整变化 —— 这两条的当前形态与是否仍作为独立产品提供，请以官方文档当前版本为准。
