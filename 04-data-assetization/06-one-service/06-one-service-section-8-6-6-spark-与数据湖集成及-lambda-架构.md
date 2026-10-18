@@ -411,7 +411,7 @@
   服务层用 `UNION ALL` 拼接批表 + 实时表，按事件时间排序后输出。代价是查询复杂、性能损耗。
 
 - **模式 C：物化视图（Materialized View）**
- 批处理定期 merge 进物化视图，速度层只覆盖增量。OLAP 引擎（ClickHouse / Doris）原生支持 ReplacingMergeTree / AggregatingMergeTree 实现类似逻辑。
+ 批处理定期 merge 进物化视图，速度层只覆盖增量。OLAP 引擎原生支持类似逻辑——ClickHouse 用 ReplacingMergeTree / AggregatingMergeTree，Doris 用 Unique Key 模型。
 
 **第四层：关键工程契约。**
 

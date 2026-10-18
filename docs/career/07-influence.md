@@ -101,7 +101,7 @@
 
 **国内大厂的开源**：
 - 阿里：Apache Dubbo / RocketMQ / Druid / Paimon / 各种
-- 字节：Apache KubeRay / DOP 各种
+- 字节：扣子 Coze / DOP 各种
 - 美团 / 京东：各种
 - 华为：openEuler / MindSpore / 各种
 

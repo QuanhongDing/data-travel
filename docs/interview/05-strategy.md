@@ -34,7 +34,7 @@
 | 题目 | 核心论点 | 参考章节 |
 | --- | --- | --- |
 | **AI 原生数据栈** | 决策白盒化 / Token 经济 / Prompt 版本化 / 4 横线升级 | [Ch99 未来数据架构趋势](../../99-outro/03-trends/03-trends.md) |
-| **湖仓 vs Data Mesh vs Data Fabric** | 域化 vs 中心化 vs 混合；中国大厂走中心化 | [Ch09 Data Mesh](../../09-data-intelligence-product/03-data-mesh/03-data-mesh.md) |
+| **湖仓 vs Data Mesh vs Data Fabric** | 中心化 vs 域化 vs 混合；中国大厂走中心化 | [Ch09 Data Mesh](../../09-data-intelligence-product/03-data-mesh/03-data-mesh.md) |
 | **向量库 vs 关系数据库 vs 图数据库** | 混合检索 + 语义层 + AI 原生 | [Ch04 向量湖 / 混合检索](../../04-data-assetization/) |
 | **Agent 时代数据架构师角色** | 从执行到判断 / 从工具人到产品化 / 反向翻译 | [Ch99 未来数据架构师成长路径](../../99-outro/01-future-plans/01-future-plans.md) |
 | **国内数据中台 vs 国外 Data Mesh** | 中心化 vs 联邦化；大厂走中心化 + 中台化，中小厂走 Mesh | [Ch01 OneData / 数据中台](../../01-modeling/08-one-data/08-one-data.md) |
@@ -54,7 +54,7 @@
 - **Snowflake Cortex**：AI 原生数仓的范本
 - **Databricks Mosaic AI**：数据 + AI 一体化
 - **华为盘古 + 昇腾**：国产算力 + 大模型
-- **智谱 GLM / 月之暗面 Kimi / 阶跃星辰**：国内大模型六小虎
+- **智谱 GLM / 月之暗面 Kimi / 阶跃星辰**：国内大模型「六小虎」中的三家
 
 ## 进阶：怎么展示「行业视野」
 

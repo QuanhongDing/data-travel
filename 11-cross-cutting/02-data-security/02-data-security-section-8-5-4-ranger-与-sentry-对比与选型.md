@@ -188,7 +188,7 @@ Uber 在其数据平台用 Ranger 的 Row Filter 做"业务 BP 只能看自己�
 
 | 维度 | Ranger | Sentry |
 | --- | --- | --- |
-| K8s 部署 | 有官方 Operator / Helm Chart | 无官方 K8s 支持 |
+| K8s 部署 | 有 Operator（社区演进中）/ Helm Chart | 无官方 K8s 支持 |
 | 容器化 | 镜像完整、配置简洁 | 镜像老旧，配置复杂 |
 | 工作负载身份 | 支持 SPIFFE 集成（实验性） | 不支持 |
 | HPA / 自动伸缩 | 通过 K8s 原生支持 | 需自实现 |
@@ -199,7 +199,7 @@ Uber 在其数据平台用 Ranger 的 Row Filter 做"业务 BP 只能看自己�
 | 维度 | Ranger | Sentry |
 | --- | --- | --- |
 | 传统组件（Hive/HDFS/HBase/Kafka） | 支持 | 支持 |
-| Iceberg / Hudi / Delta | 已支持 Iceberg/Hudi/Delta Plugin | 不支持 |
+| Iceberg / Hudi / Delta | 社区起步阶段，Plugin 演进中（见第六层） | 不支持 |
 | 云原生（Trino / Presto / Flink） | 支持 Trino / Flink Plugin | 不支持 |
 | NoSQL（Cassandra / MongoDB） | 部分支持（HBase + 自研） | 不支持 |
 | 向量库（Milvus / Pinecone） | 暂无原生，需自研 | 不支持 |

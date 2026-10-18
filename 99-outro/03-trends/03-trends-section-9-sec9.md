@@ -31,8 +31,8 @@
 
 - 《Weapons of Math Destruction》（Cathy O'Neil）
 - 《The Age of Surveillance Capitalism》（Shoshana Zuboff）
-- 《Data Ethics》（Kord Davis）
-- 《AI Ethics》（Mark Coeckel 等）
+- 《Ethics of Big Data》（Kord Davis）
+- 《AI Ethics》（Mark Coeckelbergh）
 
 #### 组织与文化类
 

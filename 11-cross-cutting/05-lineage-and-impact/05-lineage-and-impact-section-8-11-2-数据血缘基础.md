@@ -348,7 +348,7 @@
 
 - **输入**：`asset_urn`、`direction = DOWNSTREAM`、`max_hops`。
 - **数据要求**：节点要有 `urn` 与 `type`，边要有 `transformation_type` 以便过滤；字段血缘要细化到列级别才能精确回答「**改 A 字段，影响哪些字段**」。
-- **输出**：受影响的资产清单 + 距变更点的距离 + 涉及的下游报表 / 模型 / 看板；often shown as a graph view in the UI。
+- **输出**：受影响的资产清单 + 距变更点的距离 + 涉及的下游报表 / 模型 / 看板；通常在 UI 中以图形化视图展示。
 - **工程实现**：BFS / DFS **正向遍历**（沿 source→target 边，与本层 `direction = DOWNSTREAM` 一致）+ 剪枝（按 domain / owner）；预计算「**关键节点 N 跳子图**」加速。
 - **工业参考**：DataHub GraphQL API 的 `lineage(direction, maxHops)`、Atlas 的 `LineageService`、Unity Catalog 的 `table_lineage`。
 

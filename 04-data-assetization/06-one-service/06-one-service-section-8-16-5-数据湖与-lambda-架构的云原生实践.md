@@ -60,7 +60,7 @@
 
 **3. 常见陷阱**
 
-- **用 NodePort 暴露 Driver Web UI**。大集群上 NodePort 端口冲突频繁，应用 HostPort + 固定端口。
+- **用 NodePort 暴露 Driver Web UI**。大集群上 NodePort 端口冲突频繁，应用 Service + Ingress 暴露。
 - **Pod 资源 requests == limits**。Spark 是动态资源需求，requests == limits 会导致资源调度僵化。
 - **Local PV 不做监控**。Local PV 节点故障时数据丢失，要做副本（PVC 复制）。
 - **K8s 默认调度器**。在 Spark 大作业场景下必踩坑，必须上 Volcano / YuniKorn。
@@ -477,7 +477,7 @@ Operator 自动创建 Deployment + Service + HPA。
 
 **第三层：典型问题与解法。**
 
-- **Driver UI 端口**：用 Ingress 暴露 4040 端口；大集群上 NodePort 端口冲突频繁，应用 HostPort + 固定端口（见 §16.5.1）。K8s 默认 30s 超时需要单独配置。
+- **Driver UI 端口**：用 Ingress 暴露 4040 端口；大集群上 NodePort 端口冲突频繁（见 §16.5.1）。K8s 默认 30s 超时需要单独配置。
 - **Spark Shuffle Service**：用 External Shuffle Service Pod + NodePort 暴露，避免 executor 重建后 shuffle 文件丢失。
 - **Flink Checkpoint**：用 S3 / OSS 作为 state backend，避免依赖本地盘。
 - **Operator 升级**：CRD v1beta1 → v1 时需要 conversion webhook。

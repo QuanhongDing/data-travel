@@ -232,7 +232,7 @@
 
 - **KDC**：峰值 TGS 请求约百 QPS 量级（按万节点、5-10 万 principal 的票据按寿命摊薄得稳态约 14-28 次 TGS-REQ/s，续签风暴使峰值达稳态的数倍），主节点建议 4 核 8GB 起，从节点建议 2 核 4GB 起。
 - **Ranger Admin**：策略量 5w-20w 条，DB 连接池 ≥ 50，JVM 堆 ≥ 8GB；Plugin 缓存大小按策略条数 × 平均条目大小估算（一般 256MB 就够，但热集群用 JVM OFF-HEAP 缓存 2GB）。
-- **Audit Pipeline**：每天事件数十亿级（万节点集群上每毫秒数百次访问）。Kafka 集群容量按保留 72h 估算；ClickHouse 集群按 30 天热数据存。
+- **Audit Pipeline**：每天事件数十亿级（万节点集群上每秒数万次访问，折合每毫秒数十次；数万次/s × 86400s ≈ 数十亿/天）。Kafka 集群容量按保留 72h 估算；ClickHouse 集群按 30 天热数据存。
 - **IAM 同步**：SCIM / 自研同步走消息队列，不要直接 KDC ↔ IdP 互连。
 
 **第四层：极端情况的兜底。**
@@ -302,7 +302,7 @@
 - **案例 A（时钟漂移）**：某互联网公司凌晨批量作业集中失败，KDC 日志显示大量 `KRB_AP_ERR_SKEW`。根因：VMWare 虚拟机时间同步策略变更。止血：把 NTP daemon 切回强制同步；根治：在 Hypervisor 层禁用「时间漂移吸收」。
 - **案例 B（KDC 过载）**：某金融客户在大量并发作业提交时 KDC CPU 100%，TGS 换票请求大量超时失败。根因：KDC 单实例 + 横向扩展缺失。止血：扩容至 3 KDC；根治：业务方改成批量提交 + KDC 多主。
 - **案例 C（keytab 过期）**：某大型数据平台升级后 30% 服务报 `no key table entry`。根因：运维轮换 keytab 时漏掉若干服务。止血：批量下发旧 keytab；根治：把所有 keytab 入配置中心 + 续签监控。
-- **案例 D（长任务 TGT 过期）**：某 Spark Streaming 作业跑了 14 天后失败，日志显示 `TGT expired`。根因：AM 续签线程崩溃。止血：重启作业 + 手动续签；根治：增强 AM 续签监控与 watchdog。
+- **案例 D（长任务 TGT 过期）**：某 Spark Streaming 作业跑了多天后失败，日志显示 `TGT expired`。根因：AM 续签线程崩溃。止血：重启作业 + 手动续签；根治：增强 AM 续签监控与 watchdog。
 
 **第四层：根治的工程标准动作。**
 
@@ -331,7 +331,7 @@
 - LinkedIn「Lessons Learned from Kerberos in Hadoop at Scale」公开演讲。
 - GitHub 上 OpenStack、Apache 项目的 KDC 故障复盘报告。
 - Netflix / Uber 关于「Network time chaos engineering」的公开博客。
-- **微众银行 Kerberos 长任务 token 续签踩坑** —— Spark Streaming 跑 14 天后 TGT 过期，根因是 AM 续签线程未做 watchdog，根治后入运维 SOP。
+- **微众银行 Kerberos 长任务 token 续签踩坑** —— Spark Streaming 跑了多天后 TGT 过期，根因是 AM 续签线程未做 watchdog，根治后入运维 SOP。
 - **京东的容器平台 Kerberos 故障复盘** —— K8s 节点时钟漂移导致全集群半数 Pod 票据失效，止血用强制 NTP 同步 + keytab 批量重发。
 - **中国移动的跨机房 KDC 故障切换实战** —— 主 KDC 故障时切换至 SLA 备机 + DNS SRV 解析，演练证明客户端无感，且时钟同步监控未触发告警。
 

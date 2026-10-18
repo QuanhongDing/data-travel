@@ -11,7 +11,7 @@
 - 是否理解 Ranger（Apache Ranger）是「**集中式策略 + 插件架构**」，Sentry（Apache Sentry）是「**角色绑定资源**」的本质设计差异，而不是简单罗列功能。
 - 能否从「策略模型 / 插件生态 / 审计能力 / 性能开销」四个维度做结构化对比。
 - 是否知道 Sentry 在社区已基本停止主版本迭代（仍随 CDH/HDP 维护），而 Ranger 仍是 Hadoop 生态主流授权中心。
-- 加分项：能结合 Apache Polaris（incubating，原 Iceberg REST Catalog）、Databricks Unity Catalog、Snowflake Horizon Catalog 等湖仓时代权限方案谈演进。
+- 加分项：能结合 Apache Polaris（incubating，Snowflake 开源后捐入 Apache 孵化，REST Catalog 实现）、Databricks Unity Catalog、Snowflake Horizon Catalog 等湖仓时代权限方案谈演进。
 
 **2. 参考答案框架**
 

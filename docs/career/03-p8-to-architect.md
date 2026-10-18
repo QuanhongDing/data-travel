@@ -119,7 +119,7 @@
 - 《An Elegant Puzzle》—— Will Larson 工程师管理文集
 - 《Measure What Matters》—— OKR 实战
 - 《The Hard Thing About Hard Things》—— Ben Horowitz 创业难题
-- [Ch00/01 能力地图](../../00-introduction/01-capability-model/01-capability-model.md) —— 4 域 × 5 级
+- [Ch00/01 能力地图](../../00-introduction/01-capability-model/01-capability-model.md) —— 4 域 × 4 级（P5-P8）
 - [Ch13 技术战略](../../13-decision/05-tech-strategy/05-tech-strategy.md) —— 3-5 年路线图
 - [Ch14 团队管理全章](../../14-leadership/) —— 12 个子章节
 - [Ch99 成长建议](../../99-outro/02-growth-advice/02-growth-advice.md) —— 资深成长路径

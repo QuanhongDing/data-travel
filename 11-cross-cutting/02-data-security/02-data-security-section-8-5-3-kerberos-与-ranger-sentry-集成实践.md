@@ -168,7 +168,7 @@
 | 架构形态 | 集中式（Admin + Plugins） | 嵌入式（绑定 HMS） |
 | 策略存储 | MySQL/Postgres（独立服务） | MySQL（Sentry 服务） |
 | 评估位置 | 各组件的 Plugin（本地） | HiveServer2 启动时加载到内存 |
-| 同步机制 | Admin REST 推送 + Plugin 缓存 | 启动时全量拉 + 重启生效 |
+| 同步机制 | Admin REST 拉取 + Plugin 缓存 | 启动时全量拉 + 重启生效 |
 
 **第二层：功能特性对比。**
 

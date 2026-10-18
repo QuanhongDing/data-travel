@@ -222,7 +222,7 @@ Flink 的 Chandy-Lamport 分布式快照协议是这一切的核心：
 
 | 故障点 | Flink 行为 | 一致性保证 |
 | --- | --- | --- |
-| Source 失败 | 从 last completed checkpoint 的 offset 重读 | 至少一次消费，靠下游幂等去重 |
+| Source 失败 | 从 last completed checkpoint 的 offset 重读 | 恰好一次（Source offset 与算子状态随同一 checkpoint 一起恢复） |
 | 算子失败 | 从 state backend 恢复状态 | 算子状态精确恢复 |
 | Sink 失败但事务已 preCommit | 重启后 abort 事务 | 外部写不生效 |
 | Sink 失败但事务已 commit | 已 commit，结果生效 | 无需重做 |
@@ -447,7 +447,7 @@ CDC 在一致性中的角色是**"事务边界复制"**——它把 OLTP 数据�
 
 | 路径 | 原理 | 工具 | 一致性 |
 | --- | --- | --- | --- |
-| **基于 binlog** | 解析 MySQL / PostgreSQL 的二进制日志 | Debezium、Canal、Maxwell | 强（基于 commit 后的 binlog） |
+| **基于 binlog** | 解析 MySQL 的二进制日志 | Debezium、Canal、Maxwell | 强（基于 commit 后的 binlog） |
 | **基于 WAL** | 解析 PostgreSQL 的 Write-Ahead Log | Debezium for PG、pgoutput | 强（Logical Replication） |
 | **基于 redo log** | 解析 Oracle 的 redo log | Oracle GoldenGate、阿里 DTS | 强 |
 | **基于 trigger** | 在源表上建 trigger，把变更写入影子表 | 自研、阿里精卫 | 中（trigger 写入失败可能漏） |
@@ -487,7 +487,7 @@ CDC 在 Lakehouse 中的**关键作用**：
 4. **跨库一致性**：多个 OLTP 库的 binlog 通过 Kafka 统一汇聚，下游一份代码处理所有库的变更。
 
 **第五层：CDC 的常见失效模式。**
-- **binlog 格式必须是 ROW**：MySQL 默认 `STATEMENT` 格式不能完整记录行变更，必须改成 `ROW`。
+- **binlog 格式必须是 ROW**：MySQL 若采用 `STATEMENT` 格式，不能完整记录行变更，必须改成 `ROW`。
 - **binlog 过期被清理**：如果 Debezium 长时间不消费，binlog 会被 MySQL 自动清理，导致"断点"——必须做监控与告警。
 - **DDL 变更漏识别**：Debezium 对部分 DDL（如 RENAME COLUMN）支持不完善，需要测试覆盖。
 - **大事务延迟**：binlog 里有一个事务有上百万行变更，Debezium 解析后会延迟下游消费——必须监控"事务延迟"指标。
@@ -495,7 +495,7 @@ CDC 在 Lakehouse 中的**关键作用**：
 **3. 常见陷阱**
 
 - **以为 CDC 默认就有 EOS。** Debezium 自身只保证"binlog 完整读取"，下游 Sink 的 EOS 必须由 Kafka Connect 的 `exactly-once` sink 或业务侧幂等兜底。
-- **忽略 binlog 格式。** MySQL 默认 `STATEMENT` 不能被 CDC 解析；忘记改 `ROW` 是最常见的部署事故。
+- **忽略 binlog 格式。** MySQL 若采用 `STATEMENT` 格式，CDC 无法解析；忘记改 `ROW` 是最常见的部署事故。
 - **把 trigger 路径当作生产可用方案。** trigger 路径写入失败可能漏变更，且增加源库写入延迟；只在 binlog 不可用的边缘系统中使用。
 - **不监控 binlog 延迟。** Debezium 卡住时 binlog 会持续累积，最终被 MySQL 清理；必须监控"消费延迟"指标。
 - **混淆 CDC 与 ETL。** CDC 是"变更事件流"，ETL 是"批量同步"；前者实时、后者定时；用 CDC 替代 ETL 不是"加一个工具"，是改变整个数据流转模式。

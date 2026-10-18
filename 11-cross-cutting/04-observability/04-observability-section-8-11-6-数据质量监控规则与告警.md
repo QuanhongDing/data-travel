@@ -340,7 +340,7 @@ checks:
 **第四层：DQC 引擎层 —— 规则执行。**
 - **Flink DataStream API**：每条 record 经过规则算子；
 - **Flink CEP**：复杂事件处理（多 record 模式匹配，如"连续 3 分钟无数据"）；
-- **状态后端**：RocksDB（默认）+ TTL；滑动窗口 / Tumbling Window；
+- **状态后端**：RocksDB + TTL；滑动窗口 / Tumbling Window；
 - **规则加载**：外部配置中心（Consul / Nacos / 自研）动态加载规则，无需重启作业。
 
 **第五层：告警与存储层。**

@@ -457,7 +457,7 @@ spec:
 **4. 追问预测**
 
 - **「K8s 节点宕机 vs YARN NM 宕机的差异？」** 答：K8s 是 Pod 级隔离（重启 Pod），YARN 是 Container 级（NM 进程级）；K8s 多了 PVC 处理。
-- **「Spark on K8s 怎么避免 shuffle 丢失？」** 答：用 External Shuffle Service（独立 DaemonSet），节点宕机不影响 shuffle；或用 Remote Shuffle Service（如 Celeborn）。
+- **「Spark on K8s 怎么避免 shuffle 丢失？」** 答：用 External Shuffle Service（独立 DaemonSet）把 shuffle 文件与 executor / AM 生命周期解耦，executor / AM 重启不丢文件（但 shuffle 文件仍落在节点本地盘，节点整体宕机时随本盘一起丢）；要连节点宕机一起扛，需用 Remote Shuffle Service（如 Celeborn）。
 - **「Flink on K8s state 后端选什么？」** 答：RocksDB state backend + 增量 checkpoint 存 PVC 或对象存储（S3 / OSS）。
 
 **5. 参考资料**

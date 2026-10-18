@@ -2,7 +2,7 @@
 
 ### 8.3 §5.1 Kerberos 认证基础
 
-> 本主题覆盖 Kerberos 的基本概念（keytab、流程、时钟、KDC）、五要素角色（KDC / TGT / Service Ticket）及万节点规模下的性能挑战。面试官通常从"为什么 Hadoop 必须配 Kerberos"问起，下钻到协议细节与运维陷阱。
+> 本主题覆盖 Kerberos 的基本概念（keytab、流程、时钟、KDC）、三类角色（KDC / TGT / Service Ticket）及万节点规模下的性能挑战。面试官通常从"为什么 Hadoop 必须配 Kerberos"问起，下钻到协议细节与运维陷阱。
 
 #### §5.1.1 请描述在 Hadoop 集群中集成 Kerberos 认证时，Keytab 文件的作用以及其安全使用规范。请举例说明为什么 Keytab 文件泄露是重大安全事故。
 

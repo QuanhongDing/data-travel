@@ -27,7 +27,7 @@
 - **读取侧**：Spark 的 FileScan 阶段需要为每个文件 open 一个 split + 建立 reader，10 万文件意味着 10 万次 RPC；MapReduce 同样。
 - **下游 compaction**：下游 ETL 读这种表，每一轮都要付出"开 10 万文件"的代价，CPU 与延迟一起升高。
 
-**第三层：三种治理手段及适用场景。**
+**第三层：四种治理手段及适用场景。**
 
 - **Iceberg/Hudi/Delta Lake 自带的 `rewrite_data_files` / `compaction`**：写后异步触发，把目标文件压到 256 MB（可通过 `target-file-size-bytes` 调）。适用：所有用湖表的场景，**首选方案**。
 - **写入侧控制并行度 + 文件大小**：Spark 的 `spark.sql.files.maxRecordsPerFile` 或 Hive 的 `tez.orc.stripe.size` 控制；Reduce 阶段按业务主键 `distribute by` 加 `cluster by`，避免下游 shuffle 后再分裂成更多文件。适用：从源头治理，是治本之法。

@@ -92,7 +92,7 @@
 2. **资源维度**：检查 `NodeManager` 的 `AvailablePhysicalMemory` / `AvailableVirtualMemory`；是否有 swap 压力（swap 触发 OOM 会误杀）。
 3. **磁盘维度**：`du -sh /data/*` 看是否被打满；HDFS 的 `dfs.datanode.data.dir` 多目录配置是否均衡；本地磁盘满会触发 Container 清理。
 4. **网络维度**：检查 `net.core.somaxconn`、`tcp retransmit` 占比，连接耗尽也会触发进程退出。
-5. **Spark / Flink 自身**：Spark 的 `spark.executor.heartbeatInterval`（默认 10s）过长会导致超时被杀，需要调小；Flink 的 `taskmanager.heartbeat.timeout`（默认 10s）同理。
+5. **Spark / Flink 自身**：Spark 的 `spark.executor.heartbeatInterval`（默认 10s）过长会导致超时被杀，需要调小；Flink 的 `heartbeat.interval`（默认 10s）同理。
 
 **第四层：止血与根治。** 止血：把可疑节点加入 YARN 黑名单（`yarn.nodemanager.unhealthy-node-detection.enabled`），或 K8s 下做 cordon + drain。根治：依归类结论走对应方向——配置缺陷改配置、版本缺陷回滚、硬件缺陷报修。
 

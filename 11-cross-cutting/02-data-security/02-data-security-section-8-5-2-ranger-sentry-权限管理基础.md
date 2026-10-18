@@ -38,7 +38,7 @@
 
 **第三层：历史演进。** 2013 年 Cloudera 开源 Sentry；2014 年 Hortonworks（HDP）推出 Ranger——Sentry 起步更早。2018 年宣布、2019 年初完成的 Cloudera / Hortonworks 合并后，Cloudera 把 Ranger 作为统一权限方向；Sentry 维护但停止大改。2020 年后 Ranger 已成为新平台的事实标准。
 
-**第四层：工业案例。** 阿里云 EMR 默认 Ranger 提供统一权限；腾讯云 TBDS、美团数据安全网关均基于 Ranger；AWS EMR 也支持 Ranger 集成。Cloudera CDH 在 6.x 之后同时支持 Ranger / Sentry（默认 Ranger）；DataBricks Unity Catalog 在产品形态上借鉴 Ranger 的"多组件策略中心"思想。Snowflake / BigQuery 的 RBAC 是云数仓自研的等价方案。
+**第四层：工业案例。** 阿里云 EMR 默认 Ranger 提供统一权限；腾讯云 TBDS、美团数据安全网关均基于 Ranger；AWS EMR 也支持 Ranger 集成。Cloudera CDH 在 6.x 之后同时支持 Ranger / Sentry（默认 Ranger）；Databricks Unity Catalog 在产品形态上借鉴 Ranger 的"多组件策略中心"思想。Snowflake / BigQuery 的 RBAC 是云数仓自研的等价方案。
 
 **3. 常见陷阱**
 

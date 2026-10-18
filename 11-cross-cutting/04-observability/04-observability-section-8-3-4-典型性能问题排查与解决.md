@@ -300,7 +300,7 @@
 - **资源不足是临时**：增加节点（弹性扩缩容，云上可走 spot instance）。
 - **资源不足是常态**：
   - 重新划分队列（按业务优先级）；
-  - 提高 `maximum-capacity`（超过 100%）；
+  - 把 `maximum-capacity` 从低于 100% 的当前值往上提（上限即 100%）；
   - 启用 Reservation System 预约；
   - 开启抢占（让低优先级释放）。
 - **资源不足是配置问题**：检查 `yarn.scheduler.capacity.resource-calculator`、`<queue>.user-limit-factor` 等。

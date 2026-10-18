@@ -267,7 +267,7 @@ Container = 物理进程，由 YARN NodeManager（NM）管控；Executor 是 Spa
 **4. 追问预测**
 
 - **「NN 切 Standby 时数据一致性？」** 答：QJM 写 EditLog 到多数派，切 Active 时保证不丢；FSImage 由 Standby 定期 merge。
-- **「DN Decommission 多久？」** 答：受数据量与带宽限制；500GB 数据 × 10MB/s 带宽 ≈ 14h；可临时调带宽。
+- **「DN Decommission 多久？」** 答：受数据量与带宽限制；500GB 数据 ÷ 10MB/s 带宽 ≈ 14h；可临时调带宽。
 - **「脑裂怎么避免？」** 答：ZK 选主 + ZKFC 隔离机制（fencing）；旧 Active kill 自身防止双写。
 
 **5. 参考资料**

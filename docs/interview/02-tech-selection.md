@@ -58,7 +58,7 @@
 - **Databricks 推 Delta**：与 Spark 商业版绑定
 - **Snowflake 走云原生**：解耦存算 + 多云
 - **美团选 Doris**：多场景统一（点查 + 分析 + 轻 ETL）
-- **京东选 StarRocks**：MySQL 生态友好
+- **京东选国产开源 OLAP**：MySQL 生态友好
 - **Apache 选 Iceberg**：社区中立（vs Databricks 控制 Delta）
 
 ## 参考资料
