@@ -1,4 +1,4 @@
-# 海外案例研究 案例研究
+# 海外案例研究案例研究
 
 > **一句话定位**：从 Databricks Lakehouse / Snowflake 数据共享 / Stripe 财务数据架构 / LinkedIn 大数据 / Anthropic Claude Engineering / OpenAI Engineering 等海外头部案例中，看清 2024–2025 年数据架构 + AI 平台的前沿趋势。
 

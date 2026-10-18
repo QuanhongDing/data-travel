@@ -1,4 +1,4 @@
-> 本文件是 **06-one-service.md** § 8 面试真题集 的子主题。完整章节请回到 [index](06-one-service.md) 或 [§ 8 索引](06-one-service-section-8-sec8.md)。
+> 本文件是 **06-one-service.md** § 8 面试真题集的子主题。完整章节请回到 [index](06-one-service.md) 或 [§ 8 索引](06-one-service-section-8-sec8.md)。
 
 ### 8.4 §16.5 数据湖与 Lambda 架构的云原生实践
 
@@ -530,7 +530,7 @@ Operator 自动创建 Deployment + Service + HPA。
 **第四层：优势（K8s 带来的）。**
 
 - **弹性**：Spark Dynamic Allocation 在 K8s 上更容易实现（Pod 数量随负载伸缩）。
-- **多云**：同一份 SparkApplication 可以在 AWS / GCP / 阿里云 上跑。
+- **多云**：同一份 SparkApplication 可以在 AWS / GCP / 阿里云上跑。
 - **统一治理**：监控（Prometheus）、日志（EFK）、网络（CNI）一套工具覆盖所有大数据组件。
 - **资源利用率**：K8s 共享池比物理机静态分配利用率提升显著（【经验】档：幅度随作业形态、共享比例与是否错峰调度而异，本节无法给出可溯源的统一数字，引用时请自行查证）。
 

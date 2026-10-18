@@ -134,7 +134,7 @@ OneID 的发展大致可分为五个阶段，每个阶段对应一种技术栈�
 | **实体解析（Entity Resolution, ER）** | 学术与系统领域的统称，包含 blocking、matching、clustering | 见 §2.3（blocking 见本表「Blocking」行） |
 | **设备指纹（Device Fingerprint）** | 浏览器/设备的稳定标识（UA + 屏幕 + 字体 + 插件 + canvas 等） | 命中率 70-90% |
 | **设备 ID** | 移动端的稳定 ID（IDFA / OAID / IMEI / Android ID / MAC） | IDFA iOS14 后需授权 |
-| **手机号三要素** | 手机号 + 姓名 + 身份证号 三字段组合 | 强匹配主流 |
+| **手机号三要素** | 手机号 + 姓名 + 身份证号三字段组合 | 强匹配主流 |
 | **图谱合并（Graph Merge）** | 基于 ID-Graph 的连通分量作为 OneID | 大厂主流 |
 | **ULID / UUID v7** | 业界推荐的新一代主键 ID（时间有序 + 全局唯一） | 推荐替代雪花 |
 | **雪花 ID（Snowflake）** | Twitter 风格的时间戳 + 机器号 + 序列号 | 国内主流 18 位 |

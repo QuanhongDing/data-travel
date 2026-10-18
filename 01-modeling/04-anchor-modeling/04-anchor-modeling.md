@@ -2,7 +2,7 @@
 
 > **一句话定位**：以 Anchors / Attrtributes / Ties / Knots 四件套，实现第 6 范式 + bitemporal 时态建模的高度可演化数据仓库。
 
-> 本文是 data-travel 项目 [Ch1 · 建模方法论](../../README.md) 的子章节（04-anchor-modeling）。覆盖 R3 数据建模 相关的"6NF 极致规范化、bitemporal 时态建模、零中断 schema 演化、AI 时代的自演化数据底座"核心能力。
+> 本文是 data-travel 项目 [Ch1 · 建模方法论](../../README.md) 的子章节（04-anchor-modeling）。覆盖 R3 数据建模相关的"6NF 极致规范化、bitemporal 时态建模、零中断 schema 演化、AI 时代的自演化数据底座"核心能力。
 
 ---
 

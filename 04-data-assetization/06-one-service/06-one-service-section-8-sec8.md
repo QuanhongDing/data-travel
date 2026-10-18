@@ -4,7 +4,7 @@
 
 > 本节整合自题库《大数据平台架构师》（创脉思 cms365.cn，版本 2025-11-25）的真实面试题，题号沿用原题库编号（PDF §X.Y 第 K 题），便于读者回溯原题。
 >
-> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Netflix / Uber / Meta / LinkedIn / Databricks / Snowflake / 阿里 / 字节 等），便于读者进一步溯源。
+> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Netflix / Uber / Meta / LinkedIn / Databricks / Snowflake / 阿里 / 字节等），便于读者进一步溯源。
 
 ### 8.1 全景视图
 
@@ -108,7 +108,7 @@
 1. **先说清约束**——任何选型都源于业务约束（延迟 / 一致性 / 成本 / 合规）。
 2. **再说清选项**——列出主流方案的优劣（湖 vs 仓、Lambda vs Kappa、Flink vs Spark）。
 3. **最后说清取舍**——为什么这么选、代价是什么、何时该换。
-4. **必引头部实践**——Netflix / Uber / Meta / LinkedIn / Databricks / Snowflake / 阿里 / 字节 是必引素材。
+4. **必引头部实践**——Netflix / Uber / Meta / LinkedIn / Databricks / Snowflake / 阿里 / 字节是必引素材。
 5. **警惕空话**——具体参数（QPS、延迟、文件大小、并行度）比抽象概念有力。
 
 **OneService 视角的核心命题**：

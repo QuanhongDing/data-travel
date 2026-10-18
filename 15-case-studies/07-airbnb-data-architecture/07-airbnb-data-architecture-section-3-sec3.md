@@ -298,4 +298,4 @@ V5.0 AI Native（2023–2025）
 
 还有一条属于本案例的特殊性，需要读者自行判断是否可迁移：**这条演进路径是十六年时间里逐步长出来的**（【经验：本案例 § 3 年表，2008–2025】），每一代都建立在上一代的成果之上。**缩短时间跨度去走同一条路，风险不在于做不出来，而在于跳过了「上一代把问题变成组织共识」的过程**——没有经历过口径分裂的组织，通常不会为语义层投入资源，语义层也就不会被引用。
 
-> 配合 [主文件 § 1 背景 与 § 2 挑战](07-airbnb-data-architecture.md)、[§ 4 关键决策](07-airbnb-data-architecture-section-4-sec4.md) 与 [§ 6 复用经验](07-airbnb-data-architecture-section-6-sec6.md) 阅读。
+> 配合 [主文件 § 1 背景与 § 2 挑战](07-airbnb-data-architecture.md)、[§ 4 关键决策](07-airbnb-data-architecture-section-4-sec4.md) 与 [§ 6 复用经验](07-airbnb-data-architecture-section-6-sec6.md) 阅读。

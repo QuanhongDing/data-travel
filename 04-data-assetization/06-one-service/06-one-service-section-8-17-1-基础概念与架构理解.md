@@ -1,4 +1,4 @@
-> 本文件是 **06-one-service.md** § 8 面试真题集 的子主题。完整章节请回到 [index](06-one-service.md) 或 [§ 8 索引](06-one-service-section-8-sec8.md)。
+> 本文件是 **06-one-service.md** § 8 面试真题集的子主题。完整章节请回到 [index](06-one-service.md) 或 [§ 8 索引](06-one-service-section-8-sec8.md)。
 
 ### 8.5 §17.1 基础概念与架构理解
 

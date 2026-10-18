@@ -4,7 +4,7 @@
 
 > 本节围绕本章节自身主题「指标平台（Metric Platform）」自编 6 道面试题，覆盖指标平台端到端链路上最容易被面试官追问的工程决策点：范式定位与核心价值、原子指标建模与 OneMetric 方法论、开源工具选型（dbt Semantic Layer / Cube / LookML）、Text-to-Metric 与自然语言查询、指标血缘与口径治理、指标 API 与 Agent / LLM 消费。
 >
-> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Airbnb / dbt Labs / Cube / Snowflake / Databricks / Google Looker / 阿里 / 字节 / 美团 等），便于读者进一步溯源。
+> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Airbnb / dbt Labs / Cube / Snowflake / Databricks / Google Looker / 阿里 / 字节 / 美团等），便于读者进一步溯源。
 
 ### 8.1 全景视图
 

@@ -54,12 +54,21 @@ def cells(line):
     t = re.sub(r'\$[^$]{1,40}\$', '', t)
     return t.count('|') + 1
 
-fence_bad = []; dead = []; anch_bad = []; tbl_bad = []
+fence_bad = []; dead = []; anch_bad = []; tbl_bad = []; cjksp_bad = []
+# ④ 中文之间的多余空格：中文正文里不该出现「中<space>中」。
+#    2026-10-18 加的：这类空格是全局替换留下的尾巴，全书曾有 570+ 处。
+#    行内代码必须先切出来（SPLIT 带捕获组，代码段会保留在奇数下标），否则会把代码里的空格也算进来。
+CJKSP = re.compile(r'(?<=[一-鿿]) (?=[一-鿿])')
+CJKSP_SPLIT = re.compile(r'(`[^`]*`)')
 for p in files:
     inf = False; nf = 0; block = []
     for i, l in enumerate(open(p, encoding='utf-8', errors='replace').read().split('\n'), 1):
         if FENCE.match(l): inf = not inf; nf += 1; continue
         if inf: continue
+        for seg_i, seg in enumerate(CJKSP_SPLIT.split(l)):
+            if seg_i % 2 == 0 and CJKSP.search(seg):
+                cjksp_bad.append((os.path.relpath(p, ROOT), i, seg.strip()[:80]))
+                break
         for t in LINK.findall(l):
             if t.startswith(('http', 'mailto:')): continue
             refs.add(os.path.normpath(os.path.join(os.path.dirname(p), t)))
@@ -85,8 +94,10 @@ orph = [f for f in files if f not in refs and os.path.basename(f) != 'README.md'
 print(f'① 代码围栏异常      : {len(fence_bad)}')
 print(f'② 相对链接死链      : {len(dead)}')
 print(f'③ 锚点落空          : {len(anch_bad)}')
+print(f'④ 中文间多余空格    : {len(cjksp_bad)}')
 print(f'⑥ 表格单元格数异常  : {len(tbl_bad)}  （含已知误报：货币区间）')
 print(f'⑤ 无入链内容文件    : {len(orph)}')
-for name, rows in [('围栏', fence_bad), ('死链', dead), ('锚点', anch_bad), ('表格', tbl_bad), ('孤儿', orph)]:
+for name, rows in [('围栏', fence_bad), ('死链', dead), ('锚点', anch_bad), ('中文空格', cjksp_bad),
+                   ('表格', tbl_bad), ('孤儿', orph)]:
     for r in rows[:8]: print(f'   [{name}] {r}')
-sys.exit(1 if (fence_bad or dead or anch_bad or orph) else 0)
+sys.exit(1 if (fence_bad or dead or anch_bad or cjksp_bad or orph) else 0)

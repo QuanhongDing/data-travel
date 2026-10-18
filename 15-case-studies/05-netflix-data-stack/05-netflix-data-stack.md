@@ -1,4 +1,4 @@
-# Netflix 数据栈 案例研究
+# Netflix 数据栈案例研究
 
 > **一句话定位**：Netflix 用 15 年时间构建了一套以「Iceberg 表格式 + Spark/Flink + Maestro 调度 + Data Mesh 自治」为核心的现代化数据栈，是大规模数据栈 + 工程师自治文化最值得借鉴的海外样本。
 

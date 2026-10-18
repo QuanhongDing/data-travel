@@ -2,7 +2,7 @@
 
 > **一句话定位**：把"建模方法论"落到工具上——DataWorks、MaxCompute、Hologres、DataFinder、Iceberg/Hudi/Paimon 湖仓，OneData / OneID / 指标平台的端到端落地参考。
 
-> 本文是 data-travel 项目 [Ch1 · 建模方法论](../../README.md) 的子章节（12-hands-on）。覆盖 R3 数据建模 相关的"工业级建模实战、工具链组合、AI 增强落地"核心能力。
+> 本文是 data-travel 项目 [Ch1 · 建模方法论](../../README.md) 的子章节（12-hands-on）。覆盖 R3 数据建模相关的"工业级建模实战、工具链组合、AI 增强落地"核心能力。
 
 ---
 

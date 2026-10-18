@@ -13,7 +13,7 @@
 ## 子主题
 
 - [01 概念与定位](01-capability-model.md#1-概念与定位) — 能力地图是什么、为什么需要、在 AI 时代的位置
-- [02 核心原理](01-capability-model.md#2-核心原理) — 4 域 × 等级 × 子能力 三维结构
+- [02 核心原理](01-capability-model.md#2-核心原理) — 4 域 × 等级 × 子能力三维结构
 - [03 设计模式与范式](01-capability-model.md#3-设计模式与范式) — 3 维矩阵、画像组合、能力差距图
 - [04 工程实现](01-capability-model.md#4-工程实现) — 画像卡片、能力云、行为锚点
 - [05 前沿演进](01-capability-model.md#5-前沿演进ai-时代) — Skills-based organization、AI-Augmented 评估

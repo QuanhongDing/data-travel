@@ -1,4 +1,4 @@
-# Airbnb 数据架构 案例研究
+# Airbnb 数据架构案例研究
 
 > **一句话定位**：Airbnb 用 16 年时间构建了以「Minerva 指标平台 + Dataportal 元数据 + Airflow 调度 + ML Platform」为核心的元数据驱动数据架构，是数据科学家友好 + 治理成熟度最高的数据架构样本之一。
 

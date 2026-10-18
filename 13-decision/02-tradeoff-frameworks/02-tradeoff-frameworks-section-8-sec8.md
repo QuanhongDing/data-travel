@@ -4,7 +4,7 @@
 
 > 本节整合自题库《大数据平台架构师》（创脉思 cms365.cn，版本 2025-11-25）的真实面试题，题号沿用原题库编号（PDF §X.Y 第 K 题），便于读者回溯原题。原题库在分发到本章时题干错配（Hudi/Delta Lake/Iceberg 题被混入「选型决策框架」章），本章按章节自身主题——选型决策框架（Trade-off Frameworks）——重新组织题面、补全题干并五段式作答，保留原题号 §13.2.1 ~ §13.2.6 便于回溯。
 >
-> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业与权威机构的公开架构实践**（AWS / Google / Microsoft / Netflix / Uber / LinkedIn / ThoughtWorks / 阿里 等），便于读者进一步溯源。
+> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业与权威机构的公开架构实践**（AWS / Google / Microsoft / Netflix / Uber / LinkedIn / ThoughtWorks / 阿里等），便于读者进一步溯源。
 
 ### 8.1 全景视图
 
@@ -563,7 +563,7 @@ r 是企业的折现率（典型 8–12%），t 是年份。**钱的时间价值
 2. **再列选项**：至少 3 个候选，对照 Reference Architecture（AWS / Google / Azure）。
 3. **最后说取舍**：用加权得分 + 敏感性分析 + TCO / NPV 三件套支撑取舍。
 4. **必须 ADR 归档**：决策 = Considered Options + Decision Matrix + Sensitivity + Consequences；半年后复盘。
-5. **必引头部企业**：Netflix / Uber / LinkedIn / AWS / Google / Stripe / 阿里 / 字节 / 美团 / 腾讯 等公开实践是答案的「事实底座」，避免凭空论证。
+5. **必引头部企业**：Netflix / Uber / LinkedIn / AWS / Google / Stripe / 阿里 / 字节 / 美团 / 腾讯等公开实践是答案的「事实底座」，避免凭空论证。
 6. **警惕 AI 神化**：LLM 是 Copilot 不是 Decision Maker；幻觉与责任归属是工程硬约束。
 
 ---

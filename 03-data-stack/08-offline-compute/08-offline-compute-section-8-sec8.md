@@ -212,7 +212,7 @@
 
 - 经验值 128MB-512MB（Parquet 列存 + ZSTD 压缩后）。
 - 太小：读放大没缓解；太大：并行度退化（一个分区一个文件时并发上不去）、失败重算代价高。
-- 与 Shuffle Block 大小 匹配（典型 128MB 块对齐）。
+- 与 Shuffle Block 大小匹配（典型 128MB 块对齐）。
 
 **3. 常见陷阱**
 
@@ -491,7 +491,7 @@
 
 **第三层：SQL 方言与兼容性。** Hive 与 Spark SQL 在**绝大多数常见 SQL** 上兼容（本书无法给出可溯源的统计比例，此处按【经验】档处理），差异主要在：① 高阶分析函数（窗口、collect_list、复杂类型）；② Lateral View / Explode；③ 自定义 UDF 加载方式；④ 一些 ANSI SQL 行为的差异（如 NULL 排序）。生产中通常用 Spark SQL 提供 **Hive 兼容模式**（`spark.sql.hive.convertMetastoreOrc=true` 等），让历史 HQL 直接运行。
 
-**第四层：元数据与生态的复用。** Spark SQL 主动复用 Hive Metastore 作为元数据层，让 Hive 表与 Spark 表**共享一份 Catalog**——这是二者协同的关键。Databricks 的 Unity Catalog、阿里 DataWorks、网易雷火 / 米哈游 的数据平台都遵循这一架构。
+**第四层：元数据与生态的复用。** Spark SQL 主动复用 Hive Metastore 作为元数据层，让 Hive 表与 Spark 表**共享一份 Catalog**——这是二者协同的关键。Databricks 的 Unity Catalog、阿里 DataWorks、网易雷火 / 米哈游的数据平台都遵循这一架构。
 
 **第五层：生产选型策略。**
 

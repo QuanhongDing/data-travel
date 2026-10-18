@@ -1,4 +1,4 @@
-> 本文件是 **03-build-vs-buy.md** § 8 面试真题集 的子主题。完整章节请回到 [index](03-build-vs-buy.md) 或 [§ 8 索引](03-build-vs-buy-section-8-sec8.md)。
+> 本文件是 **03-build-vs-buy.md** § 8 面试真题集的子主题。完整章节请回到 [index](03-build-vs-buy.md) 或 [§ 8 索引](03-build-vs-buy-section-8-sec8.md)。
 
 ### 8.6 §14.4 流处理框架技术选型与适用（Flink / Spark Streaming / Kafka Streams）
 

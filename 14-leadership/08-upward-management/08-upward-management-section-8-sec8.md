@@ -4,7 +4,7 @@
 
 > 本节整合自题库《大数据平台架构师》（创脉思 cms365.cn，版本 2025-11-25）的真实面试题，题号沿用原题库编号（PDF §X.Y 第 K 题），便于读者回溯原题。
 >
-> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Netflix / Bridgewater / Amazon / 字节跳动 / Google / Meta / Apple / 阿里巴巴 / 华为 等），便于读者进一步溯源。
+> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Netflix / Bridgewater / Amazon / 字节跳动 / Google / Meta / Apple / 阿里巴巴 / 华为等），便于读者进一步溯源。
 >
 > **本主题方向**：资深架构师的「跨级影响力」能力——主动同步、风险升级、资源争取、期望管理、跨级沟通、自我展示。考察的不是「拍马屁」的技巧，而是「让老板赢」的专业体系。
 
@@ -42,7 +42,7 @@
 
 **第一层：学术定义。** 向上管理（Managing Up）研究的是「下属如何与上级建立高效、专业、双赢的工作关系」。源头有三：1967 年 Peter Drucker 在《The Effective Executive》中首次提出「Manage yourself, then manage up」；1980 年 John Gabarro 与 John Kotter 在《Harvard Business Review》发表《Managing Up》给出系统框架；后续 Keith Ferrazzi《Who's Got Your Back》（2009）补完了「盟友体系」的概念，Michael Lopp《Managing Humans》（2012）补完了「工程师语境下的实操」。共同点是：**它研究的不是「怎么说好话」，而是「怎么让老板赢，自己也赢」**。
 
-**第二层：工程定义（数据架构师语境）。** 向上管理 = 期望管理 × 沟通节奏 × 汇报技巧 × 资源争取 × Win-Win × 跨级协作 × 危机管理 的体系。其中：期望管理是「了解老板想要什么、主动对齐」；沟通节奏是「每周 1:1 + 月度 MBR + 季度 QBR 的频次」；汇报技巧是「金字塔原理 + SCQA 结构 + 30 秒电梯」；资源争取是「HC / 预算 / 技术投入的 ROI 论证」；危机管理是「坏消息的立即汇报与带着方案」。
+**第二层：工程定义（数据架构师语境）。** 向上管理 = 期望管理 × 沟通节奏 × 汇报技巧 × 资源争取 × Win-Win × 跨级协作 × 危机管理的体系。其中：期望管理是「了解老板想要什么、主动对齐」；沟通节奏是「每周 1:1 + 月度 MBR + 季度 QBR 的频次」；汇报技巧是「金字塔原理 + SCQA 结构 + 30 秒电梯」；资源争取是「HC / 预算 / 技术投入的 ROI 论证」；危机管理是「坏消息的立即汇报与带着方案」。
 
 **第三层：与「拍马屁 / 报喜不报忧」的本质区别。**
 
@@ -57,7 +57,7 @@
 
 **第四层：现代组织中的两种极端对照。** Netflix 的「自由与责任」（Freedom & Responsibility）文化要求极高的人才密度与全栈坦诚——这里的「向上」是一种「对待成年人」的对话，老板期待听到「坏消息 + 方案」，回避问题的人会被淘汰。Bridgewater 的「Radical Transparency」更进一步——几乎所有会议录音开放、内部有「棒球卡」互评系统，这里的「向上」几乎消失，因为信息不对称被系统性地消灭。亚马逊的 Leadership Principles 里有两条直接相关——「Have Backbone; Disagree and Commit」（敢于反对并承诺执行）与「Dive Deep」（深潜事实，不浮于表面）。这是判断候选人是否真正理解「向上管理不是讨好」的关键场景题。
 
-**第五层：从公式到行为。** 实践上把 `UpwardManagementSuccess = Trust × Visibility × WinWin × Resources` 落到日常：① 在每个 OKR 季度开始前主动找老板对齐目标（Expectation Setting）；② 每周固定 30-60 分钟 1:1 + 月度 MBR；③ 关键项目主动请老板站台（Visibility）；④ 危机 24 小时内带着方案汇报（Crisis）；⑤ 季度 QBR 用 Storytelling + 数据 讲结果（Visible Output）。这五条是面试官期待的「可操作答案」。
+**第五层：从公式到行为。** 实践上把 `UpwardManagementSuccess = Trust × Visibility × WinWin × Resources` 落到日常：① 在每个 OKR 季度开始前主动找老板对齐目标（Expectation Setting）；② 每周固定 30-60 分钟 1:1 + 月度 MBR；③ 关键项目主动请老板站台（Visibility）；④ 危机 24 小时内带着方案汇报（Crisis）；⑤ 季度 QBR 用 Storytelling + 数据讲结果（Visible Output）。这五条是面试官期待的「可操作答案」。
 
 **3. 常见陷阱**
 

@@ -4,7 +4,7 @@
 
 > 本节整合自题库《大数据平台架构师》（创脉思 cms365.cn，版本 2025-11-25）的真实面试题，题号沿用原题库编号（PDF §X.Y 第 K 题），便于读者回溯原题。本章案例研究的对象是 Netflix 数据栈，因此题目围绕「表格式选型 / 实时管道 / 调度 / Data Mesh 治理」四个主题设计。
 >
-> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Netflix / Uber / Databricks / LinkedIn / Airbnb / 阿里 / 字节 / 美团 等）与**行业垂直案例**（招商银行 微众银行 蚂蚁 平安 / 米哈游 网易雷火 / 美的 海尔 永辉 等），便于读者进一步溯源。
+> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Netflix / Uber / Databricks / LinkedIn / Airbnb / 阿里 / 字节 / 美团等）与**行业垂直案例**（招商银行微众银行蚂蚁平安 / 米哈游网易雷火 / 美的海尔永辉等），便于读者进一步溯源。
 
 ### 8.1 全景视图
 
@@ -284,7 +284,7 @@ Netflix 公开经验：**「共享基础设施 + 团队级配额 + 准入审批�
 - 是否理解「**流批一体**」的真正含义——**不是同一套 SQL 跑批又跑流**（那是流批融合），而是**同一份存储同时被流处理引擎与批处理引擎读写**（那是流批同存储）。Iceberg 解决的是后者。
 - 能否讲清 Flink 写 Iceberg 与 Spark 读 Iceberg 在 commit 协议下的协作——Flink 写入产生新 snapshot，Spark 读时通过 `ref` 指针拉到「最新已 commit 的 snapshot」。
 - 是否知道 Iceberg 的「**读时合并（Merge-on-Read, MOR）**」与「**写时合并（Copy-on-Write, COW）**」两种写入模式，对流读与批读的影响。
-- 加分项：能区分 Iceberg / Hudi / Delta 在流批同存储上的具体差异，并引用字节跳动 / 蚂蚁 的同类实践。
+- 加分项：能区分 Iceberg / Hudi / Delta 在流批同存储上的具体差异，并引用字节跳动 / 蚂蚁的同类实践。
 
 **2. 参考答案框架**
 
@@ -307,7 +307,7 @@ Iceberg 解决的是**第一层**（存储一体），为第三层（口径一�
 
 **Snapshot 隔离**：每次 commit 产生新 snapshot；老 snapshot 不会被修改或删除。读者启动时锁定一个 snapshot，整个查询过程中看到的是该 snapshot 的「冻结视图」，不会受并发写入影响。
 
-**第三层：Flink 写 + Spark/Trino 读 的协作流程。**
+**第三层：Flink 写 + Spark/Trino 读的协作流程。**
 
 - **Flink 端**：Flink job 写入 Iceberg 时，每完成一个 Checkpoint 触发一次 commit。每次 commit 在 S3 / HDFS 上生成新的 manifest list，并通过 atomic rename 完成。Flink 用 `FlinkSink` 的两阶段提交协议保证「Flink state」「Kafka offset」「Iceberg 写入」三者原子。
 - **Spark 端**：Spark 读 Iceberg 时，通过 Iceberg Spark connector 解析 manifest list，找到当前 commit 的 manifest 与 data file，按 Spark 的批处理模型并行读取。Spark 读的是「**当前 latest snapshot**」，也可以通过 `as-of-timestamp` 读到历史 snapshot。
@@ -433,8 +433,8 @@ Netflix 实际用法：核心交易表走 COW（数据量稳定、按天刷新�
 
 **第五层：行业横向对比。**
 
-- **Airflow**：Airbnb 开源，Lyft / Stripe / Twitter / 京东 / 美团 / 字节 等大量公司采用。优势是生态丰富、Operator 多；劣势是触发语义弱、UI 偏弱。
-- **DolphinScheduler**：国产开源调度系统，海尔 / 唯品会 / 字节 / 美团 等国内厂商广泛采用，强项是「**可视化 + 多触发 + 任务类型丰富**」，与 Maestro 设计哲学类似。
+- **Airflow**：Airbnb 开源，Lyft / Stripe / Twitter / 京东 / 美团 / 字节等大量公司采用。优势是生态丰富、Operator 多；劣势是触发语义弱、UI 偏弱。
+- **DolphinScheduler**：国产开源调度系统，海尔 / 唯品会 / 字节 / 美团等国内厂商广泛采用，强项是「**可视化 + 多触发 + 任务类型丰富**」，与 Maestro 设计哲学类似。
 - **Apache Airflow + 自研触发层**：部分公司（LinkedIn / Uber）选择在 Airflow 上自研事件触发层（如 Kafka trigger）。这是「**生态优先 + 增量定制**」的折中方案。
 - **Netflix Maestro**：自研的统一 DAG 调度（已开源，开源仓库地址本书未给出；设计与实践见 Netflix 工程博客，2022），社区影响力目前小于 Airflow / DolphinScheduler，但设计哲学值得参考。
 

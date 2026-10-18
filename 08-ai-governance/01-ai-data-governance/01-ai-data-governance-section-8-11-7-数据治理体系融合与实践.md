@@ -1,4 +1,4 @@
-> 本文件是 **01-ai-data-governance.md** § 8 面试真题集 的子主题。完整章节请回到 [index](01-ai-data-governance.md) 或 [§ 8 索引](01-ai-data-governance-section-8-sec8.md)。
+> 本文件是 **01-ai-data-governance.md** § 8 面试真题集的子主题。完整章节请回到 [index](01-ai-data-governance.md) 或 [§ 8 索引](01-ai-data-governance-section-8-sec8.md)。
 
 ### 8.5 §11.7 数据治理体系融合与实践
 
@@ -323,7 +323,7 @@ Quality Rule Run → Kafka → 结果入 Metric Store + Catalog 标注
 
 ---
 
-#### §11.7.5 在一个大型数据平台中，如何设计一个元数据采集系统，以确保能够自动、高效地收集 Hive / Spark / Flink / 湖表 等多源的元数据，并支持近实时？
+#### §11.7.5 在一个大型数据平台中，如何设计一个元数据采集系统，以确保能够自动、高效地收集 Hive / Spark / Flink / 湖表等多源的元数据，并支持近实时？
 
 **1. 考察点**
 

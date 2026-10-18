@@ -215,7 +215,7 @@
 
 **标准与官方文档（可核验的判定入口）**
 
-- 《信息安全技术 信息系统灾难恢复规范》GB/T 20988-2007——主文件 §1.1 已引用的六级容灾口径来源。
+- 《信息安全技术信息系统灾难恢复规范》GB/T 20988-2007——主文件 §1.1 已引用的六级容灾口径来源。
 - AWS「Disaster Recovery (DR) Architecture on AWS」白皮书（AWS 官方文档，多版本持续更新）——四策略 Backup & Restore / Pilot Light / Warm Standby / Multi-Site Active/Active，与主文件 §1.1 的冷 / 温 / 热 / 多活档位一一对应；它同时也是"AI 时代容灾并未改变档位划分"的证据。
 - AWS EC2 用户指南 · Spot 中断通知——回收前 2 分钟预警窗口【公开，AWS 官方文档，2015 年前后起口径一致】。
 - AWS Fault Injection Simulator（AWS 官方公告，2021 年前后正式可用）——把故障注入做成托管能力。

@@ -313,7 +313,7 @@ evolution:
 
 **2. 参考答案框架**
 - 传统：按 CPU/内存/存储计费。
-- AI：按 Token / Tool 调用 / 推理步 / Embedding / 向量存储 多维计费。
+- AI：按 Token / Tool 调用 / 推理步 / Embedding / 向量存储多维计费。
 - 关键：按「业务价值」归因（每 1 元 token 换多少 GMV / 用户 / 收入）。
 
 **3. 常见陷阱**：只看「总 token 花费」，不看「单位业务价值」。

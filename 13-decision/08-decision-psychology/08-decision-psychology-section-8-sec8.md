@@ -4,7 +4,7 @@
 
 > 本节围绕「决策心理学（Decision Psychology）」主题，面向资深数据架构师岗位的真实高频问法进行整合。题号采用 `§8.X.Y` 编排（X 为主题号，Y 为题号），对应源文件中 8.1 ~ 8.6 六个主题分组，方便读者回溯上下文。
 >
-> **每题按五段式作答**：1) 考察点 → 2) 参考答案框架 → 3) 常见陷阱 → 4) 追问预测 → 5) 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Amazon / Netflix / Uber / Meta / LinkedIn / Stripe / Databricks / Snowflake / 阿里 MaxCompute / 字节 等），便于读者进一步溯源。
+> **每题按五段式作答**：1) 考察点 → 2) 参考答案框架 → 3) 常见陷阱 → 4) 追问预测 → 5) 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Amazon / Netflix / Uber / Meta / LinkedIn / Stripe / Databricks / Snowflake / 阿里 MaxCompute / 字节等），便于读者进一步溯源。
 
 ### 8.1 全景视图
 

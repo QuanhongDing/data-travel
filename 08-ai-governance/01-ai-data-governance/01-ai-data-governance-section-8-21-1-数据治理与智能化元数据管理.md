@@ -1,4 +1,4 @@
-> 本文件是 **01-ai-data-governance.md** § 8 面试真题集 的子主题。完整章节请回到 [index](01-ai-data-governance.md) 或 [§ 8 索引](01-ai-data-governance-section-8-sec8.md)。
+> 本文件是 **01-ai-data-governance.md** § 8 面试真题集的子主题。完整章节请回到 [index](01-ai-data-governance.md) 或 [§ 8 索引](01-ai-data-governance-section-8-sec8.md)。
 
 ### 8.8 §21.1 数据治理与智能化元数据管理
 
@@ -352,7 +352,7 @@
 - **SQL Parser**：Calcite / JSQLParser——抽取 SELECT/FROM/JOIN/WHERE 关系；
 - **Logical Plan**：Spark Plan / Flink Plan / Trino Plan；
 - **Embedding 模型**：BERT / GPT-Embeddings 做 column/table 语义编码；
-- **LLM**：GPT / Claude / 通义千问 做 SQL / 注释 推断血缘；
+- **LLM**：GPT / Claude / 通义千问做 SQL / 注释推断血缘；
 - **Graph DB**：Neo4j / JanusGraph 储存血缘；
 - **Pipeline**：OpenLineage + Spark/Flink Listener。
 
@@ -367,7 +367,7 @@
 **第四层：上线路径。**
 
 - **Shadow 模式**：先跑「推断 + 现行血缘」双写，覆盖率与精度比较；
-- **按主题试点**：从财务 / 用户画像 等数据域开始；
+- **按主题试点**：从财务 / 用户画像等数据域开始；
 - **反馈**：用户能在 UI 内接受 / 拒绝 / 修正；
 - **回流**：反馈样本定期训练 / 微调；
 - **全量推广**：上线后逐步覆盖；

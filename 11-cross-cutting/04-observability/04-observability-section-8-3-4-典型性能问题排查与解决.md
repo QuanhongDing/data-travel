@@ -1,4 +1,4 @@
-> 本文件是 **04-observability.md** § 8 面试真题集 的子主题。完整章节请回到 [index](04-observability.md) 或 [§ 8 索引](04-observability-section-8-sec8.md)。
+> 本文件是 **04-observability.md** § 8 面试真题集的子主题。完整章节请回到 [index](04-observability.md) 或 [§ 8 索引](04-observability-section-8-sec8.md)。
 
 ### 8.2 §3.4 典型性能问题排查与解决
 

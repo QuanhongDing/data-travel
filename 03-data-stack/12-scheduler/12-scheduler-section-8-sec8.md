@@ -4,7 +4,7 @@
 
 > 本节按 5 段式作答框架（**考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料**），围绕调度系统的高频面试题展开，覆盖 Airflow / DolphinScheduler / Argo / Azkaban / K8s CronJob 的选型对比、DAG 依赖管理、基线治理、数据就绪信号、SLA 监控、失败重跑、跨集群调度等核心议题。
 >
-> 案例优先引用头部互联网企业的公开架构实践（Airbnb / LinkedIn / Uber / Netflix / Spotify / 阿里 / 字节 / 美团 / 京东 / 招行 / 微众 / 米哈游 等）。
+> 案例优先引用头部互联网企业的公开架构实践（Airbnb / LinkedIn / Uber / Netflix / Spotify / 阿里 / 字节 / 美团 / 京东 / 招行 / 微众 / 米哈游等）。
 
 ### 8.1 全景视图
 

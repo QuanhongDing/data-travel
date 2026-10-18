@@ -54,11 +54,11 @@
 
 - **Netflix 选 Iceberg**：替代自研的元数据层（hive metastore 痛点）
 - **Uber 选 Hudi**：增量处理 vs 全量重算的成本对比
-- **阿里 选 Paimon**：Flink 生态原生 + 国内活跃社区
+- **阿里选 Paimon**：Flink 生态原生 + 国内活跃社区
 - **Databricks 推 Delta**：与 Spark 商业版绑定
 - **Snowflake 走云原生**：解耦存算 + 多云
-- **美团 选 Doris**：多场景统一（点查 + 分析 + 轻 ETL）
-- **京东 选 StarRocks**：MySQL 生态友好
+- **美团选 Doris**：多场景统一（点查 + 分析 + 轻 ETL）
+- **京东选 StarRocks**：MySQL 生态友好
 - **Apache 选 Iceberg**：社区中立（vs Databricks 控制 Delta）
 
 ## 参考资料

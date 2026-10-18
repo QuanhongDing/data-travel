@@ -167,7 +167,7 @@ flowchart TB
 
 ## 辅助资源
 
-- [docs/career/](docs/career/) — P7→P8→资深架构师 成长路径与能力模型
+- [docs/career/](docs/career/) — P7→P8→资深架构师成长路径与能力模型
 - [docs/interview/](docs/interview/) — 资深架构师 / 智能体架构师面试题库（系统设计、选型决策、案例分析）
 - [docs/superpowers/specs/](docs/superpowers/specs/) — 项目设计文档
   - [2026-10-08-data-architect-restructure.md](docs/superpowers/specs/2026-10-08-data-architect-restructure.md) — 本次目录重组的现行规格（CURRENT）
@@ -176,7 +176,7 @@ flowchart TB
 
 ## 术语表
 
-为方便跨章节跳读，本书在 [序章 · 术语表](00-introduction/README.md#术语表) 中维护统一的术语对照表。新出现的关键术语都会在这里登记，重点扩充 AI 时代相关术语（智能体 / RAG / 向量数据库 / MCP / 等保 等）。
+为方便跨章节跳读，本书在 [序章 · 术语表](00-introduction/README.md#术语表) 中维护统一的术语对照表。新出现的关键术语都会在这里登记，重点扩充 AI 时代相关术语（智能体 / RAG / 向量数据库 / MCP / 等保等）。
 
 ## 写作约定
 

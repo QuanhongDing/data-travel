@@ -1,4 +1,4 @@
-> 本文件是 **01-ai-data-governance.md** § 8 面试真题集 的子主题。完整章节请回到 [index](01-ai-data-governance.md) 或 [§ 8 索引](01-ai-data-governance-section-8-sec8.md)。
+> 本文件是 **01-ai-data-governance.md** § 8 面试真题集的子主题。完整章节请回到 [index](01-ai-data-governance.md) 或 [§ 8 索引](01-ai-data-governance-section-8-sec8.md)。
 
 ### 8.7 §18.8 AI 治理与合规性
 
@@ -66,7 +66,7 @@
 - OpenAI《Preparedness Framework v2》（2024-12）。
 - Anthropic《Responsible Scaling Policy v2.1》。
 - Anthropic《Constitutional AI》系列论文。
-- 阿里 / 字节 / 百度 关于「AI 合规自动化」的公开技术分享。
+- 阿里 / 字节 / 百度关于「AI 合规自动化」的公开技术分享。
 - **蚂蚁集团的大模型备案与自动化合规** —— 在金融大模型上线前走备案 + 评估 + 数据来源可追溯全流程，Policy-as-Code 自动卡点。
 - **京东的电商 AI 客服内容审核** —— 用 AI Gateway + 内容过滤满足《生成式 AI 暂行办法》Deepfake 标识与有害信息拦截要求。
 - **微医的医疗 AI 内容标识** —— 在辅助问诊、影像诊断场景标识 AI 生成内容，输出侧给出可解释依据并备案。

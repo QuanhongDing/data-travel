@@ -22,7 +22,7 @@
 - 公开技术大会分享（KubeCon / QCon / ArchSummit / Strata / OSC / Data + AI Summit）
 - 公开技术博客（公司博客 / 个人 blog / Medium / 知乎 / InfoQ）
 - 开源项目贡献（Apache / CNCF / Linux Foundation）
-- 行业标准 / 白皮书 参与（信通院 / DAMA / 全国信标委）
+- 行业标准 / 白皮书参与（信通院 / DAMA / 全国信标委）
 
 ### Level 4：跨行业影响力（P8 / 数据架构师）
 
@@ -168,7 +168,7 @@
 - 每月 1-2 次公开技术大会
 - 1 个开源项目 Committer / Maintainer
 - 1-2 份专利 / 1 篇论文
-- 行业标准 / 白皮书 参与
+- 行业标准 / 白皮书参与
 
 ## 参考资料
 

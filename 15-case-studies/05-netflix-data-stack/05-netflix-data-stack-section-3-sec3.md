@@ -304,4 +304,4 @@ V5.0 AI Native（2023–2025）
 
 **如果只从本节拿走一个问题，那就是它**：**你这批数据「表状态的权威」写在哪个文件、哪条记录里，谁有权改它？** 这个问题回答不了的时候，讨论引擎、表格式与调度都是空的——因为无论选哪一个，都没人说得清当前这一份是什么状态。本案例的五代，本质上是在回答同一个问题的五个不同答案。
 
-> 配合 [主文件 § 1 背景 与 § 2 挑战](05-netflix-data-stack.md)、[§ 4 关键决策](05-netflix-data-stack-section-4-sec4.md) 与 [§ 6 复用经验](05-netflix-data-stack-section-6-sec6.md) 阅读。
+> 配合 [主文件 § 1 背景与 § 2 挑战](05-netflix-data-stack.md)、[§ 4 关键决策](05-netflix-data-stack-section-4-sec4.md) 与 [§ 6 复用经验](05-netflix-data-stack-section-6-sec6.md) 阅读。

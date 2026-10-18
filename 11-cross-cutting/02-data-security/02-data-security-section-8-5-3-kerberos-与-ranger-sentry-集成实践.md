@@ -1,4 +1,4 @@
-> 本文件是 **02-data-security.md** § 8 面试真题集 的子主题。完整章节请回到 [index](02-data-security.md) 或 [§ 8 索引](02-data-security-section-8-sec8.md)。
+> 本文件是 **02-data-security.md** § 8 面试真题集的子主题。完整章节请回到 [index](02-data-security.md) 或 [§ 8 索引](02-data-security-section-8-sec8.md)。
 
 ### 8.5 §5.3 Kerberos 与 Ranger / Sentry 集成实践
 

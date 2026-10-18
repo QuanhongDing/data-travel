@@ -1,4 +1,4 @@
-> 本文件是 **02-data-security.md** § 8 面试真题集 的子主题。完整章节请回到 [index](02-data-security.md) 或 [§ 8 索引](02-data-security-section-8-sec8.md)。
+> 本文件是 **02-data-security.md** § 8 面试真题集的子主题。完整章节请回到 [index](02-data-security.md) 或 [§ 8 索引](02-data-security-section-8-sec8.md)。
 
 ### 8.4 §5.2 Ranger / Sentry 权限管理基础
 

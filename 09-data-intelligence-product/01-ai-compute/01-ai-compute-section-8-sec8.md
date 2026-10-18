@@ -2,7 +2,7 @@
 
 ## 8. 面试真题集
 
-> 本节整合自《大数据平台架构师》（创脉思 cms365.cn，版本 2025-11-25）题库与公开工业实践，按"AI 算力全景视图 → 六大主题分题 → 本章小结"组织。每题沿用五段式：**考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料**。参考案例优先引用 OpenAI / Anthropic / DeepMind / Meta / Google (TPU) / Microsoft / Amazon (Trainium) / NVIDIA (MIG) / 阿里 (PAI 灵骏) / 字节 (ByteFSDP) / 华为 (昇腾) / 寒武纪 / 智谱 / 月之暗面 / 阶跃 等头部企业与芯片厂商的公开架构实践。
+> 本节整合自《大数据平台架构师》（创脉思 cms365.cn，版本 2025-11-25）题库与公开工业实践，按"AI 算力全景视图 → 六大主题分题 → 本章小结"组织。每题沿用五段式：**考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料**。参考案例优先引用 OpenAI / Anthropic / DeepMind / Meta / Google (TPU) / Microsoft / Amazon (Trainium) / NVIDIA (MIG) / 阿里 (PAI 灵骏) / 字节 (ByteFSDP) / 华为 (昇腾) / 寒武纪 / 智谱 / 月之暗面 / 阶跃等头部企业与芯片厂商的公开架构实践。
 
 ---
 

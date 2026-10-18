@@ -1,4 +1,4 @@
-# Uber 数据架构 案例研究
+# Uber 数据架构案例研究
 
 > **一句话定位**：Uber 用 14 年时间构建了一套以「Schemaless + Docstore + Apache Hudi + Michelangelo ML 平台」为核心的全球化数据架构，是实时调度 + Marketplace 业务数据化最值得借鉴的海外样本。
 

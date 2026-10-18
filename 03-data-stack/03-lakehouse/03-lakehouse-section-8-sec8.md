@@ -4,7 +4,7 @@
 
 > 本节针对「湖仓一体（Lakehouse）」章节，整理自真实架构师面试高频考点与 data-travel 项目读者的反馈。
 >
-> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业与开源社区的公开架构实践**（Netflix / Uber / Meta / LinkedIn / Databricks / Snowflake / Apache Iceberg / Apache Hudi / Delta Lake 社区 / 阿里 MaxCompute / 字节 DataFinder / 招行 / 平安 / 米哈游 / 美的 / 永辉 / 微医 等），便于读者进一步溯源。
+> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业与开源社区的公开架构实践**（Netflix / Uber / Meta / LinkedIn / Databricks / Snowflake / Apache Iceberg / Apache Hudi / Delta Lake 社区 / 阿里 MaxCompute / 字节 DataFinder / 招行 / 平安 / 米哈游 / 美的 / 永辉 / 微医等），便于读者进一步溯源。
 >
 > 题号采用章节自编码 `LH-Q`（LakeHouse-Question），便于本章节内交叉引用。
 
@@ -104,7 +104,7 @@
 
 **1. 考察点**
 
-- 是否理解 Medallion 不是「一种约 定的格式」，而是**对数据加工链路的责任划分**——Bronze 原样、Silver 清洗、Gold 服务化。
+- 是否理解 Medallion 不是「一种约定的格式」，而是**对数据加工链路的责任划分**——Bronze 原样、Silver 清洗、Gold 服务化。
 - 能否说清三层在 **流批一体** 下的形态变化（不只是离线数仓的专属）。
 - 是否区分「数据资产层（Bronze / Silver / Gold）」与「引擎层（Spark / Flink / Trino）」——很多团队把分层当物理分层挂在引擎上，做错了一次返工一个月。
 - 加分项：能给出**衰减因子**（每层是上一层的百分之多少数据量）与**迟到数据 / 重处理策略**。
@@ -582,7 +582,7 @@ Paimon 本质是**把 LSM 树结构搬到了湖表**：写入先入 memtable，f
 **通用答题心法**：
 
 - 先答**取舍**（为什么这么选），再答**特性**（有哪些能力），不要背对比表。
-- 必引用至少 1-2 个工业案例（Netflix / Uber / Databricks / Snowflake / 阿里 / 字节 / 招行 / 微医 等），证明你触过真实系统。
+- 必引用至少 1-2 个工业案例（Netflix / Uber / Databricks / Snowflake / 阿里 / 字节 / 招行 / 微医等），证明你触过真实系统。
 - 必说**代价**，任何技术选型都有代价，只讲优点是低分答案。
 - 必看 2024-2025 的进展：Iceberg V3、Paimon 1.0、Delta UniForm、Polaris 1.0——这些是当下及未来一年的高频考点。
 
