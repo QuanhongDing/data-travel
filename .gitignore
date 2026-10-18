@@ -29,6 +29,9 @@ replay_pid*
 *~
 
 
+# macOS 元数据（Finder 自动生成，不是仓库内容）
+.DS_Store
+
 # Editor / IDE / tooling state
 .idea/
 .obsidian/
