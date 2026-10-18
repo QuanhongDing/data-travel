@@ -201,6 +201,8 @@ def collect(asset, meta):
     schema_col.labels(asset).set(len(meta.columns))
     for col in meta.key_columns:        # 读内容的部分只铺在关键字段上
         quality.labels(asset, f"{col}.null_rate").set(meta.null_rate(col))
+        quality.labels(asset, f"{col}.unique_rate").set(meta.unique_rate(col))
+        psi_gauge.labels(asset, col).set(meta.psi(col))     # Distribution：与上面两条同一次遍历
 
 def detect_3sigma(history, current):
     if len(history) < WINDOW:           # 不足一个窗口就不出判定（冷启动期）
@@ -242,6 +244,8 @@ route:
 receivers:
   - name: pager
     pagerduty_configs: [{service_key: "${PAGERDUTY_KEY}"}]
+  - name: im
+    webhook_configs: [{url: "${IM_WEBHOOK}"}]      # 即时消息（钉钉 / 飞书群机器人），P1 落在这一档
   - name: ticket
     webhook_configs: [{url: "${TICKET_WEBHOOK}"}]
 ```

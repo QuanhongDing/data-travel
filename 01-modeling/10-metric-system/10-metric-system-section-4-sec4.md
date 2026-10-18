@@ -43,7 +43,7 @@
 - 监控三项：指标计算成功率、指标查询性能、指标数据质量（缺失率、异常率）。
 - 血缘：从指标到上游表到 ETL 作业的可查路径。
 - **产物**：可查询的 Owner 名册、评审例会记录（含驳回理由）、监控看板与告警规则、血缘查询入口。
-- **判据**：随机抽 3 个【经验：随指标数与 Owner 覆盖度变，先抽你怀疑没人认领的那些】指标，从平台 UI 点进去，Owner 一格应指到名册里的具名个人（写团队名或组邮箱即无人负责），并能调出这个人最近一次对该指标口径变更的审批记录；把某个指标的计算作业停一天【经验：随该指标的产出与消费周期变，喂周报的指标要停满一个周期才看得出】做演练，看告警是否在当天或次日到达值班人——只到面板、不到人，等于没有监控。
+- **判据**：随机抽 3 个【经验：随指标数与 Owner 覆盖度变，先抽你怀疑没人认领的那些】指标，从平台 UI 点进去，Owner 的 `business` / `data` 两格应各自指到名册里的具名个人（这两格写部门名、团队名或组邮箱即视为无人负责；`contact` 一格填组邮箱是允许的，见 §4.5.1），并能调出这个人最近一次对该指标口径变更的审批记录；把某个指标的计算作业停一天【经验：随该指标的产出与消费周期变，喂周报的指标要停满一个周期才看得出】做演练，看告警是否在当天或次日到达值班人——只到面板、不到人，等于没有监控。
 - **为什么必须这一步**：治理挂的是 Step 3 的产物（作业、定义、血缘），所以只能在平台之后；但它不能拖到 Step 5 之后——BI 改道过程中一定会出现「这两个数哪个对」的争议，没有 Owner 与评审，争议无人裁决，改道会停在一半，而旧看板仍然在线且没人有权下线它。
 
 **Step 5：接入 BI / AI（【经验】第 9–10 周；随消费端个数与是否要做嵌入式分析变）**
@@ -204,11 +204,11 @@ metric:
         AND u.user_type = '会员' AND o.channel = 'PC'
   data_source: {tables: [dwd.dwd_orders, dim.dim_user], fields: [o.payment_amount, o.status, o.dt, u.user_type, o.channel]}
   dimensions: [dt, channel, user_type, city]
-  owner: {business: 电商业务部, data: 数据中台团队, contact: biz-metric-owner@example.com}
+  owner: {business: zhang.san, data: li.si, contact: biz-metric-owner@example.com}   # business / data 填名册里的具体人，不填部门或团队
   refresh: {frequency: daily, cron: "0 1 * * *", sla: "T+1 09:00 前完成"}
   version: v2.3, valid_from: 2025-01-01, status: active   # active / deprecated / experimental
 ```
-**怎么用**：`oscar` 与 `dimensions` 两格必须由业务方确认，其余字段数据团队填；`${date_minus_7}` 这类占位符换成你调度器的模板语法；`contact` 填组邮箱而不是个人邮箱（人一离职这个字段就失效）；`version` / `valid_from` / `status` 三格不要照抄成常量——它们是 §4.2.7 版本化的落点，第一次口径变更就要用到。
+**怎么用**：`oscar` 与 `dimensions` 两格必须由业务方确认，其余字段数据团队填；`business` 与 `data` 两格填名册里的具体人——写部门名或团队名等于无人负责（判据见 Step 4）；`${date_minus_7}` 这类占位符换成你调度器的模板语法；`contact` 填组邮箱而不是个人邮箱（人一离职这个字段就失效）；`version` / `valid_from` / `status` 三格不要照抄成常量——它们是 §4.2.7 版本化的落点，第一次口径变更就要用到。
 #### 4.5.2 dbt Semantic Layer 指标定义（YAML）
 ```yaml
 # models/metrics/metrics.yml
