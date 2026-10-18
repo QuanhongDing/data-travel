@@ -92,11 +92,6 @@ GitHub 在 2016 年公开的 `github/architectural-decision-records` 仓库就�
 - ThoughtWorks Technology Radar 自 2014 年起对 ADR 的多次条目（Trial → Assess → Adopt 演化）——工业界对 ADR 接受度的一手证据。
 - MADR 项目官方文档——完整版模板字段定义与最佳实践。
 - 《The Software Architecture Chronicles》（Eberhard Wolff）系列博客——比较 ADR、设计文档、Wiki 的定位差异。
-- **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
-- **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
-- **中国海油** —— 中国海油海上生产数据平台——钻井平台、船舶、生产数据的实时采集与监控。
-- **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
-- **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
 
@@ -167,10 +162,6 @@ GitHub 在 2016 年公开的 `github/architectural-decision-records` 仓库就�
 - GitHub 公开仓库 `github/architectural-decision-records` 中 2018 年后的 ADR（如 GraphQL 选型 ADR）——典型的 MADR 完整版实例，字段齐全到 Confirmation。
 - adr-tools GitHub 项目（npryce/adr-tools）——Nygard 风格的 `adr new`/`adr link` CLI 工具，是 Nygard 模板的工具链代表。
 - ThoughtWorks Technology Radar 2014–2024 系列文档——多次把 ADR 实践从 Trial 推进到 Adopt，是 ADR 普及节奏的客观标尺。
-- **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
-- **京东物流** —— 京东物流仓储数据中台——AGV、库存、订单的多源整合与实时监控。
-- **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
-- **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
 > 注：以上参考资料均指向公开出版物、论文、官方仓库或企业技术博客。精确链接请按条目名称自行检索核验。
 
@@ -250,11 +241,6 @@ Proposed ──(评审通过)──> Accepted ──(不再推荐)──> Deprec
 - ThoughtWorks Technology Radar 2017 年条目「Architecture decision records」——给出「Status 强制」「Index 必须」「周期复盘」三件套的工业推荐。
 - adr-tools 项目（npryce/adr-tools）——`adr new` / `adr link` / `adr generate-index` CLI 演示 Lifecycle 的工具支持。
 - 《Software Architecture Mondays》博客（Jakub Hohn）或同等架构博客——大量 ADR 流程从 0 到 1 实践案例的真实记录。
-- **丁香园** —— 丁香园的医学知识图谱——药品、疾病、症状、指南的多跳查询与推理。
-- **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
-- **中国海油** —— 中国海油海上生产数据平台——钻井平台、船舶、生产数据的实时采集与监控。
-- **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
-- **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
 > 注：以上参考资料均指向公开出版物、官方仓库或企业公开技术博客。精确链接请按条目名称自行检索核验。
 
@@ -358,11 +344,6 @@ Step 5 · ADR-0031 维护
 - Apache Kafka 社区 KIP 流程官方文档——开源项目 RFC（KIP）的最完整工业范本。
 - IETF RFC 流程官方文档——RFC 概念的源头，提供了 Engineering RFC 的命名沿革。
 - AWS 公开演讲「Working Backwards」（Bezos 内部备忘录整理版）——非典型 RFC 范式，强调 PR/FAQ 模式。
-- **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
-- **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
-- **京东数科** —— 京东数科的金融特征平台——支撑消费分期、信用支付等场景，特征口径与模型版本强一致。
-- **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
-- **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
 
@@ -436,11 +417,6 @@ GitHub 在 `github/architectural-decision-records` 仓库的部分 ADR（如 ADR
 - GitHub 公开仓库 `github/architectural-decision-records` 中 GraphQL 等 ADR —— Decisions Drivers + Bad 一栏齐全的工业实例。
 - AWS 公开演讲「Two-Way Doors vs One-Way Doors」（Bezos 内部决策方法系列）——决策可逆性（与沉没成本反偏差密切相关）的工业表述。
 - ThoughtWorks Technology Radar 2022 年条目「Architecture Decision Records as Cognitive Bias Mitigators」——把 ADR 明确定位为反偏差工具。
-- **丁香园** —— 丁香园的医学知识图谱——药品、疾病、症状、指南的多跳查询与推理。
-- **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
-- **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
-- **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
-- **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
 
@@ -524,10 +500,6 @@ GitHub 在 `github/architectural-decision-records` 仓库的部分 ADR（如 ADR
 - Databricks / Apache Spark 官方文档中 Structured Streaming vs Flink 对比章节——本例 Spark Structured Streaming 打分依据。
 - Apache Flink 官方文档与阿里 / Uber 公开技术博客中「Flink 支撑万亿级/天事件量」的工业实证——Flink 打分依据。
 - Materialize 官方文档与社区博客——增量计算能力与局限性的一手说明。
-- **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
-- **中国海油** —— 中国海油海上生产数据平台——钻井平台、船舶、生产数据的实时采集与监控。
-- **中国石油** —— 中国石油勘探数据湖——地震、测井、钻井多源异构数据入湖 + AI 油气识别。
-- **南方电网** —— 南方电网营销数据中台——客户、电价、计费、服务的统一数据底座。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
 
@@ -635,9 +607,6 @@ GitHub Actions 中已有可参考的 ADR 校验自定义规则；阿里云 / 字
 - MADR 项目官方文档中「Affected Code / Links / Related Decisions」等字段——字段设计上把双向链接做到模板里。
 - GitHub Actions / GitLab CI 公开社区中 ADR 校验相关 workflow 示例——CI 校验的现实工程实例。
 - Spotify Backstage ADR Plugin 公开文档（Spotify Engineering Blog 2024 年文章）——KG / Catalog 化 ADR 的工业实践。
-- **京东物流** —— 京东物流仓储数据中台——AGV、库存、订单的多源整合与实时监控。
-- **滴滴** —— 滴滴实时订单与司机画像——万级 Flink 作业 + Iceberg 增量读下的冲突与 compaction 治理。
-- **货拉拉** —— 货拉拉城配实时调度——Flink 实时订单分发 + Spark 离线对账 + 路径优化。
 
 > 注：以上参考资料均指向公开出版物、官方仓库或企业公开技术博客。精确链接请按条目名称自行检索核验。
 
@@ -727,10 +696,6 @@ Wiki 文章「数据仓库架构」
 - ThoughtWorks Technology Radar 2020 年条目「Lightweight Architecture Decision Records」——明确 ADR 与 Wiki / Confluence 的边界：「Wiki 是百科，ADR 是决策日志」。
 - 字节跳动飞书「技术方案评审（TD）」与飞书文档的官方集成说明（字节公开分享）——中国企业典型的 ADR-Wiki 协同范本。
 - Atlassian Confluence / Notion 公开 API 文档——ADR supersede 同步 webhook 实现的工程基础。
-- **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
-- **京东物流** —— 京东物流仓储数据中台——AGV、库存、订单的多源整合与实时监控。
-- **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
-- **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
 
@@ -852,11 +817,6 @@ Pros/Cons 段 Good / Bad / Neutral 三栏必须都填且 Bad 不能敷衍。
 - Microsoft Research 2024 年关于 LLM 辅助 ADR 评审的论文——LLM 辅助 ADR 评审的学术框架（本节无法核验其确切篇名与作者，引用时请自行查证）。
 - ThoughtWorks Technology Radar 2024 年条目「AI-Assisted Architecture Decision Records」——明确「AI 起草 + 人 review」的工业范式。
 - Anthropic / OpenAI / 阿里 / 字节官方发布的 Agent / Prompt Engineering 最佳实践——私有化部署与 RAG 增强的具体实现方案。
-- **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
-- **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
-- **中国电信** —— 中国电信的 BSS 数据湖——计费、营账、客户数据统一入湖 + 实时营销推荐。
-- **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
-- **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
 
@@ -972,8 +932,6 @@ DIP 自动创建 supersede 草案：ADR-0078（迁移到 Kafka 3.x）
 - Aera Technology 官方白皮书——供应链决策智能平台样本（本节无法核验其篇名与发布年份，引用时请自行查证）。
 - ThoughtWorks Technology Radar 2024 / 2025 年系列条目「Decision Intelligence」——把 DI 标记为「Assess → Trial」的工业推荐。
 - Microsoft Research / IBM Research 2024 年关于 Decision Intelligence + LLMs 的论文——DI 与 LLM 结合的学术前沿（本节无法核验其具体篇名与作者，引用时请自行查证）。
-- **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
-- **京东数科** —— 京东数科的金融特征平台——支撑消费分期、信用支付等场景，特征口径与模型版本强一致。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
 
@@ -1072,11 +1030,6 @@ Step 5 · 6 个月后 Board 复盘
 - AWS 公开演讲材料「Bar Raiser」制度（Amazon 内部招聘与决策把关）——「独立于业务方的把关者」思路的工业出处。
 - ThoughtWorks Technology Radar 2023 年条目「Architecture Decision Records in the enterprise」——把「治理委员会 + ADR」列为大型组织推荐实践。
 - 《Building Evolutionary Architectures》（Ford, Parsons, Kua，2017 年出版）——演进式架构中的「治理委员会 + 适应度函数」理论，是 Board 机制的理论基础。
-- **丁香园** —— 丁香园的医学知识图谱——药品、疾病、症状、指南的多跳查询与推理。
-- **三一重工** —— 三一重工的工业遥测数据湖——PB 级设备运行数据走 Kafka + Iceberg 入湖，支撑预测性维护与能耗优化。
-- **中国电信** —— 中国电信的 BSS 数据湖——计费、营账、客户数据统一入湖 + 实时营销推荐。
-- **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
-- **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
 
@@ -1189,9 +1142,6 @@ ADR-0021 实时湖仓（Flink + Iceberg）
 - log4brains 项目官方文档（开源 ADR 站点生成器）——内置 supersede 链接管理的工具实现。
 - ThoughtWorks Technology Radar 2024 年条目「Automated architecture decision supersede detection」——把自动检测列为「Assess」阶段的一手证据。
 - 阿里 / 字节公开的技术决策管理分享——国内企业决策族谱与状态同步的实践样本。
-- **京东物流** —— 京东物流仓储数据中台——AGV、库存、订单的多源整合与实时监控。
-- **滴滴** —— 滴滴实时订单与司机画像——万级 Flink 作业 + Iceberg 增量读下的冲突与 compaction 治理。
-- **货拉拉** —— 货拉拉城配实时调度——Flink 实时订单分发 + Spark 离线对账 + 路径优化。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
 

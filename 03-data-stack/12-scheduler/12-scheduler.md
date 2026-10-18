@@ -350,15 +350,6 @@ main_task >> trigger_downstream
 
 ---
 
-- [§3. 设计模式与范式](12-scheduler-section-3-sec3.md)
-- [§4. 工程实现](12-scheduler-section-4-sec4.md)
-- [§5. 前沿演进（AI 时代）](12-scheduler-section-5-ai.md)
-- [§6. 落地实践](12-scheduler-section-6-sec6.md)
-- [§7. 与其他方法对比](12-scheduler-section-7-sec7.md)
-- [§8. 面试真题集](12-scheduler-section-8-sec8.md)
-
----
-
 ## 章节内容导航
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：

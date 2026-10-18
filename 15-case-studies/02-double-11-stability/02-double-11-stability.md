@@ -127,15 +127,6 @@ Blink 集群在双 11 跑 2000+ 实时任务，**故障恢复时间（Failover T
 
 ---
 
-- [§3. 架构演进](02-double-11-stability-section-3-sec3.md)
-- [§4. 关键决策](02-double-11-stability-section-4-sec4.md)
-- [§5. 踩坑与教训](02-double-11-stability-section-5-sec5.md)
-- [§6. 落地实践](02-double-11-stability-section-6-sec6.md)
-- [§7. 与同类案例对比](02-double-11-stability-section-7-sec7.md)
-- [§8. 面试真题集](02-double-11-stability-section-8-sec8.md)
-
----
-
 ## 章节内容导航
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：

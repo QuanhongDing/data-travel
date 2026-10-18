@@ -291,13 +291,6 @@ MeetingTimeHealth = MeetingHours / TotalHours
 
 > 💡 **思考锚点**：把你团队的日历代进 MeetingTimeHealth = 会议小时 / 总工时——落在 <30% / 30–50% / 50–70% / >70% 哪一档？如果已过 70%，按本节形式化，你会先砍 Daily / Weekly / Monthly / Quarterly / Annual 里的哪一个节奏？
 
-- [§3. 设计模式与范式](10-team-rhythm-section-3-sec3.md)
-- [§4. 工程实现](10-team-rhythm-section-4-sec4.md)
-- [§5. 前沿演进（AI 时代）](10-team-rhythm-section-5-ai.md)
-- [§6. 落地实践](10-team-rhythm-section-6-sec6.md)
-- [§7. 与其他方法对比](10-team-rhythm-section-7-sec7.md)
-- [§8. 面试真题集](10-team-rhythm-section-8-sec8.md)
-
 ---
 
 ## 章节内容导航
