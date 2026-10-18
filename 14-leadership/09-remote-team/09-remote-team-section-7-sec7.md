@@ -302,4 +302,4 @@
 >
 > 💡 **思考锚点**：按 §7.7 的迁移成本表，Hybrid → Remote-First 那一行把「书面表达能力」标成最难、以季度计的一项。先抽查一次：30 天前那次重要决策，今天能不能指出它的书面依据？再请一位未参与那次决策的成员凭同一份依据复述「当初为什么这么定」——他说得出来吗？
 >
-> 配合 [§ 2 核心原理](09-remote-team.md) 与 [§ 6 落地实践](09-remote-team-section-6-sec6.md) 阅读：§ 2 给 Async-First、Documentation-First、重叠时间、Zoom 疲劳与信任建设的形式化定义，§ 6 给 GitLab、Automattic、字节、Doist 四个案例的落地路径与踩坑记录。
+> 配合 [§2 核心原理](09-remote-team.md) 与 [§6 落地实践](09-remote-team-section-6-sec6.md) 阅读：§2 给 Async-First、Documentation-First、重叠时间、Zoom 疲劳与信任建设的形式化定义，§6 给 GitLab、Automattic、字节、Doist 四个案例的落地路径与踩坑记录。

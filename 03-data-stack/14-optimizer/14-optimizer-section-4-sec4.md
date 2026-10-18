@@ -1,4 +1,4 @@
-> 本文件是 **14-optimizer.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](14-optimizer-section-3-sec3.md) 里的模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](14-optimizer.md)。
+> 本文件是 **14-optimizer.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](14-optimizer-section-3-sec3.md) 里的模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](14-optimizer.md)。
 
 ## 4. 工程实现
 
@@ -347,4 +347,4 @@ RelNode optimizedPlan = planner.optimize(logicalPlan);
 >
 > 💡 **思考锚点**：拿你当前最贵的 10 条查询过一遍 §4.9 第一条：估计 / 实际行数偏差超过 10 倍的有几条？对这几条，查得到最后一次统计信息采集时间、上一轮采集失败次数吗？——如果偏差能看见但这两个采集信息查不到，你缺的是采集任务本身，还是那块「估计 / 实际偏差看板」？
 
-> 配合 [§ 2 核心原理](14-optimizer.md)、[§ 3 设计模式与范式](14-optimizer-section-3-sec3.md) 与 [§ 6 落地实践](14-optimizer-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](14-optimizer.md)、[§3 设计模式与范式](14-optimizer-section-3-sec3.md) 与 [§6 落地实践](14-optimizer-section-6-sec6.md) 阅读。

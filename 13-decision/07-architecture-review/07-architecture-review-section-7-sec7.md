@@ -320,4 +320,4 @@
 >
 > 💡 **思考锚点**：拿你团队最近一次「每天几十次」的 PR 级变更过一遍 §7.8 的前两行：它该走「不评审，只登记 + 设升级条件」，还是「Lightweight + 清单，结论挂合并门禁」？若给它上完整评审，2.5–3.5 人天【推算】的固定成本相对这次变更本身，是正收益还是负的？
 
-> 配合 [§ 2 核心原理](07-architecture-review.md) 与 [§ 6 落地实践](07-architecture-review-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](07-architecture-review.md) 与 [§6 落地实践](07-architecture-review-section-6-sec6.md) 阅读。

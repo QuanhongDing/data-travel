@@ -58,7 +58,7 @@ CREATE TABLE knot_currency (id BIGINT PRIMARY KEY, code VARCHAR(3), name VARCHAR
 
 **失效点**：当「实体属性数」增长到视图层与查询引擎无法把 JOIN 吸收掉时，**「加属性零成本」会反转成「读一次全貌的成本随属性数线性上涨」**，因为 6NF 把一次行读取拆成了 M 次独立的索引查找，只有当 M 小、或该组合可被物化时，视图才能把这笔成本藏起来。
 
-**真实使用**：落地集中在「属性多、且属性间变化频率差异大」的场景——保险与电信的核心实体、互联网的用户画像宽表替代方案【经验】。本章 [§ 6 落地实践](04-anchor-modeling-section-6-sec6.md) 收录了 4 个以本模式为核心的案例，可直接对照其组件拆分方式。
+**真实使用**：落地集中在「属性多、且属性间变化频率差异大」的场景——保险与电信的核心实体、互联网的用户画像宽表替代方案【经验】。本章 [§6 落地实践](04-anchor-modeling-section-6-sec6.md) 收录了 4 个以本模式为核心的案例，可直接对照其组件拆分方式。
 
 #### 3.2.2 多值属性模式（Multi-Valued Attribute via Knot / 独立 Anchor）
 
@@ -300,4 +300,4 @@ UPDATE customer_age SET valid_to = CURRENT_TIMESTAMP WHERE valid_to IS NULL;
 >
 > 💡 **思考锚点**：拿你手上最宽的那张底表，数它的业务列数离 3.6 表的 200 阈值还有多远、单实体多值集合的基数是否已到千级，再把列分成「一年内改过」与「多年未动」两组——两组泾渭分明时你会按变化频率切成 Attribute 表，几乎全部同频时拆分只是在替读侧多付 JOIN，你的表落在哪一侧？
 
-> 配合 [§ 2 核心原理](04-anchor-modeling.md)、[§ 4 工程实现](04-anchor-modeling-section-4-sec4.md) 与 [§ 6 落地实践](04-anchor-modeling-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](04-anchor-modeling.md)、[§4 工程实现](04-anchor-modeling-section-4-sec4.md) 与 [§6 落地实践](04-anchor-modeling-section-6-sec6.md) 阅读。

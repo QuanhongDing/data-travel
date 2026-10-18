@@ -257,4 +257,4 @@ Agent 的两类内部状态必须分开处置，用同一套方案处理是常�
 >
 > 💡 **思考锚点**：对着 §5.7 那四个数挑一个你下季度真能量出来的——全量重建一次向量索引的耗时与占用算力、跨区写占比 × 写 QPS，哪一个你手里已经有实测值？没有实测值的那两个，分别对应「该不该为索引跨 Region 强同步买单」和「就近路由成不成立」，你准备按什么数拍板？
 >
-> 配合 [§ 2 核心原理](02-multi-region.md)、[§ 6 落地实践](02-multi-region-section-6-sec6.md) 与 [§ 7 与其他方法对比](02-multi-region-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](02-multi-region.md)、[§6 落地实践](02-multi-region-section-6-sec6.md) 与 [§7 与其他方法对比](02-multi-region-section-7-sec7.md) 阅读。

@@ -282,4 +282,4 @@
 >
 > 💡 **思考锚点**：用 5.1 的「按机制分族、级别取族内最弱子项」规则过一遍你手上的 AI 取数路线图——如果它同时挂了「引擎内嵌（检索侧）」的向量检索与「取数侧」的自然语言入口，这条链路整体该按 L2 还是 L3 对待？再按 5.7 的次序，这两行的前置（语义层的一个域 + 元数据治理）你打算先补哪一个？
 >
-> 配合 [§ 2 核心原理](01-data-warehouse.md)、[§ 6 落地实践](01-data-warehouse-section-6-sec6.md) 与 [§ 7 与其他方法对比](01-data-warehouse-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](01-data-warehouse.md)、[§6 落地实践](01-data-warehouse-section-6-sec6.md) 与 [§7 与其他方法对比](01-data-warehouse-section-7-sec7.md) 阅读。

@@ -98,7 +98,7 @@ Consumer 读取消息时，传统路径是「磁盘 → 内核缓冲区 → 用�
 - Apache Kafka 官方文档的"Design"章节——`sendfile`、PageCache、Segment 文件组织的官方论述，是性能调优的权威。
 - Apache Kafka 社区的 `KIP-1030` / `KIP-1080`（Kafka 4.0 路线）——KIP 是 Apache Kafka 项目的提案文档（不是 Confluent 的产物）；本节不据编号断言其内容与状态，新版本在零拷贝、PageCache 利用率方向上的优化请以 KIP 页面的状态字段与目标版本 release note 为准。
 - **LinkedIn Kafka 每天数万亿消息的工程实践** —— LinkedIn 自家 Kafka 集群是其广告、Feed、搜索等核心业务的"主干道"，依赖顺序写 + PageCache + 副本机制支撑 PB 级写入，是 Kafka 持久化机制最大规模的工业实证（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
-- **Netflix Keystone Kafka 每天数千亿条事件** —— Netflix 的 Keystone 流式平台把 Kafka 当成"事件主干道"，依赖 Log Segment 文件组织做长期归档，对应持久化机制在流媒体场景的落地（口径与出处见 [Netflix 案例 § 7.4](../../15-case-studies/05-netflix-data-stack/05-netflix-data-stack-section-7-sec7.md)：2018 年「数千亿条/日」【公开：Netflix Tech Blog, Keystone, 2018】）。
+- **Netflix Keystone Kafka 每天数千亿条事件** —— Netflix 的 Keystone 流式平台把 Kafka 当成"事件主干道"，依赖 Log Segment 文件组织做长期归档，对应持久化机制在流媒体场景的落地（口径与出处见 [Netflix 案例 §7.4](../../15-case-studies/05-netflix-data-stack/05-netflix-data-stack-section-7-sec7.md)：2018 年「数千亿条/日」【公开：Netflix Tech Blog, Keystone, 2018】）。
 - **腾讯万台 Kafka 集群支撑微信/QQ/游戏实时数据** —— 在万台规模下顺序写 + NVMe SSD 成为标配，PageCache 调优是常规运维动作，是国内超大规模 Kafka 实践的代表（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
 - **京东 PB 级订单流（618 / 双 11）** —— 大促场景下日订单量是日常 5–10 倍，靠"顺序写 + 批量发送 + 多 Partition"组合扛住峰值，是电商场景 Kafka 持久化机制的工程实证（上述规模数字与倍数均属【经验】档表述，本节无法给出可核验出处）。
 - **米哈游游戏日志流（原神 / 崩坏系列）** —— 玩家行为日志高并发写入 Kafka 集群，靠顺序写 + PageCache 撑住峰值日志量，对应游戏行业 Kafka 落地的典型。
@@ -184,7 +184,7 @@ Consumer 读取消息时，传统路径是「磁盘 → 内核缓冲区 → 用�
 - 阿里中间件团队关于 RocketMQ 开源的公开材料（约 2015 年；本节无法给出该材料的标题与链接，引用时请自行查证）——RocketMQ 在阿里双 11 的诞生背景。
 - **LinkedIn Kafka 每天数万亿消息** —— 单体架构在超大规模下的工程实证，验证"Broker 本地盘"在足够运维成熟时也能撑住 PB 级（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
 - **Uber Kafka 万亿级消息流（Uber 实时订单 + 司机画像）** —— Uber 的 Kafka 集群支持实时订单分发、动态定价、ETA 预测，是单体架构在出行行业的最大规模实践（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
-- **Netflix Keystone（每天数千亿条事件）** —— 流媒体场景下 Kafka 单体架构支撑秒级仪表盘更新，验证"日志即存储"在超大规模流处理中的可行性（量级与出处见 [Netflix 案例 § 7.4](../../15-case-studies/05-netflix-data-stack/05-netflix-data-stack-section-7-sec7.md)【公开：Netflix Tech Blog, Keystone, 2018】）。
+- **Netflix Keystone（每天数千亿条事件）** —— 流媒体场景下 Kafka 单体架构支撑秒级仪表盘更新，验证"日志即存储"在超大规模流处理中的可行性（量级与出处见 [Netflix 案例 §7.4](../../15-case-studies/05-netflix-data-stack/05-netflix-data-stack-section-7-sec7.md)【公开：Netflix Tech Blog, Keystone, 2018】）。
 - **阿里 RocketMQ 双 11 万亿级消息** —— 双 11 期间零故障，验证 RocketMQ 在事务消息、强一致场景的工程能力，是 RocketMQ 在电商场景的最大规模实证（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
 - **腾讯万台 Kafka 集群** —— 万台规模下 KRaft 改造是核心动作，验证 Kafka 4.0 路线在国内的落地能力（上述规模数字属【经验】档表述，本节无法给出可核验出处）。
 - **招行 Kafka 支付场景** —— 招商银行用 Kafka 支撑支付链路实时风控，单体架构在金融场景的合规与高可用要求。

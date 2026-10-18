@@ -1,4 +1,4 @@
-> 本文件是 **04-agent-skill-extraction.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](04-agent-skill-extraction-section-3-sec3.md) 里选定的写入路径装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](04-agent-skill-extraction.md)。
+> 本文件是 **04-agent-skill-extraction.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](04-agent-skill-extraction-section-3-sec3.md) 里选定的写入路径装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](04-agent-skill-extraction.md)。
 
 ## 4. 工程实现
 
@@ -65,7 +65,7 @@
 **Step 6：Skill 入库与版本化（1–2 周【经验】，随待入库条目数与资产登记的评审层级变——走组织级资产登记时要多等审批）**
 
 1. 入库字段沿用 4.5 的 schema：触发条件 / 步骤 / 成功判据 / 反例，加来源证据（轨迹条数、成功率、最后验证时间）。
-2. 版本化与组织级资产登记联动：Skill 是一种 AI 资产，资产登记与版本协议的约定见 [§ 3 资产管理](../03-asset-management/03-asset-management.md)。
+2. 版本化与组织级资产登记联动：Skill 是一种 AI 资产，资产登记与版本协议的约定见 [§3 资产管理](../03-asset-management/03-asset-management.md)。
 3. 多条写入路径（离线候选池 / 在线固化 / 人工审核）共用一个带版本的出口，任何一条路径都不直接改线上。
 
 - **产物**：Skill Library 条目 + 版本记录 + 每条 Skill 的来源证据。
@@ -126,7 +126,7 @@
 - **做法**：Skill 带 SemVer 版本与不可变历史，写入走单一出口；变更记录（谁、何时、依据哪些轨迹）随条目保存。
 - **机制**：因为多条写入路径共用一个库时，覆盖写会让历史版本默认丢失（§3.2.2 的代价），所以版本层是回滚的唯一基准点；版本化同时让「评估记录挂到版本上」成立。
 - **失效条件**：**当在线路径为了降延迟直接改库时**，离线候选、人工驳回记录与线上实际状态三者立刻失去一致性。症状是同一个意图的检索结果在不同时间返回不同 Skill，而每一次改动都查不到是谁改的。
-- **档位**：与 [§ 3 资产管理](../03-asset-management/03-asset-management.md) 的版本协议一致，字段定义以该节为准。
+- **档位**：与 [§3 资产管理](../03-asset-management/03-asset-management.md) 的版本协议一致，字段定义以该节为准。
 
 **7. Skill 检索（基于任务匹配 Skill）**
 
@@ -373,7 +373,7 @@ def self_play_loop(agent, library, rounds):
 
 **1 → 100（规模化）**：意图数上升、Agent 变多、日轨迹量上量级。触发 §3.6 的前两条跃迁——库从 10² 升到 10³【经验，量级阈值】时全量语义检索开始误触发，要换分层检索；维护者从 1 人变多团队时人工全审退化成盖章，要上置信度分流。这一阶段变贵的是**审核容量与归一化面**；先坏的是**闸门**：队列停留时间上升、单条审核耗时下降，就是闸门开始盖章的信号。轨迹量再上 10⁴ → 10⁷【经验，量级阈值】时，全量聚类周期内跑不完，换成采样 + 增量，代价是低占比高风险的任务族被系统性漏掉，需为它们单独留全量通道。
 
-**100 →（下一道坎）**：库进组织级、跨 Agent 共享能力（注意：Cross-Agent Transfer 本身按 §5 属 L3——跨 Agent 的 schema 与版本协议尚未标准化，这一档可先落地的只有 schema 与版本协议的统一，不要把共享当作设计前提）。变贵的是 **schema 统一与存量重写**——分层检索要补历史 Skill 普遍缺失的触发条件，这是一次批量重写，重写期误触发率先上升（§3.6 第一条跃迁的迁移代价）；先坏的是**口径**：各 Agent 各自建库导致能力重复建设、跨 Agent 迁移只能靠人工搬运。收敛到组织级库之前要先定描述 schema（4.5 模板 1）与版本协议，否则跨 Agent 迁移没有共同格式可搬。更远的方向（程序性记忆建模、组合技能、库基础设施化）见 [§ 5 前沿演进](04-agent-skill-extraction-section-5-sec5.md)。
+**100 →（下一道坎）**：库进组织级、跨 Agent 共享能力（注意：Cross-Agent Transfer 本身按 §5 属 L3——跨 Agent 的 schema 与版本协议尚未标准化，这一档可先落地的只有 schema 与版本协议的统一，不要把共享当作设计前提）。变贵的是 **schema 统一与存量重写**——分层检索要补历史 Skill 普遍缺失的触发条件，这是一次批量重写，重写期误触发率先上升（§3.6 第一条跃迁的迁移代价）；先坏的是**口径**：各 Agent 各自建库导致能力重复建设、跨 Agent 迁移只能靠人工搬运。收敛到组织级库之前要先定描述 schema（4.5 模板 1）与版本协议，否则跨 Agent 迁移没有共同格式可搬。更远的方向（程序性记忆建模、组合技能、库基础设施化）见 [§5 前沿演进](04-agent-skill-extraction-section-5-sec5.md)。
 
 ### 4.9 自检清单
 
@@ -398,4 +398,4 @@ def self_play_loop(agent, library, rounds):
 >
 > 💡 **思考锚点**：翻你现在的 Skill / Prompt 库：有多少条答得上「最后验证时间」和「触发条件」这两个字段（答不出的就是幻觉与误触发的候选池）？你打算按本节的双轨给它留 1–2 个月、用验证集现算一次 hit_rate，还是直接全量切到新管道？
 >
-> 配合 [§ 2 核心原理](04-agent-skill-extraction.md)、[§ 3 设计模式与范式](04-agent-skill-extraction-section-3-sec3.md) 与 [§ 6 落地实践](04-agent-skill-extraction-section-6-sec6.md) 阅读。存量库的迁移顺序以 4.4 为准；[§ 7 与其他方法对比](04-agent-skill-extraction-section-7-sec7.md) 给出它与 Prompt Engineering、RAG 等方法的对比判据。
+> 配合 [§2 核心原理](04-agent-skill-extraction.md)、[§3 设计模式与范式](04-agent-skill-extraction-section-3-sec3.md) 与 [§6 落地实践](04-agent-skill-extraction-section-6-sec6.md) 阅读。存量库的迁移顺序以 4.4 为准；[§7 与其他方法对比](04-agent-skill-extraction-section-7-sec7.md) 给出它与 Prompt Engineering、RAG 等方法的对比判据。

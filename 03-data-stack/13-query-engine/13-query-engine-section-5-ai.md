@@ -315,4 +315,4 @@ AI 能力不是新引擎，而是挂在既有引擎周边。下表写清接口�
 >
 > 💡 **思考锚点**：按 §7.5 的第 0 步给你最重的那条查询量三个数——下推率、最大一份 join 的构建侧数据量、并发形态；若瓶颈是下推率，那么给 Agent 单列只读身份并不会让引擎变快，这会改变你"先补元数据还是先做权限"的排序吗？
 >
-> 配合 [§ 2 核心原理](13-query-engine.md)、[§ 6 落地实践](13-query-engine-section-6-sec6.md) 与 [§ 7 与其他方法对比](13-query-engine-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](13-query-engine.md)、[§6 落地实践](13-query-engine-section-6-sec6.md) 与 [§7 与其他方法对比](13-query-engine-section-7-sec7.md) 阅读。

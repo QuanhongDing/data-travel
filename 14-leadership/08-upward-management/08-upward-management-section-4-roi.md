@@ -2,7 +2,7 @@
 
 ## 9. 预期 ROI
 
-> 本节是资源申请材料里「老板要签字的那一栏」。**一页纸的整体结构、三档方案与工件模板**见姊妹节 [§ 4 工程实现](08-upward-management-section-4-sec4.md)；**为什么要赶在预算与编制窗口前递、以及论证模式本身**见 [§ 3.2.8](08-upward-management-section-3-sec3.md)；**四段式模板与谈判边界**见 [§ 8 面试真题集](08-upward-management-section-8-sec8.md)。本节只做一件事：**把这份 ROI 算出来，并写成经得起追问的形式**。
+> 本节是资源申请材料里「老板要签字的那一栏」。**一页纸的整体结构、三档方案与工件模板**见姊妹节 [§4 工程实现](08-upward-management-section-4-sec4.md)；**为什么要赶在预算与编制窗口前递、以及论证模式本身**见 [§3.2.8](08-upward-management-section-3-sec3.md)；**四段式模板与谈判边界**见 [§8 面试真题集](08-upward-management-section-8-sec8.md)。本节只做一件事：**把这份 ROI 算出来，并写成经得起追问的形式**。
 
 ### 9.1 算账：收益三项、成本三项、一条门槛
 
@@ -29,7 +29,7 @@ ROI = 收益 ÷ 成本
 
 ### 9.2 把每一个换算关系写成一行可检查的等式
 
-技术层 → 业务层 → 财务层的三段翻译，见 [§3 设计模式与范式](08-upward-management-section-3-sec3.md) 的 §3.2.8；技术口径 ↔ 业务口径的双向对照表，见 [§ 4 工程实现](08-upward-management-section-4-sec4.md) 的 Step 3。算账时在这张表上再加一条硬要求：**每一条换算关系都要写成一行等式，并标明来源**。
+技术层 → 业务层 → 财务层的三段翻译，见 [§3 设计模式与范式](08-upward-management-section-3-sec3.md) 的 §3.2.8；技术口径 ↔ 业务口径的双向对照表，见 [§4 工程实现](08-upward-management-section-4-sec4.md) 的 Step 3。算账时在这张表上再加一条硬要求：**每一条换算关系都要写成一行等式，并标明来源**。
 
 ```text
 降本 = 工单量 × 单工单处理成本
@@ -93,4 +93,4 @@ ROI = 收益 ÷ 成本
 > 本节小结：**预期 ROI 的可信度不来自算得细，而来自每一列口径都能被追问到底。**一次说不清口径，损失的不是这一次申请，而是此后你所有数字的可信度。
 >
 > 💡 **思考锚点**：翻开你手上那页 ROI，逐列标来源——投入的 HC 人均成本取自哪张表、收益的「工单量 × 单工单成本」单价是哪年的口径、机会成本写没写？再把四个追问（怎么算的 / 为什么 5 个人不是 3 个 / 不给会怎样 / 多久看到）挨个自问一遍，有哪一问答不出具体表名或年份，那一列就是你的可信度缺口。
-> 配合 [§ 2 核心原理](08-upward-management.md)、[§ 3 设计模式与范式](08-upward-management-section-3-sec3.md)、[§ 4 工程实现](08-upward-management-section-4-sec4.md) 与 [§ 6 落地实践](08-upward-management-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](08-upward-management.md)、[§3 设计模式与范式](08-upward-management-section-3-sec3.md)、[§4 工程实现](08-upward-management-section-4-sec4.md) 与 [§6 落地实践](08-upward-management-section-6-sec6.md) 阅读。

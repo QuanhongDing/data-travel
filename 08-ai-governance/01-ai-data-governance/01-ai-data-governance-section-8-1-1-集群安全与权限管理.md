@@ -1,4 +1,4 @@
-> 本文件是 **01-ai-data-governance.md** § 8 面试真题集的子主题。完整章节请回到 [index](01-ai-data-governance.md) 或 [§ 8 索引](01-ai-data-governance-section-8-sec8.md)。
+> 本文件是 **01-ai-data-governance.md** §8 面试真题集的子主题。完整章节请回到 [index](01-ai-data-governance.md) 或 [§8 索引](01-ai-data-governance-section-8-sec8.md)。
 
 ### 8.2 §1.1 集群安全与权限管理
 

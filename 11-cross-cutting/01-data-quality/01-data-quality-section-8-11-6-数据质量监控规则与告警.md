@@ -1,4 +1,4 @@
-> 本文件是 **01-data-quality.md** § 8 面试真题集的子主题。完整章节请回到 [index](01-data-quality.md) 或 [§ 8 索引](01-data-quality-section-8-sec8.md)。
+> 本文件是 **01-data-quality.md** §8 面试真题集的子主题。完整章节请回到 [index](01-data-quality.md) 或 [§8 索引](01-data-quality-section-8-sec8.md)。
 
 ### 8.4 §11.6 数据质量监控规则与告警
 

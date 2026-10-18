@@ -312,4 +312,4 @@ public interface AdapterCapability {
 >
 > 💡 **思考锚点**：抽你最近一条跨源慢查询，看 `EXPLAIN` 里源侧分片有没有带上过滤条件——若没带（§3.5 的「无下推」），你会不会正打算按 §3.3 的误选去上 Starburst / Denodo 一类商业治理层，而慢的根因其实在 Connector？再算一次：这条查询里「每次都要重新搬运或重算的那部分」占执行时间多少，够到 §3.6 的换模式线了吗？
 
-> 配合 [§ 2 核心原理](09-unified-query-gateway.md)、[§ 4 工程实现](09-unified-query-gateway-section-4-sec4.md) 与 [§ 6 落地实践](09-unified-query-gateway-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](09-unified-query-gateway.md)、[§4 工程实现](09-unified-query-gateway-section-4-sec4.md) 与 [§6 落地实践](09-unified-query-gateway-section-6-sec6.md) 阅读。

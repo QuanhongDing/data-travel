@@ -1,4 +1,4 @@
-> 本文件是 **06-postmortem-culture.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](06-postmortem-culture-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](06-postmortem-culture.md)。
+> 本文件是 **06-postmortem-culture.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](06-postmortem-culture-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](06-postmortem-culture.md)。
 
 ## 4. 工程实现
 
@@ -117,7 +117,7 @@
 - **做法**：跨部门故障的复盘会覆盖链路全环节与平台方，议题聚焦"链路哪一环失效"，结论落到"交接处的约定"（接口契约 / 校验责任 / 通知机制）；每条行动项落到有权执行且被授权的人；跨部门争议项指定一个有资源的高层 Sponsor 背书（§3.3 决策表）。
 - **机制**：因为行动项在交接处悬空是责任归属缺位、不是执行意愿问题（§3.1），所以技术归因做完之后，还需要一次把"谁执行、谁批准"显式化的动作——它不改变根因结论，只改变结论能否被执行。
 - **失效条件**：当复盘参与者都没有预算权时失效。**症状是行动项清单半年后还在，措辞未变**，而且每一条都"等排期"。可观测信号：行动项里涉及其他部门的条目占比，与这些条目实际完成的占比之间的差距。
-- **档位**：覆盖范围与 Sponsor 层级为【经验】；阿里跨 BU 复盘的公开做法见 [§ 6.3](06-postmortem-culture-section-6-sec6.md)。
+- **档位**：覆盖范围与 Sponsor 层级为【经验】；阿里跨 BU 复盘的公开做法见 [§6.3](06-postmortem-culture-section-6-sec6.md)。
 
 ### 4.3 工具链与平台
 
@@ -128,7 +128,7 @@
 | Incident 响应与 on-call | PagerDuty、Opsgenie、VictorOps、Incident.io、Firehydrant、Rootly、Squadcast；国内：阿里云 OnCall、腾讯云蓝鲸、华为云 AOM | 能不能把"谁被呼到 / 多久确认 / 几点升级"落成**可回查的时间点**，复盘的 TTD 分段直接取这些点；告警路由能否按服务的 Owner 自动带出 | TTD 只能靠回忆估算，复盘的第一步就失去数据基础；且组织一变动，手工维护的路由表会静默过期 |
 | 复盘文档与知识库 | Confluence、Notion；Incident.io、Firehydrant（Incident + Postmortem 一体化） | 能否按"失效模式与组件"打标签并支持检索；能否设成对内公开可检索；模板能否被版本化 | 文档进个人空间，新人搜不到，教训不离开在场者（§3.5 复盘文档没人看） |
 | 可观测性（复盘的数据源） | Prometheus / Grafana；Datadog / New Relic；Elasticsearch / Loki | 时间线的四个时间点（发生 / 检测 / 缓解 / 恢复）是否都能从系统取到；检测是可告警的，还是只能靠用户反馈 | TTD 不可测，"检测太慢"这条结论永远无法验证；详见 [11-cross-cutting/04-observability](../../11-cross-cutting/04-observability/04-observability.md) |
-| 混沌工程与演练 | Chaos Monkey（Netflix）、ChaosBlade（阿里）、Chaos Mesh（PingCAP） | 演练场景能不能由复盘的行动项**直接生成**（阿里把教训转为预案与演练场景的做法见 [§ 6.3](06-postmortem-culture-section-6-sec6.md)）；爆炸半径是否可控 | "我们已经吸取教训"没有验证手段，改进停在文档；详见 [12-architecture/06-chaos-engineering](../../12-architecture/06-chaos-engineering/06-chaos-engineering.md) |
+| 混沌工程与演练 | Chaos Monkey（Netflix）、ChaosBlade（阿里）、Chaos Mesh（PingCAP） | 演练场景能不能由复盘的行动项**直接生成**（阿里把教训转为预案与演练场景的做法见 [§6.3](06-postmortem-culture-section-6-sec6.md)）；爆炸半径是否可控 | "我们已经吸取教训"没有验证手段，改进停在文档；详见 [12-architecture/06-chaos-engineering](../../12-architecture/06-chaos-engineering/06-chaos-engineering.md) |
 | AI 时代工具（2024-2025） | Rootly AI、Incident.io AI、Firehydrant AI、Datadog Watchdog、New Relic AI | 官方发布说明里，异常检测 / 故障预测 / 时间线草稿 / 事件摘要 / 相似案例检索这些能力是正式条目还是预览项；输出能否逐条回溯到原始记录；有没有"确认人"字段可落 | 不是"少一个功能"，而是多一份无人认领的摘要被当作依据引用（§3.2.6 的失效点） |
 
 **这一类里最容易被误选的是最后一类。** 原因是接入它不需要先改任何制度——事件管理类工具的 AI 能力迭代快，试点一两天就能跑起来，而 Step 1 的制度约定要几个月才看得出效果；于是团队会在制度层还没修好的时候先接上它（§3.6 同一判断）。误选的后果不体现在工具上，而体现在记录上：一份排版工整、时间线完整、措辞中立的辩护词，比一份潦草的事实更难被质疑。
@@ -263,7 +263,7 @@
 4. 需要验证的教训转为演练场景，排进下一次演练
 ```
 
-**怎么用**：每个 H2 就是一次故障的一个阶段，直接按顺序执行；时间目标按自己的 SLO 与值班规模填，不要照抄本文的宽松表述（本文只给了"数分钟内""规定时限内"这类相对口径）。第四步的顺序是本文唯一不能调整的地方——**缓解先于根因确认**，因为根因分析可以放到复盘里慢慢做，业务中断不能等。第六步的第 4 条来自 [§ 6.3](06-postmortem-culture-section-6-sec6.md) 记录的做法：教训不转为演练场景，"不再犯"就只是一句话。
+**怎么用**：每个 H2 就是一次故障的一个阶段，直接按顺序执行；时间目标按自己的 SLO 与值班规模填，不要照抄本文的宽松表述（本文只给了"数分钟内""规定时限内"这类相对口径）。第四步的顺序是本文唯一不能调整的地方——**缓解先于根因确认**，因为根因分析可以放到复盘里慢慢做，业务中断不能等。第六步的第 4 条来自 [§6.3](06-postmortem-culture-section-6-sec6.md) 记录的做法：教训不转为演练场景，"不再犯"就只是一句话。
 
 **模板 3：AI 辅助复盘 Prompt（只出草稿，不写根因）**
 
@@ -374,4 +374,4 @@ ROOT_CAUSE_ANALYSIS_PROMPT = """
 >
 > 💡 **思考锚点**：把你们上一次同类故障的复盘和这次的 Action Items 清单叠在一起，数重合条数——重合越多，说明问题在闭环而不在故障本身（§4.9 第 8 条）。再抽 3 条已标「已完成」的，问「怎么验证它生效」：答案是一份文档，还是一个系统里能复现的信号？
 >
-> 配合 [§ 2 核心原理](06-postmortem-culture.md)、[§ 3 设计模式与范式](06-postmortem-culture-section-3-sec3.md) 与 [§ 6 落地实践](06-postmortem-culture-section-6-sec6.md) 阅读。存量改造的落地顺序以 4.4 为准；AI 相关能力的成熟度判断与使用边界见 [§ 5 前沿演进](06-postmortem-culture-section-5-ai.md)。
+> 配合 [§2 核心原理](06-postmortem-culture.md)、[§3 设计模式与范式](06-postmortem-culture-section-3-sec3.md) 与 [§6 落地实践](06-postmortem-culture-section-6-sec6.md) 阅读。存量改造的落地顺序以 4.4 为准；AI 相关能力的成熟度判断与使用边界见 [§5 前沿演进](06-postmortem-culture-section-5-ai.md)。

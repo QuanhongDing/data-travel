@@ -279,4 +279,4 @@
 >
 > 💡 **思考锚点**：按 §5.5 第一条的推导链，拿你们最近一份 QBR 材料的总人时当基线，乘「排版与配图占比 1/3–1/2」，算 AI 到底能压掉多少——它和你老板期待的倍数差多远？再按 §5.3 的边界自查：这份材料里「取数」和「结论」有没有被塞给模型（这两环不外包的话，效率上限就是那个推算值）？
 >
-> 配合 [§ 2 核心原理](08-upward-management.md)、[§ 6 落地实践](08-upward-management-section-6-sec6.md) 与 [§ 7 与其他方法对比](08-upward-management-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](08-upward-management.md)、[§6 落地实践](08-upward-management-section-6-sec6.md) 与 [§7 与其他方法对比](08-upward-management-section-7-sec7.md) 阅读。

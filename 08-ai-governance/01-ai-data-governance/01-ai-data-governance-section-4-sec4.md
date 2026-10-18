@@ -1,4 +1,4 @@
-> 本文件是 **01-ai-data-governance.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](01-ai-data-governance-section-3-sec3.md) 选定的治理模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](01-ai-data-governance.md)。
+> 本文件是 **01-ai-data-governance.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](01-ai-data-governance-section-3-sec3.md) 选定的治理模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](01-ai-data-governance.md)。
 
 ## 4. 工程实现
 
@@ -361,4 +361,4 @@ AI 治理的账单里硬件几乎不是主要项，**贵的是「人」和「不
 >
 > 💡 **思考锚点**：把你手上的治理动作按本节的 8 步排一次序，只看两处硬约束——「清单→分级→血缘」有没有连在一起、以及「合规映射（它要哪些证据）」有没有排在「日志表字段冻结」之前；如果先买了平台、或先建了日志表再想加列，那么这一步之后你能回填的字段是哪几个、回填不了的是哪几个？
 >
-> 配合 [§ 2 核心原理](01-ai-data-governance.md)、[§ 3 设计模式](01-ai-data-governance-section-3-sec3.md) 与 [§ 7 与其他方法对比](01-ai-data-governance-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](01-ai-data-governance.md)、[§3 设计模式](01-ai-data-governance-section-3-sec3.md) 与 [§7 与其他方法对比](01-ai-data-governance-section-7-sec7.md) 阅读。

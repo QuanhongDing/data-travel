@@ -1,4 +1,4 @@
-> 本文件是 **01-data-quality.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](01-data-quality-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](01-data-quality.md)。
+> 本文件是 **01-data-quality.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](01-data-quality-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](01-data-quality.md)。
 
 ## 4. 工程实现
 
@@ -371,4 +371,4 @@ explanation = mc.ai.explain(alert, model="claude-3-5-sonnet")
 >
 > 💡 **思考锚点**：挑你手上 3 张 P0 表，问值班人「这张表挂了先找谁」——回答里有没有具体人名？再给它们只挂「新鲜度」与「行数比值」两个不依赖业务语义的指标，观察两到四周，你能分出哪几张长期不更新、哪几张行数发生量级跳变吗？
 
-> 配合 [§ 2 核心原理](01-data-quality.md)、[§ 3 设计模式与范式](01-data-quality-section-3-sec3.md) 与 [§ 6 落地实践](01-data-quality-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](01-data-quality.md)、[§3 设计模式与范式](01-data-quality-section-3-sec3.md) 与 [§6 落地实践](01-data-quality-section-6-sec6.md) 阅读。

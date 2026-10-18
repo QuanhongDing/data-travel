@@ -309,4 +309,4 @@
 >
 > 💡 **思考锚点**：先报一个数——同一个业务指标，你这边有没有两份实现（离线一套 SQL、实时再写一遍 Flink），还是共用一份定义？若是两份，Lambda 的对齐成本由谁在吸收；若是一份，请当场指认代价转移到了哪一笔——表格式的写放大/读放大与 compaction 运维，还是流原生方案的常驻内存？说不出转移点的那一笔，你打算拿什么证据说它已经省下来了？
 
-> 配合 [§ 2 核心原理](10-stream-batch-unified.md) 与 [§ 6 落地实践](10-stream-batch-unified-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](10-stream-batch-unified.md) 与 [§6 落地实践](10-stream-batch-unified-section-6-sec6.md) 阅读。

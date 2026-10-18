@@ -281,4 +281,4 @@
 >
 > 💡 **思考锚点**：翻出你们最近一份选型矩阵，把每个格子标成「采集值」还是「生成值」——按 §5.3 的硬规则与 §5.8 的加权求和（Score = Σ w_j × s_ij），只要有一格是模型生成的，整张表的总分就成了证据与先验不可见的混合。再追问：这张表的权重那一列，写没写「谁定的、哪次会议、谁签字」（§5.6 第一条预测的成真信号）？
 >
-> 配合 [§ 2 核心原理](02-tradeoff-frameworks.md)、[§ 6 落地实践](02-tradeoff-frameworks-section-6-sec6.md) 与 [§ 7 与其他方法对比](02-tradeoff-frameworks-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](02-tradeoff-frameworks.md)、[§6 落地实践](02-tradeoff-frameworks-section-6-sec6.md) 与 [§7 与其他方法对比](02-tradeoff-frameworks-section-7-sec7.md) 阅读。

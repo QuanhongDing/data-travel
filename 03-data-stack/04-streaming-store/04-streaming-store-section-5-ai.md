@@ -254,4 +254,4 @@
 >
 > 💡 **思考锚点**：取你手头一个真实 topic，按「字节 × 存储单价 + 条数 × 请求单价 + 出网流量」把三项各算一遍——若请求成本占比超过一半，而你的消息又是「多而小」那档，你就撞上了 §5.5 说的「单位成本不降反升」；这时你会把保留期压到多短，还是干脆不给这条链路开对象存储原生？
 >
-> 配合 [§ 2 核心原理](04-streaming-store.md)、[§ 6 落地实践](04-streaming-store-section-6-sec6.md) 与 [§ 7 与其他方法对比](04-streaming-store-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](04-streaming-store.md)、[§6 落地实践](04-streaming-store-section-6-sec6.md) 与 [§7 与其他方法对比](04-streaming-store-section-7-sec7.md) 阅读。

@@ -1,4 +1,4 @@
-> 本文件是 **06-schema-and-time-travel.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](06-schema-and-time-travel-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](06-schema-and-time-travel.md)。
+> 本文件是 **06-schema-and-time-travel.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](06-schema-and-time-travel-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](06-schema-and-time-travel.md)。
 
 ## 4. 工程实现
 
@@ -352,4 +352,4 @@ ALTER TABLE products ADD COLUMN description_embedding ARRAY<FLOAT>;  -- 向量�
 >
 > 💡 **思考锚点**：挑你们保留策略最冷的那张表，先看配置单位是时间还是 commit 数——若按 commit 数，数一下 N 个提交实际覆盖了多少天；这个回溯窗口够不够长到覆盖你们最长的一次口径纠纷追溯期（§4.9 第 6、7 条）？不够长时，你是回 Step 5 调窗口，还是干脆放弃旧快照？
 >
-> 配合 [§ 2 核心原理](06-schema-and-time-travel.md)、[§ 3 设计模式与范式](06-schema-and-time-travel-section-3-sec3.md) 与 [§ 6 落地实践](06-schema-and-time-travel-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](06-schema-and-time-travel.md)、[§3 设计模式与范式](06-schema-and-time-travel-section-3-sec3.md) 与 [§6 落地实践](06-schema-and-time-travel-section-6-sec6.md) 阅读。

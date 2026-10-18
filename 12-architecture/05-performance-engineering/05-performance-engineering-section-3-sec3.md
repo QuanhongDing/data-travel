@@ -140,7 +140,7 @@
 - **为什么这样设计有效**：因为自回归解码的瓶颈是**显存带宽而不是算力**，每一步都要读一遍权重与 KV Cache；连续批处理与分页显存管理让显存在请求之间被更充分地复用，等价于在同样的硬件上把「每 token 的成本」摊薄——这是吞吐提升的主要来源，而不是靠更快的算子。
 - **代价**：量化与蒸馏都会**改变输出分布**，而且回退通常是静默的（不报错、只是变差）；连续批处理把不同请求绑在一起，任何一个请求的异常都会影响同批其他请求的尾延迟；TTFT 与吞吐互为代价，任何一方的好看数字都可以用调另一个换来。
 - **失效点**：当任务对精度损失敏感（细粒度分类、长尾语言、需要精确数字或格式的生成）时，量化的**「单位成本下降」会反转成「质量回退且无告警」**，因为量化误差不体现在报错或超时上，而体现在输出分布上——延迟指标全部正常，业务指标悄悄下滑。**所以量化的正确前置条件是先建立质量评测基线，而不是先建吞吐基线。**
-- **真实使用**：连续批处理由 Orca 提出并被主流推理引擎采用，vLLM 的 PagedAttention 是其中被引用最广的显存管理方案（【公开】Kwon 等《Efficient Memory Management for Large Language Model Serving with PagedAttention》，SOSP 2023；《Orca: A Distributed Serving System for Transformer-Based Generative Models》，OSDI 2022）；TensorRT-LLM、ONNX Runtime 是常见的推理运行时；vLLM 的调用示例见本章 [§ 4 工程实现](05-performance-engineering-section-4-sec4.md) 的 §4.5 模板五「AI 推理服务的量化与批处理」，而主文件 §2.3 只是把 vLLM 连同连续批处理、PagedAttention 一起列为「AI 推理优化」的条目之一。
+- **真实使用**：连续批处理由 Orca 提出并被主流推理引擎采用，vLLM 的 PagedAttention 是其中被引用最广的显存管理方案（【公开】Kwon 等《Efficient Memory Management for Large Language Model Serving with PagedAttention》，SOSP 2023；《Orca: A Distributed Serving System for Transformer-Based Generative Models》，OSDI 2022）；TensorRT-LLM、ONNX Runtime 是常见的推理运行时；vLLM 的调用示例见本章 [§4 工程实现](05-performance-engineering-section-4-sec4.md) 的 §4.5 模板五「AI 推理服务的量化与批处理」，而主文件 §2.3 只是把 vLLM 连同连续批处理、PagedAttention 一起列为「AI 推理优化」的条目之一。
 - **手段的叠加顺序**：先做**服务侧**（连续批处理、调度），再做**显存侧**（KV Cache 分页管理），最后才做**模型侧**（量化、蒸馏）。理由是前两者不改变模型输出，风险最低且收益立即可测；模型侧的改动必须伴随质量基线，成本最高。顺序反过来做，就会在没有质量基线的前提下先承担了最大的回退风险【经验】。
 
 #### 3.2.5 Self-Tuning
@@ -304,4 +304,4 @@
 >
 > 💡 **思考锚点**：先别改代码，回答 3.7 清单的第二条——你当前瓶颈是 CPU、内存、IO、网络、显存中的哪一类（3.8 小结把「一段串行的锁」也算作一类资源）？依据的是哪一次测量而非哪场讨论？说不出资源类型，你在 3.8 表里挑的模式就只是猜；说得出，再对照 3.6：你的规模是否已让上一阶段最有效的手段失效——比如正逼近「单库 → 分片」那条一旦选错分片键就不可逆的线？
 
-> 配合 [§ 2 核心原理](05-performance-engineering.md)、[§ 4 工程实现](05-performance-engineering-section-4-sec4.md) 与 [§ 6 落地实践](05-performance-engineering-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](05-performance-engineering.md)、[§4 工程实现](05-performance-engineering-section-4-sec4.md) 与 [§6 落地实践](05-performance-engineering-section-6-sec6.md) 阅读。

@@ -324,4 +324,4 @@ CREATE TABLE cross_cloud_skeleton (
 >
 > 💡 **思考锚点**：用 §3.7 的清单量你现有血缘图的两个可算量——采集覆盖率的「分母」（自动解析成功的作业数 ÷ 全部作业数）你答得出来吗，一条 ≥3 跳查询的最坏结果集有没有深度上限与分页？若分母答不出、深度又没上限，卡住你的是采集没覆盖全，还是深链路查询没有护栏？
 >
-> 配合 [§ 2 核心原理](09-data-lineage.md)、[§ 4 工程实现](09-data-lineage-section-4-sec4.md) 与 [§ 6 落地实践](09-data-lineage-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](09-data-lineage.md)、[§4 工程实现](09-data-lineage-section-4-sec4.md) 与 [§6 落地实践](09-data-lineage-section-6-sec6.md) 阅读。

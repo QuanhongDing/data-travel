@@ -1,4 +1,4 @@
-> 本文件是 **01-ai-data-governance.md** § 8 面试真题集的子主题。完整章节请回到 [index](01-ai-data-governance.md) 或 [§ 8 索引](01-ai-data-governance-section-8-sec8.md)。
+> 本文件是 **01-ai-data-governance.md** §8 面试真题集的子主题。完整章节请回到 [index](01-ai-data-governance.md) 或 [§8 索引](01-ai-data-governance-section-8-sec8.md)。
 
 ### 8.8 §21.1 数据治理与智能化元数据管理
 

@@ -314,4 +314,4 @@
 >
 > 💡 **思考锚点**：按 §3.5 的推算，一段 30 分钟视频（约 1800 帧 × 256 token ≈ 46 万 token）直接进模型时，成本由输入形态而非单价决定——你的链路是先抽关键帧 / 转写，还是直接喂原始帧？再答那个判据：把现在的最强模型换成便宜一个量级的，你这条桥还剩多少能力？
 >
-> 配合 [§ 2 核心原理](01-multimodal-ai.md)、[§ 4 工程实现](01-multimodal-ai-section-4-sec4.md) 与 [§ 6 落地实践](01-multimodal-ai-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](01-multimodal-ai.md)、[§4 工程实现](01-multimodal-ai-section-4-sec4.md) 与 [§6 落地实践](01-multimodal-ai-section-6-sec6.md) 阅读。

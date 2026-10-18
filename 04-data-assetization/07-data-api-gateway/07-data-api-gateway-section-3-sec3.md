@@ -305,4 +305,4 @@ routes:
 >
 > 💡 **思考锚点**：翻一下你的网关限流配置——它计的是「请求数」，还是也覆盖了「返回行数 / 扫描字节」？找一个被设计成「看汇总」却被按「明细导出」调用的接口，它的返回行数 P99 是多少？这个数字，你在限流或告警里给它设过阈值吗？
 
-> 配合 [§ 2 核心原理](07-data-api-gateway.md)、[§ 4 工程实现](07-data-api-gateway-section-4-sec4.md) 与 [§ 6 落地实践](07-data-api-gateway-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](07-data-api-gateway.md)、[§4 工程实现](07-data-api-gateway-section-4-sec4.md) 与 [§6 落地实践](07-data-api-gateway-section-6-sec6.md) 阅读。

@@ -316,4 +316,4 @@ TBLPROPERTIES (
 >
 > 💡 **思考锚点**：先量你的一次下沉动作落在 §3.6 的哪个价差档——沉到对象存储标准层只省约 1.1 倍（$0.30→$0.276），沉到归档层才省约 6.3 倍（→$0.048）。用你现有的数据量算这笔年节省额（每 TB 下沉标准层约 $24、下沉归档层约 $252）：它是被一次批量取回就可能吃掉的量级吗？若是，你该先补的是访问采集（先定判据信号），还是先改下沉档位（只换执行者）？
 
-> 配合 [§ 2 核心原理](05-cold-hot-tiering.md)、[§ 4 工程实现](05-cold-hot-tiering-section-4-sec4.md) 与 [§ 6 落地实践](05-cold-hot-tiering-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](05-cold-hot-tiering.md)、[§4 工程实现](05-cold-hot-tiering-section-4-sec4.md) 与 [§6 落地实践](05-cold-hot-tiering-section-6-sec6.md) 阅读。

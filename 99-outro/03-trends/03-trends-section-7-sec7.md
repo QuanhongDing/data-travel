@@ -301,4 +301,4 @@
 >
 > 💡 **思考锚点**：按 7.4 的算例算一次：你打算把判定权下推给几个域？每域配「1 名数据产品负责人 + 0.5–1 名数据工程」，乘出来是多少 FTE——配不出人的域按 7.8 先留在中央供数范围内；再定一件事：新旧机制并行跑多久（表里说唯一能削减却不能压到零的是并行期），拿哪几个指标逐日对账、差异超多少就告警？
 
-> 配合主文件 [§ 2 AI Native 数据架构](03-trends.md)、[§ 4 AI Agent 与人类：取代 / 增强 / 共生](03-trends-section-4-ai-agent.md) 与 [§ 6 LLM + 业务深度融合](03-trends-section-6-llm.md) 阅读。
+> 配合主文件 [§2 AI Native 数据架构](03-trends.md)、[§4 AI Agent 与人类：取代 / 增强 / 共生](03-trends-section-4-ai-agent.md) 与 [§6 LLM + 业务深度融合](03-trends-section-6-llm.md) 阅读。

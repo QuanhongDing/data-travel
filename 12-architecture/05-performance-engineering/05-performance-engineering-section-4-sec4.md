@@ -1,8 +1,8 @@
-> 本文件是 **05-performance-engineering.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](05-performance-engineering-section-3-sec3.md) 里的模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](05-performance-engineering.md)。
+> 本文件是 **05-performance-engineering.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](05-performance-engineering-section-3-sec3.md) 里的模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](05-performance-engineering.md)。
 
 ## 4. 工程实现
 
-本节按「落地步骤 → 关键技术点 → 工具链 → 存量迁移 → 模板 → 自检」组织，术语与主文件 §2.1 及 [§ 3](05-performance-engineering-section-3-sec3.md) 保持一致：**基线**、**瓶颈资源类型**、**延迟预算**、**P99 / P999**、**端到端**、**TTFT / TPOT**、**延迟与吞吐可调换**。§3 讲每个模式被什么约束逼出来、机制、代价与失效点；本节只讲**怎么按顺序把它装进组织**，不重复模式的论述。
+本节按「落地步骤 → 关键技术点 → 工具链 → 存量迁移 → 模板 → 自检」组织，术语与主文件 §2.1 及 [§3](05-performance-engineering-section-3-sec3.md) 保持一致：**基线**、**瓶颈资源类型**、**延迟预算**、**P99 / P999**、**端到端**、**TTFT / TPOT**、**延迟与吞吐可调换**。§3 讲每个模式被什么约束逼出来、机制、代价与失效点；本节只讲**怎么按顺序把它装进组织**，不重复模式的论述。
 
 读者分两类，本节两栏都覆盖。**从零搭建**的团队直接按 4.1 的五步走：基线可以在压测环境里先建立，SLO 与埋点清单在设计期就能定。**存量改造**的团队（系统已在线、多半也已经有若干看板与压测脚本）建议先读 4.4 再回到 4.1——存量的第一步不是建基线，而是**用已有数据拼一份事后基线并把口径统一**，这件事的顺序和从零搭完全不同。
 
@@ -361,4 +361,4 @@ server {
 >
 > 💡 **思考锚点**：§4.9 第一问——「有没有一份端到端基线，最近一次更新是哪天」——你现在答得上来吗？若答不上，先做 §4.1 的 Step 1：把当前瓶颈归到 §4.2 的资源类（CPU / 内存 / IO / 网络 / 显存）里的哪一类，依据的是哪一次测量？再挑一条你正准备做的优化（如缓存或量化），对着 §4.2 的失效条件读一遍：它的失效是报错，还是静默地落在输出分布与长尾上？
 
-> 配合 [§ 2 核心原理](05-performance-engineering.md)、[§ 3 设计模式与范式](05-performance-engineering-section-3-sec3.md) 与 [§ 6 落地实践](05-performance-engineering-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](05-performance-engineering.md)、[§3 设计模式与范式](05-performance-engineering-section-3-sec3.md) 与 [§6 落地实践](05-performance-engineering-section-6-sec6.md) 阅读。

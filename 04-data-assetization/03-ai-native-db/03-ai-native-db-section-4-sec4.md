@@ -1,4 +1,4 @@
-> 本文件是 **03-ai-native-db.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](03-ai-native-db-section-3-sec3.md) 里的做法装进一个真实系统：顺序、判据、产物与存量迁移。完整章节请回到 [index](03-ai-native-db.md)。
+> 本文件是 **03-ai-native-db.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](03-ai-native-db-section-3-sec3.md) 里的做法装进一个真实系统：顺序、判据、产物与存量迁移。完整章节请回到 [index](03-ai-native-db.md)。
 
 ## 4. 工程实现
 
@@ -398,4 +398,4 @@ FROM products WHERE category = 'phone' ORDER BY score DESC LIMIT 10;
 >
 > 💡 **思考锚点**：把你的向量库代进 Step 1 的比值算一次——向量行数 × 维度 × 每维字节数 ÷ 可用索引缓存内存等于多少？小于 1，后面调 ef_search / m 才有意义；接近或超过 1，先按 §3.2.1 把它降下来再谈调参。再补一个数：从写入到可检索的窗口，和你 SLA 里承诺的那条差多远？
 
-> 配合 [§ 2 核心原理](03-ai-native-db.md)、[§ 3 设计模式与范式](03-ai-native-db-section-3-sec3.md) 与 [§ 6 落地实践](03-ai-native-db-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](03-ai-native-db.md)、[§3 设计模式与范式](03-ai-native-db-section-3-sec3.md) 与 [§6 落地实践](03-ai-native-db-section-6-sec6.md) 阅读。

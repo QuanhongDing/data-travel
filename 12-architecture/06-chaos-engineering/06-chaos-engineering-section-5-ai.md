@@ -265,4 +265,4 @@
 
 > 💡 **思考锚点**：拿 §5.7「明确不要做」那一列扫一遍你现在的演练清单——你有没有在稳态还只有错误率与 P99 时就开过 AI 链路的混沌？再按覆盖矩阵（故障类型 × 是否注入过 × 是否有结论）填一次你的存量：那一格「从未注入」的类型，占整矩阵的几分之几？
 
-> 配合 [§ 2 核心原理](06-chaos-engineering.md)、[§ 6 落地实践](06-chaos-engineering-section-6-sec6.md) 与 [§ 7 与其他方法对比](06-chaos-engineering-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](06-chaos-engineering.md)、[§6 落地实践](06-chaos-engineering-section-6-sec6.md) 与 [§7 与其他方法对比](06-chaos-engineering-section-7-sec7.md) 阅读。

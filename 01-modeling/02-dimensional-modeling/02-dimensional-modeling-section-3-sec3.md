@@ -339,4 +339,4 @@ ALTER TABLE dim_user ADD COLUMN prev_user_level VARCHAR(16);
 >
 > 💡 **思考锚点**：把你手上的事实表逐张拿出来，能用一句话答出「一行代表什么」的有几张？答不上来的那些，落在 3.5 的「粒度混乱」还是「巨型大宽表」里？再挑一张周期快照表，把它与它派生自的事务表比一次行数——比值离 1 还有多远，决定你是否已经站到 3.6 那一行的换模点上。
 >
-> 配合 [§ 2 核心原理](02-dimensional-modeling.md)、[§ 4 工程实现](02-dimensional-modeling-section-4-sec4.md) 与 [§ 6 落地实践](02-dimensional-modeling-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](02-dimensional-modeling.md)、[§4 工程实现](02-dimensional-modeling-section-4-sec4.md) 与 [§6 落地实践](02-dimensional-modeling-section-6-sec6.md) 阅读。

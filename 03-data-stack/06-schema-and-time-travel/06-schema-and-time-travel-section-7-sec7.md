@@ -291,4 +291,4 @@
 >
 > 💡 **思考锚点**：量一下你那张 upsert 表：日均被重写的数据量 × 保留窗口天数（§7.3.3 的推算），就是你为 Time Travel 多付的存储——它涨到多大时你会改成「短窗口 + 关键节点打 tag」？而若要把追加表换成主键表，§7.7 给的是 6–18 人月，因为下游所有基于行数与到达顺序的逻辑都要重写——这部分工作量你算进去了吗？
 >
-> 配合 [§ 2 核心原理](06-schema-and-time-travel.md) 与 [§ 6 落地实践](06-schema-and-time-travel-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](06-schema-and-time-travel.md) 与 [§6 落地实践](06-schema-and-time-travel-section-6-sec6.md) 阅读。

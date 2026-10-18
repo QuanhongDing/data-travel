@@ -356,4 +356,4 @@ grain:    [1d, 1h]
 >
 > 💡 **思考锚点**：翻出你集群的查询日志，数一下每个物化视图与 Cube 覆盖的查询占比——本节说「预计算只应覆盖已被日志证明稳定出现的查询形态」，你有几个命中率接近零却仍在刷新的 MV？把它们的刷新资源收回，能不能让你现在那个「合并任务滞后时间」降下来？
 >
-> 配合 [§ 2 核心原理](11-olap-engine.md)、[§ 4 工程实现](11-olap-engine-section-4-sec4.md) 与 [§ 6 落地实践](11-olap-engine-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](11-olap-engine.md)、[§4 工程实现](11-olap-engine-section-4-sec4.md) 与 [§6 落地实践](11-olap-engine-section-6-sec6.md) 阅读。

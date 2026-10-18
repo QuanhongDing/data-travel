@@ -269,4 +269,4 @@
 >
 > 💡 **思考锚点**：先数两个数——你们目录里登记的模型张数落在 §5.7 表里的哪一行，以及 CI 里默认开启且会阻断合并的门禁有几条。本节把「CI 默认阻断影响面」当作判断 AI 是否真改变了评审瓶颈的二值信号，你这两个数落在表里那一行的建议内，还是差一整档？
 >
-> 配合 [§ 2 核心原理](11-model-management.md)、[§ 6 落地实践](11-model-management-section-6-sec6.md) 与 [§ 7 与其他方法对比](11-model-management-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](11-model-management.md)、[§6 落地实践](11-model-management-section-6-sec6.md) 与 [§7 与其他方法对比](11-model-management-section-7-sec7.md) 阅读。

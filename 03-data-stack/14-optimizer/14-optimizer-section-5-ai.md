@@ -291,4 +291,4 @@ Cost = α × I/O + β × CPU + γ × Network        ← 单条查询、三项成
 >
 > 💡 **思考锚点**：挑你们负载里重复度最高的一条报表查询，按 §5.2.2 的算式（频次 × 单次节省 − 物化刷新成本）算一遍净收益；若为正，把这条物化交给自动维护后，优化器一换代，你能一键退回引擎默认计划，还是得先手工删掉这批物化视图？
 >
-> 配合 [§ 2 核心原理](14-optimizer.md)、[§ 6 落地实践](14-optimizer-section-6-sec6.md) 与 [§ 7 与其他方法对比](14-optimizer-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](14-optimizer.md)、[§6 落地实践](14-optimizer-section-6-sec6.md) 与 [§7 与其他方法对比](14-optimizer-section-7-sec7.md) 阅读。

@@ -1,4 +1,4 @@
-> 本文件是 **09-remote-team.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](09-remote-team-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](09-remote-team.md)。
+> 本文件是 **09-remote-team.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](09-remote-team-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](09-remote-team.md)。
 
 ## 4. 工程实现
 
@@ -354,4 +354,4 @@ ASYNC_MEETING_SUMMARY_PROMPT = """
 >
 > 💡 **思考锚点**：把你们最近一条非事故类讨论拿出来，数它几轮往返才收敛——§4.9 说超过两轮且没人能说出「谁必须何时回」即为失效。再顺着查：把所有周期性会议按时区排一遍，有没有人长期落在 22:00–06:00 区间？如果「响应预期」这一条（什么级别的事多久内回）你们根本没写成规则，那 §4.10 说它是唯一决定成败的一环——你打算先补这一条，还是先上 AI 摘要把长线程压成一页？
 >
-> 配合 [§ 2 核心原理](09-remote-team.md)、[§ 3 设计模式与范式](09-remote-team-section-3-sec3.md) 与 [§ 6 落地实践](09-remote-team-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](09-remote-team.md)、[§3 设计模式与范式](09-remote-team-section-3-sec3.md) 与 [§6 落地实践](09-remote-team-section-6-sec6.md) 阅读。

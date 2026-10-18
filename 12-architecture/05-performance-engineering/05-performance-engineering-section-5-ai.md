@@ -267,4 +267,4 @@
 >
 > 💡 **思考锚点**：把你的推理服务拆成「每 token 要搬运的显存量 = 权重 + KV cache」两项：主导你单位成本的是权重被重复搬运（可被前缀缓存消掉），还是 KV cache 随上下文长度线性增长？再翻你的 SLO——里面有没有 TTFT 与 TPOT 两个分位，还是只有端到端 P99（那它看不见排队）？
 >
-> 配合 [§ 2 核心原理](05-performance-engineering.md)、[§ 6 落地实践](05-performance-engineering-section-6-sec6.md) 与 [§ 7 与其他方法对比](05-performance-engineering-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](05-performance-engineering.md)、[§6 落地实践](05-performance-engineering-section-6-sec6.md) 与 [§7 与其他方法对比](05-performance-engineering-section-7-sec7.md) 阅读。

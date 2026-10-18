@@ -1,4 +1,4 @@
-> 本文件是 **05-rag-architecture.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](05-rag-architecture-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](05-rag-architecture.md)。
+> 本文件是 **05-rag-architecture.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](05-rag-architecture-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](05-rag-architecture.md)。
 
 ## 4. 工程实现
 
@@ -373,4 +373,4 @@ RAG 的账单结构和实时相反：它没有 7×24 的常驻算力，大头是
 >
 > 💡 **思考锚点**：拿你现在的分块策略，抽 20 个已标注答案，数答案落在单个 chunk 内与落在两个 chunk 之间的比例——在把这个比例压下来、并把语料快照与问题集版本钉死之前，你分得清一次「换模型」带来的提升是检索变好了还是切分变好了吗？
 >
-> 配合 [§ 2 核心原理](05-rag-architecture.md)、[§ 3 设计模式与范式](05-rag-architecture-section-3-sec3.md) 与 [§ 6 落地实践](05-rag-architecture-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](05-rag-architecture.md)、[§3 设计模式与范式](05-rag-architecture-section-3-sec3.md) 与 [§6 落地实践](05-rag-architecture-section-6-sec6.md) 阅读。

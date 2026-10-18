@@ -310,4 +310,4 @@ LIMIT  10;
 >
 > 💡 **思考锚点**：取你现在的两路召回结果做并集，目标文档是不是都落在里面？本节指出融合只能抬高召回并集的上限、加路与调融合权重都改不了它——若并集本身不达标，你下一步该是加第三路、换编码模型，还是先把精排的 K（你用的落在 50–100 这一档吗）收回来？
 >
-> 配合 [§ 2 核心原理](04-hybrid-search.md)、[§ 4 工程实现](04-hybrid-search-section-4-sec4.md) 与 [§ 6 落地实践](04-hybrid-search-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](04-hybrid-search.md)、[§4 工程实现](04-hybrid-search-section-4-sec4.md) 与 [§6 落地实践](04-hybrid-search-section-6-sec6.md) 阅读。

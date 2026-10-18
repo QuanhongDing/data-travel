@@ -278,4 +278,4 @@
 >
 > 💡 **思考锚点**：拿你已经跑起来的 RAG 算一次：在检索出口只加一条「答案里出现的实体必须在本体里有类型」的 SHACL 形状，它拦下的违规比例是长期接近零（形状没意义）还是居高不下（真覆盖）？再照 5.6 的证伪线估一次——你让 LLM 生成的公理进人工审核队列，中位积压时长会不会越过「超过半年」那条线？
 
-> 配合 [§ 2 核心原理](05-ontology-modeling.md)、[§ 6 落地实践](05-ontology-modeling-section-6-sec6.md) 与 [§ 7 与其他方法对比](05-ontology-modeling-section-7-sec7.md) 阅读：§ 2 给本体的概念体系与形式化基础（Class / Property / Axiom、profile、SHACL、Reasoner），§ 6 给真实组织的本体落地案例，§ 7 的 7.3.2 与 7.3.3 分别讲开放世界假设与物化 / 查询重写的取舍——这两条是本节判断"本体能不能被程序消费"的机制依据。
+> 配合 [§2 核心原理](05-ontology-modeling.md)、[§6 落地实践](05-ontology-modeling-section-6-sec6.md) 与 [§7 与其他方法对比](05-ontology-modeling-section-7-sec7.md) 阅读：§2 给本体的概念体系与形式化基础（Class / Property / Axiom、profile、SHACL、Reasoner），§6 给真实组织的本体落地案例，§7 的 7.3.2 与 7.3.3 分别讲开放世界假设与物化 / 查询重写的取舍——这两条是本节判断"本体能不能被程序消费"的机制依据。

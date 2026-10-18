@@ -322,4 +322,4 @@ TBLPROPERTIES ('write.update.mode' = 'merge-on-read');
 >
 > 💡 **思考锚点**：把你线上特征按时间常数分成离线 / 近实时 / 实时三档，分别数出各档的特征数——有几档是业务真正需要的？每多留一档就多养一条计算路径与一条一致性校验链；按你现在的特征数与团队规模，哪一档可以砍掉而不让任何离线 / 在线的值对不上？
 >
-> 配合 [§ 2 核心原理](01-feature-store.md)、[§ 4 工程实现](01-feature-store-section-4-sec4.md)、[§ 5 前沿演进（AI 时代）](01-feature-store-section-5-ai.md) 与 [§ 6 落地实践](01-feature-store-section-6-sec6.md) 阅读：§ 2 给特征的定义、离线 / 在线一致性与 Point-in-Time 三条底层机制，§ 4 给特征平台的工程实现，§ 5 给 LLM / 向量特征下的演进，§ 6 给真实公司落地案例。
+> 配合 [§2 核心原理](01-feature-store.md)、[§4 工程实现](01-feature-store-section-4-sec4.md)、[§5 前沿演进（AI 时代）](01-feature-store-section-5-ai.md) 与 [§6 落地实践](01-feature-store-section-6-sec6.md) 阅读：§2 给特征的定义、离线 / 在线一致性与 Point-in-Time 三条底层机制，§4 给特征平台的工程实现，§5 给 LLM / 向量特征下的演进，§6 给真实公司落地案例。

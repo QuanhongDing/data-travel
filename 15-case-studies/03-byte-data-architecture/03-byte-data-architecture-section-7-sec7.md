@@ -64,7 +64,7 @@
 
 **这个差异由什么约束导致**：因为阿里的多个 BU 共享同一批业务实体，同一个指标在几十个业务里各算一遍时必然出现「同名不同义」，所以它只能把定义权收归中央——**否则跨业务分析在物理上无法成立，而不是「不方便」**。反过来，因为 Netflix 的业务是单一产品线、实体边界天然清晰，把定义权集中起来换不来跨域一致性收益，只会换来审批延迟，所以它选择把所有权下放、把一致性交给规范与评审。字节处在两者之间：它需要用同一套口径支撑跨 App 的统一指标，但不希望业务被中央的审批节奏拖住，所以它选择**集中定义核心指标、把表与任务的定义留给业务，并用自动血缘把两者的关联做成系统可回答的**。
 
-**公开证据**：OneData / OneID 的方法论由阿里在《大数据之路：阿里巴巴大数据实践》（电子工业出版社，2017）中公开；Netflix 于 2018 年把 Iceberg 表格式开源，其时间线可在 Apache Iceberg 项目页（iceberg.apache.org）逐条核对（2018 年开源、2018-11 进入 Apache 孵化器、2020-05 成为顶级项目）。此外，本文件的 [§ 6 落地实践](03-byte-data-architecture-section-6-sec6.md) 记录了字节侧的一个直接判据：**「一站式」是否成立，看它能否自动回答「上游变更会影响哪些下游」**——能自动回答，才说明调度、血缘、质量真的共用了一份元数据。
+**公开证据**：OneData / OneID 的方法论由阿里在《大数据之路：阿里巴巴大数据实践》（电子工业出版社，2017）中公开；Netflix 于 2018 年把 Iceberg 表格式开源，其时间线可在 Apache Iceberg 项目页（iceberg.apache.org）逐条核对（2018 年开源、2018-11 进入 Apache 孵化器、2020-05 成为顶级项目）。此外，本文件的 [§6 落地实践](03-byte-data-architecture-section-6-sec6.md) 记录了字节侧的一个直接判据：**「一站式」是否成立，看它能否自动回答「上游变更会影响哪些下游」**——能自动回答，才说明调度、血缘、质量真的共用了一份元数据。
 
 **对读者的意义**：判断自己该学谁，只需要问一个问题——**我的组织里是否存在「同一个实体或指标被两个以上业务独立计算」**。存在，中央定义（阿里路线）的收益立刻成立；不存在，集中定义只会变成审批瓶颈，此时应学 Netflix 的领域自治，或学字节的「集中定义核心指标 + 引用而非复制」的折中。
 
@@ -112,7 +112,7 @@
 
 **这个差异由什么约束导致**：因为字节把一个决策变成一次实验的**边际成本被平台压得很低**（分流、显著性、指标计算都由平台承担），所以「凭经验决策」在内部失去合法性——**不是文化先变了，而是工具让实验比争论更便宜**。反过来，如果没有统一的指标口径，实验结论无法跨实验比较，实验就会退化成局部优化；这正是 [§6](03-byte-data-architecture-section-6-sec6.md) 记录的「指标平台集中定义、引用而非复制」要解决的问题。而阿里之所以把重心放在报表与口径上，是因为它的核心矛盾是「几十个 BU 的数字对不上」，不是「决策不够快」。
 
-**公开证据**：本书 [§ 4.2](03-byte-data-architecture-section-4-sec4.md) 记录了 AB 平台的关键设计（哈希分桶、互斥分层、流量调拨、显著性检验与早停），并指出 AB 平台已作为对外产品提供——ToB 侧的对应产品是火山引擎的「A/B 测试」（[火山引擎官网产品页「A/B 测试」]，该产品线自 2018 年起对外，见本仓 [§ 3.2](03-byte-data-architecture-section-3-sec3.md)）。Netflix 长期在 Netflix 工程博客公开其实验与因果推断相关的实践，其中《Keystone Real-time Pipeline》（2018）与关于 Maestro 编排器的文章（2022）是本章引用最多的两篇。
+**公开证据**：本书 [§4.2](03-byte-data-architecture-section-4-sec4.md) 记录了 AB 平台的关键设计（哈希分桶、互斥分层、流量调拨、显著性检验与早停），并指出 AB 平台已作为对外产品提供——ToB 侧的对应产品是火山引擎的「A/B 测试」（[火山引擎官网产品页「A/B 测试」]，该产品线自 2018 年起对外，见本仓 [§3.2](03-byte-data-architecture-section-3-sec3.md)）。Netflix 长期在 Netflix 工程博客公开其实验与因果推断相关的实践，其中《Keystone Real-time Pipeline》（2018）与关于 Maestro 编排器的文章（2022）是本章引用最多的两篇。
 
 **对读者的意义**：先确定你的核心矛盾是「决策太慢」还是「数字对不上」。前者要建的是实验能力与统一指标（字节路线），后者要建的是口径治理与模型分层（阿里路线）。**两者都做，但要分先后**——没有统一口径的实验平台，只会产出无法比较的结论。
 
@@ -137,7 +137,7 @@
 
 **这个差异由什么约束导致**：字节的对外路线把**差异化定位放在应用与平台层**——从强项（推荐、AB、视频、数据中台、大模型）切入；因为通用基础设施层的竞争比的是长期规模与价格，而这块位置已有厂商占据多年，新进入者在这里只能拼价格而不是拼差异。**基础层它并不是不做，而是按标准云产品供给**——这个区分可以自行核验：打开火山引擎官网的产品列表，看基础层产品的有无与位置；至于「哪一层是它的相对强项」，用采购结构核验比用能力评价可靠。而因为 Netflix 不打算卖平台，所以它把内部解决的能力做成开放标准的边际成本最低、长期收益最高（降低自家适配成本 + 换取生态位）。阿里则同时具备规模与云基础设施，因此有能力做全栈对外。
 
-**公开证据**：火山引擎自 2019 年成立后公开的产品线与其对外叙事可在其官网产品目录中逐项核对（ByteHouse、DataFinder / DataLeap / DataWind、A/B 测试、智能推荐、豆包大模型与扣子 / Coze，[火山引擎官网产品页]，2021–2024）；本仓 [§ 3.2.5](03-byte-data-architecture-section-3-sec3.md) 记录了同一份产品清单。Iceberg 进入 Apache 顶级项目（[Apache Iceberg 项目页](https://iceberg.apache.org/)，2020）是「开源换生态」的直接证据；美团侧的对外出口见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md) §1.1 记录的 2022 年 ToB 商业化。
+**公开证据**：火山引擎自 2019 年成立后公开的产品线与其对外叙事可在其官网产品目录中逐项核对（ByteHouse、DataFinder / DataLeap / DataWind、A/B 测试、智能推荐、豆包大模型与扣子 / Coze，[火山引擎官网产品页]，2021–2024）；本仓 [§3.2.5](03-byte-data-architecture-section-3-sec3.md) 记录了同一份产品清单。Iceberg 进入 Apache 顶级项目（[Apache Iceberg 项目页](https://iceberg.apache.org/)，2020）是「开源换生态」的直接证据；美团侧的对外出口见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md) §1.1 记录的 2022 年 ToB 商业化。
 
 **对读者的意义**：判断你的组织该不该对外输出能力，看两条——**你在哪一层有存量优势**，以及**输出的对象是否愿意为这一层付费**。前者决定你能不能赢，后者决定这件事值不值得做。注意这两条都是**相对判断**（相对竞争对手、相对客户预算），不是「有没有某个产品」。
 
@@ -179,11 +179,11 @@
 | --- | --- | --- | --- | --- | --- |
 | 资产规模 | 未公开统一表口径 | 数据目录口径 30 万+ 表 | 未公开统一表口径 | 未公开统一表口径 | 【公开】30 万+ 表见本仓 [04-data-assetization/08-data-catalog §6 案例 6.1](../../04-data-assetization/08-data-catalog/08-data-catalog-section-6-sec6.md)（阿里 DataWorks 数据地图，2016–2024 口径）；其余三格为「未公开」，不是「为零」 |
 | 核心 OLAP 路线 | ByteHouse（基于 ClickHouse 自研改造） | MaxCompute + Hologres | ClickHouse（成熟组件 + 场景化改造） | Iceberg 表格式 + Spark / Flink | 【公开】ByteHouse / Hologres / ClickHouse 均为各家公开产品与公开技术文章所载（ClickHouse 2016 年由 Yandex 开源，见 7.2.2）；美团一列只到「用 ClickHouse」这一粒度 |
-| 特征 / ML 平台 | 推荐中台、Feature Store、AB 平台 | PAI、PAI FeatureStore | 美团 ML 平台、Feature Store | Metaflow（2019 年开源）、Maestro（2022 年公开） | 【公开】字节侧见本仓 [§ 4.2](03-byte-data-architecture-section-4-sec4.md)（Feature Store 平台化见 [主文件 § 1.1](03-byte-data-architecture.md) 的 2021 年节点）；美团侧见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md) §1.1 的 2018 年 V1 / 2019 年 V2；Netflix 侧见 github.com/Netflix/metaflow（2019）与 Netflix 工程博客（2022） |
+| 特征 / ML 平台 | 推荐中台、Feature Store、AB 平台 | PAI、PAI FeatureStore | 美团 ML 平台、Feature Store | Metaflow（2019 年开源）、Maestro（2022 年公开） | 【公开】字节侧见本仓 [§4.2](03-byte-data-architecture-section-4-sec4.md)（Feature Store 平台化见 [主文件 §1.1](03-byte-data-architecture.md) 的 2021 年节点）；美团侧见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md) §1.1 的 2018 年 V1 / 2019 年 V2；Netflix 侧见 github.com/Netflix/metaflow（2019）与 Netflix 工程博客（2022） |
 | 决策依据 | AB 实验 | 统一口径报表 | 业务与履约指标复盘 | 内容与观看指标 + 实验 | 【经验】由各家公开定位归纳，非单一官方原文 |
 | 定义权归属 | 指标集中定义 + 业务自治 | 中台集中 | 平台化 + 业务定义目标 | 领域自治 | 【经验】同上 |
-| 对外出口 | 火山引擎（差异化定位在应用与平台层；基础层按标准云产品供给） | 阿里云（全栈） | 对内为主 + 窄口径 ToB（美团零售 / 美团企业版） | 开源（Iceberg / Metaflow / Maestro） | 【公开】火山引擎产品目录见本仓 [§ 3.2.5](03-byte-data-architecture-section-3-sec3.md)（V5.0 火山引擎商业化，2019–2024 时间线）；Iceberg 于 2020-05 成为 Apache 顶级项目、Metaflow 于 2019 年开源；美团 ToB 自 2022 年起，见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md) §1.1 |
-| AI 侧投入 | 豆包大模型 + 扣子（Coze）智能体平台 + 一站式 AI 服务 | 通义千问 + 百炼平台 | 美团大模型（未查到可核验的具名产品，本章不据此断言）【经验】 | Netflix Maia（其能力边界本章不做断言，可自行核验 Netflix 技术博客）【经验】 | 【公开】字节侧见本仓 [§ 3.2.6](03-byte-data-architecture-section-3-sec3.md)（V6.0 AI Native 数据栈，2023–2025）与 [§ 4.2](03-byte-data-architecture-section-4-sec4.md)（大模型 + 数据中台）；阿里侧见本仓 [01-alibaba-data-middle-platform §4.1 Step 7](../01-alibaba-data-middle-platform/01-alibaba-data-middle-platform-section-4-sec4.md)（AI 中台，2020–2024）；美团与 Netflix 两格本章未核到公开来源 |
+| 对外出口 | 火山引擎（差异化定位在应用与平台层；基础层按标准云产品供给） | 阿里云（全栈） | 对内为主 + 窄口径 ToB（美团零售 / 美团企业版） | 开源（Iceberg / Metaflow / Maestro） | 【公开】火山引擎产品目录见本仓 [§3.2.5](03-byte-data-architecture-section-3-sec3.md)（V5.0 火山引擎商业化，2019–2024 时间线）；Iceberg 于 2020-05 成为 Apache 顶级项目、Metaflow 于 2019 年开源；美团 ToB 自 2022 年起，见本仓 [04-meituan-feature-store.md](../04-meituan-feature-store/04-meituan-feature-store.md) §1.1 |
+| AI 侧投入 | 豆包大模型 + 扣子（Coze）智能体平台 + 一站式 AI 服务 | 通义千问 + 百炼平台 | 美团大模型（未查到可核验的具名产品，本章不据此断言）【经验】 | Netflix Maia（其能力边界本章不做断言，可自行核验 Netflix 技术博客）【经验】 | 【公开】字节侧见本仓 [§3.2.6](03-byte-data-architecture-section-3-sec3.md)（V6.0 AI Native 数据栈，2023–2025）与 [§4.2](03-byte-data-architecture-section-4-sec4.md)（大模型 + 数据中台）；阿里侧见本仓 [01-alibaba-data-middle-platform §4.1 Step 7](../01-alibaba-data-middle-platform/01-alibaba-data-middle-platform-section-4-sec4.md)（AI 中台，2020–2024）；美团与 Netflix 两格本章未核到公开来源 |
 | 编制归属 | 平台团队 + 业务数据团队 | 中台 + BU 数据团队 | 平台化 + 业务团队 | 中央平台 + 领域团队 | 【经验】公开材料中的组织描述归纳 |
 | 数据链路形态 | 开发 / 调度 / 血缘 / 质量 / 指标在同一元数据上 | 集成 / 开发 / 治理 / 服务一体化 | 平台能力 + 业务链路 | 领域链路 + 中央基础设施 | 【经验】同上 |
 
@@ -252,7 +252,7 @@
 - **字节的代价：为了「数据驱动 + 实验优先」，必须让每个决策都可度量**
   - 它换到了什么：决策速度快、争论成本低、平台能力被反复复用并最终对外产品化（AB 平台 → 火山引擎「A/B 测试」）。
   - 什么条件下反噬：**难以度量的工作会在资源争夺中系统性吃亏**——长期基础设施、内容生态、探索性研究都属于这一类；而当竞争从「优化现有指标」转向「找到一个新指标」时，这套机制会失灵。
-  - 公开痕迹：内部「AB 实验优先」的公开描述，以及 AB 平台被作为对外产品提供（火山引擎官网产品页「A/B 测试」；本仓 [§ 3.2](03-byte-data-architecture-section-3-sec3.md) 记该产品线 2018 年对外）。
+  - 公开痕迹：内部「AB 实验优先」的公开描述，以及 AB 平台被作为对外产品提供（火山引擎官网产品页「A/B 测试」；本仓 [§3.2](03-byte-data-architecture-section-3-sec3.md) 记该产品线 2018 年对外）。
   - 正确做法：为「暂时无法度量的工作」保留一条显式的资源通道与评估口径，否则它会持续被数据说话的机制挤出去。
 
 - **Netflix 的代价：为了「领域自治」，把数据所有权下放、中央只做基础设施**
@@ -305,4 +305,4 @@
 >
 > 💡 **思考锚点**：把你自己的组织套进 7.5 决策树——你的多个业务是否「共享同一批实体、跨业务数字对不上」？若是，你在阿里 / Netflix / 字节三条路线里选哪一条；再按 7.7 三种组合的代价掂一次：你的元数据模型改一次会牵动血缘、质量、指标几处，你承受得起吗？
 
-> 配合 [§ 2 挑战](03-byte-data-architecture.md) 与 [§ 6 落地实践](03-byte-data-architecture-section-6-sec6.md) 阅读。
+> 配合 [§2 挑战](03-byte-data-architecture.md) 与 [§6 落地实践](03-byte-data-architecture-section-6-sec6.md) 阅读。

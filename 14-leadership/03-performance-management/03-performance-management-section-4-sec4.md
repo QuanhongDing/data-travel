@@ -1,4 +1,4 @@
-> 本文件是 **03-performance-management.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](03-performance-management-section-3-sec3.md) 里的机制装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](03-performance-management.md)。
+> 本文件是 **03-performance-management.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](03-performance-management-section-3-sec3.md) 里的机制装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](03-performance-management.md)。
 
 ## 4. 工程实现
 
@@ -321,4 +321,4 @@
 >
 > 💡 **思考锚点**：去做本节自检第一条：抽你组织里 3 个团队问「这条 KR 完成会不会影响你的评级」——三人的回答和那张耦合关系表一致吗？本节说耦合关系一旦在员工心里定了型，恢复要花的不只是一个周期，还有一批人重新愿意踮脚；你现在的偏差属于哪一类——表本身有歧义，还是表清楚却没被传达到？
 >
-> 配合 [§ 2 核心原理](03-performance-management.md)、[§ 3 设计模式与范式](03-performance-management-section-3-sec3.md) 与 [§ 6 落地实践](03-performance-management-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](03-performance-management.md)、[§3 设计模式与范式](03-performance-management-section-3-sec3.md) 与 [§6 落地实践](03-performance-management-section-6-sec6.md) 阅读。

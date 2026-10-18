@@ -1,4 +1,4 @@
-> 本文件是 **01-data-warehouse.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](01-data-warehouse-section-3-sec3.md) 里的七个模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](01-data-warehouse.md)。
+> 本文件是 **01-data-warehouse.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](01-data-warehouse-section-3-sec3.md) 里的七个模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](01-data-warehouse.md)。
 
 ## 4. 工程实现
 
@@ -379,4 +379,4 @@ df = client.query(metrics=["gmv"], group_by=["region"],
 >
 > 💡 **思考锚点**：把「一行代表什么」这句声明，从你仓里最被下游依赖的一张事实表和一张 DWS 表上各写一遍，再对回它们的分区键——按天分区却声明成「一行 = 一个订单」这种跨天实体的表有几张，你会先改声明还是先调分区键？
 
-> 配合 [§ 2 核心原理](01-data-warehouse.md)、[§ 3 设计模式与范式](01-data-warehouse-section-3-sec3.md) 与 [§ 6 落地实践](01-data-warehouse-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](01-data-warehouse.md)、[§3 设计模式与范式](01-data-warehouse-section-3-sec3.md) 与 [§6 落地实践](01-data-warehouse-section-6-sec6.md) 阅读。

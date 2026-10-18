@@ -306,4 +306,4 @@
 >
 > 💡 **思考锚点**：挑你们最近给推荐加的那条召回通道，翻曝光日志里记的策略版本与编码器版本——追得到它上线时用的是哪一版吗？§5.2.1 要求内容 / 语义通道与 ID 通道并行对照；若版本都没登记，你拿什么把「内容通道更好」和「只是特征口径变了」分开？
 >
-> 配合 [§ 2 核心原理](05-recommendation.md)、[§ 6 落地实践](05-recommendation-section-6-sec6.md) 与 [§ 7 与其他方法对比](05-recommendation-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](05-recommendation.md)、[§6 落地实践](05-recommendation-section-6-sec6.md) 与 [§7 与其他方法对比](05-recommendation-section-7-sec7.md) 阅读。

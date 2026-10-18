@@ -287,4 +287,4 @@
 >
 > 💡 **思考锚点**：翻你组织最近一年，按 §5.6 末尾那三行记一次：有人因为一次 AI 决策被叫去解释过吗？文化指标出现在任何个人考核里吗？手册最近一次修改是哪天、为什么改？若某一行两年内都没动，按 §5.8 那条固定顺序，你此刻该先补的是 §5.2.1 那个不需要 AI 的载体（公开手册），而不是引入任何评分工具——你会先写哪一条？
 
-> 配合 [§ 2 核心原理](12-culture-building.md)、[§ 6 落地实践](12-culture-building-section-6-sec6.md) 与 [§ 7 与其他方法对比](12-culture-building-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](12-culture-building.md)、[§6 落地实践](12-culture-building-section-6-sec6.md) 与 [§7 与其他方法对比](12-culture-building-section-7-sec7.md) 阅读。

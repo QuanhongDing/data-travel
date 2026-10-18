@@ -255,4 +255,4 @@
 >
 > 💡 **思考锚点**：挑你过去半年发过的内容，逐篇标出"只有我能写出来的部分"（一手取数 / 复现步骤）并算它的占比；再按小结"AI 把产能抬到约 1.25–1.3 倍"问一句——省下的时间你投回了取数，还是又多发了几篇？若是后者，5.7 里"更新连续 6 个月不断"那条信号，凭什么会因为你发得更勤而改善？
 >
-> 配合 [§ 2 核心原理](05-tech-evangelism.md)、[§ 6 落地实践](05-tech-evangelism-section-6-sec6.md) 与 [§ 7 与其他方法对比](05-tech-evangelism-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](05-tech-evangelism.md)、[§6 落地实践](05-tech-evangelism-section-6-sec6.md) 与 [§7 与其他方法对比](05-tech-evangelism-section-7-sec7.md) 阅读。

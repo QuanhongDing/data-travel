@@ -281,4 +281,4 @@
 >
 > 💡 **思考锚点**：把你上一次 build-vs-buy 决策翻出来：TCO、Core-Edge-Spot、还是拍脑袋，你用的是哪一个？它把哪一部分成本划在了记账边界之外——TCO 漏失败概率，Core-Edge-Spot 漏金额，拍脑袋漏交接？把漏掉的那一项按你现在的数补进比较，结论会不会翻转？
 
-> 配合 [§ 2 核心原理](03-build-vs-buy.md) 与 [§ 6 落地实践](03-build-vs-buy-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](03-build-vs-buy.md) 与 [§6 落地实践](03-build-vs-buy-section-6-sec6.md) 阅读。

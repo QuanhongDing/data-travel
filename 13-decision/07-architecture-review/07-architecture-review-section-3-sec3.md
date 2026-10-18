@@ -303,4 +303,4 @@ PR 检查项：改动是否与在册 ADR 冲突？冲突则要求新增/更新 A
 
 > 💡 **思考锚点**：挑最近一次你签字放行的评审，倒推一步——如果那次决策挂的不是文档而是门禁，它会不会把同一处改动拦下来？如果拦不下，你该换的是评审方法，还是它挂载的那个环节？
 
-> 配合 [§ 2 核心原理](07-architecture-review.md)、[§ 4 工程实现](07-architecture-review-section-4-sec4.md) 与 [§ 6 落地实践](07-architecture-review-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](07-architecture-review.md)、[§4 工程实现](07-architecture-review-section-4-sec4.md) 与 [§6 落地实践](07-architecture-review-section-6-sec6.md) 阅读。

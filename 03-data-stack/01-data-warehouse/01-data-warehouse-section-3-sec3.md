@@ -341,4 +341,4 @@ Cube：把「维度组合 → 聚合值」在写入侧算完，查询侧只做�
 >
 > 💡 **思考锚点**：挑一个最近被质疑过的指标，按 §3.3 那句判据量两件事——它错了多久才发现、改对要回刷多少历史分区；再把你链路的层数与 §3.5「收敛到 4 层（ODS/DWD/DWS/ADS）」这条线对一次，看多出来的层是在买「变化过程可还原」，还是只在买加工开销？
 >
-> 配合 [§ 2 核心原理](01-data-warehouse.md)、[§ 4 工程实现](01-data-warehouse-section-4-sec4.md) 与 [§ 6 落地实践](01-data-warehouse-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](01-data-warehouse.md)、[§4 工程实现](01-data-warehouse-section-4-sec4.md) 与 [§6 落地实践](01-data-warehouse-section-6-sec6.md) 阅读。

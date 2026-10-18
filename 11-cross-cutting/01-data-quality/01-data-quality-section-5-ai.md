@@ -259,4 +259,4 @@
 >
 > 💡 **思考锚点**：拿 §5.7 要求的那三行数字——误报率 / MTTR / 契约违约次数——套你现在的存量：今天能拿出几行？拿不出的那一行，缺的是「哪个字段、哪个窗口、多少算违约」的判定语义，还是断言没挂到绕不过去的环节上？
 
-> 配合 [§ 2 核心原理](01-data-quality.md)、[§ 6 落地实践](01-data-quality-section-6-sec6.md) 与 [§ 7 与其他方法对比](01-data-quality-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](01-data-quality.md)、[§6 落地实践](01-data-quality-section-6-sec6.md) 与 [§7 与其他方法对比](01-data-quality-section-7-sec7.md) 阅读。

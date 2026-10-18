@@ -1,4 +1,4 @@
-> 本文件是 **05-tech-strategy.md** § 8 面试真题集的子主题。完整章节请回到 [index](05-tech-strategy.md) 或 [§ 8 索引](05-tech-strategy-section-8-sec8.md)。
+> 本文件是 **05-tech-strategy.md** §8 面试真题集的子主题。完整章节请回到 [index](05-tech-strategy.md) 或 [§8 索引](05-tech-strategy-section-8-sec8.md)。
 
 ### 8.9 §19.5 大数据技术趋势与演进方向
 

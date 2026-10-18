@@ -287,4 +287,4 @@
 >
 > 💡 **思考锚点**：拿你现有的一条反馈链路自查两点：它采到的反馈带没带曝光上下文与判官版本？它对应的奖励能不能被一个可验证函数算出来？按 5.7 的四步顺序，你现在卡在第几步——是判官与被判者同分布给不出新信息，还是采集阶段就没带上产生条件？
 
-> 配合 [§ 2 核心原理](02-feedback-loop.md)、[§ 6 落地实践](02-feedback-loop-section-6-sec6.md) 与 [§ 7 与其他方法对比](02-feedback-loop-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](02-feedback-loop.md)、[§6 落地实践](02-feedback-loop-section-6-sec6.md) 与 [§7 与其他方法对比](02-feedback-loop-section-7-sec7.md) 阅读。

@@ -308,4 +308,4 @@
 >
 > 💡 **思考锚点**：按你年招聘人数落在 5.7 的哪一档（年招 <20 / 50–200 / 数百以上），对照「现在就该做」那一列：你的初筛分数现在被当作取证还是定罪？若它已参与淘汰决策，而 5.5 说反馈以年计——你打算靠哪一条记录，在争议发生前把它变回可复核？
 
-> 配合 [§ 2 核心原理](01-team-formation.md)、[§ 6 落地实践](01-team-formation-section-6-sec6.md) 与 [§ 7 与其他方法对比](01-team-formation-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](01-team-formation.md)、[§6 落地实践](01-team-formation-section-6-sec6.md) 与 [§7 与其他方法对比](01-team-formation-section-7-sec7.md) 阅读。

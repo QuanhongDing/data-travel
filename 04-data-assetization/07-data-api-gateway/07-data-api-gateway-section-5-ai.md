@@ -288,4 +288,4 @@
 >
 > 💡 **思考锚点**：翻一次你们的网关计量日志，看同一栏能不能同时读出「谁」（含 Agent 与它代表的人）和「用了多少资源」——单位是请求数，还是返回行数 / 扫描量？§5.2.2 说账本主键要从请求数换成资源单位；若还在按请求数记账，那些一次扫几亿行的慢查询靠什么限住？
 >
-> 配合 [§ 2 核心原理](07-data-api-gateway.md)、[§ 3 设计模式与范式](07-data-api-gateway-section-3-sec3.md)、[§ 6 落地实践](07-data-api-gateway-section-6-sec6.md) 与 [§ 7 与其他方法对比](07-data-api-gateway-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](07-data-api-gateway.md)、[§3 设计模式与范式](07-data-api-gateway-section-3-sec3.md)、[§6 落地实践](07-data-api-gateway-section-6-sec6.md) 与 [§7 与其他方法对比](07-data-api-gateway-section-7-sec7.md) 阅读。

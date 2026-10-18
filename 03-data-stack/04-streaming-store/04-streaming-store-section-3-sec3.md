@@ -314,4 +314,4 @@ Event Sourcing（事实不可变，状态是投影）
 >
 > 💡 **思考锚点**：把你当前 Topic 的保留天数拆成「热窗口多长」与「冷数据被访问的间隔」两个数，再按你实际的冷读频率估算冷段卸载到对象存储的出流量费用——它是否真比多留本地盘便宜？如果便宜不了，你是不是把副本数与确认策略当成了分层存储的替代？
 >
-> 配合 [§ 2 核心原理](04-streaming-store.md)、[§ 4 工程实现](04-streaming-store-section-4-sec4.md) 与 [§ 6 落地实践](04-streaming-store-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](04-streaming-store.md)、[§4 工程实现](04-streaming-store-section-4-sec4.md) 与 [§6 落地实践](04-streaming-store-section-6-sec6.md) 阅读。

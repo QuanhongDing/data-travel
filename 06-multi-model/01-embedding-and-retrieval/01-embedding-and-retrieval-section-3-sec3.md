@@ -302,4 +302,4 @@ CREATE INDEX idx_coarse ON doc_chunk
 
 > 💡 **思考锚点**：你的向量量级落在 §3.6 表的哪一格——十万、百万还是亿级？若已到「百万 → 亿级」那一行，按 3.2.1 的推算你的单机能常驻全维度索引吗，还是要走量化 / 低维截断？再往下看一格：若检索已接进 LLM 上下文，你的优化目标还是召回率，还是已换成 §3.6 的端到端答案质量——你的评测集（§3.7 第 1 条）能证明换成哪个了吗？
 
-> 配合 [§ 2 核心原理](01-embedding-and-retrieval.md)、[§ 4 工程实现](01-embedding-and-retrieval-section-4-sec4.md) 与 [§ 6 落地实践](01-embedding-and-retrieval-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](01-embedding-and-retrieval.md)、[§4 工程实现](01-embedding-and-retrieval-section-4-sec4.md) 与 [§6 落地实践](01-embedding-and-retrieval-section-6-sec6.md) 阅读。

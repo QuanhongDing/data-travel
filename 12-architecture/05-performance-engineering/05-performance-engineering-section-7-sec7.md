@@ -309,4 +309,4 @@ AI 优化    ≈ GPU 数 × 卡时单价 × 8760h / 吞吐提升倍数
 >
 > 💡 **思考锚点**：把你链路的扇出数 n 与单分支慢比例 p 带进 7.7 的 `1-(1-p)^n`——若 p = 1%、n = 50，有多少比例的请求至少撞上一个慢分片？这个数远大于 1% 时，你现在的 SLO 是写在平均值上，还是写在这种尾部放大后的 P99 上？
 
-> 配合 [§ 2 核心原理](05-performance-engineering.md) 与 [§ 6 落地实践](05-performance-engineering-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](05-performance-engineering.md) 与 [§6 落地实践](05-performance-engineering-section-6-sec6.md) 阅读。

@@ -57,11 +57,11 @@
 | 存储层 | Cassandra / Schemaless | S3 | S3 | HDFS + OSS | 【公开】（Schemaless 见 Uber 工程博客 2016；S3 / Cassandra 为公开材料中的具名组件。美团一栏未核到公开来源） |
 | 表格式 | Hudi（2016 立项 / 2017 开源） | Iceberg（2018 开源） | Iceberg 类（2022 后，以官方材料为准） | 湖上表格式（以官方材料为准） | 【公开】（Hudi / Iceberg 见 Apache 项目页；Airbnb 与美团两列为案例口径，无公开版本号） |
 | 调度 | Airflow 系 + 自研编排 | Maestro（2022 公开） | Airflow（自研起源，2014 起） | 自研（Dolphin，名称以官方材料核验） | 【公开】（Airflow 见 Apache Airflow 项目页（年份以该页为准）；Maestro 见 Netflix 技术博客 2022；美团一栏未核到公开来源） |
-| ML 平台 | Michelangelo（2017 公开） | Metaflow（2019 开源） | Bighead（[Airbnb 案例 § 4.5](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md)） | PAI（名称以官方材料核验） | 【公开】（Michelangelo 见 Uber 工程博客 2017；Metaflow 见 Netflix 技术博客 2019；Bighead 见本仓库 Airbnb 案例 § 4.5。MLflow 见下注） |
+| ML 平台 | Michelangelo（2017 公开） | Metaflow（2019 开源） | Bighead（[Airbnb 案例 §4.5](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md)） | PAI（名称以官方材料核验） | 【公开】（Michelangelo 见 Uber 工程博客 2017；Metaflow 见 Netflix 技术博客 2019；Bighead 见本仓库 Airbnb 案例 §4.5。MLflow 见下注） |
 
-> 逐条核验路径：[Uber 案例](06-uber-data-architecture-section-3-sec3.md) § 3.4 的链路是 `Kafka → Flink → Hudi`；[Netflix 案例](../05-netflix-data-stack/05-netflix-data-stack-section-3-sec3.md) § 3.2.3 是 `Kafka → Flink → Iceberg`；[Airbnb 案例](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md) § 4.4.2 是 `Kafka → Flink / Spark Streaming`；[美团案例](../04-meituan-feature-store/04-meituan-feature-store-section-4-sec4.md) § 4.2 是 `Kafka → Flink → Redis / 自研 KV`。**工具名相同不代表架构相同**——同一批组件装出四种不同的平台，原因在下面四个维度里。
+> 逐条核验路径：[Uber 案例](06-uber-data-architecture-section-3-sec3.md) §3.4 的链路是 `Kafka → Flink → Hudi`；[Netflix 案例](../05-netflix-data-stack/05-netflix-data-stack-section-3-sec3.md) §3.2.3 是 `Kafka → Flink → Iceberg`；[Airbnb 案例](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md) §4.4.2 是 `Kafka → Flink / Spark Streaming`；[美团案例](../04-meituan-feature-store/04-meituan-feature-store-section-4-sec4.md) §4.2 是 `Kafka → Flink → Redis / 自研 KV`。**工具名相同不代表架构相同**——同一批组件装出四种不同的平台，原因在下面四个维度里。
 >
-> ML 平台一行有一处**口径**需要说明：本仓库 [Airbnb 案例 § 4.5](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md) 把 Airbnb 自研的 ML 平台记为 **Bighead**（其演进时间线记作 2022 年的 ML Platform V3）。MLflow 是 Databricks 发起的开源项目，在本仓库 [Uber 案例 § 5](06-uber-data-architecture-section-5-sec5.md)、[§ 8](06-uber-data-architecture-section-8-sec8.md) 中被记为 Michelangelo 引入的组件——两者不是同一个平台，因此本章按 Bighead 记，MLflow 作为独立候选保留在 7.4 的 ML 平台一行。
+> ML 平台一行有一处**口径**需要说明：本仓库 [Airbnb 案例 §4.5](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md) 把 Airbnb 自研的 ML 平台记为 **Bighead**（其演进时间线记作 2022 年的 ML Platform V3）。MLflow 是 Databricks 发起的开源项目，在本仓库 [Uber 案例 §5](06-uber-data-architecture-section-5-sec5.md)、[§8](06-uber-data-architecture-section-8-sec8.md) 中被记为 Michelangelo 引入的组件——两者不是同一个平台，因此本章按 Bighead 记，MLflow 作为独立候选保留在 7.4 的 ML 平台一行。
 
 四家的差异可以归到 4 个机制维度上。**同维度内是「约束不同导致选择不同」，跨维度才是真正的路线分歧**——把维度分清楚，一半的比较工作就可以省掉。
 
@@ -74,7 +74,7 @@
 | --- | --- | --- | --- | --- |
 | **Uber** | 行程状态机、司机位置、支付单 | 高频行级更新（CDC + upsert） | **Hudi**（Apache 项目，Uber 起源） | 主键索引、upsert、增量拉取 |
 | **Netflix** | 播放 / 观看事件、设备与质量埋点 | 只追加不可变事件 | **Iceberg**（Apache 项目，Netflix 起源） | 快照隔离、隐藏分区、多引擎共识 |
-| **Airbnb** | 预订、房源、评价 | 批量分区重载 + 增量修正 | Iceberg 类（[Airbnb 案例 § 4.4.3](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md)，2022 后） | 批读写、schema 演进、多引擎 |
+| **Airbnb** | 预订、房源、评价 | 批量分区重载 + 增量修正 | Iceberg 类（[Airbnb 案例 §4.4.3](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md)，2022 后） | 批读写、schema 演进、多引擎 |
 | **美团** | 订单、履约、商家 | 批量与实时混合 | 湖上表格式（具体以官方材料为准） | 批流统一 |
 
 - **这个差异由什么约束导致**：因为一次行程从请求到下客要经历「请求 → 接单 → 到达 → 完单 → 支付」多个状态，**同一行的主键会在几十分钟内被反复更新**，所以 Uber 必须选一个原生支持 upsert 与增量拉取的格式，否则每次状态变化都要重写整个数据文件；Iceberg 的模型是「不可变数据文件 + 快照」，行级更新要靠 delete file 加数据文件重写来表达，写放大落在写入侧。反过来，**因为 Netflix 的主链路数据是不可变的观看事件，upsert 对它不是收益而是负担**——主键索引与 compaction 都是纯开销，所以它选择把「快照 + 文件清单」做到极致，换取多引擎读同一份数据。
@@ -114,14 +114,14 @@
 
 | 案例 | 治理形态 | 谁定义口径 | 不一致的成本落在谁身上 | 公众可见的建设重点 |
 | --- | --- | --- | --- | --- |
-| **Uber** | 数据域所有权 + 联邦治理（[Uber 案例 § 4.2](06-uber-data-architecture-section-4-sec4.md)） | 各业务域 | 分散在各业务线 | 数据产品目录、Owner、SLA、联邦委员会 |
+| **Uber** | 数据域所有权 + 联邦治理（[Uber 案例 §4.2](06-uber-data-architecture-section-4-sec4.md)） | 各业务域 | 分散在各业务线 | 数据产品目录、Owner、SLA、联邦委员会 |
 | **Airbnb** | 中心语义层（指标作为一等对象） | 中心平台 + 指标责任团队 | 全公司（跨团队引用的核心数字） | 指标定义、元数据目录、血缘 |
 | **Netflix** | 中心平台 + 团队自治 | 各团队 | 各团队自己承担 | 数据移动与处理平台、编排服务、ML 工具链 |
 | **美团** | 强业务驱动，平台配合业务节奏 | 业务方主导 | 业务线 | 业务落地的全栈能力 |
 
 - **这个差异由什么约束导致**：治理模型看起来是「理念选择」，实际由**「谁承担口径错误的成本」**决定。因为 Airbnb 的核心数字（GMV、预订间夜）会被几十个团队反复引用、还可能对外披露，一次口径不一致的成本落在整家公司，所以理性选择是把指标做成**带 Owner 的定义对象**，让口径只有一份；Uber 的乘运 / Eats / Freight 各自有独立损益，口径分散的成本主要落在各自业务线内，所以把所有权交给数据域、由联邦机制处理跨域问题，是成本更低的解。**换句话说：中心化治理不是「更成熟」，而是「不一致成本更集中」时的必然选择。**
 - **由此必然导出的性质**：**因为联邦制把口径权交到域内，所以跨域口径问题只能靠协商解决，协商速度受域的数量约束**——域越少越快，域越多越慢；反过来，**因为中心语义层把口径权收上去，所以跨域一致性天然成立，但任何口径变更都要排队走中心平台**，平台吞吐成为组织级瓶颈。两种治理模式的痛点位置不同，选型时要问「你能忍受的是协商慢，还是排队慢」。
-- **公开证据**：Uber 在 2022 年前后推进数据域所有权与联邦治理（[Uber 案例 § 4.2](06-uber-data-architecture-section-4-sec4.md) 记录的四大原则）；「data mesh」这一术语由 Zhamak Dehghani 于 2019 年提出（[martinfowler.com, 2019]），而 Netflix 常被引为该方向的实践样本，其**自身材料对所有权下放的记录晚于术语的提出年份**——本仓库 [Netflix 案例](../05-netflix-data-stack/05-netflix-data-stack.md) 的演进时间线把「Data Mesh 实践」记为 2022，并将其进展描述为「内部推进缓慢、阻力大」。**引用时请区分「术语提出年份」与「某家公司的采用年份」，两者不是同一个数**；具体采用年份以 Netflix 技术博客原文为准。Airbnb 的指标平台与元数据平台由其工程博客公开介绍（[Airbnb Engineering Blog]，具体年份以原文为准）。
+- **公开证据**：Uber 在 2022 年前后推进数据域所有权与联邦治理（[Uber 案例 §4.2](06-uber-data-architecture-section-4-sec4.md) 记录的四大原则）；「data mesh」这一术语由 Zhamak Dehghani 于 2019 年提出（[martinfowler.com, 2019]），而 Netflix 常被引为该方向的实践样本，其**自身材料对所有权下放的记录晚于术语的提出年份**——本仓库 [Netflix 案例](../05-netflix-data-stack/05-netflix-data-stack.md) 的演进时间线把「Data Mesh 实践」记为 2022，并将其进展描述为「内部推进缓慢、阻力大」。**引用时请区分「术语提出年份」与「某家公司的采用年份」，两者不是同一个数**；具体采用年份以 Netflix 技术博客原文为准。Airbnb 的指标平台与元数据平台由其工程博客公开介绍（[Airbnb Engineering Blog]，具体年份以原文为准）。
 - **对读者的意义**：先回答「口径错了，谁付钱」。付钱的是全公司，就必须有中心语义层；付钱的是各自业务线，则联邦更省。**跨域口径一旦上升到财务披露，联邦机制一定不够用，必须补中心层。**
 - **自验方法**：找出最近 3 次口径争议，记录争议双方属于同一业务线还是跨业务线、以及最终由谁裁决。裁决者是谁，治理形态就该向谁收敛。
 - **失效条件**：中心语义层在**探索期**会变成速度瓶颈——口径还没稳定时就要求走平台流程，会把试错周期拉长；此时更合适的是「先在域内自由迭代，口径稳定后再登记进语义层」。
@@ -195,7 +195,7 @@
 | 数据团队规模 | 数据组织规模无公开来源（不给精确人数） | 数据平台 + 数据科学数百人量级 | 数据相关团队数百人量级 | 未公开 | 【经验】（Uber 一列无公开来源，故不给精确人数；Netflix / Airbnb 两列按行业普遍量级） |
 | 表格式起点 | 2016 内部立项 / 2017 开源 | 2018 开源并捐入 Apache | 2022 后引入 Iceberg 类格式 | 以官方材料为准 | 【公开】（Hudi / Iceberg 项目页） |
 | 调度系统 | Airflow 系 + 自研编排 | 自研 Maestro（2022 公开） | 自研 Airflow（2014 起） | 自研调度（Dolphin，具体名称请以官方材料核验） | 【公开】（Airflow 见 Apache Airflow 项目页（年份以该页为准）；Maestro 见 Netflix 技术博客 2022；美团一栏未核到公开来源） |
-| ML 平台 | Michelangelo（2017 公开） | Metaflow（2019 开源） | Bighead（[Airbnb 案例 § 4.5](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md)） | PAI（产品名以官方材料核验） | 【公开】（Michelangelo 见 Uber 工程博客 2017；Metaflow 见 Netflix 技术博客 2019；MLflow 为 Databricks 发起的开源项目，在本仓库 [Uber 案例 § 5](06-uber-data-architecture-section-5-sec5.md)、[§ 8](06-uber-data-architecture-section-8-sec8.md) 中记为 Michelangelo 的组件） |
+| ML 平台 | Michelangelo（2017 公开） | Metaflow（2019 开源） | Bighead（[Airbnb 案例 §4.5](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md)） | PAI（产品名以官方材料核验） | 【公开】（Michelangelo 见 Uber 工程博客 2017；Metaflow 见 Netflix 技术博客 2019；MLflow 为 Databricks 发起的开源项目，在本仓库 [Uber 案例 §5](06-uber-data-architecture-section-5-sec5.md)、[§8](06-uber-data-architecture-section-8-sec8.md) 中记为 Michelangelo 的组件） |
 | 实时链路约束 | 匹配必须在单次请求内完成 | 个性化可容忍秒级延迟 | 搜索为交互式 | 履约时效为核心 KPI | 【经验】（由业务形态推出，非公开数字） |
 | 治理形态 | 数据域所有权 + 联邦 | 中心平台 + 团队自治 | 中心语义层 + 元数据平台 | 业务驱动 | 【经验】 |
 
@@ -247,7 +247,7 @@
      │   └─ 否 → 不引入新格式；用你现有引擎自带的表能力，别为「统一」付迁移成本
      │
      └─ 你的核心数字是否被 ≥20 个团队引用、或需要对外披露？
-         ├─ 是 → 学 Airbnb（[Airbnb 案例 § 7](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-7-sec7.md)）：
+         ├─ 是 → 学 Airbnb（[Airbnb 案例 §7](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-7-sec7.md)）：
          │        把指标做成带 Owner 的定义对象，而不是各自实现
          └─ 否 → 学 Netflix 的中心平台 + 团队自治组合
                  把精力放在平台能力上，让口径由各团队自己负责
@@ -341,4 +341,4 @@
 > 本节小结：这四家的差异里**唯一真正起决定作用的一条**，是「主链路数据是否被反复更新」。它决定了表格式（upsert vs 快照）、决定了实时链路是否必须进入请求路径（更新型数据往往对应在线状态）、也间接决定了治理形态（更新型数据的错误更容易被下游直接感知，因此更要靠门禁而不是靠事后追责）。其余差异——ML 平台形态、调度选型、组织规模——基本都是这条差异与各自约束的下游结果。
 >
 > 💡 **思考锚点**：按本节的优先级自己跑一遍四问——拿最大的一张事实表统计最近 7 天写入里主键命中已有分区的比例（决定 upsert 还是快照）、逐条问「实时结果晚 1 分钟损失什么」（决定要不要在线特征）、翻最近 3 次口径争议看裁决者属跨业务线还是单域（决定治理集中还是联邦）、再问你要解决的问题今天在开源生态里有没有可用解（决定自研还是消费开源）——这四问里你答得最虚的是哪一问？按本节「写入模式判错，后面三条再对也没用」的优先级，它是不是恰好落在第一问上？
-> 配合 [§ 2 挑战](06-uber-data-architecture.md) 与 [§ 6 落地实践](06-uber-data-architecture-section-6-sec6.md) 阅读。
+> 配合 [§2 挑战](06-uber-data-architecture.md) 与 [§6 落地实践](06-uber-data-architecture-section-6-sec6.md) 阅读。

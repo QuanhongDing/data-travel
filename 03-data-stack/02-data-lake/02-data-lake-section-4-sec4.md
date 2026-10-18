@@ -1,4 +1,4 @@
-> 本文件是 **02-data-lake.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](02-data-lake-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](02-data-lake.md)。
+> 本文件是 **02-data-lake.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](02-data-lake-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](02-data-lake.md)。
 
 ## 4. 工程实现
 
@@ -134,8 +134,8 @@
 | 入湖链路 | DataX / Sqoop / Spark（离线）；Flink CDC / Kafka Connect / Vector（实时与日志）；对象存储事件通知 + 定时任务（文件） | 先问幂等性与顺序性能否成立（重复投递是否产生重复行、同主键能否保序），而不是先问吞吐 | 离线链路在高频增量场景下退化为「每小时跑一次全量」，成本随表数增长 |
 | 查询引擎 | Trino / Spark SQL / Flink / DuckDB / StarRocks（同类还有 Doris / ClickHouse） | 高并发点查 → StarRocks 一类；联邦与多源 → Trino；ETL 与批处理 → Spark SQL；单机百 GB → DuckDB；流批一体 → Flink | 用扫描型引擎做点查，代价随数据量线性增长，且加机器无效——机器不改变扫描量 |
 | 元数据与治理 | Apache Atlas / DataHub / Unity Catalog | 判据是血缘能不能挂到门禁上、Owner 能不能落到人；三者差别更多在既有生态绑定，而不是功能清单 | 只有元数据没有血缘，盘点靠人工；只有血缘没有 Owner，责任落不到人 |
-| 血缘 | OpenLineage / DataHub | 采集方式必须是自动解析 + 定时校准（采集入口与「血缘不更新」这条反模式见 [§ 11 血缘与影响面 §3.5](../../11-cross-cutting/05-lineage-and-impact/05-lineage-and-impact-section-3-sec3.md)）；人工登记的边会随人员变动而失准【经验：数周至一个季度量级，随团队流动率变】 | 变更影响面只能靠发通知等回应，覆盖会持续下降 |
-| 质量 | Great Expectations / Soda | 在湖边先覆盖三类就够：新鲜度、行数、schema 变更（湖之外的质量维度交给 [§ 11 数据质量](../../11-cross-cutting/01-data-quality/01-data-quality.md)） | 上游改了字段、下游静默算错，而链路上没有任何检查点 |
+| 血缘 | OpenLineage / DataHub | 采集方式必须是自动解析 + 定时校准（采集入口与「血缘不更新」这条反模式见 [§11 血缘与影响面 §3.5](../../11-cross-cutting/05-lineage-and-impact/05-lineage-and-impact-section-3-sec3.md)）；人工登记的边会随人员变动而失准【经验：数周至一个季度量级，随团队流动率变】 | 变更影响面只能靠发通知等回应，覆盖会持续下降 |
+| 质量 | Great Expectations / Soda | 在湖边先覆盖三类就够：新鲜度、行数、schema 变更（湖之外的质量维度交给 [§11 数据质量](../../11-cross-cutting/01-data-quality/01-data-quality.md)） | 上游改了字段、下游静默算错，而链路上没有任何检查点 |
 | 权限 | Apache Ranger / AWS Lake Formation | 前置是「有没有 catalog」：没有 catalog 时先建 catalog，再谈列级权限 | 只在桶策略层授权，等于授权整表 |
 | AI 检索 / 向量 | LanceDB / Milvus / Pinecone / Qdrant / ChromaDB | 按嵌入规模、是否需要「过滤 + 向量」混合检索、能否自运维来分档；另加一条硬判据：索引能否按 `embed_version` 分片重建 | 派生索引与事实侧漂移而不报错，召回结果无法回溯到原文 |
 
@@ -327,7 +327,7 @@ tEnv.executeSql("INSERT INTO paimon_sink SELECT * FROM kafka_source");
 
 ### 4.9 自检清单
 
-下面 11 条只问**上线与运行期才存在的状态**——抽样、对账、调度记录、账单、访问日志。模式层面的检查（提交边界该划在哪、分区按什么维度分、保留期定多长、分层粒度是否合理、权限该配在哪一层）不在这里重复，统一见 [§ 3.7 自检清单](02-data-lake-section-3-sec3.md)。
+下面 11 条只问**上线与运行期才存在的状态**——抽样、对账、调度记录、账单、访问日志。模式层面的检查（提交边界该划在哪、分区按什么维度分、保留期定多长、分层粒度是否合理、权限该配在哪一层）不在这里重复，统一见 [§3.7 自检清单](02-data-lake-section-3-sec3.md)。
 
 - [ ] 与表格式同目录的路径下，拿当前快照的 manifest 清单与实际文件清单求一次差集：有没有**不属于任何快照**的文件（有人绕过格式直写）？
 - [ ] 抽 3 张表，在 catalog 上打开它们的 Owner 字段：是具体人名，还是团队名 / 空缺？最近一次 Owner 交接有没有留下记录？
@@ -347,4 +347,4 @@ tEnv.executeSql("INSERT INTO paimon_sink SELECT * FROM kafka_source");
 >
 > 💡 **思考锚点**：拿你现在的湖仓把 Step 2 的三次实测各跑一遍——改一个字段名，提交的是元数据还是重写数据？第二个引擎能不能读到同一份快照？把时间旅行拨回去，取得到吗？任意一条失败，你的「一致性由结构保证」就退回「由流程保证」；按你下游作业的数量算，改一个字段会引爆多少个任务？
 
-> 配合 [§ 2 核心原理](02-data-lake.md)、[§ 3 设计模式与范式](02-data-lake-section-3-sec3.md) 与 [§ 6 落地实践](02-data-lake-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](02-data-lake.md)、[§3 设计模式与范式](02-data-lake-section-3-sec3.md) 与 [§6 落地实践](02-data-lake-section-6-sec6.md) 阅读。

@@ -276,4 +276,4 @@
 
 > 💡 **思考锚点**：给你的组织数一个 k——同一项 AI 能力被几个团队各实现了一遍？按 §5.7，k ≤ 2 时不该建平台；若你的 k 已到 3 以上，那你准备收进平台的那「最常被重复实现的一件事」，是不是恰好落在「每用一次都要重付」那一半，而非「付一次就能共享」的那一半？
 
-> 配合 [§ 2 核心原理](11-team-topology.md)、[§ 6 落地实践](11-team-topology-section-6-sec6.md) 与 [§ 7 与其他方法对比](11-team-topology-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](11-team-topology.md)、[§6 落地实践](11-team-topology-section-6-sec6.md) 与 [§7 与其他方法对比](11-team-topology-section-7-sec7.md) 阅读。

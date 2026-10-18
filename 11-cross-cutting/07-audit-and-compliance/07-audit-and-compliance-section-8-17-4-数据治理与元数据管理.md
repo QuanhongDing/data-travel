@@ -1,4 +1,4 @@
-> 本文件是 **07-audit-and-compliance.md** § 8 面试真题集的子主题。完整章节请回到 [index](07-audit-and-compliance.md) 或 [§ 8 索引](07-audit-and-compliance-section-8-sec8.md)。
+> 本文件是 **07-audit-and-compliance.md** §8 面试真题集的子主题。完整章节请回到 [index](07-audit-and-compliance.md) 或 [§8 索引](07-audit-and-compliance-section-8-sec8.md)。
 
 ### 8.6 §17.4 数据治理与元数据管理
 

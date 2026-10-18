@@ -299,4 +299,4 @@
 >
 > 💡 **思考锚点**：在你自己的栈里挑一次「统一」，按 §3.2 归到格式层（学 §3.2.1 的开放表格式）、引擎层（学 §3.2.2 的共享即读）还是接口层——明天要换掉它，导出与迁移的工作量落在哪一层？再看 §3.4：组合成立的前提是「谁都不许把治理规则写进引擎」——你的权限与血缘是绑在某个引擎上，还是已经独立成一层？
 >
-> 配合 [§ 2 挑战](10-overseas-cases.md)、[§ 4 关键决策](10-overseas-cases-section-4-sec4.md) 与 [§ 6 落地实践](10-overseas-cases-section-6-sec6.md) 阅读。
+> 配合 [§2 挑战](10-overseas-cases.md)、[§4 关键决策](10-overseas-cases-section-4-sec4.md) 与 [§6 落地实践](10-overseas-cases-section-6-sec6.md) 阅读。

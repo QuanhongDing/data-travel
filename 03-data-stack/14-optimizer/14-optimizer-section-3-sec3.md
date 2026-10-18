@@ -298,4 +298,4 @@ CBO + AQE + hint 的三层边界（谁在什么时候还能改计划）
 >
 > 💡 **思考锚点**：数一下你参与 Join 的最大表数——按 §3.6 那句「N 张表的连接排列是 N!」，5 张 120 种、10 张约 360 万种，你的查询落在哪一档？如果它已经让优化耗时进到秒级，你是先补统计信息，还是先给搜索设预算、并把 hint 当出口？
 
-> 配合 [§ 2 核心原理](14-optimizer.md)、[§ 4 工程实现](14-optimizer-section-4-sec4.md) 与 [§ 6 落地实践](14-optimizer-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](14-optimizer.md)、[§4 工程实现](14-optimizer-section-4-sec4.md) 与 [§6 落地实践](14-optimizer-section-6-sec6.md) 阅读。

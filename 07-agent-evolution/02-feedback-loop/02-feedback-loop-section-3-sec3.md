@@ -300,4 +300,4 @@ CREATE TABLE retrieval_feedback (
 >
 > 💡 **思考锚点**：先量你们反馈「从产生到可用于更新」的中位延迟（3.7 第 6 条）落在哪个量级——秒、天、还是季？它一旦定档，3.8 表里的可选模式就只剩对应那几行。再量第二个数：当前链路里「采集」的单位成本是否已高于「消费」（3.6 的换挡判据）——若是，你该先停掉的不是模型，是一部分没人消费的信号。
 
-> 配合 [§ 2 核心原理](02-feedback-loop.md)、[§ 4 工程实现](02-feedback-loop-section-4-sec4.md) 与 [§ 6 落地实践](02-feedback-loop-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](02-feedback-loop.md)、[§4 工程实现](02-feedback-loop-section-4-sec4.md) 与 [§6 落地实践](02-feedback-loop-section-6-sec6.md) 阅读。

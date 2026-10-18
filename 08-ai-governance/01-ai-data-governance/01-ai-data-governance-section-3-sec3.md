@@ -328,4 +328,4 @@ CREATE TABLE asset_bridge (
 >
 > 💡 **思考锚点**：用 §3.6 那句判定测一下你自己的平台——它只能回答「我们有哪些资产」，还是能回答「这次动作是谁授权做的」？若只能答前者，按 §3.6 你的治理单元还停在「可枚举的实体」，而 Agent 场景的主键已经是 `(trace_id, step_index)`。再对 §3.5「过度治理」自查：你们有没有流程不是被反对、而是被绕过（改名 / 加别名 / 应用层转换）？
 >
-> 配合 [§ 2 核心原理](01-ai-data-governance.md)、[§ 4 工程实现](01-ai-data-governance-section-4-sec4.md) 与 [§ 6 落地实践](01-ai-data-governance-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](01-ai-data-governance.md)、[§4 工程实现](01-ai-data-governance-section-4-sec4.md) 与 [§6 落地实践](01-ai-data-governance-section-6-sec6.md) 阅读。

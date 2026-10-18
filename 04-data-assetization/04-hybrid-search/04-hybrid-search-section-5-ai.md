@@ -268,4 +268,4 @@
 >
 > 💡 **思考锚点**：在你自己的评测集上，量一遍两路并集 Recall@K 相对较优单路的增量——它有没有超过标注噪声量级（几百条问题的标注集上大致 3–5 个百分点）？如果没超过，你加的第二路是在补召回，还是在重复第一路同一个错误、把成本照付了一遍？
 
-> 配合 [§ 2 核心原理](04-hybrid-search.md)、[§ 6 落地实践](04-hybrid-search-section-6-sec6.md) 与 [§ 7 与其他方法对比](04-hybrid-search-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](04-hybrid-search.md)、[§6 落地实践](04-hybrid-search-section-6-sec6.md) 与 [§7 与其他方法对比](04-hybrid-search-section-7-sec7.md) 阅读。

@@ -283,4 +283,4 @@ RAG 不是自成一体的系统：上游接数据资产与预处理，下游接�
 >
 > 💡 **思考锚点**：在你自己那份查询集上把失败分成两类——正确片段根本没进 top-k（召回失败），和进了 top-k 但没排上来（排序失败）——两类各占多少？这个比例直接决定你该先改「索引里放什么表示」（GraphRAG / 多模态），还是先上精排（改排序）：你现在把预算压在哪一类上？
 
-> 配合 [§ 2 核心原理](05-rag-architecture.md)、[§ 6 落地实践](05-rag-architecture-section-6-sec6.md) 与 [§ 7 与其他方法对比](05-rag-architecture-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](05-rag-architecture.md)、[§6 落地实践](05-rag-architecture-section-6-sec6.md) 与 [§7 与其他方法对比](05-rag-architecture-section-7-sec7.md) 阅读。

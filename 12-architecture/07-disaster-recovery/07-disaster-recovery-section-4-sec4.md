@@ -1,4 +1,4 @@
-> 本文件是 **07-disaster-recovery.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](07-disaster-recovery-section-3-sec3.md) 里选定的档位装进一个真实系统：顺序、判据、产物、存量迁移与演练。各档位被什么约束逼出来、代价与失效点见 §3。完整章节请回到 [index](07-disaster-recovery.md)。
+> 本文件是 **07-disaster-recovery.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](07-disaster-recovery-section-3-sec3.md) 里选定的档位装进一个真实系统：顺序、判据、产物、存量迁移与演练。各档位被什么约束逼出来、代价与失效点见 §3。完整章节请回到 [index](07-disaster-recovery.md)。
 
 ## 4. 工程实现
 
@@ -308,4 +308,4 @@ dr_scenarios:
 >
 > 💡 **思考锚点**：隔一个月看两个数（§4.4 第⑦条）：A＝登记表里「有具体责任人与恢复动作」的行数占比，B＝最近一次演练的实测 RPO/RTO 是否比上上次更接近承诺。如果你这里 A 只涨不落、B 却没改善，你会先补台账里的哪一列，还是先把决策段的耗时压下来？
 >
-> 配合 [§ 2 核心原理](07-disaster-recovery.md)、[§ 3 设计模式与范式](07-disaster-recovery-section-3-sec3.md) 与 [§ 6 落地实践](07-disaster-recovery-section-6-sec6.md) 阅读。异地多活作为独立主题另见 [Ch12 §02 异地多活](../02-multi-region/02-multi-region.md)。
+> 配合 [§2 核心原理](07-disaster-recovery.md)、[§3 设计模式与范式](07-disaster-recovery-section-3-sec3.md) 与 [§6 落地实践](07-disaster-recovery-section-6-sec6.md) 阅读。异地多活作为独立主题另见 [Ch12 §02 异地多活](../02-multi-region/02-multi-region.md)。

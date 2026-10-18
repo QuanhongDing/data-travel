@@ -1,4 +1,4 @@
-> 本文件是 **08-data-consistency.md** § 8 面试真题集的子主题。完整章节请回到 [index](08-data-consistency.md) 或 [§ 8 索引](08-data-consistency-section-8-sec8.md)。
+> 本文件是 **08-data-consistency.md** §8 面试真题集的子主题。完整章节请回到 [index](08-data-consistency.md) 或 [§8 索引](08-data-consistency-section-8-sec8.md)。
 
 ### 8.4 §20.4 数据冲突检测与解决策略
 

@@ -301,4 +301,4 @@ dbt 的结构要害：模型 = 一条 SELECT + 声明式配置，
 
 > 💡 **思考锚点**：把你本季度最大那笔基础设施账单拆成「按用量付费」与「固定人力」两栏：固定人力那一栏摊到每个请求上的单位价格，是不是仍高于 SaaS 的报价？若是，按 §3.8 你就还没到自建的切换点。此时该做的是 §3.6 那条纪律——把「升到下一级」的触发条件写成可观察信号（哪个量级、哪个已经发生的痛点），而不是写成「每 18 个月升一级」的时间表。你现在写的是哪一种？
 
-> 配合 [§ 2 挑战](08-startup-evolution.md)、[§ 4 关键决策](08-startup-evolution-section-4-sec4.md) 与 [§ 6 落地实践](08-startup-evolution-section-6-sec6.md) 阅读。
+> 配合 [§2 挑战](08-startup-evolution.md)、[§4 关键决策](08-startup-evolution-section-4-sec4.md) 与 [§6 落地实践](08-startup-evolution-section-6-sec6.md) 阅读。

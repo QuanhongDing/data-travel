@@ -281,4 +281,4 @@ AI 增强的输入全在既有栈里，所以「能不能用」取决于接口�
 >
 > 💡 **思考锚点**：对照你最近一次复盘：AI 要抽出的那条「分钟级时间线」，前提是那些事实当时被记下来了吗？在你现有的可观测性与变更记录下，哪些环节根本没有原始记录——AI 的抽取会在哪一段直接断掉，剩下的只能退回靠人回忆？
 
-> 配合 [§ 2 核心原理](06-postmortem-culture.md)、[§ 6 落地实践](06-postmortem-culture-section-6-sec6.md) 与 [§ 7 与其他方法对比](06-postmortem-culture-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](06-postmortem-culture.md)、[§6 落地实践](06-postmortem-culture-section-6-sec6.md) 与 [§7 与其他方法对比](06-postmortem-culture-section-7-sec7.md) 阅读。

@@ -1,4 +1,4 @@
-> 本文件是 **06-chaos-engineering.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](06-chaos-engineering-section-3-sec3.md) 里选定的模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](06-chaos-engineering.md)。
+> 本文件是 **06-chaos-engineering.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](06-chaos-engineering-section-3-sec3.md) 里选定的模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](06-chaos-engineering.md)。
 
 ## 4. 工程实现
 
@@ -292,4 +292,4 @@ finally:
 >
 > 💡 **思考锚点**：拿你稳态看板上任意一条链路，按 4.9 第 1 条自检：它是否写全了「指标 + 阈值 + 持续时间 + 数据来源」四项？再抽一条没做过的线路，问 4.1 的 Step 1 能否回答它的命中实例数与 r 是多少——这两个数你现在答不上来的话，是打算先补看板，还是直接开注入（后者消耗的可用性预算，对应的是 4.10 哪一类「不可用的结论」）？
 
-> 配合 [§ 2 核心原理](06-chaos-engineering.md)、[§ 3 设计模式与范式](06-chaos-engineering-section-3-sec3.md) 与 [§ 6 落地实践](06-chaos-engineering-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](06-chaos-engineering.md)、[§3 设计模式与范式](06-chaos-engineering-section-3-sec3.md) 与 [§6 落地实践](06-chaos-engineering-section-6-sec6.md) 阅读。

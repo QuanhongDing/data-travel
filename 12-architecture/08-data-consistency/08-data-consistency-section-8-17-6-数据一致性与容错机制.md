@@ -1,4 +1,4 @@
-> 本文件是 **08-data-consistency.md** § 8 面试真题集的子主题。完整章节请回到 [index](08-data-consistency.md) 或 [§ 8 索引](08-data-consistency-section-8-sec8.md)。
+> 本文件是 **08-data-consistency.md** §8 面试真题集的子主题。完整章节请回到 [index](08-data-consistency.md) 或 [§8 索引](08-data-consistency-section-8-sec8.md)。
 
 ### 8.2 §17.6 数据一致性与容错机制
 

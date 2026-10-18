@@ -1,4 +1,4 @@
-> 本文件是 **03-lakehouse.md** 的子文件（§ 2 核心原理 — 深度版），与主文件 [§ 2 核心原理](03-lakehouse.md) 配套阅读。本文件按"**算法 → 数据结构 → 实现细节 → 性能模型**"四层展开，把 Lakehouse 核心抽象讲透。
+> 本文件是 **03-lakehouse.md** 的子文件（§2 核心原理 — 深度版），与主文件 [§2 核心原理](03-lakehouse.md) 配套阅读。本文件按"**算法 → 数据结构 → 实现细节 → 性能模型**"四层展开，把 Lakehouse 核心抽象讲透。
 
 ## 2. 核心原理（深度版）
 
@@ -279,4 +279,4 @@ T_query ≈ α × (Files_scanned × Avg_file_size / Disk_throughput)
 
 > 💡 **思考锚点**：把你最常见那条慢查询拆进 Q ≈ α·(Files_scanned × Avg_file_size / Disk_throughput) + β·Manifest + γ·Compute——按本节实测里「100 万文件 / 20x」那一档，你把分区键或 Z-Order 键换成查询真正过滤的字段后，pruning 能把 Files_scanned 压到几分之一？压不下去时，主导你耗时的是 α 项（IO）还是 γ 项（计算）？
 >
-> 配合 [§ 6 落地实践](03-lakehouse-section-6-sec6.md) 阅读：§ 6 给真实公司案例，§ 2（本文件）给算法与数据结构。
+> 配合 [§6 落地实践](03-lakehouse-section-6-sec6.md) 阅读：§6 给真实公司案例，§2（本文件）给算法与数据结构。

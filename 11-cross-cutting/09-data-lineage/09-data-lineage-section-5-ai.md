@@ -261,4 +261,4 @@ GROUP  BY origin;
 >
 > 💡 **思考锚点**：数一下你血缘图里 `collector` 为 manual / llm_inferred 的边占比——抽 10 条要它们各自给出证据引用，答不出的比例是多少？按 §5.2.1，门禁只应读 `usable_in_gate = true` 的边；如果门禁误信了一条推断边，一次误拦截和一次漏拦截，各自要花多久才能定位到是哪条边？
 
-> 配合 [§ 2 核心原理](09-data-lineage.md)、[§ 6 落地实践](09-data-lineage-section-6-sec6.md) 与 [§ 7 与其他方法对比](09-data-lineage-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](09-data-lineage.md)、[§6 落地实践](09-data-lineage-section-6-sec6.md) 与 [§7 与其他方法对比](09-data-lineage-section-7-sec7.md) 阅读。

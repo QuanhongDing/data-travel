@@ -271,4 +271,4 @@
 >
 > 💡 **思考锚点**：把你 RAG 链路的那四个版本乘起来——知识库 × Embedding 模型 × 向量索引 × Prompt 缓存 key，你上一次改动动了其中几个？按 §5.2.3，只有固定三个、一次动一个，A/B 才有可比性；再想一下，你 Agent 状态里哪些字段的「合并」在业务上需要解释——需要解释的那种，能交给 CRDT 吗？
 
-> 配合 [§ 2 核心原理](08-data-consistency.md)、[§ 6 落地实践](08-data-consistency-section-6-sec6.md) 与 [§ 7 与其他方法对比](08-data-consistency-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](08-data-consistency.md)、[§6 落地实践](08-data-consistency-section-6-sec6.md) 与 [§7 与其他方法对比](08-data-consistency-section-7-sec7.md) 阅读。

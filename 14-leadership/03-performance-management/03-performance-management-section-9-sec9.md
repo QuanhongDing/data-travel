@@ -140,7 +140,7 @@
 
 ### 9.5 接口
 
-这套脚本自己只负责「谈」和「写」：材料里的证据时间线来自 [§4 工程实现](03-performance-management-section-4-sec4.md) Step 4 的面谈记录与 [§4.5 模板 / 示例](03-performance-management-section-4-sec4.md) 的模板四（第 4 节即 IDP）；资源的真实性与范围来自 Step 5 的激励组合与兑现台账；PIP 的 30–90 天期限沿用主文件 [§ 2.3](03-performance-management.md) 末位淘汰五步里的口径，IDP 的 6–12 个月则是按晋升周期定的经验区间【经验，随职级体系与维度差数量变】；而「判据事后不得追加」这一条，与 [§3 设计模式与范式](03-performance-management-section-3-sec3.md) 处置链是同一件事：那里把预警写成「无预警 = 程序瑕疵」，把再评估写成「按事先写好的判据评价，不临场定标准」。AI 在这条链上只出现在两个位置——起草初稿与汇总证据；定级、沟通、受理申诉不可自动化，三个角色（写证据 / 定级 / 受理申诉）必须彼此独立，见 [§5 前沿演进](03-performance-management-section-5-ai.md)。这套脚本在整章里的位置见 [§6 落地实践](03-performance-management-section-6-sec6.md) 与 [§7 与其他方法对比](03-performance-management-section-7-sec7.md)。合规上有一件事要先核：欧盟《人工智能法案》（Regulation (EU) 2024/1689，2024 年通过）把用于就业与员工管理的 AI 归入高风险类别【公开】，落地前按当地要求核验员工是否被告知、是否留痕、是否保留人工复核与申诉通道，具体以官方文本当前版本为准。
+这套脚本自己只负责「谈」和「写」：材料里的证据时间线来自 [§4 工程实现](03-performance-management-section-4-sec4.md) Step 4 的面谈记录与 [§4.5 模板 / 示例](03-performance-management-section-4-sec4.md) 的模板四（第 4 节即 IDP）；资源的真实性与范围来自 Step 5 的激励组合与兑现台账；PIP 的 30–90 天期限沿用主文件 [§2.3](03-performance-management.md) 末位淘汰五步里的口径，IDP 的 6–12 个月则是按晋升周期定的经验区间【经验，随职级体系与维度差数量变】；而「判据事后不得追加」这一条，与 [§3 设计模式与范式](03-performance-management-section-3-sec3.md) 处置链是同一件事：那里把预警写成「无预警 = 程序瑕疵」，把再评估写成「按事先写好的判据评价，不临场定标准」。AI 在这条链上只出现在两个位置——起草初稿与汇总证据；定级、沟通、受理申诉不可自动化，三个角色（写证据 / 定级 / 受理申诉）必须彼此独立，见 [§5 前沿演进](03-performance-management-section-5-ai.md)。这套脚本在整章里的位置见 [§6 落地实践](03-performance-management-section-6-sec6.md) 与 [§7 与其他方法对比](03-performance-management-section-7-sec7.md)。合规上有一件事要先核：欧盟《人工智能法案》（Regulation (EU) 2024/1689，2024 年通过）把用于就业与员工管理的 AI 归入高风险类别【公开】，落地前按当地要求核验员工是否被告知、是否留痕、是否保留人工复核与申诉通道，具体以官方文本当前版本为准。
 
 ### 9.6 小结
 

@@ -297,4 +297,4 @@ LLM 抽象产出候选 Skill
 >
 > 💡 **思考锚点**：把你库里当前的 Skill 总数除以「去重后的有效数」——这个比值若持续变大，按 §3.5 你已在「Skill 爆炸」区间；而 §3.6 列出的四个换模式信号（误触发率、去重后有效 Skill 数、空跑率、同意图检索结果一致性）里，你现在真正在监控的有几个？一个都没监控，你凭什么判断库是在长能力还是在长噪声？
 
-> 配合 [§ 2 核心原理](04-agent-skill-extraction.md)、[§ 4 工程实现](04-agent-skill-extraction-section-4-sec4.md) 与 [§ 6 落地实践](04-agent-skill-extraction-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](04-agent-skill-extraction.md)、[§4 工程实现](04-agent-skill-extraction-section-4-sec4.md) 与 [§6 落地实践](04-agent-skill-extraction-section-6-sec6.md) 阅读。

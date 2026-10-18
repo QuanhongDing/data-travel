@@ -297,4 +297,4 @@
 >
 > 💡 **思考锚点**：数一数「同一份业务逻辑」在你系统里现在有几份实现——若你正用 Lambda，按 7.4 两份实现差个位数百分比时业务能不能接受（7.5 的 Q2 说这条只能由业务方答）？若你在考虑 Kappa，写下你的事故恢复 SLA，用 7.5 Q3 的「单次重放耗时 ÷ 回算间隔」算一遍：你的回算间隔留得下走完一次全量重放吗？
 
-> 配合 [§ 2 核心原理](07-architecture-decisions.md) 与 [§ 6 落地实践](07-architecture-decisions-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](07-architecture-decisions.md) 与 [§6 落地实践](07-architecture-decisions-section-6-sec6.md) 阅读。

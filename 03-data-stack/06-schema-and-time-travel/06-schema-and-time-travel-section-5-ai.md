@@ -283,4 +283,4 @@
 >
 > 💡 **思考锚点**：把 §5.7 的「先量」三项套到你自己的表上：写入是不是纯追加、日均被重写多少数据、保留窗口是几天——如果复盘周期比保留窗口还长，你落的那份「快照 + 代码版本 + 参数」清单里，真正还能复现的是哪一项？
 >
-> 配合 [§ 2 核心原理](06-schema-and-time-travel.md)、[§ 6 落地实践](06-schema-and-time-travel-section-6-sec6.md) 与 [§ 7 与其他方法对比](06-schema-and-time-travel-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](06-schema-and-time-travel.md)、[§6 落地实践](06-schema-and-time-travel-section-6-sec6.md) 与 [§7 与其他方法对比](06-schema-and-time-travel-section-7-sec7.md) 阅读。

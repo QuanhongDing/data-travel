@@ -319,4 +319,4 @@ SELECT * FROM kudu_orders WHERE order_id = 12345;              -- 主键前缀�
 >
 > 💡 **思考锚点**：挑你系统里最慢的一条跨源查询，量一下它搬进引擎的行数占源侧总扫描行数的比例：比例接近 1，就是 §3.7 第 1 条那个「源侧分片没带过滤条件」的信号。按 §3.6 的判据——「每次查询都要重新搬运的那部分数据占执行时间主要部分时，就该换模式」——你已经落在「朴素联邦」那一格，而不是你以为的「最大化下推」。你打算给这个 Connector 补下推实现，还是把这条查询下沉到 OLAP 层、让联邦层只做编排？
 
-> 配合 [§ 2 核心原理](13-query-engine.md)、[§ 4 工程实现](13-query-engine-section-4-sec4.md) 与 [§ 6 落地实践](13-query-engine-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](13-query-engine.md)、[§4 工程实现](13-query-engine-section-4-sec4.md) 与 [§6 落地实践](13-query-engine-section-6-sec6.md) 阅读。

@@ -59,16 +59,16 @@
 
 ---
 
-## § 8 子主题导航
+## §8 子主题导航
 
-本章 § 8 面试真题集按子主题拆分为以下独立文件（每文件 200-800 行）：
+本章 §8 面试真题集按子主题拆分为以下独立文件（每文件 200-800 行）：
 
-- [§ 8.2 §6.6 Spark 与数据湖集成及 Lambda 架构](06-one-service-section-8-6-6-spark-与数据湖集成及-lambda-架构.md)
-- [§ 8.3 §8.4 统一数据服务实现](06-one-service-section-8-8-4-统一数据服务实现.md)
-- [§ 8.4 §16.5 数据湖与 Lambda 架构的云原生实践](06-one-service-section-8-16-5-数据湖与-lambda-架构的云原生实践.md)
-- [§ 8.5 §17.1 基础概念与架构理解](06-one-service-section-8-17-1-基础概念与架构理解.md)
-- [§ 8.6 §17.7 数据架构与 AI/ML 集成](06-one-service-section-8-17-7-数据架构与-ai-ml-集成.md)
-- [§ 8.7 §18.5 大数据平台与 ML 平台集成](06-one-service-section-8-18-5-大数据平台与-ml-平台集成.md)
+- [§8.2 §6.6 Spark 与数据湖集成及 Lambda 架构](06-one-service-section-8-6-6-spark-与数据湖集成及-lambda-架构.md)
+- [§8.3 §8.4 统一数据服务实现](06-one-service-section-8-8-4-统一数据服务实现.md)
+- [§8.4 §16.5 数据湖与 Lambda 架构的云原生实践](06-one-service-section-8-16-5-数据湖与-lambda-架构的云原生实践.md)
+- [§8.5 §17.1 基础概念与架构理解](06-one-service-section-8-17-1-基础概念与架构理解.md)
+- [§8.6 §17.7 数据架构与 AI/ML 集成](06-one-service-section-8-17-7-数据架构与-ai-ml-集成.md)
+- [§8.7 §18.5 大数据平台与 ML 平台集成](06-one-service-section-8-18-5-大数据平台与-ml-平台集成.md)
 
 ---
 

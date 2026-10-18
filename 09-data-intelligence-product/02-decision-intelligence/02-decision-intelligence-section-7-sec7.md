@@ -307,4 +307,4 @@
 >
 > 💡 **思考锚点**：把你系统里的自动决策逐条过一遍：哪些落在 GDPR 第 22 条 / 个保法说的「对个人产生法律或重大影响」里、哪些只是内部排序？只有前一类扛外部**举证义务**——你现在给这两类留的决策日志，粒度一样吗，还是只对其中一类做了「依据与上下文一起落库」？
 >
-> 配合 [§ 2 核心原理](02-decision-intelligence.md) 与 [§ 6 落地实践](02-decision-intelligence-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](02-decision-intelligence.md) 与 [§6 落地实践](02-decision-intelligence-section-6-sec6.md) 阅读。

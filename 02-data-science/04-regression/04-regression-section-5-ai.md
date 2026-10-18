@@ -292,4 +292,4 @@
 >
 > 💡 **思考锚点**：把你线上现役的文本特征列一遍，逐条查它能不能在特征平台里追到"提示词版本 + 模型版本"——追不到的那几条，跨期对比误差变化时，你拿什么判断是提示词换了、权重换了，还是分位点被模型默认值顶掉了？
 >
-> 配合 [§ 2 核心原理](04-regression.md)、[§ 6 落地实践](04-regression-section-6-sec6.md) 与 [§ 7 与其他方法对比](04-regression-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](04-regression.md)、[§6 落地实践](04-regression-section-6-sec6.md) 与 [§7 与其他方法对比](04-regression-section-7-sec7.md) 阅读。

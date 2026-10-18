@@ -261,4 +261,4 @@
 >
 > 💡 **思考锚点**：在你现在的平台上数一下，那些确定性接口——工具 schema、非人主体的身份、按次可计量的业务单位——已经定下来几个？本节说 AI 只把「判断」交给概率模型，「能力」仍需固定在这些接口上；再问一句：你有没有把「用了哪个模型版本、读了哪份原件、花了多少钱」提成第一条 SLO，给「判断」层留下一条可复核的痕迹？
 >
-> 配合 [§ 2 挑战](10-overseas-cases.md)、[§ 3 架构演进](10-overseas-cases-section-3-sec3.md)、[§ 6 落地实践](10-overseas-cases-section-6-sec6.md) 与 [§ 7 与同类案例对比](10-overseas-cases-section-7-sec7.md) 阅读。
+> 配合 [§2 挑战](10-overseas-cases.md)、[§3 架构演进](10-overseas-cases-section-3-sec3.md)、[§6 落地实践](10-overseas-cases-section-6-sec6.md) 与 [§7 与同类案例对比](10-overseas-cases-section-7-sec7.md) 阅读。

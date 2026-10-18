@@ -279,4 +279,4 @@
 >
 > 💡 **思考锚点**：数一下你上个月被 ≥3 人重复问的问题条数，再把这批问题按「信息 / 技能 / 机会」三类缺口分堆。这三堆的分布决定了你该先写文档、先做 1:1，还是先修 Sponsor 机制——你现在的分布偏哪一堆？
 >
-> 配合 [§ 2 核心原理](07-mentorship.md)、[§ 6 落地实践](07-mentorship-section-6-sec6.md) 与 [§ 7 与其他方法对比](07-mentorship-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](07-mentorship.md)、[§6 落地实践](07-mentorship-section-6-sec6.md) 与 [§7 与其他方法对比](07-mentorship-section-7-sec7.md) 阅读。

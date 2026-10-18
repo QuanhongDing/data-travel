@@ -309,4 +309,4 @@ GROUP  BY 1, 2, 3;
 >
 > 💡 **思考锚点**：打开你上个月的账单，写出它到底对哪个变量积分——容量 × 时长、扫描字节、作业 × 频次，还是 GPU 小时？再把三项最贵的成本按这个计费单元重排一次，然后回看 §3.3：你做降本的顺序对吗（先占用、后单价；先归因、后优化），还是把承诺折扣锁在了你还没收敛的用量上？
 
-> 配合 [§ 2 核心原理](03-data-cost-finops.md)、[§ 4 工程实现](03-data-cost-finops-section-4-sec4.md) 与 [§ 6 落地实践](03-data-cost-finops-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](03-data-cost-finops.md)、[§4 工程实现](03-data-cost-finops-section-4-sec4.md) 与 [§6 落地实践](03-data-cost-finops-section-6-sec6.md) 阅读。

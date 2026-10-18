@@ -303,4 +303,4 @@ evidence:   { retention: 12mo, immutable: true }
 >
 > 💡 **思考锚点**：拿一份你正在记的审计日志问两个数：它被判为「不可篡改」的保留期要求多长（举证需要），以及它响应删除权请求的时限要求多短（最小化需要）？如果这两个要求落在同一份存储上，你打算怎么切分证据区与原文区——哪些字段进不可变区、哪些可随删除权抹掉，抹掉之后还能否从证据区复算出那次操作？
 
-> 配合 [§ 2 核心原理](07-audit-and-compliance.md)、[§ 4 工程实现](07-audit-and-compliance-section-4-sec4.md) 与 [§ 6 落地实践](07-audit-and-compliance-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](07-audit-and-compliance.md)、[§4 工程实现](07-audit-and-compliance-section-4-sec4.md) 与 [§6 落地实践](07-audit-and-compliance-section-6-sec6.md) 阅读。

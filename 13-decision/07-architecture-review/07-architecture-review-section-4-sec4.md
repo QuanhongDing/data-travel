@@ -1,8 +1,8 @@
-> 本文件是 **07-architecture-review.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](07-architecture-review-section-3-sec3.md) 里的评审模式装进一个真实组织：顺序、判据、产物、存量补齐与多久见效。完整章节请回到 [index](07-architecture-review.md)。
+> 本文件是 **07-architecture-review.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](07-architecture-review-section-3-sec3.md) 里的评审模式装进一个真实组织：顺序、判据、产物、存量补齐与多久见效。完整章节请回到 [index](07-architecture-review.md)。
 
 ## 4. 工程实现
 
-本节按「落地步骤 → 关键技术点 → 工具链 → 存量迁移 → 模板 → 自检」组织。术语与主文件 [§ 2 核心原理](07-architecture-review.md) 逐字一致：**Lightweight Review / Formal Review / ATAM / Architecture Board / Checklist / Quality Attributes / Stakeholder / Reviewer / Approver / Decision Outcome / Follow-up Action / ADR / Pre-Mortem / AI-assisted Review** ——在本节里指的就是 §2.1 定义的那几件事，不另立口径。每个模式被什么约束逼出来、代价与失效点见 [§3 设计模式与范式](07-architecture-review-section-3-sec3.md)，本节不复述。读者分两类：**从零搭建**的组织按 §4.1 的 Step 1–4 起步（定对象与准入、定流程、定清单、定委员会），Step 5–8 随规模补，模板直接取 §4.5；**在存量上改造**的组织是多数——已经有系统在跑、已经开过评审会、也已经有了一批没有记录的决策，请把 §4.1 当顺序依据、把 **§4.4 当主路径**。顺序反过来，会在新流程落地前先撞上「历史包袱没人认」的墙。判别自己属于哪一类只需回答一个问题：能不能拿出去年三个重大决策的书面依据。拿不出，就先做 §4.4 的①。
+本节按「落地步骤 → 关键技术点 → 工具链 → 存量迁移 → 模板 → 自检」组织。术语与主文件 [§2 核心原理](07-architecture-review.md) 逐字一致：**Lightweight Review / Formal Review / ATAM / Architecture Board / Checklist / Quality Attributes / Stakeholder / Reviewer / Approver / Decision Outcome / Follow-up Action / ADR / Pre-Mortem / AI-assisted Review** ——在本节里指的就是 §2.1 定义的那几件事，不另立口径。每个模式被什么约束逼出来、代价与失效点见 [§3 设计模式与范式](07-architecture-review-section-3-sec3.md)，本节不复述。读者分两类：**从零搭建**的组织按 §4.1 的 Step 1–4 起步（定对象与准入、定流程、定清单、定委员会），Step 5–8 随规模补，模板直接取 §4.5；**在存量上改造**的组织是多数——已经有系统在跑、已经开过评审会、也已经有了一批没有记录的决策，请把 §4.1 当顺序依据、把 **§4.4 当主路径**。顺序反过来，会在新流程落地前先撞上「历史包袱没人认」的墙。判别自己属于哪一类只需回答一个问题：能不能拿出去年三个重大决策的书面依据。拿不出，就先做 §4.4 的①。
 
 ### 4.1 落地步骤
 
@@ -391,4 +391,4 @@ print(review)
 >
 > 💡 **思考锚点**：按 §4.9 最后两条给你们的评审负载算一次——「评审节点数 × 单节点准备工时」是否已经超过团队每周可支配的评审时间、例外台账最近一条记录是什么？若已经超过，说明评审正在退化为签字，你打算把 Step 1 的准入边界从哪一类决策开始收窄？
 >
-> 配合 [§ 2 核心原理](07-architecture-review.md)、[§ 3 设计模式与范式](07-architecture-review-section-3-sec3.md) 与 [§ 6 落地实践](07-architecture-review-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](07-architecture-review.md)、[§3 设计模式与范式](07-architecture-review-section-3-sec3.md) 与 [§6 落地实践](07-architecture-review-section-6-sec6.md) 阅读。

@@ -298,4 +298,4 @@ TEE：明文只在硬件隔离区内出现，进出隔离区都是密文
 >
 > 💡 **思考锚点**：把你这套方案按四问过一遍——保护对象是什么、对谁保护、强度参数（FL 的 ε、DP 的记账）是多少、它在什么条件下失效（§3.5）？哪一问答不上来、或某一环的保证只写着「靠合同约束」，那一环就是短板：你打算先补这一问，还是先把 ε 按全链路累计重算一次？
 >
-> 配合 [§ 2 核心原理](08-privacy-computing.md)、[§ 4 工程实现](08-privacy-computing-section-4-sec4.md) 与 [§ 6 落地实践](08-privacy-computing-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](08-privacy-computing.md)、[§4 工程实现](08-privacy-computing-section-4-sec4.md) 与 [§6 落地实践](08-privacy-computing-section-6-sec6.md) 阅读。

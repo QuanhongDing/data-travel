@@ -300,4 +300,4 @@ change_policy: backward_compatible # 破坏性变更须提前通知并等待消�
 >
 > 💡 **思考锚点**：挑你们最关键的一条链路，回答 3.7 第 3 问——断言执行在数据写出**之前**还是之后？若是之后，再量 3.6 的比值：「数据产出到被消费」的间隔 ÷ 检查周期，它大于 1 还是小于 1？小于 1 说明检查追不上消费，那你承诺的「拦住坏数据」，究竟落在断言上，还是落在事后回刷上？
 
-> 配合 [§ 2 核心原理](01-data-quality.md)、[§ 4 工程实现](01-data-quality-section-4-sec4.md) 与 [§ 6 落地实践](01-data-quality-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](01-data-quality.md)、[§4 工程实现](01-data-quality-section-4-sec4.md) 与 [§6 落地实践](01-data-quality-section-6-sec6.md) 阅读。

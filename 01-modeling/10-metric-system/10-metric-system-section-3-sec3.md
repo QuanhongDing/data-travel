@@ -306,4 +306,4 @@ metric: gmv
 >
 > 💡 **思考锚点**：挑你现在的 5 个高频核心指标，逐个问「它的口径由哪个写入端唯一决定、定义停在查询时编译 / 调度时物化 / 事件到达时流式哪一档」——答不出写入端的那几个，换一次计算时机（比如把物化改成实时流）就会各自再实现一遍口径；你准备先给哪几个补上可执行定义层？
 >
-> 配合 [§ 2 核心原理](10-metric-system.md)、[§ 4 工程实现](10-metric-system-section-4-sec4.md) 与 [§ 6 落地实践](10-metric-system-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](10-metric-system.md)、[§4 工程实现](10-metric-system-section-4-sec4.md) 与 [§6 落地实践](10-metric-system-section-6-sec6.md) 阅读。

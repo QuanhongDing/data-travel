@@ -258,4 +258,4 @@
 >
 > 💡 **思考锚点**：拿你现有的表过一遍 §2.4.1 那条界线——**每周字段变化达到十个的实体有几个**？把它们按 5.2.1 拆成每属性一表之后，再估其中多少张能被视图物化覆盖（5.7 表里要盯的正是视图查询 P95 与物化率这两个数）。这个比例才是你该不该走 6NF 的入场券，而不是「AI 原生」这个标签。
 >
-> 配合 [§ 2 核心原理](04-anchor-modeling.md)、[§ 6 落地实践](04-anchor-modeling-section-6-sec6.md) 与 [§ 8 面试真题集](04-anchor-modeling-section-8-sec8.md) 阅读。
+> 配合 [§2 核心原理](04-anchor-modeling.md)、[§6 落地实践](04-anchor-modeling-section-6-sec6.md) 与 [§8 面试真题集](04-anchor-modeling-section-8-sec8.md) 阅读。

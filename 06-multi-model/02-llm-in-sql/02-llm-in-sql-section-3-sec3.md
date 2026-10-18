@@ -303,4 +303,4 @@ FROM   reviews WHERE dt = CURRENT_DATE;
 >
 > 💡 **思考锚点**：把你最近一条 AI 取数链路的两个属性写出来——数据能不能出仓（边界），以及每次调用要代入多少行（行数）。按 3.1 的筛选顺序它该落在哪个模式？如果第二步的行数把你推向批处理，而第一步的边界你其实判错了（数据本可出仓），你会白付哪一份代价：仓内算力，还是那一层的副本与新鲜度链路？
 
-> 配合 [§ 2 核心原理](02-llm-in-sql.md)、[§ 4 工程实现](02-llm-in-sql-section-4-sec4.md) 与 [§ 6 落地实践](02-llm-in-sql-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](02-llm-in-sql.md)、[§4 工程实现](02-llm-in-sql-section-4-sec4.md) 与 [§6 落地实践](02-llm-in-sql-section-6-sec6.md) 阅读。

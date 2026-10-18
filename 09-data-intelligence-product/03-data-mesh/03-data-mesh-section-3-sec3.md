@@ -310,4 +310,4 @@ deny_reason["restricted_requires_grant"] {
 >
 > 💡 **思考锚点**：对你最近一次「推 Data Mesh」的改动点一次名：按 3.8 的判据，这一次之后是否多了一个具体的人为某一份数据的质量负责？如果只是目录里多了一个 Owner 字段，而数据产品、自助平台、联邦治理这三条派生一条都没动，那你把「所有权落到人」换成了什么动作，它会在哪一类跨域取数上先失效？
 
-> 配合 [§ 2 核心原理](03-data-mesh.md)、[§ 4 工程实现](03-data-mesh-section-4-sec4.md) 与 [§ 6 落地实践](03-data-mesh-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](03-data-mesh.md)、[§4 工程实现](03-data-mesh-section-4-sec4.md) 与 [§6 落地实践](03-data-mesh-section-6-sec6.md) 阅读。

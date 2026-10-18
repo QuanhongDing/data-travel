@@ -314,4 +314,4 @@ AI 在绩效流程中的作用边界（三个角色必须彼此独立）
 >
 > 💡 **思考锚点**：先回答耦合问题——你团队里哪些目标直接换钱（奖金 / 晋升公式），哪些不换？按 §3.7 第 2 条查一遍：OKR 完成度是否出现在任何换算公式里，出现即解耦失败。再按 §3.6 的规模台阶给团队定个位（10 → 50 → 200 → 1000 人），看三个信号里哪个先亮：评优比例是否在上漂、反馈周期是否短于业务显著变化的间隔、管理者工时是否已超载？
 
-> 配合 [§ 2 核心原理](03-performance-management.md)、[§ 4 工程实现](03-performance-management-section-4-sec4.md) 与 [§ 6 落地实践](03-performance-management-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](03-performance-management.md)、[§4 工程实现](03-performance-management-section-4-sec4.md) 与 [§6 落地实践](03-performance-management-section-6-sec6.md) 阅读。

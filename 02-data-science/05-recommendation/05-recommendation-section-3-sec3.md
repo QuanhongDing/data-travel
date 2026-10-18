@@ -306,4 +306,4 @@
 >
 > 💡 **思考锚点**：把你当前精排面对的候选数写下来——它被上游限在千级，还是直接面对千万级全集？若是后者，按 §3.6 的「十万 → 千万级 Item」那一行，你的漏斗缺的是召回层还是粗排层，补上之后要接受多大的级联损失？
 
-> 配合 [§ 2 核心原理](05-recommendation.md)、[§ 4 工程实现](05-recommendation-section-4-sec4.md) 与 [§ 6 落地实践](05-recommendation-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](05-recommendation.md)、[§4 工程实现](05-recommendation-section-4-sec4.md) 与 [§6 落地实践](05-recommendation-section-6-sec6.md) 阅读。

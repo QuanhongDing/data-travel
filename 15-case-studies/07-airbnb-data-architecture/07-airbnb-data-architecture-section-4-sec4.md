@@ -152,7 +152,7 @@ Airbnb 用 ER 模型定义业务实体：
 | **Druid** | 实时 OLAP，供在线服务点查与聚合 | 查询形态是「时间范围 + 聚合」，且要求亚秒级响应 | 写入吞吐超预聚合刷新能力时，查询会看到部分数据（结果偏小且不报错），必须自己对「数据完整性」设一条可观测断言 |
 | **Iceberg**（2022 后） | 表格式，承载批写与增量修正 | 需要 schema 演进、快照回溯、多引擎共存 | 小文件与快照不治理时，元数据操作随文件数变慢——**它换的是存储，不是代际**（§3.6 已把这条区分列为判据） |
 
-**档位**：Kafka 由 LinkedIn 于 2011 年开源（【公开：Apache Kafka 项目页, 2011】）；Iceberg 由 Netflix 于 2018 年开源并进入 Apache 孵化（【公开：Apache Iceberg 项目页, 2018】）；本案例 2022 年后采用 Iceberg 这一点属案例记录（【经验】）。实时链路 2020 年用 Spark Streaming、2022 年换 Flink，沿用本案例 § 3 的年表（【经验】）。
+**档位**：Kafka 由 LinkedIn 于 2011 年开源（【公开：Apache Kafka 项目页, 2011】）；Iceberg 由 Netflix 于 2018 年开源并进入 Apache 孵化（【公开：Apache Iceberg 项目页, 2018】）；本案例 2022 年后采用 Iceberg 这一点属案例记录（【经验】）。实时链路 2020 年用 Spark Streaming、2022 年换 Flink，沿用本案例 §3 的年表（【经验】）。
 
 **失效条件**：**当实时结果并不被在线请求读取时，双链路会反转成「一条更贵、更脆、还需要与批链路对齐口径的批链路」**。症状：流链路在跑，但它的消费方只有次日报表与人工抽查。
 
@@ -387,4 +387,4 @@ Airbnb 这套栈里最贵的是**「一致性」本身的人力**，不是算力
 >
 > 💡 **思考锚点**：数一下你组织里被引用最广的那个口径，每周被几个团队引用——个位数时中心语义层摊不薄；再改一次它的口径，看下游引用处是不做人工通知也自动同步，还是要有人挨个去改报表。如果答案是后者，你现在缺的是「可被引用的定义对象」本身，还是五要素里的某一项？
 >
-> 配合 [§ 2 挑战](07-airbnb-data-architecture.md)、[§ 3 架构演进](07-airbnb-data-architecture-section-3-sec3.md)、[§ 5 踩坑与教训](07-airbnb-data-architecture-section-5-sec5.md) 与 [§ 6 落地实践](07-airbnb-data-architecture-section-6-sec6.md) 阅读。
+> 配合 [§2 挑战](07-airbnb-data-architecture.md)、[§3 架构演进](07-airbnb-data-architecture-section-3-sec3.md)、[§5 踩坑与教训](07-airbnb-data-architecture-section-5-sec5.md) 与 [§6 落地实践](07-airbnb-data-architecture-section-6-sec6.md) 阅读。

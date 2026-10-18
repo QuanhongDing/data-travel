@@ -283,4 +283,4 @@
 >
 > 💡 **思考锚点**：按 §5.2.3 的乘式算你自己的盘子——活跃用户数 × 29 MB/年 × 保留年数 = 多少 TB。如果这个数相对存储预算并不吓人，那么为它开自动遗忘（旋钮 θ / λ）就是拿**不可逆的删除**换一点点存储；先回答：你的合规删除接口与自动遗忘是不是两条独立的路，误删一条时能不能举证"这是模型判的"？
 
-> 配合 [§ 2 核心原理](01-long-term-memory.md)、[§ 3 设计模式与范式](01-long-term-memory-section-3-sec3.md) 与 [§ 6 落地实践](01-long-term-memory-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](01-long-term-memory.md)、[§3 设计模式与范式](01-long-term-memory-section-3-sec3.md) 与 [§6 落地实践](01-long-term-memory-section-6-sec6.md) 阅读。

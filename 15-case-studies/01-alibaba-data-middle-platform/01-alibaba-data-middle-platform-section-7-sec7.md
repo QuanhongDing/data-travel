@@ -299,4 +299,4 @@
 >
 > 💡 **思考锚点**：回头查你上一次「两个业务对同一指标给了不同定义」是怎么收场的：它留在 BU 层并存了，还是被某个握有裁决权又承担成本的主体定死了？这决定了你该学的是表格式 + 统一调度，还是 OneData / OneID 那一段；再对照 7.8 表里「k ≥ 3、d ≤ 30」这一档，你的峰值形态落在它的哪一侧？
 
-> 配合主文件 [01-alibaba-data-middle-platform.md](01-alibaba-data-middle-platform.md)（§1 背景、§3 挑战）与 [§ 6 落地实践](01-alibaba-data-middle-platform-section-6-sec6.md) 阅读。
+> 配合主文件 [01-alibaba-data-middle-platform.md](01-alibaba-data-middle-platform.md)（§1 背景、§3 挑战）与 [§6 落地实践](01-alibaba-data-middle-platform-section-6-sec6.md) 阅读。

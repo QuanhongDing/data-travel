@@ -317,4 +317,4 @@ CREATE TABLE episodic_event (
 >
 > 💡 **思考锚点**：数一下你自己那条记忆链路：同一主谓能不能并存多条有效记录、删除一个用户要操作几个存储（§3.7 第 1、4 条）？这两问答不上来时，你缺的是治理流程还是存储布局——本节说结构性问题要先修结构再补治理，你打算从哪一类动手？
 >
-> 配合 [§ 2 核心原理](01-long-term-memory.md)、[§ 4 工程实现](01-long-term-memory-section-4-sec4.md) 与 [§ 6 落地实践](01-long-term-memory-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](01-long-term-memory.md)、[§4 工程实现](01-long-term-memory-section-4-sec4.md) 与 [§6 落地实践](01-long-term-memory-section-6-sec6.md) 阅读。

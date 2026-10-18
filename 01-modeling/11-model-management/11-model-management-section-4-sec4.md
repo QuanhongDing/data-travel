@@ -1,4 +1,4 @@
-> 本文件是 **11-model-management.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](11-model-management-section-3-sec3.md) 里的模式装进一个已有存量模型的真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](11-model-management.md)。
+> 本文件是 **11-model-management.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](11-model-management-section-3-sec3.md) 里的模式装进一个已有存量模型的真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](11-model-management.md)。
 
 ## 4. 工程实现
 
@@ -358,4 +358,4 @@ lineage:
 >
 > 💡 **思考锚点**：拿 §4.4 的四个退出信号量一下你自己的双轨期——「连续 4–8 周漂移零告警」「新表 100% 从仓库发布」「直连改库已收回」这几条里，先卡住的是哪一条？如果卡在「漂移零告警」上，往回追，是不是因为 Step 1 那份「现存模型 + Owner」清单还没出全，漂移检测连完整的比对基线都没有？
 
-> 配合 [§ 2 核心原理](11-model-management.md)、[§ 3 设计模式与范式](11-model-management-section-3-sec3.md) 与 [§ 6 落地实践](11-model-management-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](11-model-management.md)、[§3 设计模式与范式](11-model-management-section-3-sec3.md) 与 [§6 落地实践](11-model-management-section-6-sec6.md) 阅读。

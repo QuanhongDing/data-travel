@@ -29,8 +29,8 @@
 Netflix 成立于 1997 年（从 DVD 租赁起步），2007 年推出流媒体服务，至今 28 年。数据栈演进的关键时间节点：
 
 - **2007–2012：流媒体起步**。从 Oracle + Hadoop 起步，S3 + EMR + Hive 为主。
-- **2013：Netflix OSS 开源**。开始对外开源工具（Spinnaker、Chaos Monkey 等；Chaos Monkey / Simian Army 一类组件自 2011 年起陆续对外开源，见本仓 [§ 7.1](05-netflix-data-stack-section-7-sec7.md) 与 [12-architecture/06-chaos-engineering](../../12-architecture/06-chaos-engineering/06-chaos-engineering.md) § 1.4）。
-- **2015：Apache Kafka 大规模使用**。数据管道成为核心链路，日均事件量进入 PB 级【经验：随在订用户规模与播放量变】；日事件量的公开锚点见 § 7.4（2018 年为「数千亿条/日」，同为 PB 级，【公开：Netflix Tech Blog, Keystone, 2018】）。
+- **2013：Netflix OSS 开源**。开始对外开源工具（Spinnaker、Chaos Monkey 等；Chaos Monkey / Simian Army 一类组件自 2011 年起陆续对外开源，见本仓 [§7.1](05-netflix-data-stack-section-7-sec7.md) 与 [12-architecture/06-chaos-engineering](../../12-architecture/06-chaos-engineering/06-chaos-engineering.md) §1.4）。
+- **2015：Apache Kafka 大规模使用**。数据管道成为核心链路，日均事件量进入 PB 级【经验：随在订用户规模与播放量变】；日事件量的公开锚点见 §7.4（2018 年为「数千亿条/日」，同为 PB 级，【公开：Netflix Tech Blog, Keystone, 2018】）。
 - **2017：Iceberg 立项**。Ryan Blue 在 Netflix 内部开始研发 Iceberg 表格式。
 - **2018：Apache Iceberg 开源**。Netflix 把 Iceberg 捐赠给 Apache 基金会。
 - **2019：Metaflow 升级**。Netflix 开源 Metaflow（ML 框架），大幅升级 ML 工程化能力。

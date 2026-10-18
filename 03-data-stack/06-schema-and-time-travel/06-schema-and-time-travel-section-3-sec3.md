@@ -302,4 +302,4 @@ ALTER TABLE dwd_order_pk ADD coupon_amount decimal(18,2) DEFAULT 0;
 >
 > 💡 **思考锚点**：挑你最依赖的那张跨引擎表，回答 §3.7 里那条：field id 的映射有没有单一权威来源？若没有，用本节的判据给它归类——它的 schema 身份到底是被字段 id 持有、被提交版本持有，还是被某个人「改前先说一声」的约定持有？后者的失效方式在六个模式里对应哪一种？
 
-> 配合 [§ 2 核心原理](06-schema-and-time-travel.md)、[§ 4 工程实现](06-schema-and-time-travel-section-4-sec4.md) 与 [§ 6 落地实践](06-schema-and-time-travel-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](06-schema-and-time-travel.md)、[§4 工程实现](06-schema-and-time-travel-section-4-sec4.md) 与 [§6 落地实践](06-schema-and-time-travel-section-6-sec6.md) 阅读。

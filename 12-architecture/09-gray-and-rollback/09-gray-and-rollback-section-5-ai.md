@@ -263,4 +263,4 @@
 >
 > 💡 **思考锚点**：翻一下你们的模型 / Prompt 发布记录：回滚时你能用一个内容指纹（digest）指认「上一版」，还是只能靠「某次保存时的内容」？如果不能，§5.2.1 说的「混版」投诉出现时，你靠什么把同一会话跨版本的输出分开统计？你们的 Agent 工具（§5.2.2）的授权判定是留在调用方还是移到被调用方——留在调用方，灰度比例就顺手给灰度组扩了权，越权被拒与误拒你分得开吗？
 >
-> 配合 [§ 2 核心原理](09-gray-and-rollback.md)、[§ 6 落地实践](09-gray-and-rollback-section-6-sec6.md) 与 [§ 7 与其他方法对比](09-gray-and-rollback-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](09-gray-and-rollback.md)、[§6 落地实践](09-gray-and-rollback-section-6-sec6.md) 与 [§7 与其他方法对比](09-gray-and-rollback-section-7-sec7.md) 阅读。

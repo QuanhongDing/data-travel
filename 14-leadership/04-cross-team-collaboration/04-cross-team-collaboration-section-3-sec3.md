@@ -334,4 +334,4 @@ AI 增强协作：把"产生一份可用记录"的边际成本压向零
 
 > 💡 **思考锚点**：拿 §3.7 第 5 条给一条你正头疼的跨团队协作数一次——参与方若多对多，条数是 n(n−1)/2，按你实际的 n 算出来是多少？再看第 11 条：同一份数据的变更要串行经过几个团队？若算出 ≥ 3、且 n(n−1)/2 远超你手上的人数，你缺的是 Shared Service（要有人能改编制），还是只缺一份章程？
 
-> 配合 [§ 2 核心原理](04-cross-team-collaboration.md)、[§ 4 工程实现](04-cross-team-collaboration-section-4-sec4.md) 与 [§ 6 落地实践](04-cross-team-collaboration-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](04-cross-team-collaboration.md)、[§4 工程实现](04-cross-team-collaboration-section-4-sec4.md) 与 [§6 落地实践](04-cross-team-collaboration-section-6-sec6.md) 阅读。

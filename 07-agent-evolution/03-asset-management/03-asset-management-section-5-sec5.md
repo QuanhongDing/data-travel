@@ -294,4 +294,4 @@ AI 资产不是新的一层数据，它是**挂在既有账号、权限、计量
 >
 > 💡 **思考锚点**：数一下你手上纳管的资产落在哪一档——千级以内勉强还能人工盘点，到了万级就必须给排序加质量维度（新鲜度 / 调用量 / 评估分 / 复用度）并建退役通道，否则只是「登记数上涨、检索质量下降」。再查一件事：如果你的平台允许移动别名，这次移动留痕了吗？没有锚点，回滚就无从谈起。
 >
-> 配合 [§ 2 核心原理](03-asset-management.md)、[§ 3 设计模式与范式](03-asset-management-section-3-sec3.md) 与 [§ 6 落地实践](03-asset-management-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](03-asset-management.md)、[§3 设计模式与范式](03-asset-management-section-3-sec3.md) 与 [§6 落地实践](03-asset-management-section-6-sec6.md) 阅读。

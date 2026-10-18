@@ -263,4 +263,4 @@
 
 > 💡 **思考锚点**：拿 5.6 的第 1 条过一遍你现在在跑的组件——每个能写出"上周一个真实例子说明没有它不行"吗？写不出的那些，按小结"答不上来的组件不会带来能力，只会以每周固定工时的形式一直存在"，把它们的每周工时加总，这笔预付成本在为一个多大概率会到来的规模买单？合规是唯一的例外，按 §7.2.4 为什么它必须第一天进链路，而不能像其余四个坑那样用"晚一点做"缓解？
 >
-> 配合 [§ 3 架构演进](08-startup-evolution-section-3-sec3.md)、[§ 4 关键决策](08-startup-evolution-section-4-sec4.md) 与 [§ 6 落地实践](08-startup-evolution-section-6-sec6.md) 阅读。
+> 配合 [§3 架构演进](08-startup-evolution-section-3-sec3.md)、[§4 关键决策](08-startup-evolution-section-4-sec4.md) 与 [§6 落地实践](08-startup-evolution-section-6-sec6.md) 阅读。

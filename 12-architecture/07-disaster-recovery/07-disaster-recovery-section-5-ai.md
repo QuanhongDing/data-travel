@@ -261,4 +261,4 @@
 >
 > 💡 **思考锚点**：拿你们最近一次 DR 演练的复盘，按 §5.7 那四个数对一遍：故障注入到流量切走的决策段耗时、目标 Region 从零拉起推理副本到可服务的耗时、全量重建一次向量索引的耗时与算力、降级期的请求档位分布——四个都报得出数，你手上的「AI 容灾」提案才按 §5.8 的快捷方式落进「花钱 / 花容量」那一格；报不出的是哪一个，它是不是恰好落在「要权限」那一格？
 
-> 配合 [§ 2 核心原理](07-disaster-recovery.md)、[§ 6 落地实践](07-disaster-recovery-section-6-sec6.md) 与 [§ 7 与其他方法对比](07-disaster-recovery-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](07-disaster-recovery.md)、[§6 落地实践](07-disaster-recovery-section-6-sec6.md) 与 [§7 与其他方法对比](07-disaster-recovery-section-7-sec7.md) 阅读。

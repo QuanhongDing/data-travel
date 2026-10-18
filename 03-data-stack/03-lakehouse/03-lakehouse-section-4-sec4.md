@@ -1,8 +1,8 @@
-> 本文件是 **03-lakehouse.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](03-lakehouse-section-3-sec3.md) 里的模式装进一个真实组织与一批存量表：顺序、判据、产物、存量迁移与多久见效。完整章节请回到 [index](03-lakehouse.md)。
+> 本文件是 **03-lakehouse.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](03-lakehouse-section-3-sec3.md) 里的模式装进一个真实组织与一批存量表：顺序、判据、产物、存量迁移与多久见效。完整章节请回到 [index](03-lakehouse.md)。
 
 ## 4. 工程实现
 
-本节按「落地步骤 → 关键技术点 → 工具链 → 存量迁移 → 模板 → 自检」组织。术语与主文件 [§ 2 核心原理](03-lakehouse.md) 逐字一致：**开放表格式**、**Snapshot（快照）**、**Manifest（清单文件）**、**Schema Evolution**、**Hidden Partitioning**、**Time Travel**、**Copy-on-Write（COW）**、**Merge-on-Read（MOR）**、**Compaction**、**Z-Order**，在本节里指的就是 §3 里那几件事，不另立口径。模式被什么约束逼出来、代价与失效点见 [§3 设计模式与范式](03-lakehouse-section-3-sec3.md)。
+本节按「落地步骤 → 关键技术点 → 工具链 → 存量迁移 → 模板 → 自检」组织。术语与主文件 [§2 核心原理](03-lakehouse.md) 逐字一致：**开放表格式**、**Snapshot（快照）**、**Manifest（清单文件）**、**Schema Evolution**、**Hidden Partitioning**、**Time Travel**、**Copy-on-Write（COW）**、**Merge-on-Read（MOR）**、**Compaction**、**Z-Order**，在本节里指的就是 §3 里那几件事，不另立口径。模式被什么约束逼出来、代价与失效点见 [§3 设计模式与范式](03-lakehouse-section-3-sec3.md)。
 
 本节所有步骤的判据都来自 [§3.1](03-lakehouse-section-3-sec3.md) 的两条约束（合并成本放在写侧还是读侧、元数据权威必须唯一），这里不复述推导，只取它们对落地顺序的直接推论：前者决定 Step 3 选格式之前必须先算出那个比值，后者决定 Step 2 必须排在 Step 3 之前——顺序反了，选出来的往往不是一张表格式，而是某个引擎内部的一张表。读者分两类：**从零搭建**的组织按 4.1 的七步往下走，4.4 可以略读；**在存量湖上改造**的组织（已经有 Hive 表、已经有一批 Parquet 目录被下游按路径直接读）建议先读 4.4 再回到 4.1——存量改造的瓶颈不在选定格式，而在让「同一张表」这句话在所有引擎里第一次真正成立。
 
@@ -389,4 +389,4 @@ SELECT snapshot_id, committed_at FROM lake.db.orders.snapshots ORDER BY committe
 >
 > 💡 **思考锚点**：把你自己存量湖的表数 T 带进 4.4 的推算式 T × (4–16) ÷ 8 人日——如果按「统一到一个表格式」全部返工，你的人日落在 250–1000 这一档的哪一端？再回头数：这些表里有多少张其实只需按 4.4 的分类「注册进统一 Catalog」或「优先 Compaction」，根本不该进返工队列？
 
-> 配合 [§ 2 核心原理](03-lakehouse.md)、[§ 3 设计模式与范式](03-lakehouse-section-3-sec3.md) 与 [§ 6 落地实践](03-lakehouse-section-6-sec6.md) 阅读。存量改造的落地顺序以 4.4 为准，[§ 7 与其他方法对比](03-lakehouse-section-7-sec7.md) 给出规模跃迁时该换哪种模式的判据。
+> 配合 [§2 核心原理](03-lakehouse.md)、[§3 设计模式与范式](03-lakehouse-section-3-sec3.md) 与 [§6 落地实践](03-lakehouse-section-6-sec6.md) 阅读。存量改造的落地顺序以 4.4 为准，[§7 与其他方法对比](03-lakehouse-section-7-sec7.md) 给出规模跃迁时该换哪种模式的判据。

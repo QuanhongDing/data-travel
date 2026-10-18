@@ -265,4 +265,4 @@ GAP_SUMMARY_PROMPT = """
 >
 > 💡 **思考锚点**：打开你自己的锚点表，随机抽 3 格问「这一格要交什么材料」——如果答案停在「表现优秀」，按 §4.9 第 1 条这格就不可复核；再数一数你的通道、IDP、答辩、继任台账里，有多少步是建立在这份「写不下来的标准」上的？
 
-> 配合 [§ 2 核心原理](02-talent-ladder.md)、[§ 3 设计模式与范式](02-talent-ladder-section-3-sec3.md) 与 [§ 6 落地实践](02-talent-ladder-section-6-sec6.md) 阅读。存量改造的落地顺序以 4.4 为准，[§ 7 与其他方法对比](02-talent-ladder-section-7-sec7.md) 给出规模跃迁时该换哪种模式的判据。
+> 配合 [§2 核心原理](02-talent-ladder.md)、[§3 设计模式与范式](02-talent-ladder-section-3-sec3.md) 与 [§6 落地实践](02-talent-ladder-section-6-sec6.md) 阅读。存量改造的落地顺序以 4.4 为准，[§7 与其他方法对比](02-talent-ladder-section-7-sec7.md) 给出规模跃迁时该换哪种模式的判据。

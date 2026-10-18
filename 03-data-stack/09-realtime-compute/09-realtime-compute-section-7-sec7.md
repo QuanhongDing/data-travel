@@ -291,4 +291,4 @@
 >
 > 💡 **思考锚点**：写下你这条流作业的两个数——提交间隔，和当前 keyed state 的大小。延迟下限 ≈ 提交间隔，而全量快照的搬运量与状态同阶，所以状态涨到多大时「加节点」就不再管用、必须切磁盘型状态后端 + 增量快照？这两个数你现在答得出来吗？
 
-> 配合 [§ 2 核心原理](09-realtime-compute.md) 与 [§ 6 落地实践](09-realtime-compute-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](09-realtime-compute.md) 与 [§6 落地实践](09-realtime-compute-section-6-sec6.md) 阅读。

@@ -265,4 +265,4 @@
 >
 > 💡 **思考锚点**：把 §5.5 说法 1 的两问对着你的源清单数一遍——有几个源已经有语义层、生成的 SQL 由谁校验？如果答案是「0 个」和「还没人」，按 §5.7 那一行你此刻就该停在「不要做」；反过来问：把你挡在路线图外的，究竟是模型选型没定，还是这两个数还没补上？
 
-> 配合 [§ 2 核心原理](09-unified-query-gateway.md)、[§ 6 落地实践](09-unified-query-gateway-section-6-sec6.md) 与 [§ 7 与其他方法对比](09-unified-query-gateway-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](09-unified-query-gateway.md)、[§6 落地实践](09-unified-query-gateway-section-6-sec6.md) 与 [§7 与其他方法对比](09-unified-query-gateway-section-7-sec7.md) 阅读。

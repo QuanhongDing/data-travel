@@ -321,4 +321,4 @@ CREATE TABLE asset_usage (           -- 计量：成本归属的唯一依据
 >
 > 💡 **思考锚点**：把你们资产仓库的数拉出来：资产总数、最近一次退役是什么时候——§3.6 说【经验】千级以内还能人工盘点、万级就必须靠质量分（新鲜度 / 调用量 / 评估分）+ 自动退役，你落在哪一档？§3.5 的「无退役」是不是已经在你检索结果的前排发生了？
 >
-> 配合 [§ 2 核心原理](03-asset-management.md)、[§ 4 工程实现](03-asset-management-section-4-sec4.md) 与 [§ 6 落地实践](03-asset-management-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](03-asset-management.md)、[§4 工程实现](03-asset-management-section-4-sec4.md) 与 [§6 落地实践](03-asset-management-section-6-sec6.md) 阅读。

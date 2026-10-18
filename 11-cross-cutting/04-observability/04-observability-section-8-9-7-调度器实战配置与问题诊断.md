@@ -1,4 +1,4 @@
-> 本文件是 **04-observability.md** § 8 面试真题集的子主题。完整章节请回到 [index](04-observability.md) 或 [§ 8 索引](04-observability-section-8-sec8.md)。
+> 本文件是 **04-observability.md** §8 面试真题集的子主题。完整章节请回到 [index](04-observability.md) 或 [§8 索引](04-observability-section-8-sec8.md)。
 
 ### 8.5 §9.7 调度器实战配置与问题诊断
 

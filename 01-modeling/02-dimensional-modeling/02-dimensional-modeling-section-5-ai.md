@@ -280,4 +280,4 @@ GraphRAG 那一路还有一层额外代价值得单说：图构建本身要花�
 >
 > 💡 **思考锚点**：5.3 那张接口表里，你现在的架构能跑通几条测试——「改掉一个被度量引用的字段类型，会不会被拦下」「向量索引停更一周，谁会先发现」？答不上测试答案的行，就是你还没指定 Owner 的边界，你打算先补哪一行？
 >
-> 配合 [§ 2 核心原理](02-dimensional-modeling.md)、[§ 6 落地实践](02-dimensional-modeling-section-6-sec6.md) 与 [§ 7 与其他方法对比](02-dimensional-modeling-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](02-dimensional-modeling.md)、[§6 落地实践](02-dimensional-modeling-section-6-sec6.md) 与 [§7 与其他方法对比](02-dimensional-modeling-section-7-sec7.md) 阅读。

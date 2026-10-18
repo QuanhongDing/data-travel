@@ -254,4 +254,4 @@ AI 能省下的评语工时（【推算】；输入假设标注为【经验】�
 >
 > 💡 **思考锚点**：回到你上一次团队评估：被评为「待改进」的那个人，能不能说清自己缺的是哪一条证据——是可复核、可指认、还是带边界？说不清，说明你们评的还是人而不是证据；这条证据标准，你现在写得下来吗？
 >
-> 配合 [§ 2 核心原理](03-performance-management.md)、[§ 6 落地实践](03-performance-management-section-6-sec6.md) 与 [§ 7 与其他方法对比](03-performance-management-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](03-performance-management.md)、[§6 落地实践](03-performance-management-section-6-sec6.md) 与 [§7 与其他方法对比](03-performance-management-section-7-sec7.md) 阅读。

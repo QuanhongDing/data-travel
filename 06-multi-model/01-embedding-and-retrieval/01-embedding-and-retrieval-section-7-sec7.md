@@ -298,4 +298,4 @@
 >
 > 💡 **思考锚点**：把你的语料规模与维度代进 §7.4 那条内存推算——1 亿条 768 维约 307 GB、截到 256 维约 102 GB、PQ 压到约 9.6 GB。你需要落在哪一档？如果只能靠 PQ 或维度截断压下来，你用什么把被压掉的精度补回来（扩召回，还是 Cross-Encoder 重排）？
 >
-> 配合 [§ 2 核心原理](01-embedding-and-retrieval.md) 与 [§ 6 落地实践](01-embedding-and-retrieval-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](01-embedding-and-retrieval.md) 与 [§6 落地实践](01-embedding-and-retrieval-section-6-sec6.md) 阅读。

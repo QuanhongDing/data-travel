@@ -259,4 +259,4 @@
 >
 > 💡 **思考锚点**：挑一项你正在推的跨团队 AI 协作提法，问它降到零的是「记录与表达的成本」还是「决定与担责的成本」？若是前者，你团队过去一个月里由转录 / 摘要产出的「决定」条目，被下游实际引用了几次——引用为零的记录，按小结的口径等于不存在，你有几条？
 
-> 配合 [§ 2 核心原理](04-cross-team-collaboration.md)、[§ 6 落地实践](04-cross-team-collaboration-section-6-sec6.md) 与 [§ 7 与其他方法对比](04-cross-team-collaboration-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](04-cross-team-collaboration.md)、[§6 落地实践](04-cross-team-collaboration-section-6-sec6.md) 与 [§7 与其他方法对比](04-cross-team-collaboration-section-7-sec7.md) 阅读。

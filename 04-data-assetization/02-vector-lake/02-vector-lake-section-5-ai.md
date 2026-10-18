@@ -249,4 +249,4 @@
 >
 > 💡 **思考锚点**：按 5.2.1 的两笔账给自己算一次——先算容量账（向量数 × 维度 × 4 B 折成几 TiB，除以可用内存得到「索引大小 / 可用内存」这个比值，越过 1 才轮到介质下移），再算 IOPS 账（峰值 QPS × 每次搜索的随机读次数，是否撞上你那块卷的 IOPS 上限）。这两笔账你是不是只算了前一笔（容量账），把 IOPS 那笔留给了「多买几块盘」？
 >
-> 配合 [§ 2 核心原理](02-vector-lake.md)、[§ 6 落地实践](02-vector-lake-section-6-sec6.md) 与 [§ 7 与其他方法对比](02-vector-lake-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](02-vector-lake.md)、[§6 落地实践](02-vector-lake-section-6-sec6.md) 与 [§7 与其他方法对比](02-vector-lake-section-7-sec7.md) 阅读。

@@ -321,4 +321,4 @@
 >
 > 💡 **思考锚点**：拿你下一次要上的变更先判它落在哪一档可逆性：如果不能靠「权重设回 0」或「关掉 Feature Flag」回滚，你会先在流程里造出哪个兼容态、把那个单向门动作推到第几步——而你现有的观察窗口和阶梯，是按可逆那一档定的还是按不可逆那一档定的？
 
-> 配合 [§ 2 核心原理](09-gray-and-rollback.md)、[§ 4 工程实现](09-gray-and-rollback-section-4-sec4.md) 与 [§ 6 落地实践](09-gray-and-rollback-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](09-gray-and-rollback.md)、[§4 工程实现](09-gray-and-rollback-section-4-sec4.md) 与 [§6 落地实践](09-gray-and-rollback-section-6-sec6.md) 阅读。

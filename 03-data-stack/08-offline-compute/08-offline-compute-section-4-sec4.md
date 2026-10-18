@@ -1,4 +1,4 @@
-> 本文件是 **08-offline-compute.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](08-offline-compute-section-3-sec3.md) 里选定的模式装进一个真实的集群与一批存量作业：顺序、判据、产物与存量迁移。完整章节请回到 [index](08-offline-compute.md)。
+> 本文件是 **08-offline-compute.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](08-offline-compute-section-3-sec3.md) 里选定的模式装进一个真实的集群与一批存量作业：顺序、判据、产物与存量迁移。完整章节请回到 [index](08-offline-compute.md)。
 
 ## 4. 工程实现
 
@@ -340,4 +340,4 @@ final   = partial.groupBy("user_id").agg({"sum(amount)": "sum"})         # 全�
 >
 > 💡 **思考锚点**：打开你们最近一次全量作业的执行计划，算一下它的 shuffle 放大倍数（落盘量 ÷ 输入量）——落在 §4.9 第 2 条说的 1–3 倍【经验】之内吗？若已超出，你们的容量是按输入量还是按 Step 2 的中间结果口径规划的？
 >
-> 配合 [§ 2 核心原理](08-offline-compute.md)、[§ 3 设计模式与范式](08-offline-compute-section-3-sec3.md) 与 [§ 6 落地实践](08-offline-compute-section-6-sec6.md) 阅读。存量集群的迁移顺序以 4.4 为准；[§ 7 与其他方法对比](08-offline-compute-section-7-sec7.md) 给出引擎之间的机制差异与成本函数对比。
+> 配合 [§2 核心原理](08-offline-compute.md)、[§3 设计模式与范式](08-offline-compute-section-3-sec3.md) 与 [§6 落地实践](08-offline-compute-section-6-sec6.md) 阅读。存量集群的迁移顺序以 4.4 为准；[§7 与其他方法对比](08-offline-compute-section-7-sec7.md) 给出引擎之间的机制差异与成本函数对比。

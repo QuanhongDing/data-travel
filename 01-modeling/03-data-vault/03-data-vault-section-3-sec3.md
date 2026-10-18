@@ -309,4 +309,4 @@ CREATE TABLE sat_customer_risk_score (
 
 > 💡 **思考锚点**：把你手上那张对外服务的主模型表，套进 §3.3 决策表的第一行量一次——过去一年它实际吞下了几个新源、几次加字段？如果这个数接近零，你为 Hub / Link / Satellite 付的每次查询多表拼接代价，换回来的可演化性是不是一直没被触发过？
 
-> 配合 [§ 2 核心原理](03-data-vault.md)、[§ 4 工程实现](03-data-vault-section-4-sec4.md) 与 [§ 6 落地实践](03-data-vault-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](03-data-vault.md)、[§4 工程实现](03-data-vault-section-4-sec4.md) 与 [§6 落地实践](03-data-vault-section-6-sec6.md) 阅读。

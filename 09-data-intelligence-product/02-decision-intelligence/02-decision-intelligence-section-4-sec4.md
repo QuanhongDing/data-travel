@@ -1,8 +1,8 @@
-> 本文件是 **02-decision-intelligence.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](02-decision-intelligence-section-3-sec3.md) 里的八个模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](02-decision-intelligence.md)。
+> 本文件是 **02-decision-intelligence.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](02-decision-intelligence-section-3-sec3.md) 里的八个模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](02-decision-intelligence.md)。
 
 ## 4. 工程实现
 
-[§ 3](02-decision-intelligence-section-3-sec3.md) 已经回答了「在你这组约束下该选哪个决策模式、该预留多厚的护栏」，本节不复述那八个模式，只回答三个工程问题：**按什么顺序装、每一步手上该多出什么可被检查的东西、已经散落在生产代码里的规则与模型怎么改造。**
+[§3](02-decision-intelligence-section-3-sec3.md) 已经回答了「在你这组约束下该选哪个决策模式、该预留多厚的护栏」，本节不复述那八个模式，只回答三个工程问题：**按什么顺序装、每一步手上该多出什么可被检查的东西、已经散落在生产代码里的规则与模型怎么改造。**
 
 分两类读者。**从零搭建**（要为一个新业务建决策系统，或第一次把人工决策自动化）读 §4.1 的七步顺序与判据、§4.2 九项技术点的机制与失效条件、§4.3 的选型判据、§4.5 的可套用模板即可，§4.4 可以后读。**在存量上改造**（规则散在代码与 Excel 里、模型上过线、决策日志当时没建）的读者顺序相反：先读 §4.4，再回到 §4.1——因为你的第一步不是「识别决策场景」（业务方不会为一次清点腾出时间），而是**先做一件只读、可回退、不改任何决策逻辑的事：把决策留痕旁路接上去**。没有留痕，后面所有讨论都会退化成对记忆的争论。
 
@@ -392,4 +392,4 @@ for name, contrib in sorted(zip(FEATURES, sv.values[0]), key=lambda t: -abs(t[1]
 >
 > 💡 **思考锚点**：打开你最近一次影子比对的落库结果，差异里「无法判定」占多少，比上一个观察周期是升还是降？本节把「改动即补账 + 影子比对落库」列为存量收敛的两条——若「无法判定」在涨，你分得清是补账没跟上，还是判据（§4.1 的 5 分钟 / 10 分钟那类）写得太粗吗？
 >
-> 配合 [§ 2 核心原理](02-decision-intelligence.md)、[§ 3 设计模式与范式](02-decision-intelligence-section-3-sec3.md) 与 [§ 6 落地实践](02-decision-intelligence-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](02-decision-intelligence.md)、[§3 设计模式与范式](02-decision-intelligence-section-3-sec3.md) 与 [§6 落地实践](02-decision-intelligence-section-6-sec6.md) 阅读。

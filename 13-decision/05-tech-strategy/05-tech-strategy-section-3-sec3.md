@@ -354,4 +354,4 @@ O（Objective，定性、少而稳）：例如「让数据可被自助取用」
 
 > 💡 **思考锚点**：按 Three Horizons 把你手上正在推的投入分一下：哪些的回报周期长于你的考核周期？这些 H3 项现在是和 H1 共用同一套季度验收，还是已经有独立的预算与验收口径——没有的话，它们会在哪一季度被「优先级」挤掉？
 
-> 配合 [§ 2 核心原理](05-tech-strategy.md)、[§ 4 工程实现](05-tech-strategy-section-4-sec4.md) 与 [§ 6 落地实践](05-tech-strategy-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](05-tech-strategy.md)、[§4 工程实现](05-tech-strategy-section-4-sec4.md) 与 [§6 落地实践](05-tech-strategy-section-6-sec6.md) 阅读。

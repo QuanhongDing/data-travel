@@ -356,4 +356,4 @@ AI 链路把"一致性"拆成三个不同的问题（对齐 §5.2 的编号）
 >
 > 💡 **思考锚点**：拿你系统里冲突最贵的那条跨服务写路径，按 §3.6 报两个可观测量——热点行的并发请求数 ÷ 该行可用并发度、事务参与者数量的长尾落在哪一段？前者接近 1 说明持锁式必须换，后者若集中在长尾会把你推向 Saga；这两个数你现在读得出来吗，还是得先补观测？
 >
-> 配合 [§ 2 核心原理](08-data-consistency.md)、[§ 4 工程实现](08-data-consistency-section-4-sec4.md) 与 [§ 6 落地实践](08-data-consistency-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](08-data-consistency.md)、[§4 工程实现](08-data-consistency-section-4-sec4.md) 与 [§6 落地实践](08-data-consistency-section-6-sec6.md) 阅读。

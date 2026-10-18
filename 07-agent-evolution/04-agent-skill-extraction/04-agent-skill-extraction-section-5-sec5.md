@@ -280,4 +280,4 @@
 >
 > 💡 **思考锚点**：你现在的技能库，报出来的是「总数」还是 §5.7 那条「去重后有效数」？如果只有总数，试着把每条按「最后验证时间」过一遍、把超期的扣掉——剩下多少条还能算可依赖资产？扣完若所剩无几，你下一步是补退役通道，还是像 §3.5 说的那样去加检索 top-k？
 
-> 配合 [§ 2 核心原理](04-agent-skill-extraction.md)、[§ 6 落地实践](04-agent-skill-extraction-section-6-sec6.md) 与 [§ 7 与其他方法对比](04-agent-skill-extraction-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](04-agent-skill-extraction.md)、[§6 落地实践](04-agent-skill-extraction-section-6-sec6.md) 与 [§7 与其他方法对比](04-agent-skill-extraction-section-7-sec7.md) 阅读。

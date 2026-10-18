@@ -1,4 +1,4 @@
-> 本文件是 **04-cross-team-collaboration.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](04-cross-team-collaboration-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](04-cross-team-collaboration.md)。
+> 本文件是 **04-cross-team-collaboration.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](04-cross-team-collaboration-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](04-cross-team-collaboration.md)。
 
 ## 4. 工程实现
 
@@ -374,4 +374,4 @@ CROSS_TEAM_TRANSLATION_PROMPT = """
 >
 > 💡 **思考锚点**：翻你最近三次跨团队争议的决议记录，看它们是清单上那个具名 A 拍板的，还是某位上级临时出现的——如果三次里有两次是后者，那你的 RACI 即便每项恰好 1 个 A、R ≤ 5、C ≤ 10 全都合规，这张表是责任表还是背锅表？
 >
-> 配合 [§ 2 核心原理](04-cross-team-collaboration.md)、[§ 3 设计模式与范式](04-cross-team-collaboration-section-3-sec3.md) 与 [§ 6 落地实践](04-cross-team-collaboration-section-6-sec6.md) 阅读。存量改造的落地顺序以 4.4 为准；AI 相关能力的成熟度判断与使用边界见 [§ 5 前沿演进](04-cross-team-collaboration-section-5-ai.md)。
+> 配合 [§2 核心原理](04-cross-team-collaboration.md)、[§3 设计模式与范式](04-cross-team-collaboration-section-3-sec3.md) 与 [§6 落地实践](04-cross-team-collaboration-section-6-sec6.md) 阅读。存量改造的落地顺序以 4.4 为准；AI 相关能力的成熟度判断与使用边界见 [§5 前沿演进](04-cross-team-collaboration-section-5-ai.md)。

@@ -298,4 +298,4 @@
 >
 > 💡 **思考锚点**：把你现状最痛的那条查询代回 7.4 的五项成本函数——它慢在 f（维表冗余）还是 g（JOIN 层数 × 扫描量）？按 7.5 的 Q3，抽最近 100 条查询数其中进入二级以上层次的有没有超过半数；若判定为「高频」，而你这张星型换成 DV 后表数要从 13 张涨到 36–54 张、连接链路多出 3–4 倍，这笔账你现在付得起吗？
 
-> 配合 [§ 2 核心原理](02-dimensional-modeling.md) 与 [§ 6 落地实践](02-dimensional-modeling-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](02-dimensional-modeling.md) 与 [§6 落地实践](02-dimensional-modeling-section-6-sec6.md) 阅读。

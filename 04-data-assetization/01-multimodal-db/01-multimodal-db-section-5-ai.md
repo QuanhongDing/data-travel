@@ -270,4 +270,4 @@
 >
 > 💡 **思考锚点**：把你们最主要的一条直读路径代进 5.7 的两条成本口径——检索按查询次数估、直读按「输入体量 × 调用次数」估。你的直读候选上限（Top-K）定在几？成本是随查询次数涨还是随输入体量涨？按这个斜率，哪一条会先撞上你给的原件 SLA？
 >
-> 配合 [§ 2 核心原理](01-multimodal-db.md)、[§ 6 落地实践](01-multimodal-db-section-6-sec6.md) 与 [§ 7 与其他方法对比](01-multimodal-db-section-7-sec7.md) 阅读。
+> 配合 [§2 核心原理](01-multimodal-db.md)、[§6 落地实践](01-multimodal-db-section-6-sec6.md) 与 [§7 与其他方法对比](01-multimodal-db-section-7-sec7.md) 阅读。

@@ -47,15 +47,15 @@
 
 ---
 
-## § 8 子主题导航
+## §8 子主题导航
 
-本章 § 8 面试真题集按子主题拆分为以下独立文件（每文件 200-800 行）：
+本章 §8 面试真题集按子主题拆分为以下独立文件（每文件 200-800 行）：
 
-- [§ 8.2 §1.1 集群安全与权限管理](02-data-security-section-8-1-1-集群安全与权限管理.md)
-- [§ 8.3 §5.1 Kerberos 认证基础](02-data-security-section-8-5-1-kerberos-认证基础.md)
-- [§ 8.4 §5.2 Ranger / Sentry 权限管理基础](02-data-security-section-8-5-2-ranger-sentry-权限管理基础.md)
-- [§ 8.5 §5.3 Kerberos 与 Ranger / Sentry 集成实践](02-data-security-section-8-5-3-kerberos-与-ranger-sentry-集成实践.md)
-- [§ 8.6 §5.4 Ranger 与 Sentry 对比与选型](02-data-security-section-8-5-4-ranger-与-sentry-对比与选型.md)
+- [§8.2 §1.1 集群安全与权限管理](02-data-security-section-8-1-1-集群安全与权限管理.md)
+- [§8.3 §5.1 Kerberos 认证基础](02-data-security-section-8-5-1-kerberos-认证基础.md)
+- [§8.4 §5.2 Ranger / Sentry 权限管理基础](02-data-security-section-8-5-2-ranger-sentry-权限管理基础.md)
+- [§8.5 §5.3 Kerberos 与 Ranger / Sentry 集成实践](02-data-security-section-8-5-3-kerberos-与-ranger-sentry-集成实践.md)
+- [§8.6 §5.4 Ranger 与 Sentry 对比与选型](02-data-security-section-8-5-4-ranger-与-sentry-对比与选型.md)
 
 ---
 

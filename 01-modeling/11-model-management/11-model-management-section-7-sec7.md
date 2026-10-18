@@ -44,13 +44,13 @@
 
 **族二：模型管理的实现路线**
 
-| 路线 | 定位 | 核心机制（一句话） | 代表工具（[§ 4 工程实现](11-model-management-section-4-sec4.md) 的 §4.3） | 许可 / 商业模式 |
+| 路线 | 定位 | 核心机制（一句话） | 代表工具（[§4 工程实现](11-model-management-section-4-sec4.md) 的 §4.3） | 许可 / 商业模式 |
 | --- | --- | --- | --- | --- |
 | 轻量版：Git + 文档 | 单团队、模型数少 | 命名规范与模型清单入 Git，判定靠 PR 评论 | Git / GitHub、Markdown | 开源 / 免费 |
 | 集中式建模 | 变更少、要求全局一致的建模 | 中央团队持有写入权，会议式评审 | PowerDesigner、ER/Studio、IBM InfoSphere | 商业 |
 | 联邦式 + GitOps | 域各自持有写入权 | 可执行规范 + CI 校验 + PR 流程 | dbt、SQLMesh、Coalesce、GitHub PR | 开源 + 托管 |
 | 目录化（Catalog-First） | 以登记为发布前置 | 强制登记项（分层 / 域 / 粒度 / Owner / 上游），缺项不能发布 | DataHub、OpenMetadata、Unity Catalog、Apache Atlas、阿里 DataWorks | 开源 / 商业 |
-| 语义层（本体建模） | 面向机器推理的模型层 | 把实体与关系写成可被图查询与向量检索消费的语义制品 | 本体 / 知识图谱 + GraphRAG 一类组合（[§ 5 前沿演进](11-model-management-section-5-ai.md) 的 §5.2.4） | 开源 / 商业 |
+| 语义层（本体建模） | 面向机器推理的模型层 | 把实体与关系写成可被图查询与向量检索消费的语义制品 | 本体 / 知识图谱 + GraphRAG 一类组合（[§5 前沿演进](11-model-management-section-5-ai.md) 的 §5.2.4） | 开源 / 商业 |
 | AI 增强 | 判定的建议层 | LLM 读 DDL 做规范与口径检查，Agent 基于血缘推演影响 | Cursor + dbt、Databricks Assistant、AI Code Review | 商业 / 订阅 |
 | 数据契约 | 跨团队接口 | 把字段的语义、SLA、PII、Owner 写成机器可读契约 | Bitol、Data Contract Specification | 开源规范 |
 
@@ -289,4 +289,4 @@
 >
 > 💡 **思考锚点**：拿最近 10 条模型变更做一次抽查——能答出依据的比例，对照 7.8 表里的哪一行；再按迁移表估你的联邦式改造落在「3–5 人小组 2–5 人月」还是「集中式 → 联邦式 6–12 人月」，你会先外部化判据还是先收敛部署路径？
 
-> 配合 [§ 2 核心原理](11-model-management.md) 与 [§ 6 落地实践](11-model-management-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](11-model-management.md) 与 [§6 落地实践](11-model-management-section-6-sec6.md) 阅读。

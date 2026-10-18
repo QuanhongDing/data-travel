@@ -310,4 +310,4 @@
 >
 > 💡 **思考锚点**：把 §7.3 的两条判定方法在你团队上各跑一次——把所有承担辅导角色的人每周显性辅导时长加起来，占团队总工时够 5% 吗（不到，就说明辅导其实没有预算，任何机制选择都是空谈）？再抽 10 条最近给过的反馈，把「行为发生日」到「反馈送达日」的间隔取中位数，超过 7 天了吗？这两问里哪一个先不达标，它指向的是辅导预算，还是反馈节奏？
 
-> 配合 [§ 2 核心原理](07-mentorship.md) 与 [§ 6 落地实践](07-mentorship-section-6-sec6.md) 阅读：§ 2 给 1:1 / OJT / IDP / GROW / SBI / Sponsor 的机制定义，§ 6 给 Microsoft、阿里师兄制、Google Project Oxygen、OJT+IDP 四个案例的落地路径。
+> 配合 [§2 核心原理](07-mentorship.md) 与 [§6 落地实践](07-mentorship-section-6-sec6.md) 阅读：§2 给 1:1 / OJT / IDP / GROW / SBI / Sponsor 的机制定义，§6 给 Microsoft、阿里师兄制、Google Project Oxygen、OJT+IDP 四个案例的落地路径。

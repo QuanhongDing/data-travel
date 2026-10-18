@@ -389,7 +389,7 @@
 - **Iceberg 的核心优势**：① **ACID 事务**——基于 snapshot id 的一致性保证，原子提交；② **Schema 演进**——`add column` / `rename` / `drop column` 不阻塞读写；③ **Time Travel**——按 snapshot id 或时间戳查询历史版本；④ **隐藏分区**——分区不是物理目录，而是计算出来的，查询时自动剪枝；⑤ **统计信息**——元数据自带行数、文件数、min/max，可下推优化。
 - **vs Hudi 的取舍**：Hudi 强在增量写入（Copy-on-Write / Merge-on-Read），适合 CDC 场景；Iceberg 强在查询优化（hidden partition + statistics），适合分析场景。字节推荐场景**查询密集 + 写入相对少**，Iceberg 更合适。
 - **vs Delta Lake 的取舍**：Delta Lake 强在 Spark 生态（Databricks 原生支持），但弱在多引擎兼容（Flink 支持 Iceberg 比 Delta 更成熟）。字节同时用 Spark + Flink，Iceberg 的多引擎兼容性更好。
-- **业界对比**：Netflix 公开过其 Iceberg 实践——**万亿行级的 Iceberg 表**（此处指的是表的行数量级，不是每日事件量；日事件量的口径见 [Netflix 案例 § 7.4](../../15-case-studies/05-netflix-data-stack/05-netflix-data-stack-section-7-sec7.md)），Spark / Flink / Presto 多引擎查询；Apple 公开过其 Iceberg 在 Apple Music / iCloud 的应用；LinkedIn 公开过 Iceberg 在数据仓库的应用。Uber 是 Hudi 的主要贡献者，强在增量处理。
+- **业界对比**：Netflix 公开过其 Iceberg 实践——**万亿行级的 Iceberg 表**（此处指的是表的行数量级，不是每日事件量；日事件量的口径见 [Netflix 案例 §7.4](../../15-case-studies/05-netflix-data-stack/05-netflix-data-stack-section-7-sec7.md)），Spark / Flink / Presto 多引擎查询；Apple 公开过其 Iceberg 在 Apple Music / iCloud 的应用；LinkedIn 公开过 Iceberg 在数据仓库的应用。Uber 是 Hudi 的主要贡献者，强在增量处理。
 
 **第三层：流批一体的工程实现。** 字节 Lakehouse 的核心创新是**流批共用一份存储**：
 

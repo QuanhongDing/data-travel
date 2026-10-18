@@ -352,4 +352,4 @@ LIMIT  20;
 
 > 💡 **思考锚点**：拿 §3.6 那条贯穿约束对账你的存量——「问题集 + 切分版本 + 嵌入模型版本 + 检索参数」现在是一组统一版本号，还是四个各走各的？回忆你最近一次换嵌入模型时，那批旧阈值、旧 K、旧融合参数里，有几个是在没做新旧双跑的情况下继续服役的？
 
-> 配合 [§ 2 核心原理](05-rag-architecture.md)、[§ 4 工程实现](05-rag-architecture-section-4-sec4.md) 与 [§ 6 落地实践](05-rag-architecture-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](05-rag-architecture.md)、[§4 工程实现](05-rag-architecture-section-4-sec4.md) 与 [§6 落地实践](05-rag-architecture-section-6-sec6.md) 阅读。

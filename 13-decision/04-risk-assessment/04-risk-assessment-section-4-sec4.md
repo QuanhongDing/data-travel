@@ -1,4 +1,4 @@
-> 本文件是 **04-risk-assessment.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](04-risk-assessment-section-3-sec3.md) 里的方法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](04-risk-assessment.md)。
+> 本文件是 **04-risk-assessment.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§3](04-risk-assessment-section-3-sec3.md) 里的方法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](04-risk-assessment.md)。
 
 ## 4. 工程实现
 
@@ -369,4 +369,4 @@ def identify_risks(system_description: str, prior_risks: list[str]) -> str:
 >
 > 💡 **思考锚点**：翻你登记册里最近关闭的 5 条风险，看「关闭」这个动作是谁点的——提交人自己就能推到 closed，还是有一个非提交人核过它的验证方式里「有没有一个可重放的动作」？§4.2 说少了后一步的点检，条目会以形式闭环一路关到底；再照 §4.4 把「已完成」的旧条目也过一遍——那些当初没写验证方式的，你打算按「未验证」重新打开吗？
 
-> 配合 [§ 2 核心原理](04-risk-assessment.md)、[§ 3 设计模式与范式](04-risk-assessment-section-3-sec3.md) 与 [§ 6 落地实践](04-risk-assessment-section-6-sec6.md) 阅读。
+> 配合 [§2 核心原理](04-risk-assessment.md)、[§3 设计模式与范式](04-risk-assessment-section-3-sec3.md) 与 [§6 落地实践](04-risk-assessment-section-6-sec6.md) 阅读。
