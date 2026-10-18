@@ -329,4 +329,4 @@ models:
 >
 > 💡 **思考锚点**：从你写进周报或客户合同的数字里抽 3 个，按 Step 1 从报表一路点回来源——几个能停在**唯一一处**、几个停在"某个人的手算"？停不下来的那些若"错了会损失信任"，按 §4.1 的排序它们就该排在"只影响内部探索"的数字之前。Step 1 便宜到一周内做完，你现在是打算先立实时专项，还是先补这一页《数字—消费方—当前来源—错的代价》？
 
-> 配合 [§ 2 核心原理](08-startup-evolution.md)、[§ 3 架构演进](08-startup-evolution-section-3-sec3.md) 与 [§ 6 落地实践](08-startup-evolution-section-6-sec6.md) 阅读。
+> 配合 [§ 2 挑战](08-startup-evolution.md)、[§ 3 架构演进](08-startup-evolution-section-3-sec3.md) 与 [§ 6 落地实践](08-startup-evolution-section-6-sec6.md) 阅读。

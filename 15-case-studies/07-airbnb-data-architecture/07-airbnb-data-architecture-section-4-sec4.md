@@ -387,4 +387,4 @@ Airbnb 这套栈里最贵的是**「一致性」本身的人力**，不是算力
 >
 > 💡 **思考锚点**：数一下你组织里被引用最广的那个口径，每周被几个团队引用——个位数时中心语义层摊不薄；再改一次它的口径，看下游引用处是不做人工通知也自动同步，还是要有人挨个去改报表。如果答案是后者，你现在缺的是「可被引用的定义对象」本身，还是五要素里的某一项？
 >
-> 配合 [§ 2 核心原理](07-airbnb-data-architecture.md)、[§ 3 架构演进](07-airbnb-data-architecture-section-3-sec3.md)、[§ 5 踩坑与教训](07-airbnb-data-architecture-section-5-sec5.md) 与 [§ 6 落地实践](07-airbnb-data-architecture-section-6-sec6.md) 阅读。
+> 配合 [§ 2 挑战](07-airbnb-data-architecture.md)、[§ 3 架构演进](07-airbnb-data-architecture-section-3-sec3.md)、[§ 5 踩坑与教训](07-airbnb-data-architecture-section-5-sec5.md) 与 [§ 6 落地实践](07-airbnb-data-architecture-section-6-sec6.md) 阅读。

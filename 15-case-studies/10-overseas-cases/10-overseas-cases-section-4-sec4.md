@@ -326,4 +326,4 @@ SELECT * FROM new.fact_order WHERE order_id IN (:sample);
 >
 > 💡 **思考锚点**：按 §4.4 把迁移成本拆三块，第三块——对账与口径回归的人力——的下限是「三级对账每月占用的人天 × 预计双轨月数」。把它算进你手上那份迁移预算后再问一句：你的双轨退出是按日历定的，还是按对账报表与依赖图定的？如果至今拿不出一张「每条差异都被判过可解释或必须解决」的差异清单，你又凭什么知道到点可以切？
 >
-> 配合 [§ 2 核心原理](10-overseas-cases.md)、[§ 3 架构演进（分案例）](10-overseas-cases-section-3-sec3.md) 与 [§ 6 落地实践](10-overseas-cases-section-6-sec6.md) 阅读。
+> 配合 [§ 2 挑战](10-overseas-cases.md)、[§ 3 架构演进（分案例）](10-overseas-cases-section-3-sec3.md) 与 [§ 6 落地实践](10-overseas-cases-section-6-sec6.md) 阅读。

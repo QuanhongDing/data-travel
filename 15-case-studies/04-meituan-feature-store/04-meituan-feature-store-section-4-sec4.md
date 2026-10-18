@@ -298,4 +298,4 @@ JOIN   feature_snapshot f
 >
 > 💡 **思考锚点**：按 4.9 抽你平台上的 3 个特征，问「这个语义一共有几个实现」「注册中心查不到、但线上在跑的有几条」——若注册中心不是唯一权威定义，补登记的成本会随特征数线性增长；再抽 3 条上次回填的样本，把特征值还原到事件发生的那个时间点，核不上（用到了事件之后才算出的值）的比例是多少，这批样本你敢照用吗？
 
-> 配合 [§ 2 核心原理](04-meituan-feature-store.md)、[§ 3 架构演进](04-meituan-feature-store-section-3-sec3.md) 与 [§ 6 落地实践](04-meituan-feature-store-section-6-sec6.md) 阅读。
+> 配合 [§ 2 挑战](04-meituan-feature-store.md)、[§ 3 架构演进](04-meituan-feature-store-section-3-sec3.md) 与 [§ 6 落地实践](04-meituan-feature-store-section-6-sec6.md) 阅读。

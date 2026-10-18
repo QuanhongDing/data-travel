@@ -318,4 +318,4 @@ Airbnb 的约束可以概括成三句。第一，**它的核心数字是组织�
 >
 > 💡 **思考锚点**：把 7.6 的四个前兆当监控项贴到你自己的平台上，看现在亮着哪一个：新指标上线时间已经长于它被使用的速度（中心语义层过载）、同一个数字在两个团队看板上开始对不上（自治失守）、还是平台上线后查询量没增长、取数仍走人工（自助入口没接住）？先亮的那一个，才决定你该学 Airbnb 的哪一部分、以及哪一部分不能照搬（7.7）。
 
-> 配合 [§ 2 核心原理](07-airbnb-data-architecture.md) 与 [§ 6 落地实践](07-airbnb-data-architecture-section-6-sec6.md) 阅读。
+> 配合 [§ 2 挑战](07-airbnb-data-architecture.md) 与 [§ 6 落地实践](07-airbnb-data-architecture-section-6-sec6.md) 阅读。

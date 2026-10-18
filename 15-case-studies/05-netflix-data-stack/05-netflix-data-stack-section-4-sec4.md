@@ -319,4 +319,4 @@ tasks:
 >
 > 💡 **思考锚点**：挑一张你现在被多个下游引用的核心表，问它两个数：Owner 字段里是人名还是团队名？加一列要重写多少数据——答案是不是「零」？如果 Owner 是团队名、加列还要重写，Step 1「表状态的权威放在哪」你算落定了吗？
 
-> 配合 [§ 2 核心原理](05-netflix-data-stack.md)、[§ 3 架构演进](05-netflix-data-stack-section-3-sec3.md) 与 [§ 6 落地实践](05-netflix-data-stack-section-6-sec6.md) 阅读。
+> 配合 [§ 2 挑战](05-netflix-data-stack.md)、[§ 3 架构演进](05-netflix-data-stack-section-3-sec3.md) 与 [§ 6 落地实践](05-netflix-data-stack-section-6-sec6.md) 阅读。
