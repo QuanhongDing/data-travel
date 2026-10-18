@@ -258,7 +258,7 @@ Source → Cleaning → TrainingData → Checkpoint → Adapter → Deployment
 
 - [§3. 设计模式与范式](01-ai-data-governance-section-3-sec3.md)
 - [§4. 工程实现](01-ai-data-governance-section-4-sec4.md)
-- [§5. 前沿演进](01-ai-data-governance-section-5-sec5.md)
+- [§5. 前沿演进（AI 时代）](01-ai-data-governance-section-5-sec5.md)
 - [§6. 落地实践](01-ai-data-governance-section-6-sec6.md)
 - [§7. 与其他方法对比](01-ai-data-governance-section-7-sec7.md)
 - [§8. 面试真题集](01-ai-data-governance-section-8-sec8.md)
