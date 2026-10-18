@@ -1,4 +1,4 @@
-> 本文件是 **01-alibaba-data-middle-platform.md** 的子文件（§6. 落地实践），与主文件 [§ 2 核心原理](01-alibaba-data-middle-platform.md) 配套阅读。本节按「**背景 → 触发点 → 详细做法 → 具体数字 → 失败教训**」5 段结构组织 4 个深度阿里巴巴数据中台案例。
+> 本文件是 **01-alibaba-data-middle-platform.md** 的子文件（§6. 落地实践），与主文件 [01-alibaba-data-middle-platform.md](01-alibaba-data-middle-platform.md) 配套阅读。本节按「**背景 → 触发点 → 详细做法 → 具体数字 → 失败教训**」5 段结构组织 4 个深度阿里巴巴数据中台案例。
 >
 > 说明：本节聚焦「**数据中台在阿里内部与外部的落地形态**」；中台作为组织形态的编制与职责划分见 [14-leadership/11-team-topology](../../14-leadership/11-team-topology/11-team-topology-section-6-sec6.md)。
 
@@ -449,4 +449,4 @@
 > - 99% 的失败来自「**统一系统而非规范 + 规范靠自觉 + 只统一数据不同构业务规则 + 全局一刀切**」——必须有 **规范先行 + 平台强制 + 同构 + 分级**。
 > - 真正的 ROI 来自「**数仓 -80% + 一致性 60%→95% + 跨业务可比较 + 接入大幅加快**」——是**数据能否成为组织级资产的分水岭**。
 
-> 配合 [§ 2 核心原理](01-alibaba-data-middle-platform.md) 阅读：§ 2 给阿里数据中台原理（OneData / OneID / OneService / 平台化 / 规模化），§ 6（本文件）给真实落地。
+> 配合 [§ 3 挑战](01-alibaba-data-middle-platform-section-3-sec3.md) 阅读：§ 3 给阿里数据中台面临的约束与应对结构（OneData / OneID / OneService / 平台化 / 规模化都在这条约束链上），§ 6（本文件）给真实落地。

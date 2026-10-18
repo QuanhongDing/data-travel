@@ -310,4 +310,4 @@ lineage_checked: true      # 变更前已列出全部引用方
 
 > 本节小结：整个落地过程里唯一那个决定成败的环节，是 **Step 2（统一实体）**。它排在第二、投入最大、且成果在业务侧看不见——正因为它最像"不产出功能的工作"，它最常被跳过，而它一旦被跳过，Step 3 之后的每一个指标体系都建在两套实体上，返工面等于全部跨 BU 指标与它们的历史。**因为实体合并是不可逆的、且错误不会报错只会让数字轻微偏移，所以它必须早于指标统一；代价是它周期长、见效慢，需要有人在看不到成果的两年里持续投入（案例材料给出的贯通顺序是用户 2017 → 商品 2018 → 订单 2019，贯通周期在两年量级【经验：区间约 2–3 年，随要贯通的实体条数与标识质量变；量级由案例材料给出的年份顺序（用户 2017 → 商品 2018 → 订单 2019）相减得出，年份本身按量级使用】）。** 这也解释了本案例里一个反复出现的规律：真正难的从来不是把数据放在一起，而是先决定"什么是同一个东西"。
 >
-> 配合 [§ 2 核心原理](01-alibaba-data-middle-platform.md)、[§ 3 挑战](01-alibaba-data-middle-platform-section-3-sec3.md)、[§ 5 关键决策](01-alibaba-data-middle-platform-section-5-sec5.md) 与 [§ 6 落地实践](01-alibaba-data-middle-platform-section-6-sec6.md) 阅读。
+> 配合 [§ 3 挑战](01-alibaba-data-middle-platform-section-3-sec3.md)、[§ 5 关键决策](01-alibaba-data-middle-platform-section-5-sec5.md) 与 [§ 6 落地实践](01-alibaba-data-middle-platform-section-6-sec6.md) 阅读。
