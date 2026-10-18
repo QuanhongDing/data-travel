@@ -145,17 +145,29 @@ allow {
   input.asset.classification != "restricted"
 }
 
-# 跨域访问：必须命中已登记的数据产品契约，且用途在授权范围内
+# 跨域访问：必须命中已登记的数据产品契约、用途在授权范围内，且非受限密级
 allow {
+  input.user.domain != input.asset.owner_domain
   input.asset.contract_id
   input.purpose in input.asset.allowed_purposes
   input.user.roles[_] == "data_consumer"
+  input.asset.classification != "restricted"
 }
 
 # 受限密级：无论域内域外，一律要求显式且有效的授权
-deny_reason["restricted_requires_grant"] {
+allow {
+  input.user.domain == input.asset.owner_domain
   input.asset.classification == "restricted"
-  not input.grant.active
+  input.grant.active
+}
+
+allow {
+  input.user.domain != input.asset.owner_domain
+  input.asset.contract_id
+  input.purpose in input.asset.allowed_purposes
+  input.user.roles[_] == "data_consumer"
+  input.asset.classification == "restricted"
+  input.grant.active
 }
 ```
 

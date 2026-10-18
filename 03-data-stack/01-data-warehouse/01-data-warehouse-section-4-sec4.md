@@ -119,7 +119,7 @@ FROM ods_user WHERE dt = '${biz_date}';
 -- Iceberg / Hudi / Delta Lake 通用形态
 MERGE INTO dwd_order_detail tgt
 USING (SELECT * FROM ods_order WHERE dt = '${biz_date}') src
-ON tgt.order_id = src.order_id
+ON tgt.order_id = src.order_id AND tgt.sku_id = src.sku_id
 WHEN MATCHED THEN UPDATE SET *
 WHEN NOT MATCHED THEN INSERT *;
 ```
@@ -139,7 +139,7 @@ context = gx.get_context()
 batch = context.get_batch({"datasource_name": "iceberg", "table_name": "dwd_order_detail"})
 
 batch.expect_column_values_to_not_be_null("order_id")
-batch.expect_column_values_to_be_unique("order_id")          # 粒度声明的一致性校验
+batch.expect_compound_columns_to_be_unique(["order_id", "sku_id"])  # 粒度声明的一致性校验
 batch.expect_column_values_to_be_between("amount", 0, 1000000)
 batch.expect_column_values_to_be_in_set("order_status", ["PAID", "REFUND", "CANCEL"])
 

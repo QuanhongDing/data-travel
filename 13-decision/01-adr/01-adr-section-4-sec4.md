@@ -53,11 +53,11 @@ docs/
 
 **Step 4：定义生命周期（1 周【经验】，随是否需要 supersede 检测而变）**
 
-1. Status 四态：`Proposed → Accepted → Deprecated / Superseded by ADR-XXXX`（取值同主文件 [§2.1](01-adr.md)）。
+1. Status 五态：`Proposed / Accepted / Rejected / Deprecated / Superseded by ADR-XXXX`（取值同主文件 [§2.1](01-adr.md)）。
 2. 每条写 Date、Deciders、Reviewers；`Superseded by` 必须双向写（新记录写它取代了谁，旧记录写它被谁取代）。
 3. 引入 **Supersede 检测**：每条新 ADR 提交时扫描库内相关内容，列出可能被取代的条目。
 
-- **产物**：一张状态机图（4 个状态 + 迁移条件）写进 README；一条「Decision Owner 必须落在有权拍板的人身上」的约定。
+- **产物**：一张状态机图（5 个状态 + 迁移条件）写进 README；一条「Decision Owner 必须落在有权拍板的人身上」的约定。
 - **判据**：随机抽 10 条 Accepted，看它们描述的方案是否仍是当前实现——对不上的条数就是状态链的断口数（与 §3.7 同一动作）。
 - **为什么排在评审之前**：状态是 PR 评审的退出条件。状态机没定义时，评审只能产出「通过 / 不通过」这种没有落点的结果，会后没人需要改任何字段；定义了状态机，评审才有一个必须写下的产物。
 

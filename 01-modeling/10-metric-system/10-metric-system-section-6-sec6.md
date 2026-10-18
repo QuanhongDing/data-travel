@@ -26,7 +26,7 @@
 阿里 OneMetric 的**5 大核心组件**：
 
 1. **OSCAR 五要素拆解（核心创新）**
-   - 关键设计：**指标 = Object（业务对象）+ Modifier（业务修饰）+ Process（业务过程）+ Period（统计周期）+ Raw（原子指标）**，即本章统一采用的 O/S/C/A/R 五要素（主文件 §1.4、§2.2.1）
+   - 关键设计：**指标 = Object（业务对象）+ Modifier（业务修饰）+ Process（业务过程）+ Period（统计周期）+ Raw（原子指标）**，即本章统一采用的 O/S/C/A/R 五要素（主文件 §1.4、§2.2.1）——**属阿里 OneData 一系**，与 Ch4 指标平台中阿里 OneMetric 的**同名 OSCAR**（O=Owner / S=Statistic / C=Caliber / A=Attribute / R=Reference）**同名不同物**，字母展开不可互换
    - 关键能力：**指标可机器校验**——缺要素直接拒绝入库
    - 关键数字：**指标数量 30 万 → 10 万（-67%）**
    - 五要素示例：
@@ -197,7 +197,7 @@
    - 关键数字：**指标统一 60% → 95%**
    - 命名规范示意：
      ```
-     <domain>_<object>_<calc>_<restriction>_<granularity>
+     <domain>_<object>_<restriction>_<calc>_<granularity>
      waimai_merchant_active_cnt_1d     外卖活跃商家数
      hotel_merchant_active_cnt_1d      酒店活跃商家数
      → 同一 object/calc/restriction，仅 domain 不同 → 可比

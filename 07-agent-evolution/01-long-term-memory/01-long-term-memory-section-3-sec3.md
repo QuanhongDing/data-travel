@@ -137,7 +137,7 @@ CREATE UNIQUE INDEX ON memory_fact (user_id, subject, predicate)
 (:User {id}) -[:ASKED     {ts, intent}]-> (:Topic {name})
 
 多跳查询（向量检索表达不了的那一类）：
-  MATCH (me:User {id:$u})-[:WORKS_ON]->(p:Project)<-[:WORKS_ON]-(peer:User)
+  MATCH (me:User {id:$u})-[:WORKS_ON]->(p:Project)<-[:WORKS_ON]-(peer:User),
         (peer)-[a:ASKED]->(t:Topic)
   WHERE a.ts > now() - interval '30 days'
   RETURN t.name, count(*) AS cnt ORDER BY cnt DESC

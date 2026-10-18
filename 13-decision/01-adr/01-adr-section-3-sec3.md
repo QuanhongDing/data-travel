@@ -34,7 +34,7 @@
 # {编号}. {标题}
 
 ## Status
-{Proposed / Accepted / Deprecated / Superseded by ADR-XXXX}
+{Proposed / Accepted / Rejected / Deprecated / Superseded by ADR-XXXX}
 
 ## Context
 {决策的上下文 / 约束 / 业务背景}
@@ -49,7 +49,7 @@
 - **为什么这样设计有效**：因为模板只要求四段、Decision 只要求一句话，所以撰写成本被压到分钟级（【经验】10–20 分钟量级，与本章 [§7.4](01-adr-section-7-sec7.md) 同一口径；四段式不含选项调研，量级低在这里）——门槛低到「决策当场顺手写」是可实现的，记录才会真的发生。
 - **代价**：四段里没有 Options 与 Decision Drivers 的槽位，被否掉的方案与当时的约束不会进正文；也**没有 Owner 字段**——「谁拍板」只能靠 Context 里的叙述，出问题时无处可查。这两笔成本买的是撰写速度。
 - **失效点**：当决策半径跨出团队时，「结论 + 后果」这套内容的优点会反转成「外部读者无法复现判断」——因为读者没有参与过当时的约束，缺 Options 意味着他既无法判断自己的场景是否适用，也不知道该不该 supersede；表现为同一个选型在新团队被重开一轮，而重开一版的成本（重新调研 + 重新说服）高于当初把 Options 写下来的成本。
-- **真实使用**：【公开】本章主文件 [§1.1](01-adr.md) 记录 ADR 概念由 Michael Nygard 在 2011 年的《Documenting Architecture Decisions》中系统化；其 Status 的四个取值（Proposed / Accepted / Deprecated / Superseded by ADR-XXXX）定义在主文件 [§2.1](01-adr.md) 的关键概念表；【公开】本章主文件 [§1.4](01-adr.md) 记录 ThoughtWorks 技术雷达 2014 年收录 ADR 实践（Trial）；【经验】本章 [§6 案例 6.1](01-adr-section-6-sec6.md) 按该案例的自述，把这家组织推行这套做法的时间上溯到 2005 年、延续 15+ 年（该案例的出处是区间式公开材料，具体年份可按 §6 正文核对）——它与本条前面的 2011 年并不冲突：2005 年是组织内部「把决策推理留下来」的做法，2011 年才是它被公开命名与模板化的时点。判定方法：翻出你们最近一条「因为没人记得当时怎么想的而重开讨论」的决策，它当初值不值得写一段 Options。
+- **真实使用**：【公开】本章主文件 [§1.1](01-adr.md) 记录 ADR 概念由 Michael Nygard 在 2011 年的《Documenting Architecture Decisions》中系统化；其 Status 的五个取值（Proposed / Accepted / Rejected / Deprecated / Superseded by ADR-XXXX）定义在主文件 [§2.1](01-adr.md) 的关键概念表；【公开】本章主文件 [§1.4](01-adr.md) 记录 ThoughtWorks 技术雷达 2014 年收录 ADR 实践（Trial）；【经验】本章 [§6 案例 6.1](01-adr-section-6-sec6.md) 按该案例的自述，把这家组织推行这套做法的时间上溯到 2005 年、延续 15+ 年（该案例的出处是区间式公开材料，具体年份可按 §6 正文核对）——它与本条前面的 2011 年并不冲突：2005 年是组织内部「把决策推理留下来」的做法，2011 年才是它被公开命名与模板化的时点。判定方法：翻出你们最近一条「因为没人记得当时怎么想的而重开讨论」的决策，它当初值不值得写一段 Options。
 
 #### 3.2.2 MADR（Markdown Any Decision Records）
 

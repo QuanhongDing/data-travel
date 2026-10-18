@@ -188,11 +188,14 @@ Schema.org 本体标准化的**5 大核心组件**：
    - 本体片段：
      ```turtle
      :Product a owl:Class ; rdfs:subClassOf :Thing .
-     :Phone   a owl:Class ; rdfs:subClassOf :Product .
+     :Phone   a owl:Class ;
+              rdfs:subClassOf :Product ;
+              rdfs:subClassOf [ a owl:Restriction ;
+                                owl:onProperty :hasScreenSize ;
+                                owl:cardinality 1 ] .
      :hasScreenSize a owl:DatatypeProperty ;
                     rdfs:domain :Phone ;
-                    rdfs:range xsd:decimal ;
-                    owl:cardinality "1" .
+                    rdfs:range xsd:decimal .
      ```
 
 2. **品类关系（核心）**

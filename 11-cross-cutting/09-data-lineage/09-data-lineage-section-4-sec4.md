@@ -249,7 +249,7 @@ validate_fields(query)           # 字段白名单：不在清单里就直接拒
 return execute_lineage_query(query)
 ```
 
-**怎么用**：`system` 里要写清可用字段（`get_upstream` / `get_downstream` / `get_impact` / `find_root_cause` / `get_end_to_end_path` / `get_cross_domain_lineage`）并写死一条约束 —— URN 只能取自查询结果，不许模型自己拼。`validate_fields` 这一步不能省：模型生成的字段名不在白名单里时应当直接拒绝，而不是让存储层去报错。模型标识与可用的请求参数请以所用 SDK 官方文档的当前版本为准。
+**怎么用**：`system` 里要写清可用字段（`get_upstream` / `get_downstream` / `get_impact` / `find_root_cause`，即 §4.2 网关对外暴露的四个字段，不多不少）并写死一条约束 —— URN 只能取自查询结果，不许模型自己拼。`validate_fields` 这一步不能省：模型生成的字段名不在白名单里时应当直接拒绝，而不是让存储层去报错。模型标识与可用的请求参数请以所用 SDK 官方文档的当前版本为准。
 
 **模板 4：网关 + 缓存（示例 4）**
 

@@ -177,7 +177,7 @@ CLOSED（正常）── 错误率 > 阈值 ──> OPEN（断开）
 desiredReplicas = ceil[currentReplicas × (currentMetric / targetMetric)]
 ```
 
-**流量调度模型（一致性 Hash）**：
+**流量调度模型（取模路由 `Hash(userId) mod N_Cells`）**：
 
 ```
 Cell = Hash(userId) mod N_Cells

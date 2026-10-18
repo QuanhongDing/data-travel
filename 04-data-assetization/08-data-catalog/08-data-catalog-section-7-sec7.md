@@ -45,7 +45,7 @@
 | AI 增强目录 | 在已有元数据之上加一层派生索引 | 向量 + 倒排做召回，LLM 只在已登记资产的封闭集合里做选择与解释 | 消费方以业务方为主 | Atlan AI、Secoda AI、Alation AI（2024 年前后推出目录侧 AI 增强检索），商业 |
 | 数据契约 / 资产登记台账 | 以协议而非页面为核心的治理载体 | 契约（schema、口径、频率）是生产方与消费方的双边承诺，目录只是展示面 | 多团队 Data Mesh | 多为自建或随治理平台提供 |
 
-> 表中年份除标注来源外，均可在主文件 §1.4 演进历程与 [§4 工程实现](08-data-catalog-section-4-sec4.md) 的 §4.3 工具链年份条目中直接核到；Amundsen 的「Neo4j + Elasticsearch」形态见 §4.3 工具链条目【公开】（来源：主文件 §1.4 与 §4.3 的年份记录；年份锚点——Atlas 2015 年条目、Amundsen 2019 年开源、DataHub 2019 年开源与 2021 年 2.0、OpenMetadata 2021 年、Snowflake Horizon 与 AWS Glue Data Catalog 升级 2024 年、Gravitino 记于 §4.3 的 2024 年条目、Atlan AI / Secoda AI / Alation AI 2024 年）。
+> 表中年份除标注来源外，均可在主文件 §1.4 演进历程与 [§4 工程实现](08-data-catalog-section-4-sec4.md) 的 §4.3 工具链年份条目中直接核到；Amundsen 的「Neo4j + Elasticsearch」形态见 §4.3 工具链条目【公开】（来源：主文件 §1.4 与 §4.3 的年份记录；年份锚点——Atlas 2015 年条目、Amundsen 2019 年开源、DataHub 2019 年开源与 2021 年 2.0、OpenMetadata 2021 年、Snowflake Horizon 与 AWS Glue Data Catalog 升级 2024 年、Gravitino 记于 §4.3 的 2024 年条目、Atlan AI / Secoda AI / Alation AI 2024–2025 区间【推算】（条目与推导链见 §4.3 工具链）。
 
 这 9 个候选分成**四族**。分族的依据不是品牌、也不是开源或闭源，而是**它和「真相」之间隔了几层副本**：
 
@@ -148,7 +148,7 @@
 
 第二层机制与成本有关：**因为每次提问都要付 token，AI 增强层的成本随「用户数 × 提问频次」增长**，而其余候选的成本随「资产数」增长。这是本章唯一一个成本函数形状与其余候选族不同的候选——这一条在 7.4 会展开。
 
-**公开证据**【公开】：Databricks Genie（Data+AI Summit 2024 发布）与 Snowflake Cortex Analyst（2024）把自然语言入口做进云数仓；Alation AI、Atlan AI、Secoda AI 在 2024 年前后推出目录侧的 AI 增强检索（§3.2.5 与 §4.3 工具链均列有这三条及年份）。判定方法：拿一个「目录里确实不存在的资产」去提问，看它是拒答还是给出一个最接近的错误答案——后者说明它没有置信度闸门。
+**公开证据**【公开】：Databricks Genie（Data+AI Summit 2024 发布）与 Snowflake Cortex Analyst（2024）把自然语言入口做进云数仓。Alation AI、Atlan AI、Secoda AI 在 2024–2025 区间推出目录侧的 AI 增强检索【推算】（推导链与条目见 §4.3 工具链，非产品级年份）。判定方法：拿一个「目录里确实不存在的资产」去提问，看它是拒答还是给出一个最接近的错误答案——后者说明它没有置信度闸门。
 
 **失效条件**：当消费方全部是数据团队（知道自己要找的表名或字段名）时，关键词与标签检索的命中率已经够用，AI 增强层的收益趋近于零，而账单按提问次数照付。
 

@@ -99,7 +99,7 @@
 - **Cost-Benefit Analysis（CBA）**：成本收益分析——货币化所有收益 / 成本。
 - **Total Cost of Ownership（TCO）**：总拥有成本——含初始成本 + 运营成本 + 维护成本 + 培训成本 + 机会成本。
 - **AHP（Analytic Hierarchy Process）**：层次分析法——Saaty 提出的多准则权重计算方法。
-- **Trade-off Table**：Steve McConnell 提出的权衡表格——把每个 trade-off 显式化。
+- **Trade-off Table**：权衡表格——把每个 trade-off 显式化。
 - **Reversibility（可逆性）**：决策的「可逆成本」（详见 §08）。
 - **Tech Radar（技术雷达）**：组织级技术选型指南（ThoughtWorks / Gartner 风格）。
 - **Reference Architecture（参考架构）**：组织级架构蓝图（AWS Well-Architected / Google SRE）。
@@ -179,7 +179,7 @@ NPV = Σ (Benefit_t - Cost_t) / (1 + r)^t
 8. **Sensitivity Analysis**——敏感性分析。
 9. **Scenario Analysis**——场景分析。
 10. **Risk-adjusted Scoring**——风险调整打分。
-11. **Trade-off Tables（Steve McConnell）**——显式化所有 trade-off。
+11. **Trade-off Tables**——显式化所有 trade-off。
 12. **CAP / PACELC**——分布式系统选型基础。
 13. **AI 辅助选型**——LLM 推荐选项 + 打分。
 14. **Decision Intelligence Platform**——选型决策图谱。

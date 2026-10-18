@@ -36,7 +36,7 @@
        modality  text,            -- text / image / video
        meta      jsonb,           -- 结构化属性（可直接用于 WHERE / JOIN）
        file_path text,            -- 指向对象存储的大文件
-       embedding vector(1024)     -- CLIP / BGE 统一向量空间
+       embedding vector(1024)     -- BGE-VL 统一向量空间
      );
      CREATE INDEX ON item USING hnsw (embedding vector_cosine_ops);
 

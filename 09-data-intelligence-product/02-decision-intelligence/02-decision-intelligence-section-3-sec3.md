@@ -165,7 +165,7 @@ LLM 增强决策的契约（谁能改状态，必须写清）
 - **代价**：单次调用的成本与延迟；模型版本与提示词版本必须与决策一起留痕，否则无法复现；输出是概率生成，校验层与兜底分支是必需组件而不是加分项。
 - **失效点**：当决策频率升高到每秒千次以上时，「自然语言理解」会反转成「成本与延迟不可控」，因为每次决策都要重付一遍推理成本，而规则与模型组件的边际调用成本极低——高频场景应把 LLM 移到离线一侧（生成规则、生成解释），而不是留在在线决策路径上。
 - **量化判据**：单次调用成本 × 决策频率、P99 推理延迟、以及可离线批处理的比例。判定方法：把在线调用按频率排序，看前 10% 高频决策贡献了多少推理账单。
-- **真实使用**：LLM-as-Decision-Maker（让模型直接出决策）、LLM-as-Rule-Generator（让模型生成规则）与 LLM-as-XAI（让模型生成解释）这三类用法的分野，正在于"谁最终裁决"落在谁身上；它们在 2023 年之后被广泛记录【经验】；这一族的用法划分见 [§5 前沿演进](02-decision-intelligence-section-5-ai.md) 的 5.1（那里把这一族列为 Rule-Generator、Decision-Reasoner、Decision-Maker 与 Decision-Auditor 四类），各类用法的能力边界与失败模式可按上述方法名一类关键词自行检索核验。
+- **真实使用**：LLM-as-Rule-Generator（让模型生成规则）、LLM-as-Decision-Reasoner（让模型生成解释）、LLM-as-Decision-Maker（让模型直接出决策）与 LLM-as-Decision-Auditor（让模型审计决策）这四类用法的分野，正在于"谁最终裁决"落在谁身上；它们在 2023 年之后被广泛记录【经验】；这一族的用法划分见 [§5 前沿演进](02-decision-intelligence-section-5-ai.md) 的 5.1（那里把这一族列为 Rule-Generator、Decision-Reasoner、Decision-Maker 与 Decision-Auditor 四类），各类用法的能力边界与失败模式可按上述方法名一类关键词自行检索核验。
 
 #### 3.2.7 Agent 决策（Agent-based Decisioning）
 
