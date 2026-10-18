@@ -202,7 +202,7 @@ OneID 与 AI 之间不是「结合」关系，而是**交接物**关系：谁把
 **论文（可核验；这一节的作用是说明「问题」比「工具」老得多）**
 
 - Fellegi & Sunter, *A Theory for Record Linkage*, JASA, 1969——似然比框架把匹配定义为逐对决策，并在原论文里就把分块写成流程的第一步（本章 §7.3.1、§7.3.2 均引此文）【公开，1969】。
-- **Yuliang Li 等的 Ditto 一线工作**《Deep Entity Matching with Pre-Trained Language Models》（常以其模型名「Ditto」引用）——把记录序列化成带列名标记的文本、用预训练语言模型做二分类，是「把实体解析做成文本任务」这条思路的公开源头【公开：Yuliang Li 等, "Deep Entity Matching with Pre-Trained Language Models", 2020，与本章 [§ 3](09-one-id-section-3-sec3.md) §3.2.4 的登记一致】。**判定入口**：按题名与作者检索原文核验——发表会议在各家转述中口径不一（本章 §3.2.4 因此只登记题名、作者与年份；本书主文件 §1.4 与本章 §8 则记为 SIGMOD 2021），**不要按二手转述的会议名对号**。
+- **Yuliang Li 等的 Ditto 一线工作**《Deep Entity Matching with Pre-Trained Language Models》（常以其模型名「Ditto」引用）——把记录序列化成带列名标记的文本、用预训练语言模型做二分类，是「把实体解析做成文本任务」这条思路的公开源头【公开：Yuliang Li 等, "Deep Entity Matching with Pre-Trained Language Models", 2020，与本章 [§ 3](09-one-id-section-3-sec3.md) §3.2.4 的登记一致】。
 - **原 §5.3.1 所列七条学术条目（零样本 ER、Ditto+LLM、层次化匹配 + LLM、AutoER、联邦 ER、GNN 图 ER、跨模态 ER）本节无法核验**：它们给的是主题名与会议年份的简写，没有可检索的标题与作者。处理办法：**保留它们所指的四个方向**（零样本判定 / 深度匹配 / 联邦 ER / 跨模态），不把它们当证据；本节也未能给出针对「LLM 判定实体匹配」的可核验评测口径。
 
 **官方 release note / 文档（判定入口）**

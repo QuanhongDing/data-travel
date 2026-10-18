@@ -43,7 +43,7 @@
    - 推荐系统、风控模型、AIGC 个性化都需要"同一个人的完整行为序列"。
    - 没有 OneID，样本拼接就是"张冠李戴"，LLM 喂给它的就是碎片化、错位的对话。
 
-**一句话总结**：OneID 是 **企业数据从"分块堆叠"走向"联通资产"的第一道工程门槛**——不是可做可不做的最佳对齐。P7 不做 OneID 数仓照样能跑，P8 不做 OneID 智能体平台就是空中楼阁。
+**一句话总结**：OneID 是 **企业数据从"分块堆叠"走向"联通资产"的第一道工程门槛**——不是可做可不做的可选项。P7 不做 OneID 数仓照样能跑，P8 不做 OneID 智能体平台就是空中楼阁。
 
 ### 1.3 在 AI 时代数据架构中的位置
 
@@ -78,7 +78,7 @@ OneID 在整体 AI 数据架构中扮演 **"实体枢纽（Entity Hub）"** 角�
 - **Ch2 数据科学**：OneID 决定样本去重、特征拼接、用户嵌入（User Embedding）训练
 - **Ch3 数据全栈**：OneID 同步链路是数据流转的核心环节
 - **Ch4 数据资产化**：OneID 进入向量索引才能支持"以人查人"语义检索
-- **Ch5 智能体平台**：Agent 长期记忆（Long-term Memory）按 OneID 维护
+- **Ch7-01 长期记忆**：Agent 的记忆按实体标识（user_id / 实体链接）维护，与本主题的 OneID 是同一类问题
 
 ### 1.4 演进历程
 
@@ -106,14 +106,14 @@ OneID 的发展大致可分为五个阶段，每个阶段对应一种技术栈�
 - ID-Mapping 任务正式被看作 **实体解析（Entity Resolution）** 问题。
 - 引入基于图嵌入（Graph Embedding）的 ID 匹配（DeepMatch、GraphER、GCN-based ER）。
 - 引入基于 Blocking + 排序学习（LTR）的端到端实体解析（DeepER、Ditto、HierMatcher）。
-- 关键论文：DeepER (VLDB 2018)、Ditto (SIGMOD 2021；会议名在不同转述中口径不一，请按题名与作者检索原文核验)、HierMatcher (NeurIPS 2021)。
+- 关键论文：DeepER (VLDB 2018)、Ditto（Yuliang Li 等，2020）、HierMatcher (NeurIPS 2021)。
 
 **阶段 5 · 2023-2025：LLM 增强实体解析（Generative ER）**
 
 - 利用 LLM 进行实体解析推理，尤其在长文本属性（地址、姓名、公司名）匹配上超越传统模型。
 - 利用 LLM 进行 OneID 属性的自然语言解释、OneID 合并原因的可解释性输出。
 - 利用 LLM 做"自然语言级"的实体识别（"张三"和"Zhang San"、"张總"、"张 3 先生"是同一人吗？LLM 答 yes）。
-- 关键论文：GPT-4 Entity Resolution (Microsoft Research 2023)、Ditto+LLM，以及 ZeroER 一线的零样本实体解析工作（篇名与发表会议请按题名与作者检索原文核验）。
+- 关键论文：GPT-4 Entity Resolution (Microsoft Research 2023)、Ditto+LLM，以及 ZeroER 一线的零样本实体解析工作。
 - 关键产品：阿里云实体解析（LLM 版）、Salesforce Data Cloud Zero-Copy ID Resolution、AWS Entity Resolution（2024 GA）、Azure AI Foundry ID Resolution、Palantir Foundry Entity Resolution。
 
 > **架构师视角**：每个阶段的跃迁都伴随"**打破 ID 孤岛**"的能力升级，从规则 → 图 → 嵌入 → 生成式 AI。2024-2025 年正处于阶段 5 的早期，LLM 辅助实体解析与传统概率图模型是 **并存而非替代**——纯 LLM 太贵，纯规则太死。
@@ -296,7 +296,7 @@ Step 4: 周期重算（每日/每小时）
 代表论文与模型：
 
 - **DeepER (VLDB 2018)**：用 RNN 编码属性序列，Attention 聚合
-- **Ditto (SIGMOD 2021，会议名以原文为准)**：基于预训练 BERT 的实体解析 SOTA，可注入领域知识
+- **Ditto（Yuliang Li 等，2020）**：基于预训练 BERT 的实体解析 SOTA，可注入领域知识
 - **HierMatcher (NeurIPS 2021)**：层次化匹配（先 entity 级，再 value 级）
 - **ZeroER（零样本实体解析）**：不依赖人工标注的训练数据完成匹配；篇名与发表会议请按题名与作者检索原文核验
 

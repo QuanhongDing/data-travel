@@ -237,7 +237,7 @@
 - **Fellegi-Sunter（1969）**：经典概率模型，对每条字段计算 m 概率（真匹配时该字段一致的概率）和 u 概率（假匹配时该字段碰巧一致的概率），取似然比 λ = ∏ mᵢ / ∏ uᵢ。λ ≥ 上阈值合并、λ ≤ 下阈值拒绝、中间进入人工 review。优点是概率可控、可解释；缺点是依赖人工设定 m/u，对非结构化字段无能为力。
 - **图连通分量（WCC）**：把每个 ID 当节点、每次匹配当边，每个连通分量分配一个 OneID。**天然处理多跳关联**（手机号 A → 用户 1 → 邮箱 B → 用户 2）。常用 Spark GraphX 或 NebulaGraph 实现。优点是捕捉长链关联；缺点是图计算资源重、阈值难调（边权 < 0.7 是否纳边？）。
 - **Embedding 余弦**：把每个 ID 的上下文（行为序列、属性集合）映射为 d 维向量，余弦相似度 ≥ τ 即合并。Embedding 来源：DIN/SASRec 行为序列、BERT/E5/BGE 文本、Node2Vec/GraphSAGE 图嵌入。τ = 0.85-0.92。优点是捕捉语义相似；缺点是冷启动难、向量检索基建重。
-- **Ditto / BERT**：把实体对序列化为 "[COL]phone[/COL]138... [SEP] [COL]phone[/COL]138..."，用预训练 BERT 做二分类。代表论文 Ditto (SIGMOD 2021)。优点是对长文本变体（公司名、地址）效果好；缺点是训练数据需求大、推理慢。
+- **Ditto / BERT**：把实体对序列化为 "[COL]phone[/COL]138... [SEP] [COL]phone[/COL]138..."，用预训练 BERT 做二分类。代表论文为 Yuliang Li 等，2020。优点是对长文本变体（公司名、地址）效果好；缺点是训练数据需求大、推理慢。
 - **LLM 辅助**：用 GPT-4 / Claude 等 LLM 给定 prompt + 两记录，输出 JSON `{decision, confidence, reason}`。代表应用 ZeroER 等零样本实体解析工作、以及 2023 年前后 Microsoft Research 关于用 GPT-4 做实体匹配的研究（两者的具体篇名与发表会议本书无法核验，引用前请自行查证）。优点是零样本、跨语言、可解释；缺点是单次调用有实打实的成本与延迟（常见经验量级为每条 ¥0.005-¥0.02、200ms+，【经验】档：随所选模型与 prompt 长度而变，本节无法给出可核验的统一定价，可按下文第四层的方式自行【推算】），工业级需严控比例。
 
 **第三层：工业流水线如何分层串联（关键）。**
@@ -308,7 +308,7 @@
 **5. 参考资料**
 
 - Ivan P. Fellegi & Alan B. Sunter (1969)《A Theory for Record Linkage》——ID-Matching 概率模型的原始论文，所有 ID-Mapping 系统的理论源头。
-- Yuliang Li 等《Ditto: Deep Entity Matching using Pre-Trained Language Models》(SIGMOD 2021)——基于 BERT 的实体解析 SOTA，可注入领域知识。
+- Yuliang Li 等《Deep Entity Matching with Pre-Trained Language Models》(2020)——基于 BERT 的实体解析 SOTA，可注入领域知识。
 - Sidharth Mudgal 等《Deep Learning for Entity Matching》（DeepER, VLDB 2018）——深度学习实体解析的开山论文之一。
 - 英国内政部 Splink 开源项目（GitHub）——生产可用的 Fellegi-Sunter Python 实现，含 Blocking、EM 参数估计。
 - Alibaba OneID 公开技术分享（中台博客 / KubeCon / ArchSummit 演讲）——OneID 流水线的国内最完整对标，含算法串联、阈值经验、ROI 数据。
