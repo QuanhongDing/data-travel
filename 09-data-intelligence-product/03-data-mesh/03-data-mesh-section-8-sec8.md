@@ -236,7 +236,7 @@ kind: DataContract
 metadata:
   name: customer_360
   domain: customer
-  owner: data-product-team@company.com
+  owner: zhang.san@company.com
   version: 1.2.0  # SemVer：major.minor.patch
 servers:
   - environment: production

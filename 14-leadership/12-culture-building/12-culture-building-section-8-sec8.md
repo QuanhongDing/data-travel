@@ -85,7 +85,7 @@
 
 **1. 考察点**
 
-- 是否理解 Netflix《No Rules Rules》（Reed Hastings / Patty McCord, 2019）的**核心思想链**：高人才密度 → 高回报 → 高自由 → 直接坦诚。
+- 是否理解 Netflix《No Rules Rules》（Hastings & Meyer, 2020）的**核心思想链**：高人才密度 → 高回报 → 高自由 → 直接坦诚。
 - 能否识别「**自由与责任**」的**适用边界**——它是 Netflix 用了 20 年迭代出来的特定组织形态，不是所有公司都能学。
 - 是否知道「**Keeper Test**」与「**Talent Density**」这两个关键概念，以及它们如何支撑整套文化。
 - 加分项：能区分「**自由与责任**」与「**HBO 文化的纯粹 KPI 驱动**」/「**硅谷创业公司的粗放管理**」——后两者看似像，实则内核不同。
@@ -158,7 +158,7 @@
 
 **5. 参考资料**
 
-- Reed Hastings & Patty McCord《No Rules Rules》（2019）——Netflix 文化的完整阐述，含 Keeper Test、4A Feedback、Talent Density 的原始定义。
+- Hastings & Meyer《No Rules Rules》（2020）——Netflix 文化的完整阐述，含 Keeper Test、4A Feedback、Talent Density 的原始定义。
 - Patty McCord《Powerful》（2022）——「**Build Your Courage Muscles**」「**Be Honest When It Feels Uncomfortable**」等具体实践。
 - Netflix 2009 公开文化手册（SlideShare 上有完整 125 页版本）——业界最广泛引用的文化案例之一。
 - **字节跳动 ByteStyle 与「**Context, not Control**」** ——张一鸣多次在公开演讲中引用 Netflix 的 Talent Density 概念，并把它改造成「**给够信息、给够权限**」的字节版，是国内对 Netflix 文化最系统的本土化改造。

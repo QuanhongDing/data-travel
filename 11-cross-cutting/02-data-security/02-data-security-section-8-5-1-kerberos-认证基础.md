@@ -186,7 +186,7 @@
 
 **2. 参考答案框架**
 
-**第一层：先估规模。** 万节点集群按每节点 5-10 个服务（NameNode / DataNode / NodeManager / HiveServer2 / Impala...）算，主机 + 服务票据请求可达 5-10 万 QPS；续签风暴（票据同时到期）峰值可能数倍。
+**第一层：先估规模。** 万节点集群按每节点 5-10 个服务（NameNode / DataNode / NodeManager / HiveServer2 / Impala...）算，主机 + 服务身份共 5-10 万个 principal——注意这是**身份数**，不是请求率。票据有寿命且会被客户端票据缓存复用，按寿命摊薄才得到稳态请求率：Service Ticket 默认 1 小时（见 §5.1.2），5-10 万身份各自每小时换发一次，稳态约 5-10 万 ÷ 3600 s ≈ 14-28 次 TGS-REQ/s；TGT 默认 10 小时、可续到 7 天，按 10 小时摊薄更是 5-10 万 ÷ 36000 s ≈ 1.4-2.8 次 AS-REQ/s。真正会把 QPS 顶上去的是**续签风暴**（票据同时到期，如早晨 9 点开工）——峰值可达稳态的数倍。
 
 **第二层：瓶颈分析。**
 
@@ -203,7 +203,7 @@
 - **延长票据有效期**：TGT 从 10h 延长到 24h，Service Ticket 从 1h 延长到 4h（视安全要求）；减少续签频次。
 - **票据缓存（client side）**：`kinit -R` 续签而非重新认证；Spark Executor 启动时预热票据。
 - **批量预热**：所有节点启动时并行 kinit，避免开机的同步尖峰。
-- **LDAP 后端**：用 OpenLDAP 或 AD 作 KDC 后端，提升 principal 查询性能；MIT Kerberos 1.18+ 原生支持 LDAP。
+- **LDAP 后端**：用 OpenLDAP 或 AD 作 KDC 后端，提升 principal 查询性能；MIT Kerberos 原生支持 LDAP 后端。
 - **监控**：QPS、TGS-REQ 延迟、KDC 内存、principal 数据库查询延迟。
 
 **第四层：典型事故与教训。** LinkedIn 在早期万节点 Hadoop 集群上踩过 KDC 单点故障的坑——一次 KDC OOM 导致整个 Hadoop 集群停摆 4 小时；之后部署 5 节点 KDC 集群 + RO KDC 才解决。Uber 在公开分享中提到 KDC 是其数据平台的"头号 SPOF 担忧"，对每个变更都有专门的演练。

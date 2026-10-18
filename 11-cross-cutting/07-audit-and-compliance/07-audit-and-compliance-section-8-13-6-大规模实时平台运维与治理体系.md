@@ -21,7 +21,7 @@
 
 - **云原生（K8s + 自动伸缩）**：Flink Kubernetes Operator 让 Flink Job 跑在 K8s 上，按 CPU / 内存 / lag 自定义 HPA / VPA 规则；Kafka 用 Strimzi Operator 把 Broker 容器化，按磁盘与流量伸缩。优点是与云基础设施深度集成（节点池、抢占式实例）；缺点是状态存储需要外置（RocksDB on S3 / OSS / HDFS）。这是头部企业的云原生方向。
 - **混合部署（YARN + K8s）**：稳态用 YARN（资源利用率高），弹性用 K8s（突发流量扩容）；用「**统一调度层**」抽象。这是阿里、字节等公司的过渡方案。
-- **存算分离（Storage-Compute Decoupling）**：把状态、消息、存储放在共享存储（S3 / OSS / HDFS / JuiceFS），计算层完全无状态，按需扩缩容。Flink 80+ 的 Reactive Mode + Adaptive Scheduler 已经支持。阿里云 Flink on K8s 的存算分离是其工业代表。
+- **存算分离（Storage-Compute Decoupling）**：把状态、消息、存储放在共享存储（S3 / OSS / HDFS / JuiceFS），计算层完全无状态，按需扩缩容。Flink 的 Reactive Mode + Adaptive Scheduler 已经支持。阿里云 Flink on K8s 的存算分离是其工业代表。
 
 **第三层：扩容/缩容的工程关键点。**
 
@@ -293,7 +293,7 @@
 - **共享集群**：所有租户共享 Broker，按 Topic 授权 + Quota 限速（`produce` / `fetch` byte rate）。Kafka 自带多租户能力。
 - **独立集群**：高优租户独立 Broker 集群。
 - **混合**：核心 Topic 独立集群 + 普通 Topic 共享集群。
-- **KIP-679 / KIP-1030**：Kafka 3.x 引入「**Client Quota per Principal**」，按租户限速，是工业级多租户基础。
+- **客户端配额（Client Quota per Principal）**：Kafka 按租户（principal）限速，是工业级多租户基础。
 
 **第五层：ClickHouse 多租户方案。**
 
@@ -325,7 +325,7 @@
 **5. 参考资料**
 
 - Apache Flink 官方文档「Cluster & Deployment」——多租户部署模式的标准参考。
-- Apache Kafka 官方文档「Multi-tenancy」「KIP-679」「KIP-1030」——多租户 Quota 的工业机制。
+- Apache Kafka 官方文档「Multi-tenancy」——多租户 Quota 的工业机制。
 - ClickHouse 官方文档「Resource Groups」「Quotas」——多租户资源分配的标准参考。
 - 字节跳动火山引擎 Flink Cloud / ClickHouse 公开文档——国内云原生多租户 Flink / ClickHouse 的工业对标。
 - Confluent Cloud 公开文档——云上 Kafka 多租户的工业范式。

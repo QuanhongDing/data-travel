@@ -152,10 +152,10 @@ CREATE TABLE order_currency (
 把时间本身建成 Anchor（而不是把日期塞进事实表的列里）
 
   trading_day (Anchor) ── trading_day_calendar (Attribute: 是否交易日 / 所属账期)
-        ▲
-        │  stock_price (Attribute: 价格，引用 trading_day Anchor)
-        │
-     stock (Anchor)
+
+  stock (Anchor) ──< stock_price (Tie) >── trading_day (Anchor)
+                          │
+                    价格 (Attribute)
 
   → 关键：时间是一等实体，可以挂属性（账期、是否交易日、所属年度）
     自然日里没有交易的日期在事实侧根本不产生行

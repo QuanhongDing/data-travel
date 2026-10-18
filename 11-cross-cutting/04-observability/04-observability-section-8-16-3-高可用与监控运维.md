@@ -387,9 +387,9 @@ spec:
 
 **第一层：K8s 节点宕机的检测。** 节点宕机后，K8s 的处理：
 - **心跳超时**：Kubelet 每 10s 向 API Server 发心跳；`node-monitor-grace-period`（默认 40s）超时后，节点状态 `NotReady`。
-- **Pod 驱逐**：Pod 从 `NotReady` 节点驱逐到其他节点；`eviction-hard` 阈值触发。
+- **Pod 驱逐**：节点 `NotReady` 后被 node-lifecycle-controller 打上 `NoExecute` 污点，Pod 超过 `tolerationSeconds`（默认 300s）容忍时间后被驱逐到其他节点。
 - **Controller 检测**：Deployment / StatefulSet Controller 检测 Pod 数量不足，启动新 Pod。
-- **Pod 重建时间**：40s 检测 + 调度延迟 + 启动时间 ≈ 1-3min。
+- **Pod 重建时间**：40s 检测 + 300s 容忍（默认 `tolerationSeconds`）+ 调度延迟 + 启动时间 ≈ 6min 以上。
 
 **第二层：大数据组件的协作。**
 
@@ -416,7 +416,7 @@ spec:
 
 **HDFS on K8s**：
 - **DataNode Pod 驱逐**：NameNode 检测 DN 失联（心跳超时）；
-- **副本缺失**：欠费副本触发再平衡，新 DN Pod 加入后复制；
+- **副本缺失**：欠副本块触发再平衡，新 DN Pod 加入后复制；
 - **HDFS 数据保留**：在 PVC；新 DN Pod 启动后挂回相同 PVC；
 - **NameNode Pod**：StatefulSet，PVC 保留；Pod 重建后恢复。
 

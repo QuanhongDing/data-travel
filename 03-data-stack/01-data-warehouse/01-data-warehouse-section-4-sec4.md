@@ -176,7 +176,7 @@ validation_result = batch.validate()
 | --- | --- | --- | --- |
 | 消息队列 | Kafka / Pulsar / RocketMQ；AutoMQ / Confluent Warpstream | 判据是「是否要保留长历史 + 是否接受托管」：需要按时间回溯消费 → 保留策略可配的队列；云上成本敏感 → 存算分离的托管形态 | 队列只当传输、不留历史 → 实时链路无法重放，口径修正只能打补丁 |
 | 流计算 | Flink / Spark Streaming；Flink 新版本 / Decodable（流批一体 SaaS） | 判据是「有没有状态与 exactly-once 需求」：有窗口与状态就用有状态引擎；只做无状态转换可用更轻的方案 | 用无状态方式拼窗口 → 乱序与重复要自己在应用层补，最终一致性无人兜底 |
-| 流式存储 | Kafka / Pravega；Apache Fluss（原 Flink Table Store） | 判据是「数据要不要被 SQL 直接查询」：只做管道用队列；要被流式 SQL 查询用流式存储 | 把明细长期压在队列里做查询 → 查询能力与保留成本都不划算 |
+| 流式存储 | Kafka / Pravega；Apache Fluss | 判据是「数据要不要被 SQL 直接查询」：只做管道用队列；要被流式 SQL 查询用流式存储 | 把明细长期压在队列里做查询 → 查询能力与保留成本都不划算 |
 | 表格式 | Iceberg / Hudi / Delta；Paimon | 判据是「写入形态」：以流式 CDC 写入为主、需要流式更新 → 面向流式更新的表格式；以批写为主 → 三者差异在事务与演进能力 | 表格式与写入模式不匹配 → 只能靠更频繁的 compaction 硬撑，运维负担转移到人身上 |
 | 实时 OLAP | ClickHouse / Doris / StarRocks；SelectDB Cloud / StarRocks 3.x | 判据是「点查多还是扫描多」「要不要强 JOIN」：高并发点查与大宽表扫描倾向不同引擎；需要多表 JOIN 与物化视图改写则另选 | 把 OLAP 同时当成实时明细存储与报表服务 → 写入侧和查询侧互相挤占，两边都不稳 |
 

@@ -325,7 +325,7 @@ Spark Structured Streaming 的 Checkpoint 写在可靠的分布式存储（HDFS 
 
 - **「Spark Structured Streaming 和 Flink 在 API 哲学上有什么根本差异？」** 答：Spark 把流看作"无界 DataFrame"，强调 SQL 表达力与批流统一 API；Flink 把流看作"真实的流"，强调事件时间、状态、watermark 的低延迟处理。两者最终都能做 EOS，但路径不同——Spark 走微批 + 幂等，Flink 走真正的流 + 2PC。
 - **「Continuous Trigger 为什么不被推荐？」** 答：实验性特性，官方给出的卖点是端到端延迟低至毫秒级（Spark 官方文档举的是 ~1ms 这个量级；实测随算子、分区与集群而异，此处按【经验】档理解），代价是牺牲了容错语义；社区实际应用少，维护弱，新项目应避免使用。
-- **「如果业务要秒级延迟 + EOS，选 Spark 还是 Flink？」** 答：Flink。Spark 的微批延迟下限在百毫秒到秒级，要再低得用 Continuous Trigger 但放弃部分容错；Fink 原生流 + 2PC 在毫秒级延迟下仍能保 EOS。
+- **「如果业务要秒级延迟 + EOS，选 Spark 还是 Flink？」** 答：Flink。Spark 的微批延迟下限在百毫秒到秒级，要再低得用 Continuous Trigger 但放弃部分容错；Flink 原生流 + 2PC 在毫秒级延迟下仍能保 EOS。
 - **「Spark Streaming 的状态后端有什么优化空间？」** 答：把 RocksDB 作为外部状态后端（Spark 3.2+ 通过 `stateStore.providerClass` 支持），把大状态从 Checkpoint 存储下沉到本地 KV；代价是部署复杂度上升。
 
 **5. 参考资料**
@@ -406,7 +406,7 @@ Spark Structured Streaming 的 Checkpoint 写在可靠的分布式存储（HDFS 
 
 **4. 追问预测**
 
-- **「跨 Region 的一致性怎么处理？」** 答：参考本节 §6.5 题（Google Spanner / CockroachDB / OceanBase）；核心是 TrueTime / HLC 全局排序 + Paxos / Raft 跨 Region 复制 + 2PC 跨 Region 强一致。Region 内强一致、Region 间最终一致是常见的折中。
+- **「跨 Region 的一致性怎么处理？」** 答：参考 §8.3 的 §20.2.3 题（Google Spanner / CockroachDB / OceanBase）；核心是 TrueTime / HLC 全局排序 + Paxos / Raft 跨 Region 复制 + 2PC 跨 Region 强一致。Region 内强一致、Region 间最终一致是常见的折中。
 - **「万节点下的 Iceberg commit 性能怎么保证？」** 答：① 用 REST Catalog（如 Polaris / Nessie）做缓存与负载均衡；② 把高频小写入合并成批提交；③ 用分区裁剪减少每次 commit 涉及的 manifest 数量；④ 对超大表用 Iceberg Partitioning + Bucketing 把 commit 影响范围缩小。
 - **「Schema 演进怎么做到零停机？」** 答：用 Iceberg / Delta 的 Schema 演进（`add column` / `rename`），下游用 Schema Registry 监听变更并自动升级 Reader 的 Schema；禁止用 `DROP COLUMN` / `RENAME COLUMN` 在下游生产环境中使用。
 - **「批流对账具体怎么做？」** 答：每天抽样一批事件同时走批链路（离线重算）和流链路（实时计算），对比结果差异；阈值超限则报警；定期人工 review 差异原因，更新口径定义。
@@ -504,7 +504,7 @@ CDC 在 Lakehouse 中的**关键作用**：
 
 - **「Debezium 怎么保证多表事务一致性？」** 答：基于 binlog 的事务边界——Debezium 把同一事务内的多表变更包装到同一个 Kafka 消息里（带 `transaction.id` 和 `event.order` 字段），下游 Flink 用 `forStmtsInSameTx` 模式保证"同一事务的事件被同一个 task 处理"。
 - **「Debezium 卡住了怎么排查？」** 答：先看 Kafka Connect 任务的 lag 指标；再查 MySQL 的 `show master status` 看 binlog 位置；如果 Debezium 落后于 MySQL binlog，需要回溯 connector offset；最坏情况下重做 Initial Snapshot。
-- **「CDC 和 Outbox 模式是什么关系？」** 答：Outbox 模式是在源表上写一份"消息表"，业务事务和消息表在同一个事务里 commit，然后 CDC 读取消息表把消息发布到 Kafka——是 CDC 与业务事务的最强一致性组合。详见本节 §6.3 题。
+- **「CDC 和 Outbox 模式是什么关系？」** 答：Outbox 模式是在源表上写一份"消息表"，业务事务和消息表在同一个事务里 commit，然后 CDC 读取消息表把消息发布到 Kafka——是 CDC 与业务事务的最强一致性组合。详见 §8.3 的 §20.2.4 题。
 - **「为什么不用 Flink CDC 直接读 MySQL？」** 答：Flink CDC 是 Debezium 的封装，本质是一样的；但生产中建议**Kafka Connect + Debezium**而不是 Flink 嵌入 Debezium，因为前者可以独立扩缩容、独立监控、独立故障恢复。
 
 **5. 参考资料**

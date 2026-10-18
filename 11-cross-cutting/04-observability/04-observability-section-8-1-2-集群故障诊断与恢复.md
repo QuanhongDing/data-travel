@@ -206,7 +206,7 @@
 
 **第三层：内存治理。** RM 内存增长通常有这几类来源：
 
-- **App 列表**：`RMContext.getScheduler().getApplications()` 持续增长——历史作业未清理。YARN 默认会清理 FINISHED 作业，但保留时长由 `yarn.resourcemanager.completed-applications.maximum-retained` 控制（默认 10000），过大时需调小。
+- **App 列表**：`RMContext.getScheduler().getApplications()` 持续增长——历史作业未清理。YARN 默认会清理 FINISHED 作业，但保留数量由 `yarn.resourcemanager.max-completed-applications` 控制（默认 10000），过大时需调小。
 - **Container 历史**：`ResourceScheduler` 保留每个 App 的 `LiveContainers` / `CompletedContainers` 记录，超过 `yarn.resourcemanager.max-completed-applications` 后清理失败会内存积压。
 - **NM 心跳**：`RMNodeImpl` 记录每个 NM 的资源使用情况，节点数 × 资源维度 × 节点状态，10K 节点 × 50 个 metric ≈ 50 万对象，本身就是大对象池。
 - **分配事件队列**：`AsyncDispatcher` 的 event queue 在分配/释放事件多时会积压。可通过 `yarn.resourcemanager.scheduler.event-queue-size`（YARN-1017 之后）调整。

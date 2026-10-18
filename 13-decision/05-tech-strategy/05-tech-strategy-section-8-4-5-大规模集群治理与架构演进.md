@@ -76,7 +76,7 @@
 
 **第二层：调度层治理。**
 
-- **队列分级与抢占**：建立 P0/P1/P2 三级队列，按业务重要性分配。P0 用 Capacity Scheduler 的 `maximum-capacity` 锁住下限；P2 用 `preemption` 让 P0 作业可以抢占。这是 Hulu、LinkedIn 等公司公开分享的标准做法（本节无法给出该分享的文档名与年份）。
+- **队列分级与抢占**：建立 P0/P1/P2 三级队列，按业务重要性分配。P0 用 Capacity Scheduler 的 `capacity` 锁住下限；P2 用 `preemption` 让 P0 作业可以抢占。这是 Hulu、LinkedIn 等公司公开分享的标准做法（本节无法给出该分享的文档名与年份）。
 - **动态资源**：开启 YARN 的 `node-labels` 或 K8s 的 `PriorityClass`，让大作业优先调度到独立节点池。
 - **调度策略切换**：从 FIFO 改 Fair Scheduler，按业务组隔离并发上限。
 

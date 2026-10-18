@@ -76,7 +76,7 @@
 **第二层：四层架构落地。**
 
 - **采集层（Ingestion）**：用 Connector + Hook 机制采集各组件元数据。Hive Hook / Spark Listener / Flink Job Listener 采集技术元数据；Airflow DAG 解析采集任务血缘；BI 工具 API（Tableau / Superset / QuickBI）采集消费元数据。开源代表是 OpenMetadata 的 Ingestion Framework。
-- **存储层（Storage）**：用图数据库（Neo4j / JanusGraph / Neo4j / Apache Atlas JanusGraph）存元模型；用列存（Parquet / ORC）存历史变更；用 KV 存实时查询缓存。LinkedIn DataHub 用 MySQL + Neo4j + ElasticSearch 三件套；Uber Databook 用自研图存储。
+- **存储层（Storage）**：用图数据库（Neo4j / JanusGraph / Apache Atlas）存元模型；用列存（Parquet / ORC）存历史变更；用 KV 存实时查询缓存。LinkedIn DataHub 用 MySQL + Neo4j + ElasticSearch 三件套；Uber Databook 用图存储。
 - **服务层（Service）**：通过 GraphQL / REST API 对外暴露统一查询，支持血缘查询、质量查询、搜索、订阅。
 - **应用层（Application）**：在统一服务之上构建数据目录（Data Catalog）、数据评分（Data Score）、数据地图（Data Map）、治理控制台。
 
@@ -319,7 +319,7 @@
 **第二层：完整排查流程。**
 
 - **第一步：异常发现**。下游报表用户或监控规则发现数据异常（数值偏差、行数异常、口径不一致）。异常通常通过「**数据质量监控**」（如 §11.7.3 中的规则）或「**业务反馈**」发现。
-- **第二步：定位目标节点。在血缘图上找到异常报表（D），向上找到它的直接上游（C、B、A）。表级血缘会直接告诉你「D 由 C 加工而来」，字段级血缘会精确到「D 的某字段来自 C 的某字段」。
+- **第二步：定位目标节点**。在血缘图上找到异常报表（D），向上找到它的直接上游（C、B、A）。表级血缘会直接告诉你「D 由 C 加工而来」，字段级血缘会精确到「D 的某字段来自 C 的某字段」。
 - **第三步：反向回溯上游链路**。沿血缘逐级回溯，对每级上游跑质量监控：① **该表数据是否异常**（行数波动、字段空值率）；② **该表加工任务是否成功**（ETL 任务状态、调度延迟）；③ **该表上游源数据是否异常**（业务库、消息队列）。
 - **第四步：根因定位**。常见根因类型：① **上游源数据异常**（业务库表结构变更、上游接口报错）；② **ETL 任务失败**（代码 bug、数据倾斜、调度延迟）；③ **数据加工逻辑错误**（SQL 写错、过滤条件错）；④ **时钟 / 分区对齐问题**（上游 T+1 没结束，下游 T+1 抢先）。
 - **第五步：影响面评估**。沿血缘向下扩散，评估哪些下游报表 / 看板 / 接口会受影响。表级血缘列出全部受影响下游；字段级血缘精确到哪些下游用了异常字段。这对**快速通知业务方**至关重要。

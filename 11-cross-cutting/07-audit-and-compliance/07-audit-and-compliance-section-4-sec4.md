@@ -188,7 +188,7 @@ class AuditCollector:
         entry = {"ts": datetime.now(timezone.utc).isoformat(), "actor": actor,
                  "resource": resource, "action": action, "resource_cls": classification,
                  "source_system": CURRENT_SOURCE, "outcome": "OK"}
-        if classification in ("机密", "绝密"):
+        if classification in ("秘密", "机密"):
             self.alert_high_sensitivity_access(entry)   # 立即告警，不等批量
         self.write_immutable(entry)
         return entry

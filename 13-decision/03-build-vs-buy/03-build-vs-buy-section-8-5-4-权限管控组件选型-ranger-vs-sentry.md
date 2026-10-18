@@ -17,7 +17,7 @@
 **第一层：各自定位。** Apache Ranger 与 Apache Sentry 都是面向 Hadoop 生态的**集中式权限管控框架**，目标都是解决「Hive / HDFS / HBase / Kafka / Spark 等组件在原生 ACL 之上需要细粒度访问控制」的问题。但两者路线不同：
 
 - **Ranger**：走「**统一管控中心 + 插件化**」路线。通过 Ranger Admin 提供 Web 控制台与 REST API，所有组件通过「Ranger Plugin」接入，把策略统一存到 MySQL/Postgres，集中审计。**强项是策略统一 + 细粒度（行级 / 列级 / 标签级）+ 审计完整**。除了访问控制，还提供基于 Apache Atlas 标签的「标签策略」（tag-based policy）和数据脱敏（masking）。
-- **Sentry**：走「**轻量级、模型驱动的授权服务**」路线。早期专注 Hive / Impala 的 SQL 级授权，模型上把权限抽象为「Server → Database → Table → Column → Action」，通过 Sentry Service 统一签发/校验 token。**强项是性能开销低、与 Impala 集成最深、SQL 授权语义简洁**。但 Sentry 在 Ranger 出现后已基本停止重大演进（2020 后社区放缓）。
+- **Sentry**：走「**轻量级、模型驱动的授权服务**」路线。早期专注 Hive / Impala 的 SQL 级授权，模型上把权限抽象为「Server → Database → Table → Column → Action」，策略集中存放于 Sentry Service、由 HiveServer2 的 Sentry Binding 在启动时加载到本地内存判定。**强项是性能开销低（内存判定、无逐次 RPC）、与 Impala 集成最深、SQL 授权语义简洁**。但 Sentry 在 Ranger 出现后已基本停止重大演进（2020 后社区放缓）。
 
 **第二层：从 Build vs Buy 视角看选型。** 在 Hadoop 生态这套场景里，所谓「自研」往往是「**对开源方案二次开发 + 内化成平台能力**」。Ranger 与 Sentry 都不是商业 SaaS（无 Cloudera Data Services 那种订阅），但使用方式上有显著的「采购形态」差异：
 
@@ -38,7 +38,7 @@
 
 - **「Ranger plugin 挂了会怎样？」** 答：Plugin 短时挂掉会回退到"允许访问"的兜底策略（fail-open 默认配置），存在合规风险——必须在生产环境显式配置为 fail-closed，并通过监控 plugin 心跳发现。
 - **「Ranger 的策略成千上万条，性能会不会塌？」** 答：会。Ranger 的策略评估在 plugin 内本地缓存（轮询拉取），策略数量增长会拖慢 plugin 启动；大集群必须做"分环境 / 分业务域"的多 Ranger 实例，或用策略分层（组继承）。
-- **「Sentry 模型与 RBAC 的关系？」** 答：Sentry 的 role 接近 RBAC 角色（privilege 的集合），但没有 group 层（直接绑 role 到 user），在大企业组织架构下会有 N×M 角色膨胀问题。
+- **「Sentry 模型与 RBAC 的关系？」** 答：Sentry 的 role 接近 RBAC 角色（privilege 的集合），group 是 user 的集合，role 授给 group——即 privilege → role → group 三层；在大企业组织架构下，role 与 group 的映射随组织变化持续增长，管理成本高。
 - **「假如我未来要上 Iceberg + 湖仓一体，Ranger 怎么适配？」** 答：Iceberg 没有 Ranger plugin（开源社区起步阶段），通常做法是"数据访问走 Trino/Presto，权限在 Trino 层做（Cloudera 的 SQL 引擎集成）"或"用 Lake Formation 之类的整合层"。
 
 **5. 参考资料**
@@ -60,13 +60,13 @@
 
 - 是否真正读懂两者在 Hive 层授权上的**机制差异**，而不仅仅是「Ranger 有 UI、Sentry 没有」。
 - 是否能从「**谁存储策略 → 谁执行校验 → 何时生效**」这条主链路讲清楚区别。
-- 加分项：能点出 Sentry 之所以在 Hive 上"看起来更快"，是因为授权点更集中、Ranger plugin 是拦在客户端 SDK 上的，本质是 "RPC 拦截 vs Driver 拦截" 的差异。
+- 加分项：能点出两者都在 HiveServer2 进程内拦截（Ranger plugin 在 Hive Driver / HDFS RPC 内部 in-process 拦截，Sentry Binding 在 HiveServer2 内启动时全量加载策略到内存），真正的差异在**策略生效方式**——Ranger 热加载（30s）vs Sentry 冷加载（重启 HS2）。
 
 **2. 参考答案框架**
 
 **第一层：策略模型。** ① **Ranger**：策略以"资源 / 权限 / 委托人 / 条件"四元组存于 Ranger DB（MySQL/Postgres），每条 policy 是一个 JSON 风格的对象，**细到 HDFS path / Hive column / tag / action 级别**。Policy 可继承、可启用/禁用、可带 deny exception。② **Sentry**：策略是「**privilege model**」——把 Hive 的"server.database.table.column.action"抽象成 privilege，role 是 privilege 的集合，group 是 user 的集合，三层关系。Sentry 的策略粒度天然止于 SQL model 层（不能跨 HDFS/Kafka）。
 
-**第二层：授权生效路径。** ① **Ranger**：在 HiveServer2 / HDFS NameNode / Kafka Broker 内**嵌入 plugin**，plugin 周期（默认 30s）从 Admin REST 拉取策略缓存到本地。每次访问发生时，plugin 在 Hive Driver / HDFS RPC 内部**拦截**请求并按缓存策略评估——这是「in-process interceptor」模式，授权点离 SQL 解析最近，但代价是 plugin 与 Hive 各版本绑定，紧耦合。② **Sentry**：把授权集中到 **Sentry Service** 这个独立进程，HiveServer2 通过 **client RPC**（基于 Thrift）调用 Sentry Service 校验权限。授权点相对解耦，但因为每次访问都走 RPC，**集中服务成为瓶颈**——生产部署通常按业务域分多实例。
+**第二层：授权生效路径。** ① **Ranger**：在 HiveServer2 / HDFS NameNode / Kafka Broker 内**嵌入 plugin**，plugin 周期（默认 30s）从 Admin REST 拉取策略缓存到本地。每次访问发生时，plugin 在 Hive Driver / HDFS RPC 内部**拦截**请求并按缓存策略评估——这是「in-process interceptor」模式，授权点离 SQL 解析最近，但代价是 plugin 与 Hive 各版本绑定，紧耦合。② **Sentry**：通过 **Sentry Binding** 嵌入 HiveServer2，策略集中存放在 **Sentry Service**（独立进程 + 数据库）；HiveServer2 在启动时从 Sentry Service 全量拉取策略并加载到本地内存，之后由 Hive Hook 在 SQL 执行阶段**内存判定**，无逐次 RPC 开销；代价是策略变更必须重启 HiveServer2 才能生效（冷加载）。
 
 **第三层：可扩展性。** ① **Ranger**：扩展性体现在两方面——可以加 plugin 接入新组件（Kafka、HBase、HDFS、Solr、Trino、Presto 都已原生支持）；可以加新策略类型（如 tag-based、masking、row filter）。② **Sentry**：扩展性弱——模型本身只覆盖 SQL 层，添加新组件要写新 Sentry Model；2020 年后社区基本停滞，新组件接入需要自己 fork。
 
@@ -76,7 +76,7 @@
 
 - **只讲"谁有 UI"**。UI 不是机制差异的核心。
 - **误以为 Sentry 必须绑定 Impala**。Sentry 也能接入 Hive，只是 Impala 用得更多。
-- **忽略"策略生效时延"**。Ranger plugin 默认 30s 拉取，期间修改策略不立刻生效；Sentry 的 RPC 模式几乎实时，但多了一层网络开销。
+- **忽略"策略生效时延"**。Ranger plugin 默认 30s 拉取，期间修改策略不立刻生效；Sentry 的策略在 HiveServer2 启动时全量加载到内存，变更必须重启 HS2 才能生效——冷加载意味着策略更新要走发版。
 - **不区分 SQL 授权与文件级授权**。Ranger 同时覆盖 Hive (SQL) 与 HDFS (path)，Sentry 只覆盖 SQL——这在"分析师下数据到 S3 然后本地读"的场景下后果严重。
 - **混淆"兼容性"和"可扩展性"**。兼容性指与现有组件版本匹配，可扩展性指未来能否接入新组件。
 
@@ -90,7 +90,7 @@
 **5. 参考资料**
 
 - Apache Ranger 官方文档中"Plugin Architecture"章节——plugin 拉取与本地缓存的实现细节。
-- Cloudera Engineering Blog 关于 Sentry Service 性能优化的公开文章——Sentry RPC 模式下的瓶颈分析与分实例建议。
+- Cloudera Engineering Blog 关于 Sentry Service 性能优化的公开文章——Sentry 授权服务的性能特征与部署考量。
 - Apache Sentry 官方文档的"Privilege Model"——Sentry 的 role / privilege / group 三层模型定义。
 - Hortonworks（合并到 Cloudera 前）的公开白皮书——Ranger 与 Sentry 在 HDP3 中的角色分工对比。
 - 阿里 E-MapReduce 团队关于 Hive 权限整合的公开技术博客——国内大规模集群下的 Ranger / Apache Ranger 二次开发经验。

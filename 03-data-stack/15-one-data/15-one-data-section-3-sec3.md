@@ -42,7 +42,6 @@ CREATE TABLE dwd_trade_order (          -- 明细层：清洗 + 主体统一，�
 
 CREATE TABLE dws_trade_shop_1d (        -- 公共汇总层：粒度与口径固定，一次加工多处复用
   shop_id  BIGINT,
-  dt       DATE,
   gmv      DECIMAL(18,2),               -- 口径由指标平台唯一裁决，不在此重新定义
   paid_ord BIGINT
 ) PARTITIONED BY (dt DATE);
@@ -95,7 +94,7 @@ metric:
 **结构**：
 
 ```sql
--- 流式汇总表：与离线 DWS 同名、同粒度、同口径，差异只在时间语义
+-- 流式汇总表：与离线 DWS 同源、同粒度、同口径（表名以 _1d/_rt 后缀区分批流），差异只在时间语义
 CREATE TABLE dws_trade_shop_rt (
   shop_id     BIGINT,
   window_end  TIMESTAMP(3),

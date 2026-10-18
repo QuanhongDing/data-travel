@@ -21,7 +21,7 @@
 
 ### 1.1 是什么
 
-**学术定义**：文化建设（Culture Building）是组织为塑造「**共享价值观、行为准则、决策习惯**」而进行的系统性实践。理论基础源于 **Edgar Schein《Organizational Culture and Leadership》（1985）**、**John Kotter《Corporate Culture and Performance》（1992）**、**Netflix《No Rules Rules》（Reed Hastings, Patty McCord, 2019）**、**Patty McCord《Powerful》（2022）**、**Project Aristotle（Google 2015）**。
+**学术定义**：文化建设（Culture Building）是组织为塑造「**共享价值观、行为准则、决策习惯**」而进行的系统性实践。理论基础源于 **Edgar Schein《Organizational Culture and Leadership》（1985）**、**John Kotter《Corporate Culture and Performance》（1992）**、**Netflix《No Rules Rules》（Hastings & Meyer, 2020）**、**Patty McCord《Powerful》（2022）**、**Project Aristotle（Google 2015）**。
 
 **工程定义**：在数据架构师语境下，**文化建设 = 心理安全 × Trust × Ownership × Customer Focus × Speed × Excellence × Bias for Action** 的体系。它解决的核心问题是：
 
@@ -115,7 +115,7 @@
 
 - 2015：Google「**Project Aristotle**」发现心理安全是高效团队第一要素。
 - 2017：Netflix《No Rules Rules》核心内容形成。
-- 2019：Netflix《No Rules Rules》出版。
+- 2020：Netflix《No Rules Rules》出版。
 
 **AI 原生阶段（2020+，LLM + Agent 驱动）**：
 

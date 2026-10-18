@@ -235,7 +235,7 @@ AI 辅助 ADR     成本 ≈ ADR 全部成本 + 语料与索引维护 + token(�
 
 | 场景 | 首选 | 备选 | 不选它的原因 |
 | --- | --- | --- | --- |
-| 5–10 人、单系统、决策可逆 | Nygard 四段式轻量 ADR | 临时讨论 + 群组同步 | 完整 MADR 的选项调研成本高于决策本身的价值 |
+| 5–10 人、单系统、不可逆或影响面大 | Nygard 四段式轻量 ADR | 临时讨论 + 群组同步 | 完整 MADR 的选项调研成本高于决策本身的价值 |
 | 10–50 人、长期决策 | MADR + Decision Matrix | Nygard 轻量 | 轻量模板缺 Considered Options，后人无法质疑结论 |
 | 50–200 人、跨团队 | MADR + 按主题分类（`adr/data/`、`adr/platform/`） | ADR + 标签 | 单层目录在数百条时不可检索 |
 | 200+ 人、组织级治理 | Y-statement（可聚合） + Living ADR | 按主题分类 + Decision Matrix | 自由文本无法做组织级聚合与统计 |

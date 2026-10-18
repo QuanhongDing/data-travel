@@ -207,7 +207,7 @@ kind: DataContract
 metadata:
   name: customer_360
   domain: customer
-  owner: data-product-team@company.com   # 必须具体到人，不是团队邮箱
+  owner: zhang.san@company.com   # 必须具体到人，不是团队邮箱
   version: 1.2.0
 servers:
   - environment: production

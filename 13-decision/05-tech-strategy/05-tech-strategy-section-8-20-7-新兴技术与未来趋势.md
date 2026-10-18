@@ -270,7 +270,7 @@
 - **向量存储**：向量库（Milvus / Lance）或 Iceberg 的向量扩展。
 - **样本版本管理**：训练样本快照 + 版本。
 - **模型管理**：MLflow / 模型注册表。
-- **GPU 计算**：Lakehouse 计算层支持 GPU（Databricks Photon / Ray on K8s）。
+- **GPU 计算**：Lakehouse 计算层支持 GPU（Ray on K8s）。
 
 **第四层：架构形态。**
 

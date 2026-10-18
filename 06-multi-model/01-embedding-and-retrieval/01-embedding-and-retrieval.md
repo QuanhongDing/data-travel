@@ -151,7 +151,7 @@
 - 2024：Nomic Embed Text v1.5（长上下文 8192）。
 - 2024：ColBERT v2 / ColPali（Late Interaction 复兴）。
 - 2024：Cohere Rerank 3 / BGE Reranker v2-m3（重排模型主流化）。
-- 2025：Jina Embeddings v3（任务特定向量）、MixedBread Embed（多任务）。
+- 2024：Jina Embeddings v3（任务特定向量）、MixedBread Embed（多任务）。
 
 **一句话总结**：**Embedding 从「词向量 → 句子向量 → 多语言 / 多模态 → Late Interaction / 重排」四阶段演进，今天已形成"召回 + 精排"的两段式检索标准架构**。
 

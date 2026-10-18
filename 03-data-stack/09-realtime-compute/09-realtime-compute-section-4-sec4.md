@@ -78,8 +78,8 @@
   env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500);
   env.getCheckpointConfig().setMaxConcurrentCheckpoints(1);
   env.getCheckpointConfig().setTolerableCheckpointFailureNumber(3);
-  env.getCheckpointConfig().setExternalizedCheckpointRetention(
-      ExternalizedCheckpointRetention.RETAIN_ON_CANCELLATION);
+  env.getCheckpointConfig().setExternalizedCheckpointCleanup(
+      ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
   env.setStateBackend(new RocksDBStateBackend("s3://flink-checkpoints"));
   ```
 

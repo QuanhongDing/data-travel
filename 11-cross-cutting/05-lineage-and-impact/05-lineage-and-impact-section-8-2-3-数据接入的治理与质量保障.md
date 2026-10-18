@@ -36,7 +36,7 @@
 **第四层：兜底层——不兼容变更的工程策略。** 真实生产里，删列 / 改类型 / 改语义这三种破坏性变更几乎无法避免。健康实践分四步走：
 
 1. **契约侧先发"Canary 新版本"**：先在 Schema Registry 注册新版本（默认配置为 `BACKWARD`），让上游发版、新旧版本同时在生产跑一段时间。
-2. **写入侧多版本兼容**：Kafka 用 schemaId 分区消费；Iceberg / Hudi 的 Schema Evolution 在 `add column` / `rename` 上原生支持，但 `drop column` 需要显式走 `metadata_only` 策略，否则会引发物理删列导致历史数据丢失。
+2. **写入侧多版本兼容**：Kafka 用 schemaId 分区消费；Iceberg / Hudi 的 Schema Evolution 在 `add column` / `rename` 上原生支持，`drop column` 走的是元数据标记删除、物理保留（旧数据按旧 ID 仍可读），但下游 SQL 按最新 schema 查询会读不到删掉的列。
 3. **下游按版本路由**：消费端按 schemaId 选对应版本解析，新老版本独立消费组、独立 parsing 路径。Apache Beam `Row` schema 与 DataHub GMS 的 `Aspect` 路由都是这类设计。
 4. **兜底断路器 + 影子链路**：当 Schema 校验失败或解析失败累计超过阈值，触发断路器：要么拒收（drop 且告警）、要么降级（落到 dead-letter 队列并通知 oncall）。Airbnb 在公开演讲中提到过「**shadow consumer**」模式：在主链路旁并行跑一份新版本消费者的影子输出，离线对比差异无问题后再真正切流。
 

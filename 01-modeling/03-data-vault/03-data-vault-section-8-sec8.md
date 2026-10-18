@@ -75,7 +75,7 @@
 
 **4. 追问预测**
 
-- **「Hub 的 Hash Key 怎么生成？为什么用 MD5 而不是业务键本身？」** 答：MD5(源系统 + 业务键)，保证跨源等价判定；用 Hash Key 而不是业务键是因为业务键可变（如身份证升位、订单号规则调整），Hash Key 稳定。
+- **「Hub 的 Hash Key 怎么生成？为什么用 MD5 而不是业务键本身？」** 答：MD5(源系统 + 业务键)；哈希输入含来源系统，同一业务键在不同源算出的键不同，跨源同一实体靠 Same-As Link 对齐、而不是靠哈希天然相等；用 Hash Key 而不是业务键是因为业务键可变（如身份证升位、订单号规则调整），Hash Key 稳定。
 - **「如果业务键在源系统就重复了怎么办？」** 答：先用业务规则去重（同一身份证 + 同一姓名视为同一客户），再生成 Hash Key。重复的业务键意味着建模前的业务盘点不彻底，需要回到 Entity Inventory 阶段补正。
 - **「Link 与 Satellite 的加载顺序有依赖吗？」** 答：Link 必须在 Hub 之后加载（因为 Link 包含 Hub Hash Key 作为外键）；Satellite 与 Hub、Link 之间**无加载顺序依赖**——Satellite 只需要 Hub Hash Key，可以在 Hub 加载完成后任何时刻追加。这是并行加载的基础。
 - **「三件套与维度建模中的事实表 + 维度表怎么对应？」** 答：Hub + Link 共同构成"业务过程的事实表"（多对多关系），Satellite 构成"维度表"。Data Vault 是把"事实 + 维度"进一步范式化拆为 Hub/Link/Satellite，再在 Business Vault / Data Mart 层把它们重组成星型。

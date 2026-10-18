@@ -102,7 +102,7 @@
 
 - **批处理层（Batch Layer）**：用 Spark 周期性（如 T+1）重算全量历史，结果写入 ADS 表的批处理分区（`_batch_dt=yyyymmdd`）。Spark 在 Delta 上做 `MERGE` / 全量覆盖，**承诺：给定同样的输入永远得到同样的输出**。
 - **速度层（Speed Layer）**：Flink 或 Spark Structured Streaming 消费 Kafka，做去重、维度关联、简单聚合，写入 ADS 表的实时分区（`_batch_dt` 留空，按事件时间分区）。**承诺：秒级/分钟级新鲜度，但允许被批结果覆盖**。
-- **服务层（Serving Layer）**：OneService API（FastAPI / Cube / dbt Semantic Layer）查询 ADS 时，**只读批处理分区**；实时需求走单独的实时表（用 Doris / ClickHouse 做 OLAP 副本）。这样避免了"同一指标两套数据来源"的口径漂移。
+- **服务层（Serving Layer）**：OneService API（FastAPI / Cube / dbt Semantic Layer）查询 ADS 时，**按批处理分区与实时分区在同一次查询里合并（见第三层）**；实时需求也可用 Doris / ClickHouse 做 OLAP 副本加速。这样避免了"同一指标两套数据来源"的口径漂移。
 
 **第三层：湖表布局。** Delta Lake 的好处是把批流写到同一张表的不同 dt 上，让"批流融合"简化为单表查询。
 

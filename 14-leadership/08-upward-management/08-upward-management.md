@@ -105,7 +105,7 @@
 
 **传统阶段（1960s-2010）**：
 
-- 1967：Drucker《The Effective Executive》提出「**向上管理**」概念。
+- 1967：Drucker《The Effective Executive》论述「**关注贡献**」——让上级的有效性最大化，但他并未提出「向上管理」概念名。
 - 1980：Gabarro & Kotter《Managing Up》（HBR）。
 - 1990s：CEO 教练文化兴起（Marshall Goldsmith）。
 - 2000s：高管 1:1 制度普及。

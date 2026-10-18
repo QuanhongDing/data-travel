@@ -195,7 +195,7 @@
 
 **4. 追问预测**
 
-- **「LLM 解释有什么前沿方法？」** 答：Circuits（Anthropic）、Sparse Autoencoder（OpenAI / Anthropic）、Trivia / Tracr（DeepMind）。
+- **「LLM 解释有什么前沿方法？」** 答：Circuits（Anthropic）、Sparse Autoencoder（OpenAI / Anthropic）、Tracr（DeepMind）。
 - **「如何把 XAI 输出与监管报送对齐？」** 答：定义报告模板，把 SHAP + decision path 输出为 PDF/HTML 报告，与监管系统接口。
 
 **5. 参考资料**

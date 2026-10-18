@@ -203,7 +203,7 @@ CellID = Hash(UID) mod N_Cells
    - **灰度切流**：按 Cell 切分灰度。
 
 5. **AI 时代的单元化**（判据是「状态归属」而不是「用不用 GPU」，级别见 [§5](01-cell-based-architecture-section-5-ai.md) §5.1）：
-   - **无状态推理副本**：按既有 Cell 部署，随 Cell 一起发布与灰度——机制是既有单元化的直接套用（L1）。
+   - **无状态推理副本**：按既有 Cell 部署，随 Cell 一起发布与灰度——机制是既有单元化的直接套用，但 §6 案例属建设方自述、第②条缺第三方生产案例，故判 L2（见 §5）。
    - **模型副本**：每 Cell 一份权重副本，代价是显存按 N 份占用（见 [§5](01-cell-based-architecture-section-5-ai.md) §5.2.1）。
    - **GPU Cell**：每 Cell 独立 GPU 池——属 L2，只在延迟 / 合规硬约束下按状态归属做 PoC，不要为每个 Cell 常备产能。
    - **Agent Cell**：每 Cell 独立 Agent 集群——属 L3，缺公开生产案例，不要为 Agent 单独建 Cell。

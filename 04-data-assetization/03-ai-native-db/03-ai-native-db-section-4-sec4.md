@@ -288,13 +288,14 @@ LIMIT 10;
 ```sql
 CREATE EXTENSION IF NOT EXISTS plpython3u;
 
-CREATE OR REPLACE FUNCTION embed(text) RETURNS vector(1536)
+CREATE OR REPLACE FUNCTION embed(text) RETURNS vector(1024)
 LANGUAGE plpython3u AS $$
   # 生产实现：读配置的密钥与模型名、设超时、失败返回 NULL 而不是抛异常
-  # 按 openai-python 1.x 的客户端写法（模块级 openai.Embedding 在 1.0 之后已移除）
+  # 客户端调用形态以 openai-python 1.x 为例（模块级 openai.Embedding 在 1.0 之后已移除）；换用 BGE / 通义等其它 embedding 服务时按其客户端替换，并保持同一返回结构
+  # 返回维度必须与 products.embedding 的向量列维度一致（本例 1024，对应 BGE-M3）
   from openai import OpenAI
   client = OpenAI()
-  response = client.embeddings.create(input=text, model='{你的 embedding 模型，例如 text-embedding-3-small}')
+  response = client.embeddings.create(input=text, model='{你的 embedding 模型，例如 BGE-M3}')
   return response.data[0].embedding
 $$;
 

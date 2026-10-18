@@ -2,7 +2,7 @@
 
 ### 8.4 §3.4 典型性能问题排查与解决
 
-> 本主题考察大数据集群三大性能瓶颈（RM、磁盘 IO、Spark 慢任务、写吞吐）以及资源申请失败的排查思路。面试官真正想听的是「分层定位 + 经验参数 + 业务/工程权衡」，而不是「加大内存、加机器」的口号式回答。
+> 本主题考察大数据集群四大性能瓶颈（RM、磁盘 IO、Spark 慢任务、写吞吐）以及资源申请失败的排查思路。面试官真正想听的是「分层定位 + 经验参数 + 业务/工程权衡」，而不是「加大内存、加机器」的口号式回答。
 
 #### §3.4.1 当 YARN 集群的 ResourceManager 成为性能瓶颈时，请问可以通过哪些架构层面和参数层面的优化手段来提升其性能？
 
@@ -26,7 +26,7 @@
 **第三层：参数级优化（治标）。**
 - **NM 心跳合并**：`yarn.nodemanager.resource-monitor.interval-ms` 调大（默认 1s 可调到 3-5s）；`yarn.resourcemanager.nodemanagers.heartbeat-interval-ms`（RM 端）同步调整。
 - **AM 注册异步化**：早期 YARN 的 AM 注册走同步流程，Hadoop 2.9+ 加入异步路径；确认版本在 2.9+。
-- **Container 分配批量**：`yarn.resourcemanager.scheduler.capacity.resource-calculator` 选 `DominantResourceCalculator`，开启 `assignmultiple`；`yarn.scheduler.fair.assignmultiple` 默认 1，可调到 5-10。
+- **Container 分配批量**：`yarn.scheduler.capacity.resource-calculator` 选 `DominantResourceCalculator`，开启 `assignmultiple`；`yarn.scheduler.fair.assignmultiple` 默认 1，可调到 5-10。
 - **状态存储优化**：`yarn.resourcemanager.fs.state-store.uri` 指向独立 Namenode；`yarn.resourcemanager.state-store.async` 启用异步写。
 - **GC 调优**：G1GC + `MaxGCPauseMillis=200`；堆 > 64GB 试 ZGC（JDK 15+）。
 - **RPC 异步**：`yarn.ipc.client.factory.class` 用 `HadoopYarnProtoRPC`；`yarn.ipc.server.read.threadpool.size` 调整。
@@ -163,7 +163,7 @@
 | 原因 | 特征指标 | 解决方向 |
 | --- | --- | --- |
 | **数据倾斜** | Stage 中 task 时长分布极不均匀（10x+ 差异）；`Shuffle Read` 单 task 远超其他 | 加盐打散、热点 key 拆分 |
-| **GC 频繁** | `GC Time > 5% Task Time`；`Pause` > 1s；堆使用率 > 80% | 调大堆、关闭 BJK 调 GC 算法 |
+| **GC 频繁** | `GC Time > 5% Task Time`；`Pause` > 1s；堆使用率 > 80% | 调大堆、将 GC 切换为 G1GC（或 ZGC） |
 | **Shuffle 失败** | `FetchFailedException`；`Shuffle Read Size` 异常；`Reduce slow start` | 增加 retry、调 `spark.shuffle.file.buffer` |
 | **IO 瓶颈** | 单 disk IOPS > 80% capacity；`await` > 50ms | 换 SSD、合并 IO、shuffle 文件合并 |
 
@@ -288,7 +288,7 @@
 **第三层：分析维度 2 —— 集群资源总量。**
 - **节点容量**：单 NM 的 vcore + mem 总量；`yarn node -list` 看 live nodes。
 - **节点健康**：不可用节点（Decommissioned、Unhealthy）会从总容量扣除。
-- **资源计算器**：`DominantResourceCalculator`（默认）vs `DefaultResourceCalculator`，前者考虑 vcore 与 mem 的木桶短板，更合理。
+- **资源计算器**：`DominantResourceCalculator` vs `DefaultResourceCalculator`，前者考虑 vcore 与 mem 的木桶短板，更合理。
 
 **第四层：分析维度 3 —— 调度策略。**
 - **Capacity Scheduler**：硬配额 + 抢占；

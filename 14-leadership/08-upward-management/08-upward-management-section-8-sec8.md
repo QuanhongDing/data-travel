@@ -40,7 +40,7 @@
 
 **2. 参考答案框架**
 
-**第一层：学术定义。** 向上管理（Managing Up）研究的是「下属如何与上级建立高效、专业、双赢的工作关系」。源头有三：1967 年 Peter Drucker 在《The Effective Executive》中首次提出「Manage yourself, then manage up」；1980 年 John Gabarro 与 John Kotter 在《Harvard Business Review》发表《Managing Up》给出系统框架；后续 Keith Ferrazzi《Who's Got Your Back》（2009）补完了「盟友体系」的概念，Michael Lopp《Managing Humans》（2012）补完了「工程师语境下的实操」。共同点是：**它研究的不是「怎么说好话」，而是「怎么让老板赢，自己也赢」**。
+**第一层：学术定义。** 向上管理（Managing Up）研究的是「下属如何与上级建立高效、专业、双赢的工作关系」。源头有三：1967 年 Peter Drucker 在《The Effective Executive》中论述「关注贡献」——让上级的有效性最大化，但他并未提出「向上管理」这个概念名；1980 年 John Gabarro 与 John Kotter 在《Harvard Business Review》发表《Managing Up》给出系统框架；后续 Keith Ferrazzi《Who's Got Your Back》（2009）补完了「盟友体系」的概念，Michael Lopp《Managing Humans》（2012）补完了「工程师语境下的实操」。共同点是：**它研究的不是「怎么说好话」，而是「怎么让老板赢，自己也赢」**。
 
 **第二层：工程定义（数据架构师语境）。** 向上管理 = 期望管理 × 沟通节奏 × 汇报技巧 × 资源争取 × Win-Win × 跨级协作 × 危机管理的体系。其中：期望管理是「了解老板想要什么、主动对齐」；沟通节奏是「每周 1:1 + 月度 MBR + 季度 QBR 的频次」；汇报技巧是「金字塔原理 + SCQA 结构 + 30 秒电梯」；资源争取是「HC / 预算 / 技术投入的 ROI 论证」；危机管理是「坏消息的立即汇报与带着方案」。
 
@@ -76,7 +76,7 @@
 
 **5. 参考资料**
 
-- Peter Drucker《The Effective Executive》（1967）——向上管理概念的源头，核心论点是「管理自己，再管理上级」。
+- Peter Drucker《The Effective Executive》（1967）——「关注贡献」论述的代表作，核心是让上级的有效性最大化；但他并未提出「向上管理」概念名。
 - John Gabarro & John Kotter《Managing Up》（1980 HBR）——给出「了解老板的目标 / 风格 / 盲点」三步骤与「互相依赖」模型，是结构化论述的经典。
 - Keith Ferrazzi《Who's Got Your Back》（2009）——把向上管理扩展为「盟友关系网络」。
 - Michael Lopp《Managing Humans》（2012）——工程师 / 技术领导者语境的实操指南。

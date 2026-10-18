@@ -291,8 +291,8 @@ def execute_sql_safely(sql: str, user_id: str):
         if table.name not in ALLOWED_TABLES:
             audit_logger.warning("user=%s 尝试访问表 %s", user_id, table.name)
             raise PermissionError(f"禁止访问表 {table.name}")
-    if not sql.upper().rstrip().endswith(f"LIMIT {MAX_ROWS}"):
-        sql = sql.rstrip(";") + f"\nLIMIT {MAX_ROWS}"
+    if parsed.args.get("limit") is None:             # 语句自身已带 LIMIT 就不再追加，避免拼出双 LIMIT
+        sql = sql.rstrip().rstrip(";") + f"\nLIMIT {MAX_ROWS}"
     with sandbox_connection(user_id) as conn:      # statement_timeout 在连接参数里设
         ...                                        # 执行 + 记录 user / sql / rows / duration
 ```

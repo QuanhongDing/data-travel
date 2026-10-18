@@ -25,7 +25,7 @@ Container = 物理进程，由 YARN NodeManager（NM）管控；Executor 是 Spa
 - NM 周期性（默认 1s）检查 Container 状态：
   - 进程是否存在（`ps`）；
   - 资源使用（`/proc/<pid>/status`）；
-  - **健康度脚本**：`yarn.nodemanager.health-checker.script.path`（默认 `health-check.sh`，可自定义）；
+  - **健康度脚本**：`yarn.nodemanager.health-checker.script.path`（默认不配置，需自定义脚本）；
   - **磁盘健康**：`yarn.nodemanager.disk-health-checker.enable` + `yarn.nodemanager.disk-health-checker.disk-free-space-threshold`。
 - 触发动作：Container OOM → NM kill Container → AM 收到 `ContainerFailed` 事件。
 
@@ -163,7 +163,7 @@ Container = 物理进程，由 YARN NodeManager（NM）管控；Executor 是 Spa
 - **进程级（Container-level）**：监控每个 Container 进程（进程存活、内存使用、退出码）。
 
 **第二层：节点级故障检测。**
-- **健康度脚本**：`health-check.sh` 自定义；返回非 0 视为不健康；周期性执行（默认 1min）。
+- **健康度脚本**：`health-check.sh` 自定义；返回非 0 视为不健康；周期性执行（默认 10min）。
 - **磁盘健康**：检查 `dfs.datanode.data.dir` 与 `yarn.nodemanager.local-dirs` 的剩余空间；低于阈值（默认 1GB）标记不健康。
 - **节点报告**：NM 向 RM 周期汇报状态（`NodeStatus`）；`yarn.nodemanager.resource-monitor.interval-ms`（默认 1s）。
 - **节点超时**：RM 端 `yarn.resourcemanager.nm-liveness-monitor.expire-interval-ms`（默认 10min）超时未汇报，标记 NM 失联。
@@ -197,7 +197,7 @@ Container = 物理进程，由 YARN NodeManager（NM）管控；Executor 是 Spa
 
 **4. 追问预测**
 
-- **「健康检查脚本多久执行一次？」** 答：`yarn.nodemanager.health-checker.interval-ms`（默认 60000 = 1min）；可用 `health-checker.script.opts` 传参。
+- **「健康检查脚本多久执行一次？」** 答：`yarn.nodemanager.health-checker.interval-ms`（默认 600000 = 10min）；可用 `health-checker.script.opts` 传参。
 - **「cgroup v1 vs v2 区别？」** 答：v1 多个 subsystem 各自挂载；v2 统一 `cgroup v2` 单一挂载；Hadoop 3.3+ 完全支持 v2。
 - **「节点 Decommission 期间会接收新任务吗？」** 答：Decommission 中可配置 `RUNNING` → `DECOMMISSIONING` → `DECOMMISSIONED`；`DECOMMISSIONING` 期间不下发新任务。
 
@@ -231,8 +231,8 @@ Container = 物理进程，由 YARN NodeManager（NM）管控；Executor 是 Spa
 **第二层：NN 缓解措施。**
 - **NN HA（主备）**：2 个 NN（Active + Standby）+ JournalNode（Quorum，3 节点）+ ZKFC 自动 failover。
 - **Quorum Journal Manager（QJM）**：EditLog 写多数派 JournalNode，比 NFS 更可靠。
-- **ZKFC 自动切换**：`yarn.resourcemanager.zkfc.connect.retry-interval-ms` 控制 ZK 连接重试。
-- **手动切换**：`yarn rmadmin -transitionToActive --forcemanual`。
+- **ZKFC 自动切换**：`ha.zookeeper.*` 控制 ZK 连接重试。
+- **手动切换**：`hdfs haadmin -transitionToActive`。
 - **Federation**：单 NN 撑不住时拆多 Namespace；Router-Based Federation 统一访问。
 - **冷备**：定期 FSImage + EditLog 备份到独立 Namenode，灾难时恢复。
 

@@ -230,7 +230,7 @@ SET query_timeout = 300;
 # 1) 采集：带度量的条目，不是只有 SQL 文本
 slow_queries = collect_slow_queries(
     threshold_seconds=60,          # 阈值按你的 P99 定，不要照抄
-    metrics=["duration", "rows_scanned", "shuffle_bytes", "peak_memory"],
+    metrics=["duration", "bytes_scanned", "shuffle_bytes", "peak_memory"],
 )
 
 for q in slow_queries:
@@ -261,7 +261,7 @@ for q in slow_queries:
 SQL：{sql}
 执行计划（含估计行数）：{plan_estimated}
 执行计划（含实际行数）：{plan_actual}
-指标：耗时 {duration}s；扫描字节 {rows_scanned}; shuffle 字节 {shuffle_bytes}
+指标：耗时 {duration}s；扫描字节 {bytes_scanned}; shuffle 字节 {shuffle_bytes}
 
 【输出要求】逐条给出，每条必须包含：
 1. 判断（估算偏差 / 倾斜 / 写法 / 缺统计信息 / 无法判断）

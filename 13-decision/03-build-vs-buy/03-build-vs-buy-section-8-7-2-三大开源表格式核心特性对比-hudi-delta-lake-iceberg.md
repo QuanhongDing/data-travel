@@ -102,7 +102,7 @@
 | 元数据原子切换 | JSON 文件 + Checkpoint | metadata.json 指针 CAS | commit 文件 + timeline |
 | 默认并发模型 | Serializable | Snapshot Isolation | Timeline-based lock |
 | 隔离粒度 | 表 | 表 + 分区 | commit / instant |
-| 多 writer 并发 | 强（DRAM 优化） | 中（重试路径） | 强（MoR 表） |
+| 多 writer 并发 | 中（Spark 优化较好） | 强（snapshot 隔离） | 强（MoR 表） |
 | 元数据压力 | 中 | 高（manifest list） | 低 |
 
 **第四层：选型影响。** ① **多团队共享一张表 + 高并发写**——Iceberg 优势。② **强事务语义（金融 / 计费）**——Delta Lake。③ **CDC + 增量消费**——Hudi（timeline 原生支持 incremental pull）。

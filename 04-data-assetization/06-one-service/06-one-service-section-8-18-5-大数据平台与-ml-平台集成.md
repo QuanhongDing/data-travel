@@ -142,7 +142,7 @@
 
 - **Databricks**：MLflow 原生集成 + Unity Catalog 一体化。
 - **Uber Michelangelo**：内部 ML 平台，与 MLflow 兼容。
-- **Meta（Facebook）**：基于 MLflow 扩展的 FBLearner Flow。
+- **Meta（Facebook）**：自研 FBLearner Flow。
 - **字节跳动**：内部 ML 平台，对外 MLflow 兼容。
 
 **3. 常见陷阱**

@@ -117,7 +117,7 @@ checks:
 
 **第三层：实施步骤 1 —— 血缘采集。**
 - **Spark / Flink 集成 OpenLineage**：每个作业自动上报 `InputDataset` / `OutputDataset` 与运行事件。
-- **DataHub 自动发现**：通过 JDBC / Hive Hook 自动解析 SQL，构建表级血缘；字段级血缘需要额外的 SQL 解析（如 Apache SQLLineage）。
+- **DataHub 自动发现**：通过 JDBC / Hive Hook 自动解析 SQL，构建表级血缘；字段级血缘需要额外的 SQL 解析（如 SQLLineage）。
 - **Atlas Hook**：Hadoop 生态自动采集，可视化血缘。
 
 **第四层：实施步骤 2 —— 血缘 → DQC 联动。**

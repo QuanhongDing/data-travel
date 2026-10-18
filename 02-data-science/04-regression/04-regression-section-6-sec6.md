@@ -227,11 +227,12 @@
      ```python
      # age 分箱 → WOE
      bins = [(0,25),(25,35),(35,45),(45,60),(60,99)]
+     woe = {}
      for lo, hi in bins:
          bad_rate_bin   = df[(age>=lo)&(age<hi)].target.mean()
          bad_rate_total = df.target.mean()
-         woe[lo,hi] = log(bad_rate_bin / bad_rate_total)   # 单调性需校验（见失败教训）
-     df['age_woe'] = df.age.map(woe_lookup)
+         woe[lo,hi] = log((bad_rate_bin/(1-bad_rate_bin)) / (bad_rate_total/(1-bad_rate_total)))   # WOE = logit(p_bin) − logit(p)；单调性需校验（见失败教训）
+     df['age_woe'] = df.age.apply(lambda a: woe[next((lo,hi) for lo,hi in bins if lo <= a < hi)])
      ```
 
 3. **分数校准（核心）**

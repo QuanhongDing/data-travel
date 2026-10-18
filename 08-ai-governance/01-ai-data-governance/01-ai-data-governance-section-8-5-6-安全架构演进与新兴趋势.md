@@ -220,7 +220,7 @@ Ranger 必须能覆盖这四层，且决策点（Plugin / Sidecar）部署在每
 **第三层：跨对象存储的细粒度授权。**
 
 - **HDFS**：HDFS ACL + Ranger Plugin（在 NameNode 处拦截），路径级授权 + Service-level Tag。
-- **S3 / OSS**：Ranger 不直接管 object ACL，但可以通过 EMRFS / S3 Shield 等，把 Hive 表位置映射到一组前缀+S3 IAM role，间接施加细粒度策略；近年的实践是「LakeFormation + S3 Access Grants」承担对象层。
+- **S3 / OSS**：Ranger 不直接管 object ACL，但可以通过 EMRFS 等，把 Hive 表位置映射到一组前缀+S3 IAM role，间接施加细粒度策略；近年的实践是「LakeFormation + S3 Access Grants」承担对象层。
 - **Iceberg / Hudi 的 Snapshot 层**：Ranger 把 Catalog（HMS）中的表授权与底层 Parquet 文件的路径前缀同步下发；Snapshot 元数据天然不入授权——但 Manifest 文件本身要签名防篡改。
 
 **第四层：动态权限的工程落点。**
@@ -321,7 +321,7 @@ Ranger 必须能覆盖这四层，且决策点（Plugin / Sidecar）部署在每
 **1. 考察点**
 
 - 是否理解「万节点 = KDC 必须多主 + 异地灾备」；
-- 能否说清 Kerberos 性能优化（TGT 复用、TLS、加密算法选择、principal 数量控制）；
+- 能否说清 Kerberos 性能优化（TGT 复用、加密算法选择、principal 数量控制）；
 - 是否了解跨域 Trust 的工程边界。
 - 加分项：能给出具体参数（KDC CPU、principal 数、TLS 开关）。
 
@@ -337,9 +337,8 @@ Ranger 必须能覆盖这四层，且决策点（Plugin / Sidecar）部署在每
 
 - **TGT 复用**：避免每个作业都重新申请 TGT，使用 `krenew` 或 Hadoop 自带的票据缓存。
 - **算法选型**：默认 AES-256（AES256-CTS-HMAC-SHA1-96）；避免 RC4 等老旧算法。
-- **TLS 加速**：在 KDC 与 Client 之间启用 TLS，减少握手耗时。
 - **时钟同步**：所有节点 NTP 同步 + 自监控（最大允许漂移 ≤ 1 分钟，目标 ≤ 5s）。
-- **principal 量级控制**：每个用户/服务一个 principal，过多会让 Kerberos 数据库爆增；用 `princid` 优化或合并。
+- **principal 量级控制**：每个用户/服务一个 principal，过多会让 Kerberos 数据库爆增；需要控制 principal 数量（合并同类、避免重复新建）。
 - **TGS 缓存**：启用 `ticket_lifetime` 与 `renew_lifetime`，减少重新申请频率。
 
 **第三层：跨域信任（Trust）。**
@@ -414,7 +413,7 @@ Ranger 必须能覆盖这四层，且决策点（Plugin / Sidecar）部署在每
 - **mTLS + SPIFFE**：服务间身份标准化，配合自动证书轮转。
 - **Identity-Aware Proxy（IAP）**：所有 HTTP / gRPC 入口统一验证。
 - **Conditional Access + Risk-based**：风险评分高的访问要求 2FA / step-up。
-- **Policy Engine**：OPA / Cedar / Open Policy Agent Gateway / 内部 RISL 引擎。
+- **Policy Engine**：OPA / Cedar / 内部 RISL 引擎。
 
 **第四层：Lambda 架构的特殊处理。**
 

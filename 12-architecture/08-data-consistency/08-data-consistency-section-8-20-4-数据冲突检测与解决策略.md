@@ -15,7 +15,7 @@
 
 **2. 参考答案框架**
 
-**第一层：为什么需要向量时钟。** 在跨地域多 Region 的 AP 系统中，**LWW（Last-Write-Wins）**的"最后写入"难以判定——跨 Region 的时钟不可信（时钟偏移、时钟漂移）。**全局时间戳**也难以获得——NTP 同步精度只能到毫秒级，GPS 同步也只能到几十米级。
+**第一层：为什么需要向量时钟。** 在跨地域多 Region 的 AP 系统中，**LWW（Last-Write-Wins）**的"最后写入"难以判定——跨 Region 的时钟不可信（时钟偏移、时钟漂移）。**全局时间戳**也难以获得——NTP 同步精度只能到毫秒级，GPS 授时也需要专用时钟基础设施才能给出可用的误差界（见 §20.4.3）。
 
 向量时钟的提出是为了**精确追踪因果关系**——不依赖全局时间，只看事件的"逻辑先后"。
 
@@ -214,7 +214,7 @@ GDPR（欧盟）等合规要求**EU 用户的数据必须存储在 EU 内的 Reg
 - **Uber 的跨 Region 用户数据同步** —— Uber 订单、用户画像跨 Region 同步，归属 Region 强一致 + 跨 Region 最终一致，是出行行业跨 Region 一致性的代表。
 - **Netflix 的全球用户数据同步** —— Netflix 用 Cassandra 跨 Region 同步用户观看历史、偏好，最终一致 + 应用层合并，是头部流媒体公司跨 Region 一致性的代表。
 - **字节跳动全球电商 TikTok Shop 的跨 Region 一致性** —— TikTok Shop 在多 Region 部署电商业务，用归属 Region + 应用层合并，是国内大厂出海电商的代表。
-- **阿里 Lazuni / AliExpress 的跨 Region 一致性** —— 阿里速卖通在多 Region 部署电商业务，归属 Region + 应用层合并，是国内电商出海的代表。
+- **阿里 Lazada / AliExpress 的跨 Region 一致性** —— 阿里速卖通在多 Region 部署电商业务，归属 Region + 应用层合并，是国内电商出海的代表。
 - **招行基于 OceanBase 的跨 Region 强一致** —— 招商银行核心账务用 OceanBase 跨 Region 强一致，是国内大型银行跨 Region 强一致的标杆。
 - **OceanBase 在蚂蚁集团的跨 Region 强一致** —— 蚂蚁集团用 OceanBase 跨 Region 强一致支撑支付、资金、账务，是国内金融场景跨 Region 强一致的代表。
 
@@ -340,7 +340,7 @@ LWW 只适合**业务能接受"覆盖丢失"**的场景：
 
 **5. 参考资料**
 
-- Amazon Dynamo 论文（SOSP 2007）——LWW 在 AP 系统中的工业实践。
+- Amazon Dynamo 论文（SOSP 2007）——向量时钟在 AP 系统中的工业实践。
 - Werner Vogels《Eventually Consistent》——LWW 的工程含义与失效模式。
 - TrueTime 原始论文《Spanner: Google's Globally Distributed Database》（OSDI 2012）——全局时钟如何让 LWW 在跨大洲可信。
 - CRDT 的工业综述《Conflict-free Replicated Data Types》（Shapiro et al., 2011）——CRDT 的理论基础。
@@ -605,7 +605,7 @@ LWW：所有非时钟新的写入都被认为"覆盖"，没有"冲突"概念。
 - Amazon Dynamo 论文（SOSP 2007）——向量时钟在 AP 系统中的工业实践。
 - Werner Vogels《Eventually Consistent》——LWW 与向量时钟的工业论述。
 - Shapiro et al.《A Comprehensive Study of Convergent and Commutative Replicated Data Types》——CRDT 的理论基础，向量时钟的进化方向。
-- **Amazon Dynamo 的向量时钟 + LWW 混合** —— Dynamo 默认 LWW，但用向量时钟检测冲突，必要时返回 sibling 让应用层合并，是头部电商系统的代表。
+- **Amazon Dynamo 的向量时钟 + 应用层合并** —— Dynamo 用向量时钟检测冲突，必要时返回 sibling 让应用层合并，是头部电商系统的代表。
 - **Riak 的向量时钟默认 + sibling 返回** —— Riak 默认用向量时钟检测冲突，返回 sibling 让应用层解决，是 AP 数据库的代表。
 - **Cassandra 的 LWW 默认 + 应用层冲突解决** —— Cassandra 默认 LWW，但可以配应用层合并，是 宽列（wide-column）NoSQL 数据库的代表。
 - **Google Spanner 的 TrueTime 替代向量时钟** —— Spanner 用 TrueTime + Paxos，节点数可扩展到万级而不需要向量时钟，是 CP 系统的标杆。

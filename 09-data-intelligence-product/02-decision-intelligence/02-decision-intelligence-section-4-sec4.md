@@ -270,18 +270,18 @@ def decide_with_llm(ctx: dict) -> str:
 from langgraph.graph import StateGraph, END
 BUDGET_MS = {"features": 25, "rules": 15, "model": 50, "log": 10}  # 【经验】按你自己链路的实测 P99 上浮后取整
 
-def guarded(node, fallback_action):
+def guarded(node, budget_ms, fallback_action):
     def run(state):
         try:
-            return node(state, timeout_ms=BUDGET_MS[node.__name__])
+            return node(state, timeout_ms=budget_ms)
         except TimeoutError:
             state.update(degraded=True, action=fallback_action)   # 超时走预置降级动作：监控上看到的是这一段降级率，不是请求失败率
             return state
     return run
 g = StateGraph(dict)
 for name, fn in [("features", load_features), ("rules", match_rules), ("model", predict)]:
-    g.add_node(name, guarded(fn, "MANUAL_REVIEW"))
-g.add_node("decide", decide_by_policy)   # 策略层：唯一能决定动作的地方
+    g.add_node(name, guarded(fn, BUDGET_MS[name], "MANUAL_REVIEW"))
+g.add_node("decide", guarded(decide_by_policy, BUDGET_MS["log"], "MANUAL_REVIEW"))   # 策略层：唯一能决定动作的地方
 g.set_entry_point("features")
 g.add_edge("features", "rules"); g.add_edge("rules", "model"); g.add_edge("model", "decide"); g.add_edge("decide", END)
 ```

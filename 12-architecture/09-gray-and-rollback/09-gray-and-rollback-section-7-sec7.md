@@ -79,7 +79,7 @@
 
 **这条机制也解释了 RTO 分级**：主文件 §2.2 把回滚 RTO 分成 30 秒（应用层）、5 分钟（Schema 兼容条件下）、30 分钟（需要数据修复）三档。**这三档不是按工具分的，是按「要不要数据修复」分的**——[§ 5 前沿演进](09-gray-and-rollback-section-5-ai.md) §5.2.3 把数据灰度拆成只读影子 / 幂等写入 / 已消费三类路径，划的正是同一条线。
 
-**公开证据**【公开】：Kubernetes 的 Deployment 默认采用滚动更新并暴露 `maxUnavailable` / `maxSurge` 两个参数来控制替换节奏与共存窗口，判定入口是官方文档 Deployment 的 `strategy` 字段说明（本条描述的是长期存在的官方能力，不含年份主张）；本书 §4.2 的 Argo Rollouts 与 §4.2 的 Istio VirtualService 示例分别给出「按实例替换」与「按权重切流」两种实现；在线改表工具 gh-ost、pt-online-schema-change、pg_repack 的能力见 §4.3 工具表，具体版本与限制以各自官方文档当前版本为准。**其余年份与产品沿革沿用主文件 §1.4 的记述，不在本节重复断言。**
+**公开证据**【公开】：Kubernetes 的 Deployment 默认采用滚动更新并暴露 `maxUnavailable` / `maxSurge` 两个参数来控制替换节奏与共存窗口，判定入口是官方文档 Deployment 的 `strategy` 字段说明（本条描述的是长期存在的官方能力，不含年份主张）；本书 §4.2 的 Argo Rollouts（Rollout 的 `setWeight` 阶梯）与 Istio VirtualService（`weight` 分流）示例给出的都是「按权重切流」这一种实现，而「按实例替换」即本句前半段 Kubernetes Deployment 的滚动更新；在线改表工具 gh-ost、pt-online-schema-change、pg_repack 的能力见 §4.3 工具表，具体版本与限制以各自官方文档当前版本为准。**其余年份与产品沿革沿用主文件 §1.4 的记述，不在本节重复断言。**
 
 **失效条件**：当你的流量入口根本不支持按请求切分（例如只有 DNS 轮询或多副本直连）时，「金丝雀」实际得到的是实例级粒度，**你能设的最小比例是 1/副本数**——三副本环境下最小就是 33%。此时再讨论「1% 灰度」没有意义，要先补一个能按请求切分的入口，而不是把比例写在配置里自我安慰。
 

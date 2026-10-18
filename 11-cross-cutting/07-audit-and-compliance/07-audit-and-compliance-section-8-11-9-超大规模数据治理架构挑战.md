@@ -91,11 +91,11 @@
 
 **第二层：分库分表之外的方案。**
 
-- **图数据库（Neo4j / JanusGraph / NebulaGraph / Amazon Neptune）**：血缘和所有权关系本质是图，用图数据库存「**实体-关系**」做遍历，效率通常显著优于关系库的多表 JOIN；LinkedIn DataHub 用 Neo4j 做血缘图存储，跨级追溯延迟在毫秒量级（上述性能差距的具体倍数与延迟数值随查询深度、数据规模与实现而异，本节无法给出可溯源基准，按【经验】档处理）。Uber Databook 用自研图存储。
+- **图数据库（Neo4j / JanusGraph / NebulaGraph / Amazon Neptune）**：血缘和所有权关系本质是图，用图数据库存「**实体-关系**」做遍历，效率通常显著优于关系库的多表 JOIN；LinkedIn DataHub 用 Neo4j 做血缘图存储，跨级追溯延迟在毫秒量级（上述性能差距的具体倍数与延迟数值随查询深度、数据规模与实现而异，本节无法给出可溯源基准，按【经验】档处理）。Uber Databook 用图存储。
 - **KV / 文档数据库（Apache Cassandra / ScyllaDB / HBase / MongoDB）**：适合存「**实体属性**」（表的所有属性、字段的所有属性）。高写吞吐 + 多版本天然（用时间戳做版本）。
 - **列存 + 搜索（Elasticsearch / OpenSearch / Apache Solr）**：适合全文搜索和聚合查询（按标签、按 Owner 聚合统计）。LinkedIn DataHub、OpenMetadata 都用 ES 做搜索层。
 - **时序数据库（InfluxDB / TimescaleDB / Prometheus）**：存元数据变更历史（schema 变更、policy 变更），用于「**时点恢复**」与「**变更审计**」。
-- **湖仓表格式（Iceberg / Hudi）**：元数据本身可以「**元数据即数据**」，把元数据作为 Iceberg 表存一份，开放给所有引擎查询。Databricks Unity Catalog 把元数据存成 Iceberg 表，是这个方向的工业代表。
+- **湖仓表格式（Iceberg / Hudi）**：元数据本身可以「**元数据即数据**」，把元数据作为 Iceberg 表存一份，开放给所有引擎查询。Uber Databook 把元数据存成 Iceberg 表，是这个方向的工业代表。
 - **分层存储 + 冷热分离**：热数据（最近 30 天变更）存图数据库，冷数据（历史版本）存对象存储（S3 / OSS）做归档。
 
 **第三层：典型架构。** LinkedIn DataHub 的存储架构是「**MySQL（实体 + 属性）+ Neo4j（血缘图）+ ElasticSearch（搜索）+ Kafka（事件流）**」四件套——任何变更走 Kafka 广播，各存储异步消费。这是工业上最成熟的「**混合存储 + 事件驱动**」范本。OpenMetadata 是「**MySQL + ES**」相对轻量的组合，把图查询简化为带索引的关系查询。阿里云 DataWorks 用「**图数据库 + 列存 + KV**」三层支撑海量元数据。Uber Databook 用自研「**元数据即 Iceberg 表**」架构，所有元数据当作 Iceberg 表存，让 Spark 直接查。
@@ -371,7 +371,7 @@
 
 **第三层：治理评分（Governance Score）。** Uber Databook 提出「**Data Score**」：把元数据完整度、血缘覆盖率、质量评分、消费活跃度四个分数加权平均，得到一张表 / 一个数据集的「**治理分**」。这是「**三者协同对外**」的统一抽象。LinkedIn DataHub 用「**Metadata Health**」指标评估元数据完整度。Databricks Unity Catalog 在每个 Catalog / Schema / Column 上提供「**Catalog Health**」评分。
 
-**第四层：工业实践。** LinkedIn DataHub 是「**元数据 + 血缘 + 质量**」协同的工业范本——所有异常都走「**质量事件 → 血缘 API → 元数据通知**」流程。Uber Databook 把三者融合为「**Data Score**」，是协同机制的对外语言。Databricks Unity Catalog 把三者集成到 Catalog 内置，是湖仓时代协同机制的对标。阿里云 DataWorks 用「**OneData + 数据地图 + 监控 + 评分**」打通，国内对标完整（该评价本节无法给出可核验的出处，按【经验】档处理）。Netflix Data Quality + Databook + 血缘系统共同构成「**数据契约**」的执行基础设施。
+**第四层：工业实践。** LinkedIn DataHub 是「**元数据 + 血缘 + 质量**」协同的工业范本——所有异常都走「**质量事件 → 血缘 API → 元数据通知**」流程。Uber Databook 把三者融合为「**Data Score**」，是协同机制的对外语言。Databricks Unity Catalog 把三者集成到 Catalog 内置，是湖仓时代协同机制的对标。阿里云 DataWorks 用「**OneData + 数据地图 + 监控 + 评分**」打通，国内对标完整（该评价本节无法给出可核验的出处，按【经验】档处理）。Netflix Data Quality + Data Card + 血缘系统共同构成「**数据契约**」的执行基础设施。
 
 **3. 常见陷阱**
 

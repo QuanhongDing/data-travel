@@ -300,7 +300,7 @@
 **第三层：参考案例（公开报道 / 通用案例）。**
 
 - **案例 A（时钟漂移）**：某互联网公司凌晨批量作业集中失败，KDC 日志显示大量 `KRB_AP_ERR_SKEW`。根因：VMWare 虚拟机时间同步策略变更。止血：把 NTP daemon 切回强制同步；根治：在 Hypervisor 层禁用「时间漂移吸收」。
-- **案例 B（KDC 过载）**：某金融客户在大量并发作业提交时 KDC CPU 100%，TGS 返回 `KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN`。根因：KDC 单实例 + 横向扩展缺失。止血：扩容至 3 KDC；根治：业务方改成批量提交 + KDC 多主。
+- **案例 B（KDC 过载）**：某金融客户在大量并发作业提交时 KDC CPU 100%，TGS 换票请求大量超时失败。根因：KDC 单实例 + 横向扩展缺失。止血：扩容至 3 KDC；根治：业务方改成批量提交 + KDC 多主。
 - **案例 C（keytab 过期）**：某大型数据平台升级后 30% 服务报 `no key table entry`。根因：运维轮换 keytab 时漏掉若干服务。止血：批量下发旧 keytab；根治：把所有 keytab 入配置中心 + 续签监控。
 - **案例 D（长任务 TGT 过期）**：某 Spark Streaming 作业跑了 14 天后失败，日志显示 `TGT expired`。根因：AM 续签线程崩溃。止血：重启作业 + 手动续签；根治：增强 AM 续签监控与 watchdog。
 

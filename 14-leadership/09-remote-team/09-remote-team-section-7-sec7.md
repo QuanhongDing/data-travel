@@ -30,7 +30,7 @@
 
 ### 7.2 候选方案全景
 
-保留全部五个候选（Remote-First、Async-First、Hybrid、Office-First、AI 增强），并把 **Quarterly Offsite** 补入；**Annual Retreat** 亦一并列出，它来自主文件 §2.1——§2.1 把 Quarterly Offsite 与 Annual Retreat 并列为两个概念。两者都是远程方案不可省略的一件，区别在节奏与用途（见 7.6 的组合 5）。
+保留全部五个候选（Remote-First、Async-First、Hybrid、Office-First、AI 增强），并把 **Quarterly Offsite** 补入，下表共六个选项；**Annual Retreat** 不单独成行，它来自主文件 §2.1——§2.1 把 Quarterly Offsite 与 Annual Retreat 并列为两个概念。两者都是远程方案不可省略的一件，区别在节奏与用途（见 7.6 的组合 5）。
 
 | 方案 | 定位 | 核心机制（一句话） | 典型使用者 | 成本形态 |
 | --- | --- | --- | --- | --- |

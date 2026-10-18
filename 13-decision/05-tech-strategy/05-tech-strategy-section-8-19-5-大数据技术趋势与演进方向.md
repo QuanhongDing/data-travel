@@ -261,7 +261,7 @@
 - **湖仓一体成为标准**：Iceberg / Hudi / Paimon 成为事实标准存储格式。
 - **存算分离**：对象存储 + 表格式层成为主流。
 - **多模态统一**：结构化 + 非结构化 + 向量统一存储（如 Lance / Iceberg 的向量扩展）。
-- **格式统一**：Iceberg v3 引入删除文件、变长类型、向量支持。
+- **格式统一**：Iceberg V3 引入删除向量、Variant 类型（行级删除文件机制自 v2 规范起已提供）。
 - **零拷贝共享**：跨引擎 / 跨云共享数据（Snowflake Data Sharing / Delta Sharing）。
 
 **第三层：调度的演进。**
@@ -283,7 +283,7 @@
 
 - **Databricks Photon** 是向量化执行引擎的工业标杆。
 - **Snowflake** 的存储 + 计算分离是演进方向。
-- **阿里 Paimon** 是流批一体存储的新探索（2024 捐给 Apache）。
+- **阿里 Paimon** 是流批一体存储的新探索（2023 年进入 ASF 孵化，2024 年毕业）。
 - **Uber / Netflix** 的增量处理实践指向"存储层统一"。
 - **LangChain / LlamaIndex** 指向"AI 与数据平台融合"。
 

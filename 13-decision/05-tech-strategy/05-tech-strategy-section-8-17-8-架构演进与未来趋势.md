@@ -117,7 +117,7 @@
 
 - **Snowflake** 是存算分离的开创者——存储在三方云对象存储，计算独立伸缩。
 - **Databricks** 的 Lakehouse = 存算分离 + Delta Lake + Spark。
-- **阿里 MaxCompute** 从 2019 年起向存算分离演进（存储用 ECS + 对象存储）。
+- **阿里 MaxCompute** 从 2019 年起向存算分离演进（存储层基于盘古 Pangu，计算层为伏羲 Fuxi 调度）。
 - **AWS EMR + S3** 是 AWS 上的存算分离标准组合。
 - **Google BigQuery** 是完全 Serverless 的存算分离数仓。
 
@@ -336,7 +336,7 @@
 - **阿里** Flink + Paimon——流批一体的代表。
 - **字节** Flink on K8s——大规模流批一体。
 - **Netflix** Flink + Iceberg——流批协同。
-- **Databricks** Spark + Delta——Painless 批流一体。
+- **Databricks** Spark + Delta——批流一体。
 
 **3. 常见陷阱**
 

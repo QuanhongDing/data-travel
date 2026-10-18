@@ -197,7 +197,7 @@ dimensions:
     - assertion: max_event_time_within
       value: 1d
 severity: P0                 # 决定走哪条告警通道（4.2 第 3 条）
-not_covered: [accuracy, uniqueness]   # 本次不做的维度必须显式写下来
+not_covered: [accuracy, consistency, uniqueness]   # 本次不做的维度必须显式写下来
 ```
 
 **怎么用**：填 `dataset` / `owner` / `threshold_basis` / `value` 四格；`not_covered` 是这张模板的重点，它把「没想过」与「想过但不做」区分开。`schedule` 与 `value` 不要照抄示例值——前者必须早于该表下游的消费时刻（§3.2.1 失效点），后者必须能回答「依据是什么」。
