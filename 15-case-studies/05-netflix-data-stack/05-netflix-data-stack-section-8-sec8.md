@@ -42,7 +42,7 @@
 
 **第二层：五维度对比。**
 
-- **ACID 事务**：Hive 无——HDFS 上的目录改名是「伪原子」，并发写必然脏；Delta Lake 通过 `_delta_log`（JSON checkpoint + commits 目录）实现乐观并发；Iceberg 通过 snapshot 隔离（每次 commit 产生新 snapshot，多 reader 看到的是各自 snapshot 视图）实现 ACID，且 commit 是基于「重命名 manifest list 文件」的原子操作——对 S3 / HDFS 都一致。
+- **ACID 事务**：Hive 无——HDFS 上的目录改名是「伪原子」，并发写必然脏；Delta Lake 通过 `_delta_log`（JSON checkpoint + commits 目录）实现乐观并发；Iceberg 通过 snapshot 隔离（每次 commit 产生新 snapshot，多 reader 看到的是各自 snapshot 视图）实现 ACID，且 commit 是基于「原子替换 metadata 指针」的原子操作——对 S3 / HDFS 都一致。
 - **Schema Evolution**：Hive 改列名 / 改类型需要重建表；Delta Lake 支持列增删改与类型 promotion；Iceberg 用 `column-id` 而非「列名 + 类型」做列引用，每个字段有独立 ID，旧 schema 仍可正确解码历史数据文件——这是 Iceberg 在「字段重命名 + 历史兼容」上的关键优势。
 - **Time Travel**：Hive 没有原生支持（需要外部快照工具）；Delta Lake 通过 `VERSION AS OF` 支持；Iceberg 通过 `snapshot-id` / `as-of-timestamp` 支持任意历史 snapshot 还原，且 `expire_snapshots` 提供自动过期策略。
 - **隐藏分区（Hidden Partition）**：Hive 的分区是「字段值 = 分区路径」，下游必须写 `WHERE dt='2025-01-01'`；Delta Lake 的 partition 走 Spark 的 `PartitionTransform`，但仍暴露字段；Iceberg 的 partition 通过 `transform`（`identity`、`bucket`、`truncate`、`year`、`month`、`day`、`hour`）声明，**partition 列不出现为查询字段**，写者变更 partition 策略不影响老 SQL——例如按 `event_time` 的 `day(ts)` 分区，查询写 `WHERE event_time BETWEEN ...` 即可，schema 干净。
@@ -66,7 +66,7 @@
 
 **4. 追问预测**
 
-- **「Iceberg 的 commit 协议具体怎么工作？两个并发写怎么冲突？」** 答：每次 commit 生成一个新的 manifest list 文件（旧文件路径原子重命名或新建 pointer）。两个 writer 拿到同一个 parent snapshot，各自生成新 snapshot；commit 时通过「compare-and-swap」检查 parent 是否变化，若变化则整个 commit 重试。这是 optimistic concurrency，不阻塞读。
+- **「Iceberg 的 commit 协议具体怎么工作？两个并发写怎么冲突？」** 答：每次 commit 生成一个新的 manifest list 文件，并原子替换 metadata 指针。两个 writer 拿到同一个 parent snapshot，各自生成新 snapshot；commit 时通过「compare-and-swap」检查 parent 是否变化，若变化则整个 commit 重试。这是 optimistic concurrency，不阻塞读。
 - **「Delta Lake 的 UniForm 出现后，Iceberg 还有优势吗？」** 答：UniForm 是「把 Delta 的 log 转写为 Iceberg / Hudi 协议」，本质是单点适配层，治理仍在 Databricks。Iceberg 的优势是**原生跨引擎 + Apache 治理 + REST Catalog 标准化**（Iceberg 1.3 起的标准），协议层不依赖单一厂商。
 - **「国内大厂为什么选 Iceberg 而不是 Delta？」** 答：① 多引擎需求（同时跑 Spark + Flink + Trino），② 不想被 Databricks 控制，③ 拥抱 Apache 社区标准。蚂蚁、字节、腾讯、京东都已给出公开分享。
 - **「Iceberg 近年的关键升级是什么？」** 答：行级 update/delete API（Row Delta）先落地；其后规范层面引入**删除向量、增量读取与 Variant 类型**（半结构化数据原生支持）。**版本号以官方表规范页当前内容为准**——本书其它章节按 **V3 规范**记录，此处不另立一个版本号。
@@ -174,7 +174,7 @@ Netflix 2015 年的真实故障：Hive 表 partition 数到**百万级**后，`S
 **1. 考察点**
 
 - 是否理解 exactly-once 不是 Flink 单点能力，而是「**Flink Checkpoint + Kafka 事务 + Iceberg 二阶段提交**」三方协同的结果。
-- 能否说清 Flink 的「两阶段提交（Two-Phase Commit, 2PC）」Sink 在 Iceberg 上的实现——Iceberg 的 commit 是「pre-commit 写 manifest list 文件 + commit 阶段 rename」。
+- 能否说清 Flink 的「两阶段提交（Two-Phase Commit, 2PC）」Sink 在 Iceberg 上的实现——Iceberg 的 commit 是「pre-commit 写 manifest list 文件 + commit 阶段原子替换 metadata 指针」。
 - 是否知道 Schema 演进在大流量下的真实代价（反序列化错误导致整个 Kafka topic 消费中断），以及 Schema Registry 的兼容性级别（BACKWARD / FORWARD / FULL）。
 - 加分项：能引用 LinkedIn / Uber 的同类架构做横向对比，说明「Kafka + Flink + 表格式」已成为实时数仓的事实范式。
 
@@ -186,7 +186,7 @@ Netflix 2015 年的真实故障：Hive 表 partition 数到**百万级**后，`S
 
 - **Kafka 事务生产者**：Flink 通过 `KafkaTransactionalProducer` 把同一个 Checkpoint 内的多条消息原子写入 Kafka。下游消费者设置 `isolation.level=read_committed`，未 commit 的消息对下游不可见——这是「不丢不重」的基础。
 - **Flink Checkpoint**：基于 Chandy-Lamport 算法做异步屏障（barrier），状态后端（RocksDBStateBackend）把 state 落到分布式存储（S3 / HDFS）。Checkpoint 成功才视为「这段数据已落地」，否则整段回放。
-- **Iceberg 二阶段提交（2PC）**：Flink 写 Iceberg 走「pre-commit → commit」两阶段。Flink job 收到 Checkpoint 完成信号后，先「pre-commit」（写一个新的 manifest list 到临时路径），JobManager 收到所有 task 的 pre-commit ACK 后才真正 rename manifest list 完成 commit。这把「Flink state」「Kafka offset」「Iceberg 写入」三者绑成原子单元——任意一段失败都能通过 cancel + 回滚恢复。
+- **Iceberg 二阶段提交（2PC）**：Flink 写 Iceberg 走「pre-commit → commit」两阶段。Flink job 收到 Checkpoint 完成信号后，先「pre-commit」（写一个新的 manifest list 到临时路径），JobManager 收到所有 task 的 pre-commit ACK 后才真正原子替换 metadata 指针完成 commit。这把「Flink state」「Kafka offset」「Iceberg 写入」三者绑成原子单元——任意一段失败都能通过 cancel + 回滚恢复。
 
 故障恢复：若 Flink job 在 commit 前崩溃，重启后从上一个 Checkpoint 重放；commit 后崩溃，下游看到的是「要么旧 snapshot、要么新 snapshot」的二选一语义，不会出现「部分写入」。
 
@@ -282,7 +282,7 @@ Iceberg 解决的是**第一层**（存储一体），为第三层（口径一�
 
 **第三层：Flink 写 + Spark/Trino 读的协作流程。**
 
-- **Flink 端**：Flink job 写入 Iceberg 时，每完成一个 Checkpoint 触发一次 commit。每次 commit 在 S3 / HDFS 上生成新的 manifest list，并通过 atomic rename 完成。Flink 用 `FlinkSink` 的两阶段提交协议保证「Flink state」「Kafka offset」「Iceberg 写入」三者原子。
+- **Flink 端**：Flink job 写入 Iceberg 时，每完成一个 Checkpoint 触发一次 commit。每次 commit 在 S3 / HDFS 上生成新的 manifest list，并通过原子替换 metadata 指针完成。Flink 用 `FlinkSink` 的两阶段提交协议保证「Flink state」「Kafka offset」「Iceberg 写入」三者原子。
 - **Spark 端**：Spark 读 Iceberg 时，通过 Iceberg Spark connector 解析 manifest list，找到当前 commit 的 manifest 与 data file，按 Spark 的批处理模型并行读取。Spark 读的是「**当前 latest snapshot**」，也可以通过 `as-of-timestamp` 读到历史 snapshot。
 - **Trino 端**：类似 Spark，按 snapshot 读。Trino 在 Iceberg 上的优势是**联邦查询**——可同时查 Hive / MySQL / Kafka 表。
 
@@ -356,7 +356,7 @@ Netflix 实际用法：核心交易表走 COW（数据量稳定、按天刷新�
 
 **2. 参考答案框架**
 
-**第一层：工作流调度的核心抽象。** 不论是 MapAir 还是 Maestro，工作流调度的核心抽象都包含：
+**第一层：工作流调度的核心抽象。** 不论是 Airflow 还是 Maestro，工作流调度的核心抽象都包含：
 
 - **DAG 模型**：节点（task）+ 边（依赖）+ 状态（pending/running/success/failed）。
 - **触发器**：时间（cron / interval）、事件（外部信号 / 上游完成）、API（手动触发）。
@@ -508,7 +508,7 @@ Zhamak Dehghani 在《Data Mesh: Delivering Data-Driven Value at Scale》（2021
 
 - Zhamak Dehghani《Data Mesh: Delivering Data-Driven Value at Scale》（2021）——Data Mesh 四大原则的原始出处。
 - Netflix Tech Blog《Data Mesh at Netflix》与公开演讲——Netflix 内部 Data Mesh 落地的真实进展与阻力。
-- Airbnb Engineering Blog《DataHub: A Generalized Metadata Search & Discovery Tool》——数据产品目录的工程实践参考。
+- LinkedIn Engineering Blog《DataHub: A Generalized Metadata Search & Discovery Tool》——数据产品目录的工程实践参考。
 - LinkedIn Engineering Blog《DataHub: Popular Metadata Architectures》——头部互联网公司元数据架构对比。
 - 阿里《大数据之路》中关于 OneData 数据中台的章节——集中式数据中台的对照范式。
 - 微众银行公开分享的联邦学习 + 数据沙箱架构——金融行业 Data Mesh 思路的合规落地。

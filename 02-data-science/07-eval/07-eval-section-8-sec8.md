@@ -55,7 +55,7 @@
 **第三层：诊断与对齐的工程手段。**
 
 - **离线-在线相关性分析**：把同一批候选模型同时跑离线评估 + 小流量在线 A/B，画出离线指标 vs 在线指标的散点图，计算 Pearson / Spearman 相关系数。Meta 的 Experimentation 平台把这做成自动化报表「Online-Offline Correlation Dashboard」，把「离线指标上线前先验证与在线指标的相关性」固化为流程要求。至于相关性要做到多高才算过关，0.7 是常见的**经验法则**，不是该平台公开披露的硬阈值（本节无法核验其具体取值出处）。
-- **Holdout 长期监控**：留 5-10% 流量不参与任何实验，作为「基线对照组」，用 30-90 天的长窗口观察新模型在新奇效应消退后的真实效果。这是 Google / Microsoft / Amazon 通用做法。
+- **Holdout 长期监控**：留 5-10% 流量不参与任何实验，作为「基线对照组」，用 30-90 天的长窗口观察新模型在新奇效应消退后的真实效果。这是 Google / Microsoft / Amazon 通用做法（各家保留比例不同，Google 长期仅约 1%，Microsoft / Booking 约 5%，详见 §7.6）。
 - **分桶对比**：离线评估时按用户分群（新用户 / 老用户 / 高活 / 低活）分别评估，找到离线涨但在线不涨的人群。Airbnb 在搜索排序上发现，离线 NDCG 的整体提升主要来自老用户，对新用户几乎没有帮助（本节无法核验该案例的公开出处，也无法给出可溯源的具体幅度）——于是把离线评估按「新用户 NDCG」加权。
 - **PSI / KS 漂移检测**：上线后实时监控「线上样本特征分布 vs 训练集分布」的差异（PSI > 0.2 视为严重漂移），漂移严重的模型即使离线指标再好也要回炉。
 - **Counterfactual 评估（反事实评估）**：用日志回放 + IPS / Doubly Robust 估计「如果换模型，原本没曝光的内容会发生什么」。这是 Netflix / YouTube / 字节在推荐系统上长期使用的方法，能在不做 A/B 的情况下给出接近在线的无偏估计。
@@ -172,13 +172,13 @@ $$n = \frac{(z_{\alpha/2} + z_\beta)^2 \cdot 2\sigma^2}{\delta^2}$$
 
 - **「流量分层时，同一层内多个实验能同时跑吗？会互相污染吗？」** 答：层内不能同时跑多个实验（同一用户同一时间只能接受一个实验处理），但同一用户在不同层可以同时接受不同实验。字节 ABT 平台 / 阿里 POE 都有层内互斥机制。
 - **「CUPED 的协变量怎么选？选错了会怎样？」** 答：协变量必须与目标指标强相关（Pearson > 0.5）且不随实验变化（pre-period）。选错了反而放大方差。Microsoft 在 CUPED 实践中用实验前一段时间的同指标历史均值作为协变量，效果通常最好；这段窗口取「最近 30 天」这一量级属**经验性取值**，本节无法核验其公开出处。
-- **「Switchback 怎么决定切换频率？」** 答：切换频率 = 业务最小可观察周期 / 2。例如网约车 1 天一个完整周期，Switchback 用 12 小时切换；外卖用 6 小时切换。Uber 的工程经验是「切换频率 × 2 < 业务周期」是底线。
+- **「Switchback 怎么决定切换频率？」** 答：切换频率 = 业务最小可观察周期 / 2。例如网约车 1 天一个完整周期，Switchback 用 12 小时切换；外卖用 6 小时切换。Uber 的工程经验是「切换频率 × 2 ≤ 业务周期」是底线（按上式 12 小时 × 2 = 24 小时，正好取等号）。
 - **「如果实验需要测 100 个指标，多重比较怎么做？」** 答：用 BH-FDR 控制假发现率，或先做主指标（OEC）确认主结论，再对其他指标做探索性分析（不做强校正）。Meta / Google 都用「主 OEC + 护栏指标 + 探索指标」三层结构。
 
 **5. 参考资料**
 
 - Google「Overlapping Experiment Infrastructure」论文（2010）——流量分层（Layer）的原始设计与工程实现，是分层实验的必读文献。
-- Microsoft「Controlled Experiments Using Pre-Existing Data」（CUPED, 2013）——方差缩减的工业论文，A/B 测试提速的标志性方法。
+- Deng 等「Improving the Sensitivity of Online Controlled Experiments by Utilizing Pre-Experiment Data」（Microsoft，CUPED 原始论文，WSDM 2013）——方差缩减的工业论文，A/B 测试提速的标志性方法。
 - Kohavi / Deng / Frasca / Walker 等「Online Controlled Experiments at Large Scale」（ACM SIGKDD 2013 & 2019 系列）——A/B 测试工程实践的圣经级论文。
 - Booking.com Experimentation 平台公开分享——贝叶斯 SRM 检测与多层实验的真实案例。
 - Meta Experimentation Platform 公开文档——多重比较与主 OEC 设计的标准做法。
@@ -373,7 +373,7 @@ $$n = \frac{(z_{\alpha/2} + z_\beta)^2 \cdot 2\sigma^2}{\delta^2}$$
 **5. 参考资料**
 
 - Guido Imbens / Donald Rubin《Causal Inference for Statistics, Social, and Biomedical Sciences》——因果推断的圣经级教材。
-- Victor Chernozhukov 等「Double Machine Learning for Treatment Effect Estimation」（2018）——DML 的原始论文，工业 DML 落地的标准参考。
+- Victor Chernozhukov 等「Double/Debiased Machine Learning for Treatment and Structural Parameters」（The Econometrics Journal, 2018）——DML 的原始论文，工业 DML 落地的标准参考。
 - Susan Athey / Stefan Wager「Generalized Random Forests」（2018）——Causal Forest 的原始论文，异质处理效应的工业基础。
 - Microsoft EconML 官方文档——DML / Causal Forest / DR-Learner 的工业实现。
 - Uber CausalML 库公开文档——Uplift 建模在出行行业的落地。

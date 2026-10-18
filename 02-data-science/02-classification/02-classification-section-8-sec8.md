@@ -134,7 +134,7 @@
 **第三层：类别不平衡的处理（详见 Q4，但风控场景要点单独列）。**
 
 - **下采样 + 加权**：保留全部欺诈 + 随机采样 10% 正常样本，class_weight 反向调整。
-- **Focal Loss**：$\mathcal{L} = -\alpha(1-p_t)^\gamma \log(p_t)$，让模型聚焦"难分样本"——招行信用卡反欺诈的核心 trick。
+- **Focal Loss**：$\mathcal{L} = -\alpha(1-p_t)^\gamma \log(p_t)$，让模型聚焦"难分样本"——风控反欺诈场景的常见做法（本书无法给出可核验的公开出处说明招行信用卡反欺诈采用了 Focal Loss，此处仅作常见说法记录）。
 - **阈值调优**：默认阈值 0.5 不可用，根据业务成本矩阵（漏判成本 vs 误判成本）调阈值。
 - **评估指标**：不用 accuracy，用 **PR-AUC / F1 / KS**（详见 Q6）。
 
@@ -372,7 +372,7 @@
   - **BalancedBagging / BalancedRandomForest**：每棵树下采样平衡子集。
   - **EasyEnsemble**：多个下采样模型 ensemble（详见上）。
 
-- **异常检测视角**：当正样本 < 0.01% 时，把它当作**异常检测**问题（Isolation Forest / One-Class SVM / AutoEncoder），而非分类问题。
+- **异常检测视角**：当正样本 < 0.1% 时，把它当作**异常检测**问题（Isolation Forest / One-Class SVM / AutoEncoder），而非分类问题。
 
 **第四层：评估指标层面的处理（详见 Q6）。**
 
@@ -387,7 +387,7 @@
 **场景 A：风控 / 反欺诈（正样本 0.1–1%）**：
 - 方案：下采样 + 加权 + Focal Loss + 阈值调优。
 - 评估：KS / F1 / PR-AUC。
-- 招行信用卡反欺诈：Focal Loss + XGBoost（召回率增益幅度**本节无法给出可核验数字**）。
+- 招行信用卡反欺诈：Focal Loss + XGBoost（该做法的公开出处本书无法核验；召回率增益幅度**本节无法给出可核验数字**）。
 - Stripe Radar：GBDT + 下采样 + 实时阈值调优。
 
 **场景 B：医疗诊断（正样本 1–10%）**：
@@ -446,7 +446,7 @@
 - He & Garcia 2009《Learning from Imbalanced Data》——不平衡学习的综述论文。
 - Liu et al. 2009《Exploratory Undersampling for Imbalance Data Learning》——EasyEnsemble 原始论文。
 - Japkowicz & Stephen 2002《The Class Imbalance Problem: A Systematic Study》——不平衡问题的系统性研究。
-- **招行信用卡反欺诈 Focal Loss 实践** —— 用 Focal Loss + XGBoost 提升欺诈召回率（**幅度随样本分布而异，本节无法给出可核验的具体数字**）。
+- **招行信用卡反欺诈 Focal Loss 实践** —— 用 Focal Loss + XGBoost 提升欺诈召回率（该做法的公开出处本书无法核验；**幅度随样本分布而异，本节无法给出可核验的具体数字**）。
 - **平安普惠信贷反欺诈** —— 下采样 + 加权 + 阈值调优的综合实践。
 - **Stripe Radar 反欺诈** —— GBDT + 下采样 + 实时阈值调优。
 - **某三甲医院肺结节检测** —— Focal Loss + U-Net，在小样本医学影像上提升召回率（**具体数字本节无法核验**）。
@@ -578,7 +578,7 @@
 - Rendle 2010《Factorization Machines》——FM 的原始论文，含特征交叉的数学基础。
 - **招行信用卡评分卡** —— WOE/IV + LR + 手工交叉的工业级实践。
 - **平安普惠信贷风控** —— WOE/IV + 自动交叉 + XGBoost。
-- **阿里妈妈 DeepFM** —— 端到端自动特征学习的代表作。
+- **华为 DeepFM** —— 端到端自动特征学习的代表作。
 - **Meta DLRM** —— 工业级推荐系统的特征工程架构。
 - **字节跳动特征平台** —— 支持亿级特征的实时查询，是国内 Feature Store 的代表。
 - **京东金融特征平台** —— 风控 / 推荐 / 营销三大场景的统一特征管理。
@@ -725,7 +725,7 @@
 **方法 2：SHAP（SHapley Additive exPlanations）**
 
 - **原理**：基于博弈论的 Shapley Value，把每个特征的贡献分配到预测上。
-- **数学**：$f(x) = \phi_0 + \sum_{i=1}^M \phi_i x_i$，$\phi_i$ 是特征 $i$ 的 SHAP 值。
+- **数学**：$f(x) = \phi_0 + \sum_{i=1}^M \phi_i$，$\phi_i$ 是特征 $i$ 的 SHAP 值。
 - **优点**：
   - 理论保证（公平分配贡献）。
   - 局部 + 全局可解释（`summary_plot` 看全局，`force_plot` 看单个预测）。

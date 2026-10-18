@@ -99,7 +99,7 @@
 - **Y-statement**：单句结构化决策陈述——「In the context of \<context\>, facing \<concern\>, we decided for \<option\>, to achieve \<goal\>, accepting \<consequences\>」。
 - **RFC（Request For Comments）**：决策**之前**的讨论文档（与 ADR 互补）。RFC 是「提议」，ADR 是「最终决定」。
 - **ADL（Architecture Decision Log）**：组织所有 ADR 的索引库。
-- **Status（状态）**：ADR 的生命周期——Proposed / Accepted / Deprecated / Superseded by ADR-XXXX。
+- **Status（状态）**：ADR 的生命周期——Proposed / Accepted / Rejected / Deprecated / Superseded by ADR-XXXX。
 - **Supersede（取代）**：当决策被推翻时，写一份新 ADR 并将旧的标记为 Superseded，建立**决策族谱**。
 - **Lightweight ADR**：只记录核心字段（标题、状态、上下文、决策、后果），适用于敏捷团队。
 - **Full ADR**：完整记录所有候选选项、评估矩阵、利弊分析，适用于复杂 / 长期决策。

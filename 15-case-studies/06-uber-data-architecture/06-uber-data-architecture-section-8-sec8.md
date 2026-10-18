@@ -32,7 +32,7 @@
 
 ### 8.2 §15.6 Uber 数据架构案例剖析
 
-> 本主题以 Uber 16 年的数据栈演进为主线，从「为什么自研 Schemaless」「为什么选 Hudi 而非 Iceberg」「Marketplace 实时调度怎么压到毫秒」「实时特征怎么做到秒级新鲜度」「Data Mesh 在 Uber 怎么落地」「GDPR/CCPA 多区域合规怎么做」「Michelangelo ML 平台怎么工程化」八个维度下钻。面试官通常从一个具体决策问起，逐层追到「如果是你，你会怎么选」「在大规模场景下代价如何」「不同行业如何借鉴」。
+> 本主题以 Uber 16 年的数据栈演进为主线，从「为什么自研 Schemaless」「为什么选 Hudi 而非 Iceberg」「COW 与 MOR 怎么取舍」「Marketplace 实时调度怎么压到毫秒」「实时特征怎么做到秒级新鲜度」「Data Mesh 在 Uber 怎么落地」「GDPR/CCPA 多区域合规怎么做」「Michelangelo ML 平台怎么工程化」八个维度下钻。面试官通常从一个具体决策问起，逐层追到「如果是你，你会怎么选」「在大规模场景下代价如何」「不同行业如何借鉴」。
 
 #### §15.6.1 Uber 为什么从 MySQL 单库演进到 Schemaless，再演进到 Docstore？请结合业务背景说明这条存储演进路径的内在驱动，并对比同时期其他头部企业的选择。
 
@@ -106,7 +106,7 @@ Docstore 的本质是**用一个统一的文档模型（JSON / BSON）+ 多种�
 **1. 考察点**
 
 - 是否理解 Uber 的选型**与业务强绑定**——Uber 的核心场景是 CDC + 实时 upsert，这是 Hudi 最早发力的方向。
-- 能否横向对比 Hudi / Iceberg / Delta Lake 在「起源」「ACID」「CDC」「Update/Delete 性能」「多引擎」「索引」「商业绑定」六个维度上的真实差异。
+- 能否横向对比 Hudi / Iceberg / Delta Lake 在「起源」「ACID」「CDC」「Update/Delete 性能」「多引擎」「索引」「商业绑定」七个维度上的真实差异。
 - 是否了解三家各自的开源治理结构、商业化与社区生态。
 - 加分项：能联系实际场景给出"如果你的场景是 XX，推荐 YY"，并能解释为什么 Iceberg 在国内比 Hudi 流行。
 
@@ -118,7 +118,7 @@ Docstore 的本质是**用一个统一的文档模型（JSON / BSON）+ 多种�
 - **Apache Iceberg**：2017 年在 Netflix 内部立项、2018 年开源并进入 Apache 孵化，2020 年成为顶级项目。核心目标——**隐藏分区（Hidden Partitioning）+ 多引擎兼容（Spark / Flink / Trino / Hive 都能读）+ 元数据可演进**。起点是 Netflix 在 S3 上做大规模 PB 级分析。
 - **Delta Lake**：2019 年 Databricks 开源。核心目标——**Spark 生态内的 ACID + 时间旅行 + Schema 演进**，后逐步扩展到 Flink / Trino。商业上是 Databricks 产品的核心数据格式。
 
-**第二层：六维度横向对比。**
+**第二层：十维度横向对比。**
 
 | 维度 | Hudi | Iceberg | Delta Lake |
 | --- | --- | --- | --- |
@@ -209,7 +209,7 @@ Hudi 的 **Copy-on-Write（COW）/ Merge-on-Read（MOR）** 双模式恰好覆�
 - **典型查询模式**：`READ_OPTIMIZED`（只读 base file，延迟低但有少量延迟，适合 BI 报表）和 `SNAPSHOT`（读 base + delta，时延稍高但数据最新，适合实时看板）。
 - **关键依赖**：compaction 调度——必须定期把 delta log 合并回 base file，否则 delta 越积越多，查询越来越慢，最终演变成"读延迟爆炸"事故。
 
-**第三层：六维度对比。**
+**第三层：七维度对比。**
 
 | 维度 | COW | MOR |
 | --- | --- | --- |
@@ -523,7 +523,7 @@ Compaction 调度使用 Uber 自研的"Maestro + Hudi Cleaner"组合：
 
 - Zhamak Dehghani《Data Mesh: Delivering Data-Driven Value at Scale》——Data Mesh 原始定义与四大原则的权威出处。
 - Uber Engineering Blog《How Uber Built Its Data Mesh》——Uber Data Mesh 落地形态的第一手材料。
-- Netflix Technology Blog《DataHub: A Generalized Metadata Search & Discovery Tool》——Netflix 元数据联邦的对照案例。
+- LinkedIn Engineering Blog《DataHub: A Generalized Metadata Search & Discovery Tool》——元数据联邦的对照案例。
 - 阿里数据中台团队《大数据之路》中关于组织与治理的章节——国内集中 vs 联邦的对照。
 - Thoughtworks Technology Radar 关于 Data Mesh 的多期评论——Data Mesh 适用场景的判断框架。
 - Datahub / DataHub OSS 项目文档——开源数据目录的工程实现参考。

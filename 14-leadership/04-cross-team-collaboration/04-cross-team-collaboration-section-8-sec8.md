@@ -72,7 +72,7 @@
 
 - **IPMT（Integrated Portfolio Management Team）**：组合管理团队，负责战略对齐与资源分配，对应 Portfolio 层。
 - **PDT（Product Development Team）**：产品开发团队，单项目负责人拥有「Single Threaded Leader」权力（亚马逊也强调这一点），不被 PMO 干预日常执行。
-- **PMO**：支撑 IPDMT 与 PDT 的常设方法论与治理机构，**输出模板、培训、跨项目数据、阶段评审的协调**，但不替代项目 Leader 决策。
+- **PMO**：支撑 IPMT 与 PDT 的常设方法论与治理机构，**输出模板、培训、跨项目数据、阶段评审的协调**，但不替代项目 Leader 决策。
 
 亚马逊 Two-Pizza Team（6–10 人）的实践与 PMO 是「**互补而非对立**」的关系：Two-Pizza Team 保证小团队快速推进，PMO 保证跨团队一致性与战略对齐。
 
@@ -632,8 +632,8 @@ InfluenceScore = Persuasion × Credibility × Coalition × Timing
 | 共享 KPI | 占比 | 评估方 |
 | --- | --- | --- |
 | **跨 BU 数据接入率** | 各 BU 数据 Lead 绩效的 30% | 数据架构师 + 集团数据治理委员会 |
-| **跨 BU 指标口径冲突数** | 数据架构师绩效的 40% | 5 个 BU 数据 Lead |
-| **平台可用率** | 数据架构师绩效的 30% | 集团 SRE |
+| **跨 BU 指标口径冲突数** | 数据架构师绩效的 20% | 5 个 BU 数据 Lead |
+| **平台可用率** | 数据架构师绩效的 20% | 集团 SRE |
 
 设计原则：
 

@@ -60,7 +60,7 @@
 - **1 亿级**（中型搜索 / 推荐）：仍走 Bi-Encoder + Rerank，但 Bi-Encoder 必须配 IVF + PQ 压缩；ColBERT v2 的 2-bit 量化（PLAID 引擎）让索引大小降到原来 1/10，可作为更高精度的召回层。
 - **10 亿级**（广告召回 / 大规模推荐）：双塔 Bi-Encoder + 内积近似 + PQ 量化 + GPU 索引（NVIDIA cuVS / Rapids RAFT），Late Interaction 索引过大不可行，Cross-Encoder 只能离线批量打分或 LLM-as-Reranker 抽样精排。
 
-**第五层：头部工业验证。** Cohere 在 2024 年 Rerank 3 公告中明确把「召回 + 精排」作为 RAG 标准范式，并给出多语种检索的 nDCG@10 提升数据（该公告未在本书标注可核验链接，量级为两位数百分比，具体数值随语言与评测集而异，引用时请查 Cohere 原文）。Snowflake《Arctic Embed》技术报告强调「Matryoshka 训练让单一模型支持 64 / 128 / 256 / 512 / 1024 维分层检索」，大幅降低规模门槛。Stanford ColBERT v2 论文（Santhanam 等，SIGIR 2022）证实 2-bit 压缩后索引降为原来 1/10 而 Recall@50 几乎不变。LinkedIn 工程团队在公开分享中提到其职位检索系统用 Bi-Encoder 召回 + 自研 Cross-Encoder 精排的两段式架构，是典型的双塔 + 重排工业实例。
+**第五层：头部工业验证。** Cohere 在 2024 年 Rerank 3 公告中明确把「召回 + 精排」作为 RAG 标准范式，并给出多语种检索的 nDCG@10 提升数据（该公告未在本书标注可核验链接，量级为两位数百分比，具体数值随语言与评测集而异，引用时请查 Cohere 原文）。Snowflake《Arctic Embed》技术报告强调「Matryoshka 训练让单一模型支持 64 / 128 / 256 / 512 / 1024 维分层检索」，大幅降低规模门槛。Stanford ColBERT v2 论文（Santhanam 等，NAACL 2022）证实 2-bit 压缩后索引降为原来 1/10 而 Recall@50 几乎不变。LinkedIn 工程团队在公开分享中提到其职位检索系统用 Bi-Encoder 召回 + 自研 Cross-Encoder 精排的两段式架构，是典型的双塔 + 重排工业实例。
 
 **3. 常见陷阱**
 
@@ -82,7 +82,7 @@
 - Lewis 等《Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks》（NeurIPS 2020）——RAG 原始论文与召回 + 生成的协同机制。
 - Cohere 官方博客的 Rerank 3 发布公告（2024）——召回 + 精排范式与多语种检索的质量数据（该公告的准确标题与发布日期本节无法核验，请以 Cohere 官方博客当前版本为准）。
 - Snowflake Engineering Blog《Arctic Embed: The Fast, Scalable, and Performant Embedding Model Family》（2024）——Matryoshka 训练与单模型多维度检索的工程突破。
-- Santhanam 等《ColBERTv2: Effective and Efficient Retrieval via Lightweight Late Interaction》（SIGIR 2022）——Late Interaction 经典论文。
+- Santhanam 等《ColBERTv2: Effective and Efficient Retrieval via Lightweight Late Interaction》（NAACL 2022）——Late Interaction 经典论文。
 - Chen 等《BGE-M3: Multi-lingual, Multi-functionality, Multi-granularity Text Embeddings Through Self-knowledge Distillation》（ACL 2024）——多语言多功能嵌入的训练与评测方法。
 - Muennighoff 等《MTEB: Massive Text Embedding Benchmark》（HuggingFace，2022 起持续维护）——Embedding 模型横评事实标准。
 - LinkedIn Engineering《Building a Job Search Recommendation System》（2022 公开分享）——双塔 Bi-Encoder + 内部 Cross-Encoder 精排的工业实例。

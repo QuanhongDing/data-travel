@@ -238,7 +238,7 @@
 **5. 参考资料**
 
 - Box G. E. P. & Jenkins G. M.《Time Series Analysis: Forecasting and Control》——ARIMA 体系的经典教科书，是 ARIMA 选型的理论参考。
-- Sean J. Taylor & Benjamin Letham《Forecasting at Scale》（American Statistician 2017）——Prophet 的原始论文，含加法分解与 changepoint 的完整推导。
+- Sean J. Taylor & Benjamin Letham《Forecasting at Scale》（American Statistician 2018）——Prophet 的原始论文，含加法分解与 changepoint 的完整推导。
 - Haoyi Zhou et al.《Informer: Beyond Efficient Transformer for Long Sequence Time-Series Forecasting》（AAAI 2021）——长序列 Transformer 的早期代表。
 - Yuqi Nie et al.《A Time Series is Worth 64 Words: Long-term Forecasting with Transformers》（ICLR 2023）——PatchTST 的原始论文，Patch 化的标志性方案。
 - Yong Liu et al.《iTransformer: Inverted Transformers Are Effective for Time Series Forecasting》（2024）——反转 Transformer for TS。

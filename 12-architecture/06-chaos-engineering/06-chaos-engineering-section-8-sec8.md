@@ -52,7 +52,7 @@
 
 **第三层：Netflix 的五条原则。** 2014 年 Netflix 公开的《Chaos Engineering Principles》是学科化的标志，面试常考这五条的核心要点：① **Build a Hypothesis around Steady State Behavior**——围绕稳态行为建立假设，让实验可证伪；② **Vary Real-world Events**——引入真实世界事件，而非模拟出来的伪故障；③ **Run Experiments in Production**——在生产环境跑实验，因为生产环境的复杂性不可在测试环境复现；④ **Automate Experiments to Run Continuously**——自动化、持续运行，把混沌融入 CI/CD；⑤ **Minimize Blast Radius**——最小化爆炸半径，避免实验演变成事故。这五条的核心思想是：**与其等故障自然发生后再响应，不如主动制造可控的故障来验证韧性**。
 
-**第四层：在大规模分布式系统中的核心价值。** 分布式系统微服务化后调用链路从 3 跳变成 10 跳，故障域扩大 100 倍——而**「未知的未知」比「已知的未知」更危险**。混沌工程的核心价值体现在三个层面：① **主动发现脆弱点**——上线就崩的边界条件、生产环境才能暴露的隐含依赖、架构师的"自以为是"都能被实验证伪；② **验证恢复流程**——Runbook 是否真能跑通、值班人员是否真会处理、告警阈值是否合理；③ **驱动架构改进**——每一次实验的发现都转化为具体的架构 / 代码 / 监控改进项，避免"靠老司机救火"。Netflix 99.99% 可用性与故障恢复时间 < 5 分钟的成绩，背后就是持续二十年的混沌工程。
+**第四层：在大规模分布式系统中的核心价值。** 分布式系统微服务化后调用链路从 3 跳变成 10 跳，故障域扩大 100 倍——而**「未知的未知」比「已知的未知」更危险**。混沌工程的核心价值体现在三个层面：① **主动发现脆弱点**——上线就崩的边界条件、生产环境才能暴露的隐含依赖、架构师的"自以为是"都能被实验证伪；② **验证恢复流程**——Runbook 是否真能跑通、值班人员是否真会处理、告警阈值是否合理；③ **驱动架构改进**——每一次实验的发现都转化为具体的架构 / 代码 / 监控改进项，避免"靠老司机救火"。Netflix 99.99% 可用性与故障恢复时间 < 5 分钟的成绩，背后就是持续十余年的混沌工程（2011 年起算，见 §6）。
 
 **第五层：行业实践与适用边界。** Netflix 的 ChAP（Chaos Automation Platform）与 FIT（Failure Injection Testing）每天自动跑数百个生产环境实验；阿里的 ChaosBlade + AHAS 在双 11 前做全链路 GameDay；字节跳动的 ChaosAgent 覆盖 AI 应用链路；Meta、Google、LinkedIn、Uber 都有自己的混沌平台。**但混沌工程不是万能的**——它适合稳态指标清晰、可观测性完善、团队 DevOps 文化成熟的系统；对**完全不可控**的金融核心交易、**强合规**的医疗数据，初期应从预生产环境 + GameDay 切入，逐步放大爆炸半径。
 
@@ -291,7 +291,7 @@
 
 **第五层：事后复盘——RCA、改进项、知识沉淀。** 这是 GameDay 价值的最后一环——
 
-- **T+24 小时**：组织复盘会议，所有参与团队 Leader 参加，逐场景分析——① 系统行为是否符合预期假设？③ 组织响应是否及时、有效？④ 决策链路是否过长？⑤ 沟通是否清晰？
+- **T+24 小时**：组织复盘会议，所有参与团队 Leader 参加，逐场景分析——① 系统行为是否符合预期假设？② 组织响应是否及时、有效？③ 决策链路是否过长？④ 沟通是否清晰？
 - **RCA（Root Cause Analysis）**：对每个"实验失败"（即发现脆弱点）做根因分析——是技术问题（架构设计、代码 Bug、监控缺失）？还是流程问题（Runbook 不完整、值班人员不熟悉、审批流程过长）？还是组织问题（沟通断点、决策权限不清）？
 - **改进项**：每个 RCA 产出**具体的改进项**——架构改进（加限流、加熔断、加冗余）、代码改进（修复 Bug、加监控）、流程改进（更新 Runbook、优化审批）、组织改进（加强培训、明确决策权）。改进项必须有 Owner、Deadline、跟踪机制。
 - **知识沉淀**：把 GameDay 的经验、教训、最佳实践整理成文档，纳入团队培训材料，让 GameDay 的价值持续放大。
@@ -479,7 +479,7 @@ LitmusChaos 适合**标准化实验**（直接引用 ChaosHub 模板）场景，
 - LitmusChaos 官方文档（litmuschaos.io）——CNCF Incubating 项目，ChaosEngine + Experiment 模式，ChaosHub 实验库。
 - 《Kubernetes Operator 模式》——理解混沌工程 Operator 的设计原理。
 - Prometheus + Alertmanager + Grafana 官方文档——混沌实验的告警联动与 Abort 机制。
-- **阿里 ChaosBlade + AHAS** ——阿里开源的混沌工程工具，2024 年新增 GPU / 大模型链路故障注入，是国内大厂混沌工程的代表。
+- **阿里 ChaosBlade + AHAS** ——阿里开源的混沌工程工具，是国内大厂混沌工程的代表；其是否提供 GPU / 大模型链路故障注入动作，以项目官方故障类型清单为准（§5.4），本条不追认"某年新增 GPU 故障注入"的说法。
 - **PingCAP Chaos Mesh** ——CNCF 旗下 K8s 原生混沌工程工具，TiDB 团队的工程化产物，CRD 体系最完整的开源方案。
 - **MayaData LitmusChaos** ——CNCF 旗下混沌工程工具，ChaosHub 实验库最丰富，社区贡献模式。
 - **字节跳动 ChaosAgent** ——字节内部混沌平台，基于 K8s 改造，覆盖 AI 链路。
@@ -576,7 +576,7 @@ LitmusChaos 适合**标准化实验**（直接引用 ChaosHub 模板）场景，
 
 - **LLM 限流实验**：模拟 OpenAI API 返回 429，观察系统的限流退避策略（指数退避）+ 备用模型切换 + 用户级降级（核心用户用备用模型，普通用户返回兜底话术）。
 - **Agent 工具失败实验**：模拟 Agent 的某个工具（如 SQL 查询）持续失败，观察 Agent 是否会陷入死循环（持续重试），系统的最大重试次数 + 超时熔断是否生效。
-- **GPU OOM 实验**：用 NVIDIA 的 fault-injection 工具或 ChaosBlade 的 GPU 实验，强制让 GPU 显存耗尽，观察推理服务的限流 + 重试 + 排队行为。
+- **GPU OOM 实验**：用 NVIDIA 的 fault-injection 工具，或工具官方故障类型清单里核到的 GPU / 显存类动作（§5.1 表第 6 行、§5.4），强制让 GPU 显存耗尽，观察推理服务的限流 + 重试 + 排队行为。
 - **向量检索慢实验**：向 Milvus 注入 10w 个 dummy 向量制造高负载，观察检索延迟；验证系统的超时阈值 + 兜底检索（BM25）。
 - **RAG 全链路故障实验**：同时让 Embedding 慢 + LLM 限流 + 向量库连接慢，验证系统是否能优雅降级到"返回缓存答案 + 兜底话术"。
 
@@ -607,7 +607,7 @@ LitmusChaos 适合**标准化实验**（直接引用 ChaosHub 模板）场景，
 - vLLM / Triton Inference Server / TensorRT Serving 官方文档——推理服务的故障模式与压测方法。
 - LangChain / LlamaIndex / AutoGPT 官方文档——Agent 框架的错误处理与重试机制。
 - **字节跳动 ChaosAgent** ——字节跳动 AI 应用混沌平台，支持 Agent 工具失败、API 超时、模型冷启动、GPU OOM 等新型故障。
-- **阿里 ChaosBlade 2024 新增 GPU / 大模型链路故障注入** ——阿里 ChaosBlade 在 2024 年增加 GPU / 大模型相关故障支持。
+- **阿里 ChaosBlade 的 GPU / 大模型链路故障注入能力** ——阿里 ChaosBlade 是否提供 GPU / 大模型相关故障注入动作，以项目官方故障类型清单为准（§5.1 表第 6 行、§5.4）；本条不追认"某年新增 GPU 故障注入"的说法，不作为事实。
 - **OpenAI 内部混沌实践** ——OpenAI 在 GPT 模型部署中使用混沌工程验证韧性（2024 公开分享）。
 - **AWS Bedrock + AWS FIS 集成** ——AWS 把 Bedrock（大模型平台）与 FIS（混沌服务）集成，验证大模型应用的故障注入。
 - **Azure AI Studio Chaos Engineering** ——Azure 把 AI Studio 与 Chaos Studio 集成，提供 AI 链路混沌能力。

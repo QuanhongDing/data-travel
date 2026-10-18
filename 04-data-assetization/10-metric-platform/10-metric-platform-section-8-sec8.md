@@ -123,7 +123,7 @@
 2. **修饰词（Modifier）**：原子指标的限定条件，对应"业务圈选逻辑"。例如 `is_new_user`（是否新用户）、`is_refunded`（是否已退款）、`payment_method = 'credit_card'`。**强约束**：修饰词必须能翻译为字段上的布尔判断或枚举相等，不能是复杂计算。
 3. **时间周期（Time Grain）**：原子指标的统计粒度。日 / 周 / 月 / 季度 / 年，以及"最近 7 天 / 30 天 / 同环比"等动态窗口。
 4. **维度（Dimension）**：观察指标的角度。地区、用户分层、渠道、品类等。维度是**对结果做 GROUP BY 的列**，而不是过滤列。
-5. **派生指标（Derived Metric）**：由原子指标 + 修饰词 + 时间周期 + 维度组合而成的业务指标。例如 `北京新用户最近 7 天 GMV` = `order_amount`（原子）+ `is_new_user = true`（修饰词）+ `last_7d`（时间周期）+ `city = 'Beijing'`（维度过滤）。
+5. **派生指标（Derived Metric）**：由原子指标 + 修饰词 + 时间周期 + 维度组合而成的业务指标。例如 `北京新用户最近 7 天 GMV` = `order_amount`（原子）+ `is_new_user = true`（修饰词）+ `last_7d`（时间周期）+ `city`（维度，GROUP BY 后取 `Beijing` 一行）。
 
 **第二层：拆解 / 重组的真实路径。** 一个真实的指标如何按 OneMetric 拆解？以 GMV 为例：
 

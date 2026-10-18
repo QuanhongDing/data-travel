@@ -190,7 +190,7 @@
 
 **第二层：分桶如何优化 JOIN。** 关键洞见——JOIN 最贵的代价是 **shuffle**（两个表各自按 join key 重排数据再配对）。如果两个表都按 join key 分桶，且桶数一致或成倍数关系，那么同键的数据**已经物理相邻**，JOIN 阶段可以本地配对：
 
-- **Bucket Map Join（Spark） / SMB Join（Hive）**：分桶数完全一致时，JOIN 两侧可以按桶号一一配对，**完全省掉 shuffle**。这是 100 TB 级事实表与维度表 JOIN 的关键优化。
+- **Bucket Map Join（Hive） / SMB Join（Hive，Spark 端称 `Sort Merge Bucket Join`）**：分桶数完全一致时，JOIN 两侧可以按桶号一一配对，**完全省掉 shuffle**。这是 100 TB 级事实表与维度表 JOIN 的关键优化。
 - **桶数成倍数**（如 64 桶对 32 桶）：可以通过简单的桶号映射避免 shuffle，但实现复杂，引擎支持有限。
 - **不匹配桶数**：退化为普通 shuffle JOIN，分桶带来的优势消失。
 
@@ -212,7 +212,7 @@
 - 写入慢：分桶需要先哈希再写，**写吞吐明显低于普通写入**（幅度随引擎与桶数而异，本书无法给出可溯源的统一数字，此处按【经验】档处理）。
 - 改桶难：分桶数是建表时固定的，**改桶数需要重建整张表**。这是分桶最大的运维坑。
 - 倾斜：分桶按哈希分桶，对**热点 key** 的倾斜依然无能为力——这是 hash 分桶的天花板。
-- 取样优势：分桶表可以用 `TABLESAMPLE == BUCKET 1 OUT OF 4` 做高效采样，比全表采样快几个数量级。
+- 取样优势：分桶表可以用 `TABLESAMPLE (BUCKET 1 OUT OF 4)` 做高效采样，比全表采样快几个数量级。
 
 **3. 常见陷阱**
 
@@ -227,7 +227,7 @@
 - **「分桶数建表后能改吗？」** 答：**改桶数必须重建表**——因为分桶的物理文件位置由哈希值与桶数共同决定，改桶数会全部错位。生产上唯一可行的是新建分桶表 + 数据重灌 + 切换视图。这也是为什么很多团队转 Iceberg/Hudi——表格式层的 transform 可以透明地改。
 - **「事实表按 user_key 分桶，维度表按 user_key 分桶，怎么保证 JOIN 不 shuffle？」** 答：Spark 上两个分桶 `bucket(user_key, 64)` 完全相同的表做 JOIN，优化器会自动选 bucket join。**关键条件是桶数必须一致**（最好是 2 的幂），且两个表的 `clusteredBy` 写法一致。
 - **「分桶倾斜怎么办？」** 答：哈希分桶对均匀分布的 key 效果好，对热点 key（如 KOL 用户）无效。常用做法是**对热点 key 单独处理**（特殊键单独走非分桶链路）或**用 Iceberg 的 `bucket` transform + sort 复合**让热点键被物理聚簇而非散开。
-- **「TABLESAMPLE 抽样为什么要分桶？」** 答：分桶表可以在桶级别随机选一组桶（如 `TABLESAMPLE == BUCKET 1 OUT OF 4`），**只需读 1/4 的桶文件**，比全表随机抽样快几十倍。这是分桶表最容易"赚到"的隐性收益。
+- **「TABLESAMPLE 抽样为什么要分桶？」** 答：分桶表可以在桶级别随机选一组桶（如 `TABLESAMPLE (BUCKET 1 OUT OF 4)`），**只需读 1/4 的桶文件**，比全表随机抽样快几十倍。这是分桶表最容易"赚到"的隐性收益。
 
 **5. 参考资料**
 
@@ -365,7 +365,7 @@
 **第四层：与湖表分区演进的关系。**
 
 - **Iceberg 的 Hidden Partition**：用户写数据时不需要在 WHERE 里写分区函数（如 `days(ts)`），引擎自动转换。这是 2020 年后湖表对 Hive 分区语法的关键升级。
-- **ClickHouse 的分区策略**：ClickHouse 分区更激进，**默认按月分区**，且支持 `PARTITION BY toYYYYMM(dt)` 表达式分区，比 Hive 灵活。
+- **ClickHouse 的分区策略**：ClickHouse 支持 `PARTITION BY toYYYYMM(dt)` 这类表达式分区，**实践中通常按月分区**（按月是推荐取值，不是引擎默认行为；粒度需由使用者按「单分区数据量」自定），比 Hive 更灵活。
 - **Hudi 的 BOOTSTRAP**：支持把存量表平滑升级到分桶 + 排序的湖表，分区策略在 catalog 层统一管理。
 - 这些演进的共同方向——**让分区从"用户语法"变成"表格式能力"**，降低用户的心智负担。
 
@@ -1015,7 +1015,7 @@ Kafka (ODS) → Flink (清洗 + 关联维度) → Iceberg/Hudi (DWD 明细)
 **第三层：重复的处理——Checkpoint + 幂等 sink + 主键去重。**
 
 - **Checkpoint**：Flink 周期性地把算子状态 + Kafka offset 快照到持久存储（HDFS/S3）。崩溃时从快照点重启，保证"不丢不重"。
-- **幂等 sink**：写入 ClickHouse / Iceberg / Kafka 时使用幂等操作（CH 用 `INSERT ... ON CONFLICT REPLACE`、Iceberg 用 `MERGE INTO`、Kafka 用事务），重复事件不会产生副作用。
+- **幂等 sink**：写入 ClickHouse / Iceberg / Kafka 时使用幂等操作（CH 用 ReplacingMergeTree + `version` 列、在查询时合并去重；Iceberg 用 `MERGE INTO`；Kafka 用事务），重复事件不会产生副作用。
 - **主键去重**：在 Flink 算子里维护一个状态（`ValueState` / RocksDB）记录"是否处理过该 key"，超时清理。
 
 **第四层：反压的处理——Buffer Pool + 限流 + Sink 配置。**
@@ -1029,7 +1029,7 @@ Kafka (ODS) → Flink (清洗 + 关联维度) → Iceberg/Hudi (DWD 明细)
 
 - **Source 关**：Kafka source 必须支持"按 offset 回放"——Kafka 天然支持（每个消费者记录自己的 offset）。
 - **State 关**：Flink 状态必须支持快照恢复——RocksDB state backend + checkpoint 是标准做法。
-- **Sink 关**：写入必须幂等——CH 的 `INSERT ON CONFLICT`、Iceberg 的 `MERGE INTO`、Kafka 事务、Kafka-to-Kafka 2PC。
+- **Sink 关**：写入必须幂等——CH 的 ReplacingMergeTree（+ `version` 列、查询时合并去重）、Iceberg 的 `MERGE INTO`、Kafka 事务、Kafka-to-Kafka 2PC。
 - **端到端 exactly-once**：所有关都满足才能达成。**现实约束**：Flink-to-外部 sink 的 2PC 代价很高（事务协调器 + 协调成本），生产上多数是**"at-least-once + 幂等"**的实际等价路径——即"可能重发但不重复写入"。
 
 **3. 常见陷阱**
@@ -1051,7 +1051,7 @@ Kafka (ODS) → Flink (清洗 + 关联维度) → Iceberg/Hudi (DWD 明细)
 
 - Apache Flink 官方文档中关于 Watermark、Checkpoint 与 Exactly-Once 的章节——Flink 一致性模型的权威论述。
 - Apache Kafka 官方文档中关于事务（Transaction）与幂等生产者（Idempotent Producer）的章节——Kafka 端的 exactly-once 支撑。
-- ClickHouse 官方文档中关于 `INSERT ... ON CONFLICT` 与批量写入的章节——CH 作为 sink 的幂等实现。
+- ClickHouse 官方文档中关于 ReplacingMergeTree 表引擎（`version` 列 + 查询时合并去重）与批量写入的章节——CH 作为 sink 的幂等实现。
 - Apache Iceberg 官方文档中关于事务写入与 MERGE INTO 的章节——湖表作为 sink 的事务支撑。
 - Uber / Netflix / LinkedIn 公开技术博客——头部企业在实时数仓一致性与反压治理上的工业经验。
 - 阿里云 / 字节跳动公开技术博客——国内 Flink 实时数仓生产案例与踩坑总结。

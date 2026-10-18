@@ -275,7 +275,7 @@
 
 **第四层：治理手段——按代价递增。**
 
-- **广播 Join（BHJ）**：小表广播，避免 Shuffle；阈值默认 10MB，调小阈值可处理更大表。
+- **广播 Join（BHJ）**：小表广播，避免 Shuffle；阈值默认 10MB（`spark.sql.autoBroadcastJoinThreshold`）。调高阈值可让更大的表也走广播；反过来，为避免广播 OOM 应把阈值调小。
 - **AQE 的 `skewJoin`**：自动识别倾斜分区并拆分发到多个 Task；适合"现网业务变化频繁、代码改动成本高"场景。
 - **加盐两阶段聚合（Salting）**：
   - 第一阶段：给 Key 加随机后缀（如 `_0` ~ `_9`），做局部聚合。
@@ -505,7 +505,7 @@
 
 - **"Spark SQL 比 Hive 快 N 倍，所以取代 Hive。"** 错。快的那部分来自执行引擎（Catalyst / Tungsten），但 Hive 的"元数据 + SQL 方言 + UDF 生态"是 Spark SQL 没想替代的——它主动复用 Hive Metastore。
 - **"Hive on Spark = Spark SQL。"** 错。Hive on Spark 仍是 Hive 编译 → Spark 执行，**Hive 的 logical plan 限制**（如不支持某些复杂子查询、谓词下推不到位）仍然存在。
-- **"Hive UDF 不能在 Spark 用。"** 错。Spark SQL 通过 `Hive UDF Registry` 加载 Hive UDF（`spark.sql.hive.manageFilesourcePartitions` 等参数），多数 Hive UDF 可直接复用。
+- **"Hive UDF 不能在 Spark 用。"** 错。Spark SQL 通过 `Hive UDF Registry` 加载 Hive UDF，多数 Hive UDF 可直接复用。
 - **"Spark SQL 是 SQL 方言的银弹。"** 错。Spark SQL 不完全遵循 ANSI SQL（如 `INTERSECT` 在某些版本表现差异），迁移需测试。
 - **"选 Spark SQL 还是 Hive 看哪个更现代。"** 错。看的是业务上下文（历史作业、UDF 生态、团队技能、运维能力）。
 

@@ -201,7 +201,7 @@
   - **阿里** 在双 11 期间用 Iceberg 做交易宽表，主打能力是"任意时刻可查近期任意订单状态"；该窗口的具体天数本书无法给出可核验出处，此处按【经验】档处理。
 - **AI 训练复现（Netflix / 字节）**：
   - 选 **Iceberg V3** + 长保留 + 与 MLflow 集成。
-  - 关键能力：snapshot tag（永久标签）+ 向量类型 + Variant 半结构化。
+  - 关键能力：snapshot tag（永久标签）+ Variant 半结构化 + 向量进表方向（规范里是否有向量类型须回规范的类型章节核对）。
   - **Netflix** 训练特征表用 Iceberg V3，每次训练用 tag 指定 snapshot → 训练完全可复现。
 
 **第五层：常见工程权衡。**
@@ -576,7 +576,7 @@ Partition Spec (V2)：
 - **Time Travel 与回滚**（§7.4.3, §7.4.4）：Iceberg/Hudi/Delta 三种表格式的 Time Travel 实现，金融级"Time Travel + 备份"双保险设计。
 - **Schema Registry 与治理**（§7.4.6）：主流 SR 集群的选型与高可用设计，金融级强一致场景的工程实践。
 - **分区与查询优化**（§7.4.5）：Hidden Partition vs Hive 显式分区，Partition Evolution 在 Schema 演进时的工程表现。
-- **AI 时代的演进方向**：LLM 自动生成 schema（§7.4.1）、向量类型演进（§7.4.3）、Variant + Hidden Partition 协同（§7.4.5）。
+- **AI 时代的演进方向**：LLM 自动生成 schema（§7.4.2）、向量类型演进（§7.4.3）、Variant + Hidden Partition 协同（§7.4.5）。
 
 ### 8.4 本章小结
 

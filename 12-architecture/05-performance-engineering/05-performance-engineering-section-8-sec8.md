@@ -700,7 +700,7 @@ GC 类型：
 - **Datadog Continuous Profiler**：商业 SaaS，支持 JVM / Python / Go / Node / .NET。
 - **Polar Signals Cloud**：开源 + 商业，基于 eBPF + Parca 格式。
 - **Pyroscope（开源）**：自托管持续 Profiling。
-- **Uber's Arize / JVM Profiler**：Uber 内部基于 async-profiler 的持续 Profiling 系统，覆盖全公司 Java 服务。
+- **Uber JVM Profiler**：Uber 内部基于 async-profiler 的持续 Profiling 系统，覆盖全公司 Java 服务。
 
 **第四层：基于火焰图的瓶颈定位 SOP。**
 
@@ -795,3 +795,6 @@ GC 类型：
 面试官真正想听的永远是**「你为什么这么选」**——而不是"调大堆、调小 GC、调高并发"。所有性能优化都是在**确定的 SLO 下做资源-体验-成本的平衡**，这是性能工程的核心哲学。
 
 ### 8.5 返回
+
+- 返回 [12-architecture 章节目录](../README.md)
+- 返回 [项目根目录](../../README.md)

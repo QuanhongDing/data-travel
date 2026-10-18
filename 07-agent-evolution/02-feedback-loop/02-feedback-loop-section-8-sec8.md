@@ -42,7 +42,7 @@
 - **DPO（Direct Preference Optimization，Rafailov et al., 2023，Stanford）**：跳过 RM 和 PPO，用一个闭式解把偏好对直接转化为对策略的二元分类损失。优点是**一阶段训练、显存减半、稳定性大幅提升**；缺点是仍然依赖成对偏好数据 `(prompt, chosen, rejected)`，且在长推理 / 数学任务上**不如 GRPO**。DPO 已被 Hugging Face TRL 库工程化，是当前中小团队最常用的对齐起点。
 - **GRPO（Group Relative Policy Optimization，DeepSeek-AI）**：由 DeepSeek-AI 提出，原始算法见 DeepSeekMath（【公开】arXiv 2402.03300, 2024），并在 DeepSeek-R1 的论文与同名训练技术报告中被大规模验证。每个 prompt 采样一组（group size N，通常 8~16）response，用**组内相对优势** `advantage_i = (r_i - mean(r)) / std(r)` 代替 Value Model，因此**完全不需要训练 Reward Model**。Reward 可以是规则（答案对错、格式合规）或简单评分函数。优点是**推理 / 数学任务上 SOTA**（DeepSeek-R1 在 MATH、Codeforces、AIME 上验证），且因为省去了 Value Model 与 Reward Model，显存开销显著低于 RLHF（具体比例随实现与配置而异，本书无法给出可溯源数字）；缺点是依赖**组内多样性**（group size 必须足够大）、Reward 设计要「稀疏但准确」、对 prompt 难度敏感。
 - **KTO（Kahneman-Tversky Optimization，Ethayarajh et al., 2024）**：放弃成对偏好，只需单点「desirability」打分（用户点了👍还是👎）。借鉴 Kahneman-Tversky 的**损失厌恶**理论，对 desired / undesired 样本施加不同权重。适用：产品只能拿到「点赞 / 点踩」这类粗粒度信号、无法做 A/B 对比。
-- **IPO（Identified Preference Optimization，Azar et al., 2024）**：针对 DPO 的过拟合问题（DPO 在偏好数据噪声大时会把 chosen/rejected 概率差拉到极端），用回归损失代替对数 sigmoid。适用：偏好标注一致性差、数据量较小的场景。
+- **IPO（Identity Preference Optimization，Azar et al., 2024）**：针对 DPO 的过拟合问题（DPO 在偏好数据噪声大时会把 chosen/rejected 概率差拉到极端），用回归损失代替对数 sigmoid。适用：偏好标注一致性差、数据量较小的场景。
 
 **第二层：五维对比。**
 
@@ -63,11 +63,11 @@
 - **只拿到点赞 / 点踩**：**KTO**。典型如 ChatGPT、Claude、文心一言、豆包的👍 / 👎按钮。
 - **标注一致性差 / 小数据**：**IPO**。在偏好噪声大的场景下避免 DPO 过度优化。
 - **安全 / 价值观对齐**：**Constitutional AI**（Anthropic，2022）—— 用宪法式规则 + LLM 评判替代人类标注，是 RLHF 的扩展而非替代。
-- **多阶段组合**：OpenAI o1 / o3 公开承认推理能力来自**大规模 RL + 过程奖励（Process Reward Model）**；Llama 3 / Qwen 2.5 在 SFT 之后会同时跑 DPO 与 RLHF 做融合。**实战中算法可以串行**：先 DPO 学偏好风格、再 GRPO 学推理能力、再 Online DPO 做实时校准。
+- **多阶段组合**：厂商自述 OpenAI o1 / o3 的推理能力来自强化学习训练，但其具体 RL 算法与是否采用**过程奖励（Process Reward Model）**并未公开；Llama 3 / Qwen 2.5 在 SFT 之后会同时跑 DPO 与 RLHF 做融合。**实战中算法可以串行**：先 DPO 学偏好风格、再 GRPO 学推理能力、再 Online DPO 做实时校准。
 
 **第四层：工业实证。**
 
-- **OpenAI InstructGPT（Ouyang et al., 2022）**：RLHF 奠基论文，证明 13B InstructGPT 在人类偏好上胜过 175B GPT-3。
+- **OpenAI InstructGPT（Ouyang et al., 2022）**：RLHF 奠基论文，证明 1.3B InstructGPT 在人类偏好上胜过 175B GPT-3。
 - **DeepSeek-R1（Guo et al., 2025）**：GRPO + 规则奖励（答案正确性 + 格式合规），AIME / MATH / Codeforces 全面 SOTA；同篇还有 R1-Zero（纯 RL 无 SFT）的消融，证明 GRPO 自身能涌现推理行为。
 - **Anthropic Constitutional AI（Bai et al., 2022）**：用 LLM 替代人类做安全评判，是 RLHF 的安全扩展。
 - **Hugging Face TRL 库**：把 DPO / GRPO / IPO / KTO / Online DPO 工程化，是当前开源训练的事实标准。
@@ -86,7 +86,7 @@
 - **「GRPO 的 group size 怎么选？」** 答：经验值 ≥8 才能稳定；DeepSeek-R1 用了 16。Group size 越大，优势估计方差越小，但算力线性增长。需要按任务难度调。
 - **「RLHF 在生产中崩溃过吗？」** 答：常见崩溃模式是 **reward hacking**——模型学会「骗过 RM」而非真的变好。Anthropic 在 RLHF 论文中专门讨论过这种失败模式。缓解手段：KL 系数调大、Reward 加噪声、定期人工抽查。
 - **「数据量小怎么选？」** 答：< 1k 条偏好对：IPO（防过拟合）；1k~10k：DPO；> 10k：DPO + GRPO 联合训练。
-- **「Online DPO 是新算法吗？」** 答：不是，是 DPO 的在线版本——把离线偏好对换成在线采样的偏好对，能实时反映用户反馈。Anthropic 公开过 Online DPO 的实验。
+- **「Online DPO 是新算法吗？」** 答：不是，是 DPO 的在线版本——把离线偏好对换成在线采样的偏好对，能实时反映用户反馈。其公开出处见 Guo 等（arXiv 2402.04792, 2024）。
 
 **5. 参考资料**
 
@@ -445,7 +445,7 @@
 
 **第二层：LLM 时代的在线学习——为什么「全参数在线更新」不可行。** LLM 与传统模型最大的不同是**训练成本**——一次全参数微调（DPO / GRPO）需要数张 H100 跑数小时到数天，按小时更新参数不现实。因此 LLM 时代的「在线学习」实际有三条变体：
 
-- **路径一：Online DPO（Anthropic 公开过实验）**：把离线偏好对换成在线采样的偏好对，**小时级**用新反馈跑一次 DPO 微调（LoRA 模式下只需 1~2 张 GPU）。优点：能实时反映用户偏好；缺点：频繁训练会导致**模型遗忘（catastrophic forgetting）**、训练不稳定。
+- **路径一：Online DPO**：把离线偏好对换成在线采样的偏好对，**小时级**用新反馈跑一次 DPO 微调（LoRA 模式下只需 1~2 张 GPU）。优点：能实时反映用户偏好；缺点：频繁训练会导致**模型遗忘（catastrophic forgetting）**、训练不稳定。
 - **路径二：Prompt 在线优化（Prompt Tuning / OPRO / TextGrad）**：不更新模型参数，只调整 Prompt / Few-shot examples。**最快**（秒级生效）、**最便宜**（无训练成本）、**最稳定**（不破坏模型能力）。阿里通义公开过用 FTRL 风格做 Prompt 在线调优；OPRO（Yang et al., 2023，Google DeepMind）用 LLM 自己优化 Prompt；TextGrad（Yuksekgonul et al., 2024）把 Prompt 优化建模为「文本梯度」问题。
 - **路径三：Embedding 在线微调**：基于反馈微调检索 embedding（不是 LLM 本身）。优点：成本低（embedding 模型小）、能直接改善 RAG 检索质量；缺点：需要反馈归因到具体检索失败。
 
@@ -463,7 +463,7 @@
 
 **第四层：在线学习的工程挑战。**
 
-- **训练稳定性**：Online DPO 跑几小时就可能让模型偏离原始能力——需要 KL 散度惩罚 + 黄金集守护 + 灰度发布。Anthropic 在公开技术博客中详细讨论过 Online DPO 的工程陷阱。
+- **训练稳定性**：Online DPO 跑几小时就可能让模型偏离原始能力——需要 KL 散度惩罚 + 黄金集守护 + 灰度发布。这一路径的公开出处（Guo 等，arXiv 2402.04792, 2024）也把稳定性列为核心工程挑战。
 - **反馈延迟**：在线学习假设「反馈即时到来」，但 LLM 应用的反馈往往延迟（用户 24 小时后才回评）——需要**反馈对齐**（把 24 小时前的反馈映射回当时的模型版本）。
 - **冷启动**：新模型 / 新功能没有反馈数据，需要 bandit 做主动探索。ε-greedy 是最简单的实现。
 - **分布漂移**：在线学习容易「自我强化」（推荐过的内容获得更多点击 → 越推越多），需要**反事实推理 + 探索机制 + 定期人工校准**。
@@ -482,14 +482,14 @@
 - **Google FTRL**：McMahan et al.《Ad Click Prediction: a View from the Trenches》（2013）——FTRL 在 Google 广告 CTR 上的工业落地，是**在线学习的奠基性工业文献**。
 - **Netflix Bandit**：Netflix Technology Blog 的 Artwork Personalization 系列文章介绍过 Contextual Bandit 在「artwork personalization」（封面图个性化）上的实验，相对纯 A/B 有明显增益（幅度随场景而异，本书无法给出可溯源的具体数字，此处按【经验】档处理）。
 - **Yahoo News Bandit**：Li et al.《A Contextual-Bandit Approach to Personalized News Article Recommendation》（2010）——Contextual Bandit 在新闻推荐的开创性工作。
-- **Anthropic Online DPO**：公开技术博客与论文（2024~2025）讨论过 Online DPO 在 Claude 系统中的实验，强调 KL 惩罚与黄金集守护的必要性。
+- **Online DPO**：Guo 等（arXiv 2402.04792, 2024）——用当前策略在线生成回答并获取反馈的 Online DPO，工程上强调 KL 惩罚与黄金集守护的必要性。
 - **Google DeepMind OPRO**：Yang et al.《Large Language Models as Optimizers》（2023）——LLM 优化 Prompt 的范式。
 - **阿里通义 FTRL 风格 Prompt 调优**：公开技术分享过用在线学习思想做 Prompt 个性化，是国内工业实践的典型。
 
 **第七层：可行性边界——LLM 应用中哪些在线学习是真正落地的？**
 
 - **真正落地**：Prompt 在线优化（OPRO / TextGrad / 业务规则）、Embedding 在线微调、Contextual Bandit 用于业务路由、A/B 测试中的 bandit 分流。
-- **有限落地**：Online DPO（需要强大工程团队，Anthropic 等头部实验室在用）、FTRL 风格 Prompt 在线调优（阿里等）。
+- **有限落地**：Online DPO（需要强大工程团队）、FTRL 风格 Prompt 在线调优（阿里等）。
 - **暂未广泛落地**：全参数 Online RL（成本太高）、端到端 LLM 小时级更新（工程上仍非常脆弱）。
 
 **结论**：在线学习在 LLM 应用中更多是「**轻量在线化**」——通过 Prompt / Embedding / Bandit 的组合实现「分钟级响应」，而不是「小时级模型更新」。这一点与传统业务的对话经常被忽略，是面试中的高分项。
@@ -516,7 +516,7 @@
 - Yang et al.《Large Language Models as Optimizers》（Google DeepMind，OPRO，2023）——LLM 优化 Prompt。
 - Yuksekgonul et al.《TextGrad: Automatic Differentiation via Text》（2024）——文本梯度与 Prompt 优化。
 - Netflix Technology Blog 关于 Artwork Personalization 与 Bandit 的系列文章（2015~2024）。
-- Anthropic 公开技术博客关于 Online DPO 的工程经验（2024）。
+- Guo 等关于 Online DPO 的公开论文（arXiv 2402.04792, 2024）——用当前策略在线生成回答并获取反馈的在线偏好优化。
 - 阿里通义公开技术分享——Prompt 在线调优的工业实践（2024）。
 - 字节跳动公开技术博客——推荐系统在线学习的工程演进。
 - **京东 / Shein 的电商推荐在线学习（公开实践）** —— 在商品推荐主链路公开讨论过 FTRL 风格的在线学习方案（亿级稀疏特征 + 分钟级刷新），公开分享过冷启动探索与回音壁治理经验（本节无法给出上述分享与规模数字的可核验出处，引用时请自行查证）。
@@ -682,7 +682,7 @@
 
 ### 8.3 本章小结
 
-本节收录 6 道题，覆盖反馈闭环与偏好学习算法选型这一主题，横切六大能力维度：**算法选型（§11.8.1）→ 反馈采集设计（§11.8.2）→ A/B 测试与评估（§11.8.3）→ HITL 标注平台（§11.8.4）→ 在线学习落地（§11.8.5）→ 数据治理与合规（§11.8.6）**。这六道题构成一条完整的下钻链路：从「训练侧」（训练侧）到「采集侧」（采集侧）到「评估侧」（评估侧）到「平台侧」（平台侧）再到「治理侧」（治理侧），把反馈闭环的工程全景完整覆盖。
+本节收录 6 道题，覆盖反馈闭环与偏好学习算法选型这一主题，横切六大能力维度：**算法选型（§11.8.1）→ 反馈采集设计（§11.8.2）→ A/B 测试与评估（§11.8.3）→ HITL 标注平台（§11.8.4）→ 在线学习落地（§11.8.5）→ 数据治理与合规（§11.8.6）**。这六道题构成一条完整的下钻链路：从「训练侧」到「采集侧」到「评估侧」到「平台侧」再到「治理侧」，把反馈闭环的工程全景完整覆盖。
 
 **答题心法**：
 

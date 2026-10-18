@@ -266,9 +266,9 @@ Kafka (Source)
 **第二层：每个环节的关键工程考量。**
 
 - **Source（Kafka 消费）**：
-  - 用 `spark.readStream.format("kafka")`，订阅 topic 用 `--subscribe` 或 `--pattern`。
+  - 用 `spark.readStream.format("kafka")`，订阅 topic 用 `.option("subscribe", "...")` 或 `.option("subscribePattern", "...")`。
   - **Offset 管理**：Structured Streaming 默认把 offset 存在 checkpoint 目录（HDFS / OSS）；**故障恢复依赖 checkpoint**，所以 checkpoint 必须放在可靠存储上。
-  - **消费语义**：Kafka Source 默认是 **at-least-once**；要 exactly-once 需要 sink 端幂等（主键 upsert）+ Kafka 事务。Spark 3.x 通过 `kafka.commit-on-offset-zero=false` 与幂等 sink 配合实现。
+  - **消费语义**：Kafka Source 默认是 **at-least-once**；要 exactly-once，需要 offset 由 checkpoint 管理、sink 端幂等（主键 upsert）配合实现。
 
 - **数据清洗**：
   - **Schema 强制**：用 `from_json` 解析，**强制 cast 类型**——上游字段类型变了不会让作业直接挂，而是落入"死信队列"。

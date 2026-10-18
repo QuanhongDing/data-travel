@@ -175,7 +175,7 @@
 
 - **盲目追求 Lambda 双链路**。业务其实只需实时（如实时大屏），非要 Lambda 跑全量批，浪费资源。**正确**：业务驱动选型，纯实时优先 Kappa。
 - **盲目追求 Kappa**。业务有大量 T+1 历史报表（如月度财务），强上 Kappa 需长时间重放历史数据（【经验】档：重放时长随数据量与集群规模而异，本节无法给出可溯源的统一数字）——Lambda 更合适。
-- **混淆"流批一体"与"流批并存"**。流批并存 = Lambda；流批一体 = 一份代码。**字节跳动** 早期踩过这个坑，2018 年后统一到 Flink + Paimon 流批一体。
+- **混淆"流批一体"与"流批并存"**。流批并存 = Lambda；流批一体 = 一份代码。**字节跳动** 早期踩过这个坑，后统一到 Flink + Paimon 流批一体。
 - **忽视 Iceberg V2 流批读写**。Iceberg V2 + Flink 才支持完整流批；V1 只有 Spark Streaming 近似实现。**阿里 Flink + Iceberg** 在 V2 后才进入生产可用阶段。
 - **架构僵化**。业务变了架构不变——架构师必须有 ADR + 季度 Review 机制。
 
@@ -584,7 +584,7 @@
 - 是否理解 ADR（Architecture Decision Record）的**核心要素**：状态、背景、决策、备选方案、后果、演进路径。
 - 是否能从"**文档化 → 工程化 → 智能化**"三阶段演进视角讲清 ADR 的演进。
 - 是否能设计一套可落地的 **ADR 工具链**（Git + Markdown + CI + AI 助手）。
-- 加分项：能讲清"**AI 辅助 ADR**"——LLM 读取业务需求 + 历史 ADR → 推荐架构；**Snowflake Cortex / Databricks Genie** 是工业级参考。
+- 加分项：能讲清"**AI 辅助 ADR**"——LLM 读取业务需求 + 历史 ADR → 推荐架构；**并知道该方向目前只有厂商演示与自研（见 [§5](07-architecture-decisions-section-5-ai.md) §5.1，判为 L3），Databricks / Snowflake 等厂商的对应能力只能作判定入口、不能当工业级参考**。
 
 **2. 参考答案框架**
 
@@ -613,7 +613,7 @@ ADR 是 Michael Nygard 在 2011 年提出的架构决策文档化方法论，核
   - **AI 辅助 ADR**——LLM 读取业务需求 + 历史 ADR → 推荐架构。
   - **AI 辅助检索**——RAG 检索历史 ADR，新决策自动找到相似案例。
   - **AI 辅助 review**——LLM 自动 review ADR 质量（背景完整、备选方案覆盖、后果量化）。
-  - **典型实践**：Databricks Genie（AI 辅助架构决策）、Snowflake Cortex（AI 辅助数据决策）、自研 LLM ADR 助手。
+  - **厂商方向（只能作判定入口）**：Databricks Genie（AI 辅助架构决策）、Snowflake Cortex（AI 辅助数据决策）、自研 LLM ADR 助手——**均只有厂商演示与自研、无可举的第三方生产案例（见 [§5](07-architecture-decisions-section-5-ai.md) §5.1 第 3 行，判为 L3）**。
 
 **第三层：ADR 工程化工具链设计。**
 
@@ -656,10 +656,10 @@ tools:
 
 **第五层：典型工业实践。**
 
-- **Databricks Genie**：AI 辅助架构决策 + 自动生成 ADR 草稿，**Databricks Data Intelligence Platform** 的核心组件。
-- **Snowflake Cortex**：LLM + 向量 + 数据栈融合，**AI 辅助数据决策**，自动推荐架构 + 评估风险。
+- **Databricks Genie**：厂商在"AI 辅助架构决策 + 生成 ADR 草稿"上的方向（Databricks Data Intelligence Platform 的组件）——**属厂商演示与自研，[§5](07-architecture-decisions-section-5-ai.md) §5.1 判为 L3，具体能力以官方文档为准**。
+- **Snowflake Cortex**：厂商在"LLM + 向量 + 数据栈融合、AI 辅助数据决策"上的方向（自动推荐架构 + 评估风险）——**同判 L3，具体能力以官方文档为准**。
 - **LinkedIn ADR 工程化**：ADR + Git + CI + Decision Matrix，**LinkedIn 内部** 强制要求重大架构决策必须 ADR + 决策矩阵。
-- **字节跳动 ADR + AI 助手**：字节跳动内部 ADR 平台与 AI 助手集成，**架构师通过对话生成 ADR 草稿**。
+- **字节跳动 ADR + AI 助手（方向记录，非已落地生产实践）**：内部 ADR 平台与 AI 助手集成、**架构师通过对话生成 ADR 草稿**的方向——**本章 [§5](07-architecture-decisions-section-5-ai.md) §5.4 明写未核到可核验的第三方"AI 改变架构决策"生产案例，故此处只作方向、不当既有落地**。
 - **微众银行 ADR + 监管**：金融场景 ADR 必须包含"监管影响" + "审计要求" + "回滚方案"——监管级 ADR。
 - **招行 ADR + 风险评估**：招行 ADR 必须包含"风险矩阵" + "应急预案" + "灰度方案"——金融级 ADR。
 
@@ -684,10 +684,9 @@ tools:
 - MADR（Markdown Any Decision Records）官方文档——工业级 ADR 模板。
 - Databricks Engineering Blog《Data Intelligence Platform》——AI 辅助架构决策。
 - Snowflake Cortex 官方文档——LLM + 向量 + 数据栈融合。
-- **Databricks Genie（AI 辅助架构决策）** —— Databricks Data Intelligence Platform 的核心组件，AI 辅助 ADR 生成。
-- **Snowflake Cortex（AI 辅助数据决策）** —— LLM + 向量 + 数据栈融合，自动推荐架构 + 评估风险。
+- **Databricks Genie / Snowflake Cortex（厂商方向，判定入口）** —— 两家厂商在"AI 辅助架构决策 / AI 辅助数据决策"上的宣传方向；**具体能力以各自官方文档为准，[§5](07-architecture-decisions-section-5-ai.md) §5.4 明写该方向不给版本号、不断言某项特性存在，引用前请自行查证**。
 - **LinkedIn ADR 工程化实践** —— LinkedIn 内部强制要求重大架构决策必须 ADR + 决策矩阵。
-- **字节跳动 ADR + AI 助手** —— 字节跳动内部 ADR 平台与 AI 助手集成，对话生成 ADR 草稿。
+- **字节跳动 ADR + AI 助手（方向记录）** —— 内部 ADR 平台与 AI 助手集成、对话生成 ADR 草稿的方向；**本章 [§5](07-architecture-decisions-section-5-ai.md) §5.4 明写未核到可核验的第三方生产案例，引用前请自行查证**。
 - **微众银行监管级 ADR** —— 金融场景 ADR 必须包含监管影响 + 审计要求 + 回滚方案。
 - **招行金融级 ADR** —— 招行 ADR 包含风险矩阵 + 应急预案 + 灰度方案，金融级 ADR 标杆。
 

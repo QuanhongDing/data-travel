@@ -47,7 +47,7 @@
 
 **第二层：四家的设计原点对比。**
 
-- **Apache Iceberg（Netflix / Apple 主导）**：设计原点是「让任何引擎都能安全读」。Catalog 与物理路径完全解耦，metadata 文件层级 `metadata.json -> manifest list -> manifest -> data file`。**写模型默认 COW**，Spark / Trino / Flink / StarRocks 全兼容，社区最广。**代价**是主键索引弱、依赖墨菲条（`MERGE INTO`）做 upsert，性能不如 Hudi MOR。
+- **Apache Iceberg（Netflix / Apple 主导）**：设计原点是「让任何引擎都能安全读」。Catalog 与物理路径完全解耦，metadata 文件层级 `metadata.json -> manifest list -> manifest -> data file`。**写模型默认 COW**，Spark / Trino / Flink / StarRocks 全兼容，社区最广。**代价**是主键索引弱、依赖 `MERGE INTO` 做 upsert，性能不如 Hudi MOR。
 - **Apache Hudi（Uber 主导）**：设计原点是「CDC 主键 upsert」。Timeline + Record-Level Index 让 upsert 在 PB 级也能秒级完成，**CDC 场景通常显式切到 MOR** 让写快读时合并（Hudi 的默认表类型其实是 COW，与 Iceberg 一致）。代价是 Flink 集成偏后、社区贡献者比 Iceberg 少。Uber 把 Hudi 用在 UberEats 的实时订单流，是 CDC 路线最深的工业案例。
 - **Delta Lake（Databricks）**：设计原点是「Spark 之上最强 ACID」。Transaction Log（`_delta_log`）以 JSON+Parquet 维护，**Spark API 集成最深**，配合 Unity Catalog 与 Vector Search 形成 AI 一体化闭环。**代价**是 Flink 写入生态比较薄（2024 之前的痛点）；随 Delta Lake 3.0（2023）公布的 **Delta UniForm** 通过写一份 Delta 同时发布 Iceberg/Hudi 元数据开始回应这一问题。
 - **Apache Paimon（Alibaba / Flink 生态）**：设计原点是「流批一体的 LSM 树」。LSM 让流式写入天然防小文件、Changelog Producer 输出变更流直接驱动物化视图增量刷新。代价是 Trino / StarRocks 的批端兼容性还在追赶。
@@ -82,7 +82,7 @@
 - **「Delta UniForm 和 Iceberg V3 都是「一份数据多协议读」，它们解决的问题有何本质差异？」** 答：UniForm 是从 Delta 出发在 commit 时同步发出 Iceberg/Hudi 元数据，保持 Delta 写入主路径；Iceberg V3 是规范本身扩展（删除向量 + Variant 类型），让任何对接 V3 的引擎天然支持新语义。前者解决**多协议互认**，后者解决**单协议能力上限**。
 - **「Paimon 的 LSM 写模型和小文件治理是什么关系？为什么它被称作自然不产生小文件？」** 答：LSM 用追加写 + 后台 compaction 的天然结构，写入先落小文件，由后台线程合并成大文件，整个生命周期对小文件是「应收尽收」——Hudi / Iceberg 需要额外的 Compaction 调度（Paimon 几乎不用）。
 - **「如果公司要求 5 年内不绑定单一厂商，技术栈怎么搭？」** 答：底座用对象存储 + Iceberg 协议；Catalog 用开源 Polaris 或 Nessie；引擎层用 Trino 做联邦查询；写端按场景拆分——CDC 走 Flink+Paimon、批走 Spark+Iceberg。这是「格式中立 + 引擎多元化」的最大公约数栈。
-- **「华米欧薇大厂为什么不用 Delta Lake？」** 答：历史包袱（Spark 主导 vs Flink 主导）+ Delta 与 Databricks 商业版深度绑定 + 国内合规要求多云中立。当前国内主流是 Iceberg + Paimon + Hudi 三足鼎立，而非 Delta。
+- **「国产手机大厂为什么不用 Delta Lake？」** 答：历史包袱（Spark 主导 vs Flink 主导）+ Delta 与 Databricks 商业版深度绑定 + 国内合规要求多云中立。当前国内主流是 Iceberg + Paimon + Hudi 三足鼎立，而非 Delta。
 
 **5. 参考资料**
 
@@ -273,7 +273,7 @@
 
 - 任何 upsert 都触发**重写受影响的 base 文件**。一批 1000 行 upsert 进来，即使只动 5 行，也要把这 5 行所在的 Parquet 整文件重写。
 - 写时复制把「重算」提前到写入期，所以读端**永远是最新基线文件**，查询性能接近「直接读 Parquet」。
-- 代价：写放大极高（CDC 场景下写入量是变更量的 5-50 倍），小文件爆炸风险大，所以 COW 必须搭配 **Compaction 调度**。
+- 代价：写放大极高（CDC 场景下写入量是变更量的 5-20 倍），小文件爆炸风险大，所以 COW 必须搭配 **Compaction 调度**。
 
 **第三层：MOR 的工作原理。**
 

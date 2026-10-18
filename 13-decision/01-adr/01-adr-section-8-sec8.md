@@ -62,7 +62,7 @@ GitHub 在 2016 年公开的 `github/architectural-decision-records` 仓库就�
 
 | 字段 | 一句话问题 | 填写规范 | 常见反例 |
 | --- | --- | --- | --- |
-| **Status** | 这份 ADR 现在处于什么生命周期阶段？ | 取值必须从 `Proposed / Accepted / Deprecated / Superseded by ADR-XXXX` 中选 | 写「WIP」「Draft」「v0.2」这种状态——状态应是离散枚举，不是版本号 |
+| **Status** | 这份 ADR 现在处于什么生命周期阶段？ | 取值必须从 `Proposed / Accepted / Rejected / Deprecated / Superseded by ADR-XXXX` 中选 | 写「WIP」「Draft」「v0.2」这种状态——状态应是离散枚举，不是版本号 |
 | **Context** | 是哪些约束让我们必须做这个决策？ | 用第三人称叙述业务背景、技术现状、强制约束（合规、SLA、成本上限）；**禁止把决策本身写进来** | 把 Context 写成「经过评估，我们决定选 MySQL」——这是 Decision，不是 Context |
 | **Decision** | 我们到底决定做什么？ | 一句话陈述「决定选 X」；理由放 Consequences 或独立小节 | 用「我们倾向于 / 倾向于不」「可以考虑 X」——ADR 必须明确，不能用情态动词留口子 |
 | **Consequences** | 这个决策带给我们什么？ | 必须**双面**记录：正面（Positive / Good）+ 负面（Negative / Bad），必要时加中性（Neutral）；负面必须显式写出「我们要为此付出的代价」 | 只写「我们获得了高可用、低延迟」——这是营销文案，不是 Consequences |
@@ -82,7 +82,7 @@ GitHub 在 2016 年公开的 `github/architectural-decision-records` 仓库就�
 
 - **「ADR 与 Postmortem 的区别是什么？」** 答：Postmortem 是「出错了，回看为什么错」的事后复盘；ADR 是「要做决策了，记录当时怎么想」的事前/事中归档。两者时序相反——Postmortem 触发新的 ADR，但 ADR 本身不能事后改写。
 - **「如何让团队愿意写 ADR？」** 答：① 模板要轻（Nygard 4 段优于 MADR 11 段）；② 与 PR 流程绑定（不写 ADR 不让合并关键架构变更）；③ 评审人由架构师亲自挂帅；④ 高频反例展示——「上次没写 ADR，这次又踩了一遍坑」是最好的内部宣传。
-- **「Status 是 Proposed 但没人 review，躺在仓库里半年，怎么办？」** 答：建立「PR 超时自动 reject」机制；或周期性清理（每月一次），把长期无响应的 ADR 重写为 Decision（吸收评审意见）或 Rejected（标注放弃原因）。
+- **「Status 是 Proposed 但没人 review，躺在仓库里半年，怎么办？」** 答：建立「PR 超时自动 reject」机制；或周期性清理（每月一次），把长期无响应的 ADR 改为 Accepted（吸收评审意见）或 Rejected（标注放弃原因）。
 - **「是否每行代码改动都要 ADR？」** 答：不是——ADR 覆盖「架构决策」，即影响 3 个团队以上 / 影响 > 6 个月演进方向 / 不可逆或极难回滚的决策。单函数重构不需要 ADR，但底层依赖替换（如 Kafka→Pulsar）必须。
 
 **5. 参考资料**
@@ -117,7 +117,7 @@ GitHub 在 2016 年公开的 `github/architectural-decision-records` 仓库就�
 
 | 维度 | Nygard 4 段 | MADR 完整 | 差距 |
 | --- | --- | --- | --- |
-| 字段数 | 4 | 11+ | Nygard 写一份 ≈ 15–30 分钟；MADR 写一份 ≈ 60–120 分钟 |
+| 字段数 | 4 | 11+ | Nygard 写一份 ≈ 10–20 分钟；MADR 写一份 ≈ 30–60 分钟【经验，本章 §3.2.2 / §7.4 同一口径】 |
 | 信息密度 | 低（Context / Decision 装一切） | 高（Decision Drivers / Considered Options 独立成段） | 重读时 MADR 找到「为什么」的成本 ≈ Nygard 的 1/3 |
 | 评审成本 | 30 分钟/条 | 60–90 分钟/条（评审必须读 Considered Options） | 评审成本随字段线性上升 |
 | PR 合并冲突率 | 低（文档短） | 中（长文档，跨人多时易冲突） | 取决于评审人数 |
@@ -175,7 +175,7 @@ GitHub 在 2016 年公开的 `github/architectural-decision-records` 仓库就�
 
 **1. 考察点**
 
-- 是否能把 ADR 流程拆成「**起草 → 评审 → 接受 → 维护 → supersede**」五个步骤，并说出每一步的产物。
+- 是否能把 ADR 流程拆成「**触发 → 起草 → PR 提交 → 评审 → 合并 → 季度复盘**」六个步骤，并说出每一步的产物。
 - 是否清楚状态机——`Proposed → Accepted → Deprecated / Superseded by ADR-XXXX`——以及**为什么 Deprecated 与 Superseded 是两个不同状态**（前者是「不推荐新场景但保留」，后者是「已被新决策取代」）。
 - 是否能从「**PR 化 + Reviewer 制度 + 季度复盘**」三个动作反推流程，而不是背流程图。
 - 加分项：能说出 ADR Index 文件（`docs/adr/README.md`）的字段设计（编号、标题、状态、日期、Owner、影响范围）。
@@ -186,11 +186,14 @@ GitHub 在 2016 年公开的 `github/architectural-decision-records` 仓库就�
 
 ```
 Proposed ──(评审通过)──> Accepted ──(不再推荐)──> Deprecated
-                            │
-                            └──(被新决策取代)──> Superseded by ADR-XXXX
+   │                        │
+   │(评审否决 / 作者撤回)     └──(被新决策取代)──> Superseded by ADR-XXXX
+   ▼
+Rejected
 ```
 
 - **Proposed**：决策草案，正在评审。可以被作者主动 Rejected（撤销）。
+- **Rejected**：草案被否决或被作者撤回，未进入生效状态。
 - **Accepted**：评审通过，正式生效。**状态锁定，不可修改**。
 - **Deprecated**：决策仍然有效但不推荐新场景使用（典型：被新方案取代但未完全废弃）。
 - **Superseded by ADR-XXXX**：被新 ADR 取代，建立**决策族谱**。读到 ADR-0007 的人立刻看到它是 ADR-0012 的前置。
@@ -385,7 +388,7 @@ Step 5 · ADR-0031 维护
 - **多元 Reviewer 制度**：至少 2 名 Reviewer，且至少 1 名与决策受益方**无利益相关**（避免「部门代言人」思维）。
 - **ADR Reviewer 多样性**：技术 Reviewer + 业务 Reviewer + 安全/合规 Reviewer。字节跳动内部 TD 评审强制业务代表参会，避免纯技术视角。
 - **冷却期（Cool-down Period）**：重大 ADR 在合并前至少挂出 5–7 天；任一 Reviewer 在冷却期内反对则自动延期讨论（AWS 内部 Working Backwards 流程常用此机制）。
-- **Pre-Mortem**：评审会议加 15 分钟环节——「假设这条 ADR 已 Accepted 并执行了 12 个月，灾难性失败——为什么失败？」把假设未来的失败映射回当前决策，往往能指出决策盲区。Gartner 在 2023 年的「Decision Intelligence」报告中将 Pre-Mortem 列为反乐观偏误的标准工具。
+- **Pre-Mortem**：评审会议加 15 分钟环节——「假设这条 ADR 已 Accepted 并执行了 12 个月，灾难性失败——为什么失败？」把假设未来的失败映射回当前决策，往往能指出决策盲区。Gartner 在 2022 年的「Decision Intelligence」报告中将 Pre-Mortem 列为反乐观偏误的标准工具。
 
 **第四层：实例——GitHub 公开 ADR 中的反偏差设计。**
 
@@ -413,7 +416,7 @@ GitHub 在 `github/architectural-decision-records` 仓库的部分 ADR（如 ADR
 **5. 参考资料**
 
 - Daniel Kahneman《Thinking, Fast and Slow》（2011 年，中译本《思考，快与慢》）——确认偏误、锚定、乐观偏误的认知科学原始论述，是 ADR 反偏差设计的理论基础。
-- Gartner《Top Strategic Technology Trends 2023: Decision Intelligence》（2022 年发布）——把 Pre-Mortem 与 ADR 列为 DI（Decision Intelligence）核心组件。
+- Gartner《Top Strategic Technology Trends 2022: Decision Intelligence》（2021 年发布）——把 Pre-Mortem 与 ADR 列为 DI（Decision Intelligence）核心组件。
 - GitHub 公开仓库 `github/architectural-decision-records` 中 GraphQL 等 ADR —— Decisions Drivers + Bad 一栏齐全的工业实例。
 - AWS 公开演讲「Two-Way Doors vs One-Way Doors」（Bezos 内部决策方法系列）——决策可逆性（与沉没成本反偏差密切相关）的工业表述。
 - ThoughtWorks Technology Radar 2022 年条目「Architecture Decision Records as Cognitive Bias Mitigators」——把 ADR 明确定位为反偏差工具。
@@ -451,22 +454,22 @@ GitHub 在 `github/architectural-decision-records` 仓库的部分 ADR（如 ADR
 
 | 准则 (权重) | Flink | Spark Structured Streaming | Materialize |
 | --- | --- | --- | --- |
-| 端到端延迟 P99 < 30s (0.25) | 5（毫秒级原生流） | 3（微批批间隔 0.5s 起） | 5（增量计算原生流） |
+| 端到端延迟 P99 < 30s（must-have，不参与加权） | 达标（毫秒级原生流） | 达标（微批批间隔 0.5s 起） | 达标（增量计算原生流） |
 | 团队经验匹配 (0.20) | 2（无 Flink 生产经验） | 5（10 人全员有 Spark 生产） | 1（无人接触） |
 | 生态与可集成性 (0.15) | 5（Kafka / Hudi / Iceberg 全兼容） | 5（同上） | 3（社区接入相对新） |
 | 容错与 Exactly-Once (0.15) | 5（两阶段提交原生支持） | 3（受 source 限制） | 5（基于 SQL 事务） |
 | 成本估算（元/月，按 50TB/日）(0.10) | 4（State 较大，RocksDB 后端） | 5（复用 Spark 集群） | 3（独立部署） |
 | 学习曲线 (0.10) | 2（陡） | 5（团队熟悉） | 2（陡） |
 | 社区活跃度 / 长期演进 (0.05) | 5（顶级 Apache 项目） | 5（顶级） | 3（商用公司主导） |
-| **加权总分** | 2×0.20 + 5×0.25 + 5×0.15 + 5×0.15 + 4×0.10 + 2×0.10 + 5×0.05 = **4.00** | 5×0.20 + 3×0.25 + 5×0.15 + 3×0.15 + 5×0.10 + 5×0.10 + 5×0.05 = **4.20** | 1×0.20 + 5×0.25 + 3×0.15 + 5×0.15 + 3×0.10 + 2×0.10 + 3×0.05 = **3.30** |
+| **加权总分**（不含 must-have，其余准则权重合计 0.75） | 2×0.20 + 5×0.15 + 5×0.15 + 4×0.10 + 2×0.10 + 5×0.05 = **2.75** | 5×0.20 + 5×0.15 + 3×0.15 + 5×0.10 + 5×0.10 + 5×0.05 = **3.45** | 1×0.20 + 3×0.15 + 5×0.15 + 3×0.10 + 2×0.10 + 3×0.05 = **2.05** |
 
-**结论**：Spark Structured Streaming 总分 4.20 最高。但 Decision 应该选 Flink——因为 **延迟**是 P99 < 30s 这一**必须满足**的硬约束（不达标则上线不予通过），而矩阵里它只是 0.25 权重的「加法项」。
+**结论**：Spark Structured Streaming 加权总分 3.45 最高，但 Decision 应该选 Flink。**矩阵总分不等于决策**——「延迟 P99 < 30s」是必须满足的硬约束，但三个候选其实都达标（都远低于 30s），所以它守住底线、却不淘汰谁；把矩阵顶分的 Spark 换成 Flink 的依据在第四层：矩阵按「现状」加权（团队经验、学习曲线两项都偏向 Spark），而这条链路要按「长期演进」来拍。
 
 **第三层：权重设定——如何不流于主观。**
 
 权重不能拍脑袋，**三步法**：
 
-1. **分层而非等权**：先把准则分为「**must-have（硬约束，不达标即排除）**」「**重要（权重 0.2-0.3）**」「**加分（权重 0.05-0.1）**」三档。本例中「延迟 P99」应为 must-have，权重改为「不参与总分，直接淘汰不达标选项」。
+1. **分层而非等权**：先把准则分为「**must-have（硬约束，不达标即排除）**」「**重要（权重 0.2-0.3）**」「**加分（权重 0.05-0.1）**」三档。本例中「延迟 P99 < 30s」即 must-have——不参与加权总分，只在矩阵前做达标判定；注意它只负责排除不达标者，三个候选都达标时，它便改变不了排序。
 2. **从业务反推**：每个权重的来源必须能回答「为什么是 X？」——本例中「团队经验」0.20 是因为团队人才储备；「成本」0.10 是因为预算弹性充足。
 3. **AHP 校准**：复杂场景用 AHP（Analytic Hierarchy Process）——两两比较准则的重要性，得出相对权重，避免「5 个维度都重要」的全等权陷阱。
 
@@ -489,7 +492,7 @@ GitHub 在 `github/architectural-decision-records` 仓库的部分 ADR（如 ADR
 **4. 追问预测**
 
 - **「矩阵分数对齐不下来，团队争议大怎么办？」** 答：把打分从「**共识**」改为「**辩论**」——每个分数由 ≥3 名 Reviewer 独立给出，最终分取中位数或加权中位数；分数冲突大的准则进入第二轮深度讨论而非强行对齐分数。矩阵本质是「**促进讨论**」的工具，不是「终结讨论」的工具。
-- **「Must-have 如何处理？」** 答：硬约束——不进入加权总分矩阵，而是在矩阵前先做硬过滤：失败即淘汰。本例中「延迟 P99 < 30s」应剔除 Spark Structured Streaming 而非给它打 3 分稀释。
+- **「Must-have 如何处理？」** 答：硬约束——不进入加权总分矩阵，而是在矩阵前先做硬过滤：失败即淘汰。本例中「延迟 P99 < 30s」三个候选都在阈值之内（Spark 的微批批间隔 0.5s 起，同样远低于 30s），所以它不淘汰任何人，也不能靠它把矩阵顶分的 Spark 拿掉——**要把 Spark 换成 Flink，依据必须在矩阵之外**（第四层的战略与团队因素），而不是假装某条硬约束把 Spark 挡在门外。
 - **「LLM 能否辅助打分？」** 答：可以——把 Context、准则、候选选项输入 LLM，让模型给出每个选项每个准则的 1–5 分与依据；再由人类 Reviewer 修正偏差。但**任何 LLM 给的分数必须显式标注「AI-generated, manually reviewed」**——AI 可疑为锚定源。
 - **「AHP 比加权打分好在哪里？」** 答：AHP 通过两两比较（如「延迟 vs 成本，哪个更重要？」）得到相对权重，比 5 个 0.2 等权更精确；但 AHP 计算量更大，**适合 ≥5 准则、≥3 选项、且团队有共识训练的场景**。一般 ADR 用加权打分已足够。
 
@@ -827,7 +830,7 @@ Pros/Cons 段 Good / Bad / Neutral 三栏必须都填且 Bad 不能敷衍。
 **1. 考察点**
 
 - 是否能把 Decision Intelligence（DI）解释为「**把决策从艺术变成数据驱动的科学**」，而非简单的「决策辅助系统」。
-- 是否清楚 Gartner 在 2022 / 2023 年把 DI 列为顶级战略技术趋势（Top Strategic Technology Trend）。
+- 是否清楚 Gartner 在 2022 年把 DI 列为顶级战略技术趋势（Top Strategic Technology Trend）。
 - 能否明确 ADR 在 DI 中的**三种定位**——日志、依据、反馈回路——并区分。
 - 加分项：能给出 DataRobot、Domino、Aera、Palantir Foundry 等 DI 平台中 ADR 的实际角色，并指出当前工业落地的局限。
 
@@ -1156,7 +1159,7 @@ ADR-0021 实时湖仓（Flink + Iceberg）
 1. **先立约束，再列选项，最后说取舍**——ADR 相关的题目，面试官真正想听的是「你为什么这么选」，而非「有哪几种做法」。答模板题时要说清「团队规模 × 决策风险」的选型逻辑；答流程题时要说清「谁拍板、谁评审、怎么 supersede」。
 2. **用「责任」划边界**——ADR 的一切设计（不可变、Owner、supersede 而非修改、Reviewer 制度）都服务于一个目标：**决策责任可追溯**。理解这一点，就能反向推导几乎所有 ADR 规则的合理性。AI 相关题目尤其要守住这条线——LLM 只能起草，不能拍板。
 3. **引用工业实践要具体到「谁 + 在哪 + 做了什么」**——GitHub 的 `architectural-decision-records` 公开仓库、阿里的「架构决策书」、AWS 的 Bar Raiser、字节的 TD 流程，都是高频可引用的真实案例。复述「某大厂也这么做」不如说清「它具体怎么做的」。
-4. **主动点明代价**——ADR 不是免费午餐：写一条 15–60 分钟、评审 30–90 分钟、维护 1–2 人天/月；过度 ADR 化会让决策成本爆炸。能主动算这笔账，是准资深架构师与普通工程师的分水岭。
+4. **主动点明代价**——ADR 不是免费午餐：写一条 10–60 分钟【经验，本章 §3.2.2 / §7.4 同一口径】、评审 30–90 分钟、维护 1–2 人天/月；过度 ADR 化会让决策成本爆炸。能主动算这笔账，是准资深架构师与普通工程师的分水岭。
 
 一句话总结本章：**ADR 让决策从「个人英雄主义」变成「组织可复制的资产」——它记录的不是「做了什么」，而是「当时为什么这么选，以及我们愿意为此付出什么代价」。**
 

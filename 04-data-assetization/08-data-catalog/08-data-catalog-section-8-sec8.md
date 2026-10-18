@@ -123,7 +123,7 @@
 3. **联邦目录（Federated Catalog）**：每个域独立运维自己的目录后端，跨域查询走联邦层。Databricks Unity Catalog 用 **Catalog → Schema → Table** 的多级目录层级让一个账号/区域服务多个域，本质也是联邦思路的简化形态。
 4. **数据契约（Data Contract）**：作为生产方与消费方的接口协议，目录里要可被建模、可被签发、可被验证（Schema、口径、SLA）。这是 Data Mesh 的核心交付物。
 5. **AI/Agent 就绪的 API**：把目录的元数据暴露为高吞吐、低延迟的 API + 流式订阅，让 Agent 在决策时能"实时发现可用数据"。这是 LinkedIn DataHub 2023 年后改版的重心——把元数据变成"事件总线"。
-6. **跨域/跨云的元数据治理**：目录要支持跨账号、跨云、跨区域的一致性查询——Lyft Amundsen 后续贡献的跨云联邦能力、Apache Gravitino（腾讯 2024 开源）的多源联邦，是这一方向的工程化。
+6. **跨域/跨云的元数据治理**：目录要支持跨账号、跨云、跨区域的一致性查询——Lyft Amundsen 后续贡献的跨云联邦能力、Apache Gravitino（2024 年进入 Apache【公开】）的多源联邦，是这一方向的工程化。
 
 **第三层：与传统单体目录的关键区别。**
 
@@ -139,7 +139,7 @@
 
 - **Databricks Unity Catalog**：作为湖仓一体的代表，把 Catalog 直接挂在 Databricks 账号下，跨 Workspace 共享；同时把表格式（Delta）+ 治理（Lineage）+ 访问（ABAC）做成"一体化"。其 2023-2024 年的核心演化方向是"让任何引擎（Spark / Flink / Trino）都能读同一份元数据"（本节无法给出 Databricks 该说法的可核验文档名与链接，引用时请自行查证）。
 - **LinkedIn DataHub + WhereHows 后继**：DataHub 把"事件驱动 + 流式订阅"作为对外契约，下游消费者（包括内部 AI 平台）能像订阅 Kafka 一样订阅资产变更事件，这是把"目录"做成"数据基础设施"的关键改造。
-- **Apache Gravitino（腾讯 2024）**：以"**元数据联邦**"为核心定位（本节无法给出腾讯该公开介绍的可核验文档名与链接，引用时请自行查证）——支持 Iceberg / Hudi / Hive / MySQL / Kafka 等多种 source 的统一元数据视图，并提供统一 RBAC，是国内湖仓时代的代表项目。
+- **Apache Gravitino（2024 年进入 Apache【公开】，项目归属与年份以该项目官方文档当前版本为准）**：以"**元数据联邦**"为核心定位——支持 Iceberg / Hudi / Hive / MySQL / Kafka 等多种 source 的统一元数据视图，并提供统一 RBAC，是国内湖仓时代的代表项目。
 - **阿里 DataWorks + 阿里云数据治理**：把"数据板块 + 数据标准 + 数据指标"做成三层模型，对应 Data Mesh 里的"域 + 契约 + 指标产品"，是国内对数据网格思路的本土化落地。
 
 **3. 常见陷阱**
@@ -154,13 +154,13 @@
 
 - **「联邦目录与中央目录在 SLA 上有什么差别？」** 答：联邦目录的 SLA 是"局部最优 + 全局最终一致"——域内元数据强一致（写后立读），跨域联邦按需做异步同步（分钟/小时级延迟）。这意味着跨域合规审计不能实时，必须有 Window。
 - **「数据契约怎么落地？」** 答：技术形态上通常是 JSON Schema + 版本号 + 兼容性规则（向后兼容/严格兼容）；流程上嵌入 PR 评审；平台层面用 Schema Registry 类组件管理演进历史。这与领域驱动设计（DDD）里"上下文映射"思路一致。
-- **「湖仓一体的元数据安全怎么办？」** 答：必须把 ABAC（Attribute-Based Access Control）推到表格式自身——Iceberg 支持 row-level filter 的元数据、Unity Catalog 把权限下推到 storage credential——而不是依赖外部 IAM。**权限与元数据就近**，是湖仓安全的根本原则。
+- **「湖仓一体的元数据安全怎么办？」** 答：必须把 ABAC（Attribute-Based Access Control）推到治理层 + 引擎侧——Unity Catalog 通过 Column Mask Policy 在下推的 SQL 解析时插入行 / 列级过滤、并把权限下推到 storage credential，Apache Ranger 把 policy 下推到 Spark/Flink 引擎——而不是依赖外部 IAM。**权限与元数据就近**，是湖仓安全的根本原则。
 - **「Agent 怎么消费元数据？」** 答：通过 MCP 协议或 GraphQL/REST API 把目录能力暴露为 tools；Agent 决策时先调用 `search_assets(query)` 返回候选资产，再调用 `get_lineage(asset_id)` 验证上游。LinkedIn 与 Anthropic 联合的 MCP + DataHub 集成是该方向的早期工程探索。
 
 **5. 参考资料**
 
 - LinkedIn DataHub 官方文档与 GitHub evolution history（v0.8 → v0.13 引入 Domains / Data Products / Subscriptions）——湖仓 + 网格时代的目录形态范本，是本题最直接的工业参考。
-- Apache Gravitino（Apache Incubator, 2024）官方文档——腾讯主导的湖仓元数据联邦，对应"多源联邦 + 统一权限"的工程实践。
+- Apache Gravitino（2024 年进入 Apache【公开】）官方文档——湖仓元数据联邦，对应"多源联邦 + 统一权限"的工程实践。
 - Databricks 关于 Unity Catalog 的公开材料与白皮书——湖仓一体化目录的对标阅读，覆盖 Catalog/Schema/Table 三层抽象与跨 Workspace 共享。
 - Zhamak Dehghani《Data Mesh》——数据网格原则与"数据产品"概念的原始定义，回答 §11.4.2 必备的理论基础。
 - 阿里 DataWorks / 《阿里巴巴大数据之路》——国内数据板块 + 数据标准 + 数据指标的"准数据网格"实践范式。
@@ -195,7 +195,7 @@
 **第四层：项目里踩过的其他坑（用以体现真实性）。**
 
 - **"Owner 制度推动不动"**：早期只发邮件让业务方认领 Owner，2 周响应率 12%。改进——把 Owner 嵌入"新表上线"流程的强制项，并把数据资产评分纳入部门 OKR，响应率提升到 70%。
-- **"全表 LIKE 搜索太慢"**：v0.8 的搜索对 8 万张表全字段 LIKE 时 P95 超过 3 秒。改造——把搜索从 LIKE 改成 ES + 按"业务标签 + Owner + 数据域"分层索引，P95 降到 350ms。
+- **"全表 LIKE 搜索太慢"**：v0.8 的搜索对 8000+ 张表全字段 LIKE 时 P95 超过 3 秒。改造——把搜索从 LIKE 改成 ES + 按"业务标签 + Owner + 数据域"分层索引，P95 降到 350ms。
 - **"实时链路血缘丢失"**：Flink SQL 早期不在 DataHub 内置支持器里。补充——自研 Flink Catalog Hook + Ververica 二次开发，把 Flink 作业的 DDL 变更与 SQL 血缘一并推送。
 
 **第五层：经验总结。**
@@ -366,7 +366,7 @@
 - **「Atlas 的 JanusGraph 真的很难维护吗？」** 答：是的，JanusGraph 自己就是个分布式图数据库，需要额外管理 ZooKeeper + HBase/Cassandra + 后端索引；存储 schema 改动会引起连锁问题；社区文档质量参差不齐。生产经验——能跑起来的 Atlas 集群通常需要专门的存储 + 大数据团队支持。
 - **「DataHub 用 Kafka 会不会太重？」** 答：是双刃剑。Kafka 让元数据"流式可订阅"，对 AI 接入友好；但对小团队是负担。**DataHub 也支持 standalone（不用 Kafka，但损失事件驱动）模式**——团队规模决定是否启用。
 - **「AI 时代该押注哪个？」** 答：DataHub 的事件模型 + OpenMetadata / Unity Catalog 的湖仓集成能力最适配。**结合而非押注**——前端用 DataHub，跨源联邦用 Gravitino，引擎内权限用 Unity Catalog。
-- **「国内厂商用什么类似方案？」** 答：阿里 DataWorks + MaxCompute 内置元数据、字节 DataBus（内部有公开演讲但开源版本较少）、腾讯 Apache Gravitino、网易 Datablau（商业）。**国产替代在功能上已逐步逼近开源主流**（此处为竞争性判断，非可核验结论），但事件驱动与 AI 集成上仍有明显差距（幅度按【经验】档处理，本书无法给出可溯源的年数区间，引用时请自行查证）。
+- **「国内厂商用什么类似方案？」** 答：阿里 DataWorks + MaxCompute 内置元数据、字节 DataBus（内部有公开演讲但开源版本较少）、Apache Gravitino、网易 Datablau（商业）。**国产替代在功能上已逐步逼近开源主流**（此处为竞争性判断，非可核验结论），但事件驱动与 AI 集成上仍有明显差距（幅度按【经验】档处理，本书无法给出可溯源的年数区间，引用时请自行查证）。
 
 **5. 参考资料**
 
@@ -480,7 +480,7 @@
 **第二层：技术层面的合规措施。**
 
 1. **分类分级（Classification）**——把字段按敏感度分 4 级：公开、内部、机密、高密。技术落地——① 正则匹配自动识别（手机号 / 身份证 / 银行卡 / 邮箱）；② 字段名规则匹配（`password_*` / `*_ssn`）；③ LLM 基于字段名+样例数据自动分类；④ 人工审核兜底。**这是合规的入口，没有分类分级，后续一切都是空谈**。
-2. **行级 / 列级访问控制（RLS / CLS）**——湖仓表本身要支持行级 filter（按用户属性动态过滤行）和列级 mask（敏感字段按权限哈希或返回 `***`）。代表实现——Apache Iceberg 的 Hidden Partition + Unity Catalog 的 Column Mask Policy、Apache Ranger 的 Tag-based Policy。
+2. **行级 / 列级访问控制（RLS / CLS）**——湖仓表本身要支持行级 filter（按用户属性动态过滤行）和列级 mask（敏感字段按权限哈希或返回 `***`）。代表实现——Unity Catalog 的 Column Mask Policy、Apache Ranger 的 Tag-based Policy。
 3. **统一 ABAC 身份与访问控制**——单一认证服务（OIDC / SAML / LDAP），统一授权决策点（PDP），所有计算引擎通过同一个 Endpoint 解析权限。Databricks Unity Catalog、阿里 DataWorks 的 RBAC 模块都是这个思路——**不要让每个引擎各管一套权限**。
 4. **加密与密钥管理**——存储加密（at-rest）用 KMS 托管密钥 / BYOK；传输加密（in-transit）全链路 TLS；计算加密（in-use）借助机密计算（Confidential Compute，如 SGX）。Lakehouse 通常把"加密 + 凭证细粒度（Storage Credential）"作为存储层基础能力。
 5. **审计与可观测**——所有访问（表查询、列读取、行范围扫描）都要落审计日志，日志要不可篡改 + 可被 SIEM 消费。LinkedIn DataHub、Apache Atlas 都把 Audit Trail 作为内建能力。
@@ -741,7 +741,7 @@
 | --- | --- | --- | --- |
 | **计算模型** | 真流（每事件驱动）+ 批（有界流） | 微批（默认）+ 连续处理（可选） | 流（嵌入式） |
 | **延迟下界** | 毫秒（百 ms） | 默认 100ms-1s，连续模式 1ms | 毫秒（十 ms 量级） |
-| **状态后端** | RocksDB（可远程化 S3/HDFS） | HDFS Checkpoint（无流式 state） | RocksDB local（只能本机） |
+| **状态后端** | RocksDB（可远程化 S3/HDFS） | State Store（HDFS/S3，支持有状态算子） | RocksDB local（只能本机） |
 | **Exactly-once** | 两阶段提交 + checkpoint 强保证 | Sink 幂等 + WAL | Kafka 事务 + 状态 changelog |
 | **SQL 兼容** | Flink SQL（接近标准 SQL） | Spark SQL（与批完全一致） | ksqlDB SQL（DSL 风格） |
 | **生态适配** | 多源 / 多 sink | 多源 / 多 sink（批生态顺延） | 严格 Kafka 进 Kafka 出 |

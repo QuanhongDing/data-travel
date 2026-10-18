@@ -69,7 +69,7 @@
 
 - Q：为什么 PPO 训练不稳定？答：PPO 是 on-policy，同一批样本要复用多轮更新，策略一旦偏离采样时的行为策略，优势估计就变旧、更新方差随之放大（clip 会截断超出范围的 ratio 的梯度，只限制单步幅度、并不消除方差）；可用学习率 warmup、梯度裁剪、KL 惩罚缓解。
 - Q：SAC 的 α 怎么调？答：可固定（heuristic = −dim(action)）也可自动调节（target entropy）；后者在跨任务迁移更稳。
-- Q：是否要上 SAC？答：连续动作 + 能容忍 off-policy 复杂度时优先；强工程约束或需要 Gradio UI 调试时退回 PPO。
+- Q：是否要上 SAC？答：连续动作 + 能容忍 off-policy 复杂度时优先；强工程约束时退回 PPO。
 
 ---
 

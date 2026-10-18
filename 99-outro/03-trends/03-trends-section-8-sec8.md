@@ -66,9 +66,9 @@
 | 计费 | 存储 + 计算 | 按调用 + Token + 推理次数 |
 
 **第四层:未来 3 年的演化路径。**
-- **阶段 1(2025-2027):嵌入式 AI**——RAG / 向量 / 知识图谱成为数据库一等公民,Snowflake Cortex 与 Databricks Mosaic AI 是典型形态;阿里通义百炼、华为盘古、智谱也在向此迁移。
-- **阶段 2(2027-2030):AI 原生数据库**——语义层 + 元数据 + 推理引擎在同一内核中,数据 / 模型 / Agent 形成闭环。
-- **阶段 3(2030+):自进化数据系统**——数据库能从业务反馈中自我调整 schema、指标口径与治理策略。
+- **阶段 2(2025-2027):嵌入式 AI**——RAG / 向量 / 知识图谱成为数据库一等公民,Snowflake Cortex 与 Databricks Mosaic AI 是典型形态;阿里通义百炼、华为盘古、智谱也在向此迁移。
+- **阶段 3(2027-2030):AI Native**——语义层 + 元数据 + 推理引擎在同一内核中,数据 / 模型 / Agent 形成闭环。
+- **阶段 4(2030+):自进化系统**——数据库能从业务反馈中自我调整 schema、指标口径与治理策略。
 
 **第五层:落地中的取舍判断。** 不是所有企业都需要从 Day 1 就上 AI 原生数据库。判断依据:
 - 业务是否已有大量非结构化数据 + 强 LLM 消费场景?
@@ -317,7 +317,7 @@
 
 **4. 追问预测**
 
-- **「怎么为一个 1 万 Agent 的数据栈选型?**」答:分三段——存储端选 Iceberg / Hudi 类湖仓(可扩展 + ACID);检索端配 Milvus / 内部向量检索;语义层用 dbt + 语义层或自研;MCP 网关用开源(Litmus / Anthropic MCP SDK)或云厂商服务。先小后大,先核心场景后全场景。
+- **「怎么为一个 1 万 Agent 的数据栈选型?**」答:分三段——存储端选 Iceberg / Hudi 类湖仓(可扩展 + ACID);检索端配 Milvus / 内部向量检索;语义层用 dbt + 语义层或自研;MCP 网关用开源(Anthropic MCP SDK)或云厂商服务。先小后大,先核心场景后全场景。
 - **「Agent 消费数据时,如何保证不被 prompt 注入?**」答:三道防线——输入验证(意图白名单)、输出审查(LLM-as-judge + 规则引擎)、权限分层(不同 Agent 不同数据范围)。这是 LLM 安全与数据安全的"双层防护"。
 - **「怎么评估 Agent 数据栈的 ROI?**」答:从"业务结果"反推——Agent 产生的 GMV / 节省的成本 / 提升的转化 / 减少的事故 → 反向分摊到数据栈成本,得到每个 Agent 的"业务 ROI"。低 ROI 的 Agent 关停,高 ROI 的扩大。
 
@@ -398,7 +398,7 @@
 
 **5. 参考资料**
 
-- OpenAI Scaling Laws 与 o1/R1 推理模型公开论文——Transformer 路线对数据规模的需求。
+- OpenAI Scaling Laws 与 o1 推理模型公开论文、DeepSeek R1 推理模型公开技术报告——Transformer 路线对数据规模的需求。
 - Anthropic 关于 Constitutional AI 与可扩展监督的研究——路径与数据治理方向。
 - DeepMind AlphaFold / Gemini 多模态相关论文——世界模型与多模态数据需求。
 - Meta Llama 系列开源论文——开源生态下数据工程的范式。
@@ -476,7 +476,7 @@
 **5. 参考资料**
 
 - Anthropic 关于 Contextual Retrieval 的官方文章——RAG 精度提升的产业标杆。
-- OpenAI 关于 o1 / R1 推理模型与 tool use 的设计文档——Agent 决策与工具调用的工程模式。
+- OpenAI 关于 o1 推理模型与 tool use 的设计文档、DeepSeek 关于 R1 推理模型的公开技术报告——Agent 决策与工具调用的工程模式。
 - Databricks Mosaic AI 与 Snowflake Cortex 的官方文档——企业级 RAG + Agent 的落地形态。
 - LangChain / LlamaIndex / AutoGen / CrewAI 的官方文档——开源 Agent 框架的核心模式。
 - 《AI Engineering》(Chip Huyen)——RAG / Agent / Fine-tuning 的工程取舍方法论。
@@ -498,7 +498,7 @@
 - 是否理解隐私计算(Federated Learning / TEE / MPC / 差分隐私)的**能力边界与代价**。
 - 能否识别可解释 AI(Explainable AI)的**三层级**——数据 / 模型 / 输出。
 - 是否具备"隐私 + 可解释"在 AI 原生架构下**协同设计**的工程直觉。
-- 加分项:能结合 EU AI Act / 中国《生成式 AI 服务管理办法》/ 等保 2.0 / 3.0,以及 Google / Microsoft / 阿里 / 字节的具体产品形态给出方案。
+- 加分项:能结合 EU AI Act / 中国《生成式人工智能服务管理暂行办法》/ 等保 2.0 / 3.0,以及 Google / Microsoft / 阿里 / 字节的具体产品形态给出方案。
 
 **2. 参考答案框架**
 
@@ -555,7 +555,7 @@
 **5. 参考资料**
 
 - EU AI Act 官方文本与执行细则——全球 AI 治理的事实标杆。
-- 中国《生成式 AI 服务管理办法》与信通院《AI 治理框架》——国内监管的核心依据。
+- 中国《生成式人工智能服务管理暂行办法》与信通院《AI 治理框架》——国内监管的核心依据。
 - 等保 2.0 / 3.0 与 GDPR 相关官方文档——数据 + AI 合规框架。
 - Google Federated Learning / TensorFlow Privacy 官方文档——联邦学习与差分隐私的工业实现。
 - Microsoft InterpretML / Counterfit / Azure Confidential Computing 官方文档——可解释 AI 与 TEE 的工程案例。

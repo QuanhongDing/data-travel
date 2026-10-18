@@ -40,7 +40,7 @@
 **第二层：执行引擎差异——Worker 进程 vs Master-Worker vs Controller-Pod。**
 
 - **Airflow**：Scheduler 进程负责触发 DAG Run，Executor 负责真正执行。**LocalExecutor**（单机进程池）→ **CeleryExecutor**（消息队列分发）→ **KubernetesExecutor**（每个 Task 一个独立 Pod）。**KubernetesExecutor** 是 2.4+ 的事实标准：每个 Task 启动一个独立 Pod，资源隔离强、弹性最好。
-- **DolphinScheduler**：Master 节点负责调度分发，Worker 节点负责执行。**去中心化设计**是它的特色——Worker 自己注册到注册中心、Master 选举不需要外部协调服务；Task 状态通过 Netty RPC 推送，断网恢复友好。
+- **DolphinScheduler**：Master 节点负责调度分发，Worker 节点负责执行。**去中心化设计**是它的特色——Worker 注册到注册中心，选主与分派由注册中心负责；Task 状态通过 Netty RPC 推送，断网恢复友好。
 - **Argo**：每个 Workflow 由 Controller 转化为多个 Pod（每个 Task 一个 Pod），Pod 由 K8s 调度器调度到 Node。**没有独立的 Worker 进程**——K8s 调度器就是它的 Worker。这让 Argo 在云原生环境下弹性极佳，但**依赖 K8s 调度器的吞吐上限**——单集群万级并发 Workflow 时，Controller 与 etcd 会成为瓶颈。
 
 **第三层：生态与适用场景。**
@@ -129,7 +129,7 @@
 **第三层：依赖环检测的实现机制。**
 
 - **算法**：经典的 **DFS 三色标记**（白 = 未访问、灰 = 访问中、黑 = 访问完成）。DFS 过程中若遇到"灰"节点，则形成环。复杂度 O(V+E)。
-- **Airflow 的检测时机**：DAG 解析时（`airflow dags list` / Scheduler 启动时），若检测到环直接抛 `AirflowDagCycle`。**不依赖运行时检测**——这是好实践，因为环依赖会让调度器陷入死循环。
+- **Airflow 的检测时机**：DAG 解析时（`airflow dags list` / Scheduler 启动时），若检测到环直接抛 `AirflowDagCycleException`。**不依赖运行时检测**——这是好实践，因为环依赖会让调度器陷入死循环。
 - **DolphinScheduler 的检测时机**：保存工作流定义时检测，不允许环依赖保存。3.x 后允许"自依赖"（一个节点开始处理自己的产出），但需要在 UI 显式配置。
 - **跨 DAG 环**：纯算法层无法检测——因为调度器只看到 DAG 内依赖，看不到跨 DAG 的事件流。**必须靠血缘系统反向追溯**（DataHub / DataWorks 血缘），定期跑离线检测脚本（Neo4j 图查询"依赖图是否存在环"）。
 
@@ -456,7 +456,7 @@ SLA Miss 不只是"任务超时"，实际生产中至少四类：
   - **`retry_delay`**：重试间隔（典型 5-15 分钟，避免雪崩）。
   - **`retry_exponential_backoff`**：指数退避（推荐开启，避免下游尚未恢复时反复重试）。
 
-- **Airflow 默认重试机制**：`retries=3` + `retry_delay=timedelta(minutes=5)` + `retry_exponential_backoff=True`。生产推荐 5 次重试 + 指数退避。
+- **Airflow 重试机制（示例 `default_args`）**：`retries=3` + `retry_delay=timedelta(minutes=5)` + `retry_exponential_backoff=True`。生产推荐 5 次重试 + 指数退避。
 
 - **DolphinScheduler 重试机制**：失败重试 + 失败告警分离——重试超过 N 次后才告警，避免告警风暴。
 

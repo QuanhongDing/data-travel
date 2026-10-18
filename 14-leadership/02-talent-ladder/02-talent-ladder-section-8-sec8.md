@@ -4,7 +4,7 @@
 
 > 本节整合自题库《大数据平台架构师》（创脉思 cms365.cn，版本 2025-11-25）的真实面试题，题号沿用原题库编号（PDF §X.Y 第 K 题），便于读者回溯原题。
 >
-> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开梯队实践**（阿里 P/M 序列、字节 2-1/2-2、华为双通道、Google L3-L11、Meta E3-E10、Amazon Levels 1-7、Microsoft 60-80、Netflix D-1-D-5 等），便于读者进一步溯源。
+> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开梯队实践**（阿里 P/M 序列、字节 2-1/2-2、华为双通道、Google L3-L11、Meta E3-E10、Amazon Levels 1-7 及以上、Microsoft 60-80、Netflix D-1-D-5 等），便于读者进一步溯源。
 
 ### 8.1 全景视图
 
@@ -201,8 +201,8 @@
 
 华为特色是「**技术专家可参选 Fellow / 院士**」——22 级以上的资深专家可参加公司级 Fellow / 院士评选，享受副总裁级待遇。**华为双通道的精髓**是「**让技术专家有真正的顶级天花板**」，避免顶尖技术人才流失到学术界。
 
-**第四层：Google IC / Manager 的双轨文化。** Google 没有严格的 M/T 双通道，而是「**IC 与 Manager 可自由切换**」（以下头衔与级别的对应按常见公开口径，跨年份、跨地区口径不一，本节不逐级断言，引用前请自行核验）：
-- **L3-L5（SWE II / SWE III / Senior SWE，Staff 及以上见 L6+）**：偏 IC 主导。
+**第四层：Google IC / Manager 的双轨文化。** Google 没有严格的 M/T 双通道，而是「**IC 与 Manager 可自由切换**」（以下头衔与级别的对应按主文件 §2.1 的公开口径，跨年份、跨地区口径不一，引用前请自行核验）：
+- **L3-L5（Software Engineer / Senior Software Engineer / Staff Software Engineer）**：偏 IC 主导。
 - **L6+：IC 与 Manager 平权** — Senior Staff Engineer 与 Engineering Manager 同级同薪，L7+ Principal / Distinguished 与 Director / VP 同级同薪（「同级同薪」的具体对应关系跨公司、跨年份口径不一，本节不逐条断言，引用前请自行核验）。
 - **20% Project 文化**：L5+ 工程师每周可花 20% 时间做自己感兴趣的项目，强化 IC 影响力。
 - **可切换**：Manager → IC（Jeff Dean、Google Brain 团队多例）、IC → Manager（John Lonsdale 等）。
@@ -278,7 +278,7 @@ Google 的「**同级同薪**」是其文化的核心——Senior Staff IC 拿 E
 2. **领域级技术布道**：在 KubeCon / QCon / ArchSummit 等行业大会发表主题演讲；产出开源项目 / 行业白皮书。
 3. **下一代架构师培养**：每个资深架构师必须培养出至少 2-3 个 P8 候选人，并主导 2-3 个跨 BU 继任计划。
 
-**第二层：Google L7 Principal Engineer 的定位。** Google 把 Staff / Senior Staff / Principal / Distinguished / Fellow 等 IC 头衔依次排在 L6-L11（本节不逐级断言头衔与级别的对应细节，跨公司引用前请自行核验）。L7 Principal Engineer 的核心定位：
+**第二层：Google L7 Principal Engineer 的定位。** Google 把 Staff / Senior Staff / Principal / Distinguished / Fellow 等 IC 头衔依次排在 L5-L11（头衔与级别的对应按主文件 §2.1 的公开口径，跨公司引用前请自行核验）。L7 Principal Engineer 的核心定位：
 - **跨产品域影响**：不只影响一个产品（如 Search），而是影响至少 2 个产品域的技术决策。
 - **战略级 RFC 作者**：每年产出至少 2 个产品级 RFC（Request for Comments），影响未来 1-3 年的产品架构。
 - **导师角色**：每届 Google Apprentice / Intern 中至少指导 5 个；每个 L7 平均带 3-5 个 L5/L6 的 mentor。
@@ -291,7 +291,7 @@ Google 的「**同级同薪**」是其文化的核心——Senior Staff IC 拿 E
 
 Meta 的特色是「**IC 与 M 严格平权**」——E7 Distinguished Engineer 与 VP 同级同薪，可直接参与公司战略。代表人物：Mark Zuckerberg 本人是 IC 路径（创办人型 IC），Adam D'Angelo（技术决策核心）。Meta IC 文化的特点是「**工程师治公司**」，E6+ IC 的影响力可直接影响 CEO 决策。
 
-**第四层：Amazon L7 Senior SDE / Principal Engineer。** Amazon 的 IC 通道从 Levels 1-7（L1 入门 → L7 资深）：
+**第四层：Amazon L7 Senior SDE / Principal Engineer。** Amazon 的 IC 通道自 L1 起（L1 入门 → L7 资深 → L8+ Senior Principal / Distinguished）：
 - **L5 / L6**：SDE I / II，独立负责模块 / 子系统。
 - **L7**：Principal Engineer，组织级影响。
 - **L8+**：Senior Principal / Distinguished Engineer，行业级影响。
@@ -342,7 +342,7 @@ Netflix 没有显式的「**Principal Engineer**」Title，更强调「**Senior 
 
 - Google Engineering Ladder 官方公开材料（L3-L11 + IC / Manager 平权）。
 - Meta Engineering Levels 官方公开材料（E3-E10，IC 与 Manager 严格平权）。
-- Amazon Levels 官方公开材料（L1-L7 + Leadership Principles 14 LP + 6-pager 文化）。
+- Amazon Levels 官方公开材料（L1 起 + Leadership Principles 14 LP + 6-pager 文化）。
 - Netflix Culture Deck（自由与责任 + Keeper Test）。
 - Microsoft Career Levels（60-80 + Technical Fellow）。
 - 阿里巴巴 Senior Principal 晋升公开材料（P9+ Senior Principal + 资深专家津贴）。

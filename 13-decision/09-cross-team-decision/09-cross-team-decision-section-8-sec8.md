@@ -64,7 +64,7 @@
 
 - **诉求一：担心丢了话语权。** 把「多个 A」翻译成「一个 A + 若干 C」。业务方要的是「我的意见必须被听到」，那 C 就够——规定 A 在拍板前必须召开 C 的意见征询会并留痕。这既保住了唯一问责，又保住了参与感。
 - **诉求二：决策确实跨域。** 拆成**分层 A**：组织级 A（如首席架构师）负责「要不要做」，领域级 A（如数据平台 Lead）负责「怎么做」。此时层级不同，各自在其范围内唯一，不算违反唯一性。
-- **诉求三：政治需要平衡。** 引入**否决权（Veto）**而非共同 A：让一方当 A，另一方当 A 但带否决权标记的角色（如 RAPID 里的 Agree），即「A 能拍板，但触碰某条线时必须 Agree 才能生效」。这样问责仍唯一，但约束被显式化。
+- **诉求三：政治需要平衡。** 引入**否决权（Veto）**而非共同 A：让一方当 A，另一方持带否决权标记的角色（如 RAPID 里的 Agree），即「A 能拍板，但触碰某条线时必须 Agree 才能生效」。这样问责仍唯一，但约束被显式化。
 
 **第四层：RACI 的真实工程形态。** 头部企业的实践中，组织级 RACI 常常加上第五个角色——有些组织用 **RASCI**（多一个 S = Support，支持者），还有的用 **RACI-VS**（Verifier + Signer，加验证与签署）。Google 的 SRE 组织文化强调「把决策推给最接近问题的人」，隐含的正是「A 要落在离问题最近的那一个 owner 身上」，而不是让 VP 来做所有决策的 A。
 
@@ -111,9 +111,9 @@
 | --- | --- | --- | --- |
 | RACI | PMI / 项目管理 | 谁在这件事里扮演什么 | R / A / C / I |
 | DACI | Atlassian | 谁来驱动、谁来批准 | Driver / Approver / Contributor / Informed |
-| RAPID | Bain & Company | 决策链上的节点如何分工 | Recommend / Agree / Provide input / Decide |
+| RAPID | Bain & Company | 决策链上的节点如何分工 | Recommend / Agree / Perform / Input / Decide |
 
-关键差异在于 **A 的含义与数量**：RACI 的 A 和 DACI 的 Approver、RAPID 的 Decide 都指「最终拍板者」，唯一。但 RAPID 多了一个 DACI 没有的硬节点——**Agree（必须同意者）**：财务、法务、合规在 RAPID 里是 Agree，不是 Provide input。**这才是 RAPID 与 DACI 的分水岭**：RAPID 显式承认「有些角色拥有否决权」，DACI 则把这类约束藏在终审批中。
+关键差异在于 **A 的含义与数量**：RACI 的 A 和 DACI 的 Approver、RAPID 的 Decide 都指「最终拍板者」，唯一。但 RAPID 多了一个 DACI 没有的硬节点——**Agree（必须同意者）**：财务、法务、合规在 RAPID 里是 Agree，不是 Input。**这才是 RAPID 与 DACI 的分水岭**：RAPID 显式承认「有些角色拥有否决权」，DACI 则把这类约束藏在终审批中。
 
 **第二层：三个框架的第二个差异——「驱动者」的独立性。**
 
@@ -144,9 +144,9 @@
 | Recommend | 基础设施架构组 | 出选型对比报告 + PoC 结果 |
 | Agree | 安全与合规 | 数据驻留 / 加密 / 审计必须过关，否则一票否决 |
 | Agree | 财务 | 三年 TCO 必须在预算内 |
-| Provide input | 三个 BU 的工程 Lead | 迁移工作量、SLA 影响、能力缺口 |
+| Input | 三个 BU 的工程 Lead | 迁移工作量、SLA 影响、能力缺口 |
 | Decide | 集团首席架构师（或 CTO） | 综合后拍板 |
-| Input（被通知） | 各 BU 研发团队 | 决策后同步排期 |
+| Perform | 各 BU 研发团队 | 决策后同步排期 |
 
 为什么不用 DACI？因为三个 BU + 安全 + 财务构成的跨域，存在明确带否决权的角色，DACI 的 Contributor 描述不了「安全说不行就是不行」这一硬约束。**这个案例也暴露了 RAPID 的代价**：流程重、周期长，一次选型可能要走 4–6 周，因此只适用于不可逆、影响面大的决策。
 
@@ -165,12 +165,12 @@
 - **「RAPID 里的 Agree 如果滥用否决权怎么办？」** 答：设「Agree 必须给出替代方案或明确条件」，不能只说「不行」。同时把 Agree 的范围限定在其职责域内（安全只能就安全议题否决，不能就性能否决）。
 - **「小团队要不要走 RAPID？」** 答：不要。小团队走 RACI + 口头约定即可，RAPID 是给「多人、跨域、高风险」准备的。
 - **「这些框架能自动化吗？」** 答：可以部分。把 RACI / RAPID 落成模板 + 工作流（如 Jira 上强制填写 Agree 节点、自动拉起评审），可以降低执行成本，但判断「谁是真正的 A」仍需人。
-- **「跨地域异步团队怎么用 RAPID？」** 答：Agree / Provide input 走异步书面反馈，设固定 FCP 截止；Decide 仍由一个 A 异步拍板并公示理由——异步不是取消问责，只是拉长反馈窗口。
+- **「跨地域异步团队怎么用 RAPID？」** 答：Agree / Input 走异步书面反馈，设固定 FCP 截止；Decide 仍由一个 A 异步拍板并公示理由——异步不是取消问责，只是拉长反馈窗口。
 
 **5. 参考资料**
 
 - Atlassian 官方博客关于 DACI 决策框架的公开文章——Driver / Approver / Contributor / Informed 的原始定义与模板。
-- Bain & Company（贝恩咨询）关于 RAPID 决策框架的公开方法论——Recommend / Agree / Provide input / Decide / Input（Informed）五角色及其在大型企业中的应用，Agree 节点的否决权机制是核心。
+- Bain & Company（贝恩咨询）关于 RAPID 决策框架的公开方法论——Recommend / Agree / Perform / Input / Decide 五角色及其在大型企业中的应用，Agree 节点的否决权机制是核心。
 - PMI《PMBOK Guide》——RACI 的标准化定义与适用边界。
 - 亚马逊关于 Working Backwards（PR/FAQ）与决策机制的公开材料——大型企业在跨 BU 决策中对「客户体验反推 + 升级机制」的实践，可作为框架的补充视角。
 

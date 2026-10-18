@@ -148,7 +148,7 @@ FROM hub_customer h;
 
 **第五层：PIT 表的工程代价与替代方案。**
 
-- **存储代价**：一张 PIT 表占存储很小（每 Hub 每天一行 × 每 Sat 一列）。100 万 Hub × 365 天 × 5 Sat ≈ 18 亿行，单表存储可控。
+- **存储代价**：一张 PIT 表占存储很小（每 Hub 每天一行，多个 Sat 各占一列——Sat 是列不是行）。100 万 Hub × 365 天 ≈ 3.65 亿行，单表存储可控。
 - **维护复杂度**：PIT 表本身需要 ETL 维护，且必须保证一致性——PIT 行的 `demo_load` 必须真实指向 Sat 表里存在的那一行，否则下游 POINT-LOOKUP 会拿到空值。
 - **替代方案 1——直接用 Sat JOIN**：查询频率低的场景（如月度报表）直接 JOIN Sat 也行，没必要为低频查询维护 PIT。
 - **替代方案 2——星型宽表**：下游 ADS 层把多张 Sat 打平成一张宽表，本质是 PIT 的"实体化版本"。选择依据是查询频率——查询越频繁，越值得预聚合。
@@ -237,8 +237,8 @@ FROM hub_customer h;
 | Data Vault 层 | 经典三层数仓对应 | 关键差异 |
 | --- | --- | --- |
 | Stage | ODS | Stage 是临时落地，可定期清理 |
-| Raw Vault | ODS + 部分 DWD | Raw Vault 比 ODS 更结构化（Hub/Link/Satellite） |
-| Business Vault | DWD 主要部分 + DWS 部分 | Business Vault 承载主数据 + 轻度汇总 |
+| Raw Vault | 部分 DWD（贴源 / 明细部分） | Raw Vault 比 ODS 更结构化（Hub/Link/Satellite） |
+| Business Vault | DWD 主要部分 + DWS 的轻度汇总部分 | Business Vault 承载主数据 + 轻度汇总 |
 | Data Mart | DWS + ADS | Data Mart 通常回到星型模型 |
 
 注意：Data Vault **不是替代** ODS-DWD-ADS，而是在 DWD 层做了更精细的拆分。
@@ -279,7 +279,7 @@ FROM hub_customer h;
 
 - 是否理解 Same-As Link 的**本质**——它是一条"等价边"，把多个源系统的同一实体对齐到统一的 Hub。
 - 能否说清 Same-As Link 在 OneID 主数据治理中的**关键作用**——没有 Same-As Link，跨域用户/客户打通就是「在 DWD 层做 JOIN 爆炸」的灾难。
-- 是否知道 Same-As Link 的**典型反模式**：笛卡尔积爆炸（5 个源系统 × 5 个 ID 字段 = $5!$ 种组合）、置信度混淆（把所有等价关系一视同仁）。
+- 是否知道 Same-As Link 的**典型反模式**：笛卡尔积爆炸（5 个源系统、每个源各 1 个 ID，源与源两两判定同一实体产生 $C(5,2) = 10$ 组候选等价关系）、置信度混淆（把所有等价关系一视同仁）。
 - 加分项：能讲清"强证据优先"的等价判断策略（身份证 > 手机号 > 邮箱 > 设备 ID > 行为指纹）与 Bloom Filter / MinHash 等去重算法。
 
 **2. 参考答案框架**
@@ -322,7 +322,7 @@ hub_customer_alipay       ┘
 
 > "5 个源系统，每个客户在每个源系统都有 ID。用 Same-As Link 把 5 个 ID 全部连到 hub_customer_unified，结果生成 2000 万行等价关系。下游查询性能崩溃。"
 
-**为什么会爆炸**：5 个源系统 × 5 个 ID 字段，理论上等价组合有 $5! = 120$ 种。如果每个客户在每个源系统都有 1 个 ID，5 个源全连上后等价关系行数 = 客户数 × 120。如果有 100 万客户，等价关系表就有 1.2 亿行。**这是 Same-As Link 的头号反模式**。
+**为什么会爆炸**：5 个源系统、每个客户在每个源系统各有 1 个 ID，源与源两两判定是否同一实体，候选等价关系有 $C(5,2) = \frac{5\times4}{2} = 10$ 组（n 个源两两判定即 $n(n-1)/2$ 条候选边）。如果每个客户在每个源系统都有 1 个 ID，5 个源全连上后等价关系行数 = 客户数 × 10。如果有 100 万客户，等价关系表就有 1000 万行。**这是 Same-As Link 的头号反模式**。
 
 **第五层：规避策略。**
 
@@ -418,8 +418,8 @@ WHERE match_rule = 'ID_CARD_EXACT_MATCH'
 | 现有 Kimball 层 | 迁移后角色 | 处理方式 |
 | --- | --- | --- |
 | ODS（贴源层） | 保留为 Stage 层 | ODS 本身就是 Raw Vault 的前身，**保留并重命名**为 stage 层 |
-| DWD（明细层） | **被 Raw Vault 替代** | DWD 是"清洗 + 维度建模"的混合层；DV 用 Hub/Link/Sat 替代"维度建模"部分，"清洗"部分下沉到 Stage |
-| DWS（汇总层） | **保留** | DWS 仍然是汇总层；DV 在 DWD 之上加一层 Business Vault 做主数据 + 轻度汇总 |
+| DWD（明细层） | **被 Data Vault（Raw Vault + Business Vault）替代** | DWD 是"清洗 + 维度建模"的混合层；DV 用 Hub/Link/Sat 替代"维度建模"部分，"清洗"部分下沉到 Stage |
+| DWS（汇总层） | **保留（轻度汇总部分上移 Business Vault）** | DWS 仍然是汇总层；DV 在 DWD 之上加一层 Business Vault 做主数据 + 轻度汇总 |
 | ADS（应用层） | **保留** | ADS 是消费层；DV 在 ADS 之下提供"更纯净的 DWD" |
 | 维度表 | **被 Hub + Sat 替代** | 维度表拆分：实体进 Hub，属性进 Sat |
 | 事实表 | **被 Hub + Link 替代** | 事实表拆分：实体进 Hub，关系进 Link，属性进 Sat |

@@ -36,7 +36,7 @@
 - 是否理解 Trino / Presto 是**存算分离的 MPP 架构**——Coordinator 无状态只负责规划，Worker 负责执行。这是与 Spark（Driver + Executor）、Impala（Catalogd + Statestored + Impalad）最本质的差别。
 - 能否按"解析 → 规划 → 调度 → 执行"四阶段说清一条 SQL 的旅程，尤其是**逻辑计划 → 物理计划 → Stage 拆分 → Task 调度**的几个关键节点。
 - 是否知道 Connector 不是"插件"，而是**一个完整的 SPI**：Metadata / DataLocation / PageSource / PageSink 四件套，Coordinator 通过它**把远端数据源的 schema、统计信息、谓词下推能力都拉进 CBO**。
-- 加分项：能说清 Trino 与 PrestoDB 分叉后架构上的差异（Trino 引入 Resource Group 替代 Presto 的队列模型），并能用一张图把 Exchange（HashPartitionedExchange / BroadcastExchange / GatherExchange）的关系画出来。
+- 加分项：能说清 Trino 与 PrestoDB 分叉后架构上的差异（注意 Resource Group 并不是分叉后 Trino 相对 PrestoDB 新增的差异——它是分叉前 Meta Presto 时代就有的资源隔离机制，两支都继承，见本章 §13.1.4），并能用一张图把 Exchange（HashPartitionedExchange / BroadcastExchange / GatherExchange）的关系画出来。
 
 **2. 参考答案框架**
 

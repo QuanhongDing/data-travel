@@ -40,7 +40,7 @@
 **第一层：定义与边界。** 三者的目标函数完全不同：
 
 - **ETL（Extract-Transform-Load）**：把数据从源系统**物理搬运**到目标存储（数仓 ODS/DWD），伴随清洗、规范化、聚合与口径定义。代价是**延迟与冗余**，收益是**可重算、可追溯、可治理**。这是传统数仓与湖仓一体（Iceberg/Hudi/Delta）的默认路径。
-- **数据虚拟化（Data Virtualization）**：Denodo/Informatica 等平台**只暴露逻辑视图**，不实际搬迁数据；强调对单一数据源的语义抽象与权限包装，本质是「单源之上的逻辑层」。
+- **数据虚拟化（Data Virtualization）**：Denodo/Informatica 等平台**只暴露逻辑视图**，不实际搬迁数据；强调对数据源的语义抽象与权限包装，本质是「跨源的逻辑抽象层」。
 - **联邦查询（Federated Query）**：Trino/Presto/Apache Calcite 这类**跨源执行引擎**，把单条 SQL 拆解成多源子查询下推，结果汇聚。它是数据虚拟化的**超集**——除了逻辑抽象，还要**协调多源的物理执行**。
 
 **第二层：五维结构化对比。**
@@ -52,7 +52,7 @@
 | 存储成本 | 高（冗余副本） | 低（不搬迁） | 低（不搬迁） |
 | 口径一致性 | 强（集中加工） | 弱（依赖源） | 弱（依赖源） |
 | 工程复杂度 | 高（链路长） | 中 | 中-高（Connector 治理） |
-| 适用规模 | PB 级批算 | 单源抽象 | 数十~数百源跨源 |
+| 适用规模 | PB 级批算 | 跨源逻辑抽象 | 数十~数百源跨源 |
 
 **第三层：选型的工程取舍。**
 
@@ -63,7 +63,7 @@
 
 **第四层：工业实践对位。** **阿里 OneData** 体系以 **ODS/DWD/DWS/ADS 四层 ETL 为主**，**OneService 在服务层承担数据虚拟化与统一查询入口**——这是「ETL 主、虚拟化为辅」的典型形态；**Databricks Lakehouse Federation** 走的是「湖仓一体 + 跨源联邦」的混合路径，把 ETL 沉淀到 Iceberg，外层用联邦查询承接临时跨源；**Snowflake Horizon Catalog** 则把「跨云数据访问 + 联邦查询」作为差异化卖点，强调不搬迁即可查。
 
-**第五层：决策心法。** 三者并非互斥——**健康的数据架构是「ETL 做口径沉淀、联邦查询做跨源探索、数据虚拟化做单源语义包装」三层并存**。架构师的核心判断是：哪个场景下新鲜度重要？哪个场景下口径一致重要？两个问题的答案往往不同，因此需要混合。
+**第五层：决策心法。** 三者并非互斥——**健康的数据架构是「ETL 做口径沉淀、联邦查询做跨源探索、数据虚拟化做语义包装」三层并存**。架构师的核心判断是：哪个场景下新鲜度重要？哪个场景下口径一致重要？两个问题的答案往往不同，因此需要混合。
 
 **3. 常见陷阱**
 
@@ -76,7 +76,7 @@
 **4. 追问预测**
 
 - **「联邦查询和湖仓一体是什么关系？」** 答：互补。湖仓一体把 ETL 沉淀到 Iceberg/Hudi（解决「批算与口径」），联邦查询在湖表之上承接跨源探索（解决「跨源临时查询」）。生产环境几乎都是「湖仓 + 联邦」组合，而不是二选一。
-- **「联邦查询下推到源库，怎么防止源库被打挂？」** 答：三层治理——LIMIT/LIMIT ROWS 下推、查询超时、源库端只读副本路由。Trino 通过 Connector 配置 `case-insensitive-name-matching` 与连接池限流；生产环境还会引入 ProxySQL / RDS 读写分离。
+- **「联邦查询下推到源库，怎么防止源库被打挂？」** 答：三层治理——LIMIT/LIMIT ROWS 下推、查询超时、源库端只读副本路由。Trino 通过 Connector 的连接池做限流；生产环境还会引入 ProxySQL / RDS 读写分离。
 - **「ETL 链路延迟 1 小时，业务等不及，怎么办？」** 答：双轨——核心指标走 ETL 保证口径与可重算，新鲜度敏感的场景用 CDC + 联邦查询做实时覆盖，但要承担口径漂移风险。
 
 **5. 参考资料**
@@ -228,7 +228,7 @@
 **4. 追问预测**
 
 - **「怎么看一个查询的下推情况？」** 答：用 `EXPLAIN (FORMAT JSON)` 或 UI 上的 Stage 详情，看 Scan 算子上是否还有 Filter / Project。如果 Filter 在 Scan 上层，说明没下推。
-- **「MySQL 大表上 Predicate 没下推，怎么办？」** 答：① 让 DBA 加索引；② 让 MySQL Connector 开启 `case-insensitive-name-matching` 等配置；③ 退一步用 ETL 同步到湖表，让湖表 Connector 接管。
+- **「MySQL 大表上 Predicate 没下推，怎么办？」** 答：① 让 DBA 加索引；② 退一步用 ETL 同步到湖表，让湖表 Connector 接管。
 - **「跨源 JOIN 想做下推，能做吗？」** 答：不能真下推，但可以做「**半下推**」——把每边的过滤/投影下推到各源，再在 Trino 端做 Join。这是当前跨源查询的最佳实践。
 - **「Aggregate 下推失效，怎么回退？」** 答：Trino 的 `optimizer.use-mark-distinct` 等参数可以调整聚合策略；更直接的是改写 SQL（用 CTE 拆开聚合）。
 
@@ -264,8 +264,8 @@
 **第二层：资源隔离层——Resource Group。** Trino 的 Resource Group 是**多租户隔离的核心机制**，按用户/查询类型/源库把查询分桶，每桶绑定独立的内存/CPU/队列。
 
 - **分桶策略**：通常按业务线（ad-hoc / BI / ETL / Agent）+ 优先级（P0/P1/P2）+ 数据源敏感度（生产库/数仓）三维分桶。
-- **关键参数**：`memory.soft_limit`（软上限，超限后排队）、`hard_cpu_time_limit`（硬上限，超时杀）、`queuedqueries.limit`（队列长度上限）。
-- **抢占策略**：P0 桶可以抢占 P2 桶的资源（`schedulingPolicy=QUERY_PRIORITY`）；生产库相关的查询单独成桶，禁止其他查询抢占。
+- **关键参数**：`softMemoryLimit`（软上限，超限后排队）、`hardCpuLimit`（硬上限，超时杀）、`maxQueuedQueries`（队列长度上限）。
+- **抢占策略**：P0 桶可以抢占 P2 桶的资源（`schedulingPolicy=query_priority`）；生产库相关的查询单独成桶，禁止其他查询抢占。
 - **工业经验**：**字节跳动**的 Adhoc 平台把 Resource Group 做成「**业务线 × 优先级 × 队列**」三维矩阵，每个矩阵单元绑定独立的内存与并发配额；**Uber**的 Presto 集群则用 Resource Group + 外部配额系统（Quota Service）做双重治理。
 
 **第三层：优化器层——CBO 与统计信息。** 超大规模 CBO 失效的第一大原因不是 CBO 本身不优，而是**统计信息漂移**——表数据每天 TB 级新增，但 `ANALYZE` 没有跟上，CBO 用陈旧的行数估算做 Join Reorder，必然错。
@@ -538,7 +538,7 @@
 - **Starburst Enterprise**（Starburst Data）：Trino 的商业发行版，在 Trino 基础上加了 Fine-Grained Access Control、Cluster Manager、Usage Dashboard、跨云部署能力。定位：**Trino 的企业版**。
 - **Dremio**（Dremio Corporation）：云原生 Lakehouse + 联邦查询，自研 Arrow Flight 协议，UI 友好，强调「**语义层（Semantic Layer）**」。定位：**云原生 + 数据虚拟化**。
 - **Denodo**（Denodo Technologies）：数据虚拟化老牌厂商，强项是逻辑视图、企业级安全、跨源语义建模。定位：**传统企业级数据虚拟化**。
-- **Apache Calcite 自研**：基于 Calcite 的 SQL 解析/优化框架，自研执行引擎与 Connector。代表：阿里 MaxCompute SQL 引擎、字节 Adhoc 引擎、华为 FusionInsight。定位：**云厂商/超大规模互联网公司**。
+- **Apache Calcite 自研**：基于 Calcite 的 SQL 解析/优化框架，自研执行引擎与 Connector。代表：阿里 MaxCompute SQL 引擎、华为 FusionInsight。定位：**云厂商/超大规模互联网公司**。
 
 **第二层：四维决策矩阵。**
 
@@ -552,7 +552,7 @@
 | **运维复杂度** | 中-高 | 中（Starburst 提供运维工具） | 中（云原生简化运维） | 中（厂商支持） | 极高（自研团队维护） |
 | **性能** | 强（Velox/Gluten 加持） | 强（继承 Trino） | 强（Arrow Flight 高效） | 中 | 取决于自研深度 |
 | **适用规模** | 中-超大规模 | 中-大规模 | 中-大规模 | 中-大规模 | 超大规模（PB 级） |
-| **典型客户** | Meta、Uber、字节、Netflix | 金融、电信、合规强场景 | 中型互联网、SaaS 公司 | 传统大型企业（金融/制造） | 阿里、字节、华为、腾讯 |
+| **典型客户** | Meta、Uber、字节、Netflix | 金融、电信、合规强场景 | 中型互联网、SaaS 公司 | 传统大型企业（金融/制造） | 阿里、华为、腾讯 |
 
 **第三层：典型业务场景的选型建议。**
 
@@ -571,7 +571,7 @@
 - **场景 D：超大规模互联网公司（PB 级，万级 QPS，自研能力充足）**
   - 选 **Apache Calcite 自研**。 当开源引擎的定制需求超过社区能提供的范围（**通常发生在 PB 级、万级 QPS**），自研是唯一路径。
   - 配套：数十人年量级的工程投入（【经验】档）+ 与内部 AI 平台深度集成。
-  - 工业实证：阿里 MaxCompute 自研 SQL 引擎（基于 Calcite）、字节 Adhoc 自研引擎、华为 FusionInsight 自研查询层。
+  - 工业实证：阿里 MaxCompute 自研 SQL 引擎（基于 Calcite）、华为 FusionInsight 自研查询层。
 
 - **场景 E：AI 原生公司，Agent + 向量 + 图谱是核心场景**
   - 选 **Trino + 向量/图 Connector** 或 **Dremio Semantic Layer**。 关键是看向量检索是否要"原生支持"——Dremio 的语义层 + 向量集成更紧凑；Trino 生态灵活但需自配。
@@ -605,7 +605,7 @@
 - Denodo Technologies 官方文档——数据虚拟化平台的工业实践。
 - Apache Calcite 官方文档与论文——SQL 解析/优化框架的事实标准。
 - Matt Fuller / Manfred Moser / Martin Traverso《Trino: The Definitive Guide》第 1 章——五条技术路线的对照参考。
-- 阿里 MaxCompute / 字节 Adhoc / 华为 FusionInsight 的公开技术分享——超大规模自研查询引擎的工业范式。
+- 阿里 MaxCompute / 华为 FusionInsight 的公开技术分享——超大规模自研查询引擎的工业范式。
 - Databricks 与 Snowflake 官方文档中关于跨源查询的章节——云厂商在统一查询网关上的差异化能力。
 - LinkedIn Engineering 关于 Espresso / Pinot / Presto 的公开文章——超大规模联邦查询的内部架构选择。
 - **招商银行 Trino + Starburst 的混合选型** —— 金融合规场景下开源 Trino 承载通用查询 + 商业 Starburst 承载合规强场景的分层落地路径。

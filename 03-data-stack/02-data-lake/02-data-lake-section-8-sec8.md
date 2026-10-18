@@ -498,7 +498,7 @@ OLAP（StarRocks / Doris / ClickHouse）+ BI / AI
   - CDC 的 `-D`（-U）变更（DELETE/UPDATE）被 Paimon 翻译为 delete + insert；I（INSERT）直接走 LSM。
   - Flink checkpoint + 业务主键去重 + 湖表 upsert 三件套实现**端到端 exactly-once**。
 - **典型参数**：
-  - `bucket-num`：表分桶数，决定并发度；经验值 = 业务主键基数 × 0.5–2。
+  - `bucket-num`：表分桶数，决定并行写入的桶数与后续合并压力的分布；要在建表时定，上线以后改它等于重排数据。
   - `sink.bucket-num` 与 `sink.shard-by-rowid` 配合让并发可控。
   - `changelog-producer` 决定是否产生流读 changelog（用于流式反查）。
 - **典型场景**：
@@ -527,7 +527,7 @@ OLAP（StarRocks / Doris / ClickHouse）+ BI / AI
 - **「实时 = 上 Flink」**。 Flink 是实时计算引擎，"实时数据湖"还需要表格式提供流读写能力——湖仓缺一不可。
 - **「MySQL CDC 直接写 Iceberg 就行」**。 Iceberg 原生不支持流式 upsert（V2/V3 改进了但仍未与 Paimon 齐平），高频 CDC 场景下 Iceberg 的 commit 压力大、易冲突，需额外 lock provider。
 - **「Exactly-Once 万能」**。 Flink 内的 exactly-once + 湖表 upsert ≠ 业务级别 exactly-once，业务幂等依赖主键设计与补偿机制。
-- **「分桶越多越好」**。 过分桶会导致 small bucket、merge 压力大；经验按"主键基数 × 0.5–2"区间选。
+- **「分桶越多越好」**。 过分桶会导致 small bucket、merge 压力大；桶数要在写入并发与合并压力之间权衡，并在建表时一次定好。
 - **「落 Paimon 之后什么都不用管」**。 Paimon 简化了 small file，但**大删除 / 大更新**仍需 full-compaction；不做监控会导致 read latency 慢慢变差。
 - **「CDC 抽取就完事」**。 DDL 操作必须传播 schema，否则下游炸裂——是常见上线事故。
 - **「流批任务共用一份资源」**。 离线任务会抢占实时——必须资源隔离。

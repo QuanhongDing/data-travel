@@ -55,7 +55,7 @@
 
 如果不在工程上强制区分，业务侧会自然地**为每一种修饰都新建一个"指标"**——`DAU`、`新用户 DAU`、`PC 端新用户 DAU`、`PC 端新用户男性 DAU`……指标数很快爆炸到无法管理，而且同一原子口径在多处被重复实现，**口径漂移是必然结果**。
 
-**第三层：示例拆解。** 把"过去 7 天新用户的客单价"按 OSCAR 拆解：
+**第三层：示例拆解。** 把"过去 7 天新用户的订单金额"按 OSCAR 拆解：
 
 | 要素 | 取值 | 物理实现 |
 | --- | --- | --- |
@@ -63,13 +63,13 @@
 | S | 用户类型 = 新用户 | `WHERE user.user_type = 'new'` |
 | C | 支付 | `dwd_orders` 表 + `status = 'paid'` |
 | A | 滚动 7 天 | `WHERE dt BETWEEN today - 7 AND today` |
-| R | 客单价 = SUM(amount) / COUNT(DISTINCT user_id) | 复合聚合 |
+| R | 订单金额 = SUM(payment_amount) | 度量列 + 聚合函数 |
 
 落地 SQL：
 
 ```sql
 SELECT
-    SUM(payment_amount) / COUNT(DISTINCT user_id) AS arppu_7d_new
+    SUM(payment_amount) AS order_amount_7d_new
 FROM dwd_orders
 WHERE status = 'paid'
   AND dt BETWEEN '20251008' AND '20251014'
@@ -82,7 +82,7 @@ WHERE status = 'paid'
 - **时间窗口的归属**：`近 7 日订单金额` 的"7 日"是统计周期，但有些团队会把它写成 `7日订单数` 然后误以为是"7 日内累计"还是"过去 7 日"。**消歧规则**：统计周期必须显式标注"自然 / 滚动 / 累计"，并固化到命名模板。
 - **原子与派生的归属**：复合指标（`转化率 = 下单人数 / 活跃人数`）不是派生指标，而是**复合指标**，必须单独成类，不能混在派生指标里——否则无法维护"分子 / 分母"的对应关系。**消歧规则**：派生指标必须是"单一度量列 + 单原子"的组合，复合指标必须挂分母。
 
-**第五层：为什么 OSCAR 在 AI 时代更重要。** LLM 接到"过去 7 天新用户客单价"这种自然语言问题，必须先识别 OSCAR 五要素，然后才能正确拼装 SQL——这是 dbt Semantic Layer、Cube、Snowflake Cortex Analyst 等系统统一语义模型（Semantic Model）的设计基础。如果指标定义是散落在 SQL 里的字符串，LLM 只能凭猜测生成查询，幻觉率极高。
+**第五层：为什么 OSCAR 在 AI 时代更重要。** LLM 接到"过去 7 天新用户订单金额"这种自然语言问题，必须先识别 OSCAR 五要素，然后才能正确拼装 SQL——这是 dbt Semantic Layer、Cube、Snowflake Cortex Analyst 等系统统一语义模型（Semantic Model）的设计基础。如果指标定义是散落在 SQL 里的字符串，LLM 只能凭猜测生成查询，幻觉率极高。
 
 **3. 常见陷阱**
 

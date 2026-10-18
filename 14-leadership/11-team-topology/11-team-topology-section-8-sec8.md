@@ -109,7 +109,7 @@
 
 - 是否理解 Stream-Aligned Team 的根本目标是「**对一条业务流的端到端交付能力**」，而不是"小而全"。
 - 能否说清流对齐（Stream-Aligned）与 Bounded Context 的对应关系——一个 Stream-Aligned 团队应该对应**一个 DDD Bounded Context**，否则就会出现跨团队的强耦合。
-- 是否知道 Squad 的**典型规模 6-12 人**及原因——太小则认知负荷不足，太大则沟通成本指数级增长。
+- 是否知道 Squad 的**典型规模 6-12 人**及原因——太小则认知负荷不足，太大则沟通成本平方级增长。
 - 加分项：能讲出 **Spotify Squad 命名规范 / Amazon Two-Pizza / ByteDance 小队 / 阿里业务前台** 在端到端设计上的实践差异。
 
 **2. 参考答案框架**
@@ -123,7 +123,7 @@
 **第二层：规模与编制。** 业内通行的「**两个 Pizza 规则**」（Amazon Jeff Bezos 提出）是经验法则——团队规模应该控制在 6-12 人，使其规模仍能被两个 Pizza 喂饱（10 人左右）。
 
 - **太小（< 5 人）**：能力无法端到端覆盖，总有薄弱环节；可用 Buffer 太少，单人病假就让团队停摆。
-- **太大（> 12 人）**：沟通成本指数级增长（`n(n-1)/2`），决策变慢；同时多个心智模型难以对齐。
+- **太大（> 12 人）**：沟通成本平方级增长（`n(n-1)/2`），决策变慢；同时多个心智模型难以对齐。
 - **健康规模（6-12 人）**：能覆盖前端 / 后端 / 数据 / 测试全栈，又保持单一心智模型；典型 Stream-Aligned 团队配置：1 Tech Lead + 4-6 工程师 + 1 PM + 1 QA + 1 数据开发。
 
 **第三层：Bounded Context 边界识别。** 划分 Bounded Context 的三种方法：
@@ -285,7 +285,7 @@
 **1. 考察点**
 
 - 是否理解 **Conway's Law（1968, Melvin Conway）** 的原文——"组织设计的结构会决定系统设计的结构"。
-- 能否说清 **Inverse Conway Maneuver**（John Ousterhout / ThoughtWorks 提出）——主动调整组织结构，让它**反推**期望的系统架构。
+- 能否说清 **Inverse Conway Maneuver**（这一提法由 ThoughtWorks 等组织的公开材料推广，原始出处可按该关键词自行检索核验）——主动调整组织结构，让它**反推**期望的系统架构。
 - 是否知道数据架构 → 组织结构的对应关系——一个 Bounded Context 对应一个团队，一组共享的内聚模块对应一个 Platform Team。
 - 加分项：能讲出 **Amazon Bezos 在股东信中"逆向工作"（Working Backwards）、Netflix "highly aligned, loosely coupled"、阿里中台 + 业务前台**的代表性反演案例。
 
@@ -300,7 +300,7 @@
 - **引申**：系统架构不是凭空设计的，它必然反映了设计者所在组织的沟通结构。三个团队合作的系统会天然产生三个互相调用的服务，而不会产生一个统一的服务。
 - **形象比喻**：组织是"骨架"，系统是"骨架上长出来的肌肉"——骨架决定肌肉的整体走向，肌肉再强壮也变不成另一副骨架。
 
-**第二层：Inverse Conway Maneuver——反演 Conway's Law。** John Ousterhout 等人在 ThoughtWorks 提出 **Inverse Conway Maneuver**——既然 Conway's Law 告诉我们组织结构 → 系统架构，那么**让组织结构先动起来，就能反推系统架构**：
+**第二层：Inverse Conway Maneuver——反演 Conway's Law。** 这一提法由 ThoughtWorks 等组织的公开材料推广（反演方法本身见 Team Topologies, 2019；主文件 §2.3 给出 5 步法）——既然 Conway's Law 告诉我们组织结构 → 系统架构，那么**让组织结构先动起来，就能反推系统架构**：
 
 - **第一步：明确目标架构**——画出期望的系统架构图（Bounded Context 划分、关键交互模式）。
 - **第二步：设计组织结构**——按目标架构的 Bounded Context 反推团队边界。
@@ -511,7 +511,7 @@
 
 **职责**：
 
-1. **LLM 网关**：统一接入多家模型（OpenAI / Anthropic / Claude / 通义 / 字节豆包 / DeepSeek），提供限流、缓存、A/B 测试、模型路由。
+1. **LLM 网关**：统一接入多家模型（OpenAI / Anthropic / 通义 / 字节豆包 / DeepSeek），提供限流、缓存、A/B 测试、模型路由。
 2. **RAG 服务**：统一向量库、知识库、文档检索能力。
 3. **Agent Runtime**：Agent 执行引擎、工具调用、状态管理。
 4. **Prompt 管理**：Prompt 版本管理、A/B 测试、效果监控。

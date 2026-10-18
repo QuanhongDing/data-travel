@@ -214,7 +214,7 @@ Source EOS + Flink Checkpoint + Sink Two-Phase Commit = End-to-End EOS
 - **Flink Checkpoint**：Flink 内部状态（聚合、Join、去重等）持久化到远端。
 - **Sink Two-Phase Commit**：Sink 收到 Checkpoint 完成通知后，先"预写"（写但未生效），等所有 Sink 都完成后由 JobManager 触发"提交"（生效）。Kafka 的 Transaction API 天然支持：Pre-commit 写数据但 offset 不提交；JobManager 收到所有 Sink 的 Pre-commit 后，向 Kafka 提交事务，数据与 offset 一起生效。
 
-**第五层：为什么需要 Kafka 0.11+ 的幂等 Producer + 事务支持。** Flink 的 TwoPhaseCommitSinkFunction 要求 Sink 支持"先写但未生效 + 再一次性提交"——Kafka 0.11+ 的 Transaction API（`initTransactions` / `beginTransaction` / `preCommit` / `commit` / `abort`）刚好提供这个语义。**没有 Kafka EOS，Flink 的 Checkpoint 只能做到"内部 Exactly-Once"，无法端到端**。
+**第五层：为什么需要 Kafka 0.11+ 的幂等 Producer + 事务支持。** Flink 的 TwoPhaseCommitSinkFunction 要求 Sink 支持"先写但未生效 + 再一次性提交"——Kafka 0.11+ 的 Transaction API（`initTransactions` / `beginTransaction` / `sendOffsetsToTransaction` / `commitTransaction` / `abortTransaction`）刚好提供这个语义。**没有 Kafka EOS，Flink 的 Checkpoint 只能做到"内部 Exactly-Once"，无法端到端**。
 
 **第六层：行业真实落地。**
 

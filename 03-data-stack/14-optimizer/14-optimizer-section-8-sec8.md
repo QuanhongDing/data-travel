@@ -44,7 +44,7 @@
 **第二层：搜索框架——Cascades 与 Volcano。** RBO 在工程上很简单（规则流水线），但搜索空间受限；CBO 的难点在于「**组合爆炸**」——N 个 Join 有 N! 种顺序，每个算子又有若干物理实现。学术界和工业界给出的标准答案是 **Volcano / Cascades 框架**（Goetz Graefe）：
 - **Memo（记忆化）**：把「逻辑表达式 + 物理属性」的所有已探索组合记下来，避免重复计算。
 - **Optimize 输入 → 规则改写 → 代价估算 → 剪枝 → 输出**：用动态规划或 Top-Down 搜索。
-- Apache Calcite、Spark Catalyst（Cascades 简化版）、SQL Server、PostgreSQL（ORCA 之后）、TiDB、StarRocks 都在沿用这套思路。
+- Apache Calcite、Spark Catalyst（Cascades 简化版）、SQL Server、TiDB、StarRocks 都在沿用这套思路。
 
 **第三层：典型适用场景。**
 
@@ -74,7 +74,7 @@
 - **「统计信息陈旧时，CBO 选错计划，怎么救？」** 答：三层兜底——A. 强制 Hint 锁定计划（`/*+ BROADCAST */`、`/*+ LEADING(t1 t2 t3) */`）；B. 启用 AQE 在运行时调整（Spark 3.x / Trino 420+ / StarRocks）；C. 启动**统计信息自动刷新**（Snowflake 风格 / Databricks 风格），从根源上消除误差。生产经验上，"切到 AQE + 上自动统计信息"是性价比最高的组合。
 - **「CBO 的编译开销在大查询上能达到秒级，怎么优化？」** 答：Cascades 框架的 Memo 结构、Top-Down 剪枝、准备计划缓存（prepared plan）、对外连接卡片化（Join ordering 卡预算）都是常见手段；StarRocks 3.x 引入了**基于历史计划的代价模型预热**。
 - **「Volcano 和 Cascades 的关键区别？」** 答：Volcano 是 Top-Down 搜索，规则改写与代价估算紧密耦合；Cascades 把规则改写与代价估算解耦，允许**规则先生成所有候选、再批量估算代价**，剪枝更激进，搜索质量更好。Goetz Graefe 在 1995 年的 Cascades 论文里明确论述了这一点。
-- **「CBO 为什么很难完全分布式？」** 答：代价估算需要**全局视角**（所有节点的行数与分布），但代价计算的代价随节点数线性增长。Meta F3、Trino、CockroachDB 各自走了不同路线：F3 用样本 + 自适应估算，Trino 用 Coordinator 集中决策 + Worker 本地细化，CockroachDB 用 Volcano 改造 + 节点局部统计。
+- **「CBO 为什么很难完全分布式？」** 答：代价估算需要**全局视角**（所有节点的行数与分布），但代价计算的代价随节点数线性增长。Meta F3、Trino、CockroachDB 各自走了不同路线：F3 用样本 + 自适应估算，Trino 用 Coordinator 集中决策 + Worker 本地细化，CockroachDB 用 Cascades 改造 + 节点局部统计。
 
 **5. 参考资料**
 
@@ -123,7 +123,7 @@
 **第二层：统计信息的核心要素。**
 
 - **行数（Row Count）**：单表或分区内的总行数，是所有代价估算的起点。
-- **NDV（Number of Distinct Values）**：不同值的数量，直接影响**基数估计**——例如 `JOIN ON user_id` 的输出行数近似 `min(NDV_A, NDV_B)`；`GROUP BY user_id` 的输出组数是 `NDV`。
+- **NDV（Number of Distinct Values）**：不同值的数量，直接影响**基数估计**——例如 `JOIN ON user_id` 的输出行数近似 `|A| × |B| / max(NDV_A, NDV_B)`（等值连接的均匀分布假设），而输出中 join key 的不同值个数才近似 `min(NDV_A, NDV_B)`；`GROUP BY user_id` 的输出组数是 `NDV`。
 - **Min/Max**：用于**分区裁剪与范围下推**——`WHERE dt BETWEEN '2024-01-01' AND '2024-01-31'`，如果统计信息里 `min_dt='2024-01-01'`、`max_dt='2024-01-31'`，优化器才能放心裁剪。
 - **Histogram**：刻画**数据分布**（等高、等宽、TDigest）。它是处理**非均匀分布**的关键——例如「80% 的订单金额在 0–100 元，少数订单上百万」，没有 Histogram 就只能按均匀分布估算，选择率错一个数量级。
 - **TopK**：高频值清单。处理「少数高频值 + 长尾」分布的标准解法，被 Snowflake / StarRocks / Doris 广泛采用。
@@ -480,8 +480,8 @@
 **第二层：基于规则的改写（Rule-Based）。** Apache Calcite 提供了 `MaterializedViewRule`：
 
 - **Column Trimming（列剪裁）**：把 Q 的 SELECT 列下推到 MV，只读需要的列。
-- **Predicate Pull Up（谓词上提）**：把 Q 的 WHERE 条件拉回到 MV 上过滤（如果 MV 的粒度更粗，需要先过滤再聚合）。
-- **Aggregate Roll Up（聚合上卷）**：Q 的 GROUP BY 比 MV 的 GROUP BY 粒度细，需要**进一步聚合**（如 MV 是日级按 user 聚合，Q 是月级按 user 聚合）。
+- **Predicate Pull Up（谓词上提）**：把 Q 的 WHERE 条件拉回到 MV 上过滤（如果 MV 的粒度更细，需要先过滤再聚合）。
+- **Aggregate Roll Up（聚合上卷）**：MV 的 GROUP BY 比 Q 的 GROUP BY 粒度细，需要**进一步聚合**（如 MV 是日级按 user 聚合，Q 是月级按 user 聚合）。
 - **Join Elimination（嵌入到原始表的改写）**：Q 包含 Join，MV 已经做了 Join 预处理，改写器需要去掉重复 Join。
 
 Calcite 的实现是基于 **视图定义查询的 AST** 与 **用户查询的 AST** 做**图同构匹配**（Graph Isomorphism），找到子图同构后改写。

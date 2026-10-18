@@ -83,8 +83,8 @@
 
 **5. 参考资料**
 
-- Michael Armbrust 等（Databricks）发表于 CIDR 2021 的论文《Delta Lake: High-Performance ACID Table Storage over Cloud Object Stores》——Lakehouse 概念与 Delta Lake 设计的原始出处。
-- Benoit Dageville 等（Snowflake 工程团队）发表于 CIDR / VLDB 的论文《The Snowflake Elastic Data Warehouse》——存算分离 + 数据共享的完整架构论述。
+- Michael Armbrust 等（Databricks）发表于 VLDB 2020 的论文《Delta Lake: High-Performance ACID Table Storage over Cloud Object Stores》——Lakehouse 概念与 Delta Lake 设计的原始出处。
+- Benoit Dageville 等（Snowflake 工程团队）发表于 SIGMOD 2016 的论文《The Snowflake Elastic Data Warehouse》——存算分离 + 数据共享的完整架构论述。
 - Netflix Technology Blog 关于 Iceberg 迁移的多篇公开文章（2023–2024）——头部流媒体公司如何用 Iceberg 替代多套存储。
 - Meta 工程团队公开的 Iceberg 实践（SIGMOD / VLDB 2022–2024）——超大规模（300 PB 级）湖仓的真实工业案例。
 - 阿里云 EMR / MaxCompute 关于湖仓一体的公开技术博客——国内最完整的对标实践，参考其与海外方案的差异。
@@ -153,7 +153,7 @@
 **5. 参考资料**
 
 - Snowflake 官方文档《Secure Data Sharing》与《Data Marketplace》——数据共享的原始设计文档。
-- Benoit Dageville 等发表于 VLDB 2022 的论文《The Snowflake Elastic Data Warehouse》——存算分离 + 数据共享的完整架构论述。
+- Benoit Dageville 等发表于 SIGMOD 2016 的论文《The Snowflake Elastic Data Warehouse》——存算分离 + 数据共享的完整架构论述。
 - Capital One、Mastercard、Disney 在 Snowflake Summit 2022–2023 的公开演讲——头部金融机构与零售商的真实落地案例。
 - Bloomberg、Reuters 等数据提供者在 Snowflake Marketplace 的公开上架页面——Data Marketplace 的产业生态实证。
 - 阿里云 DataWorks 数据交换、腾讯云 WeData 官方文档——国内同类能力的对照参考。
@@ -584,7 +584,7 @@ OpenAI 在 2023 年推出 Function Calling，把这套机制产品化；Anthropi
 
 ### 8.8 本章小结
 
-本节收录 7 道题，覆盖海外案例研究 6 个子主题：海外数据基础设施对比、Snowflake 数据共享、LinkedIn 大数据、Stripe 财务一致性、AI 智能体协议、AI Native 趋势、出海业务选型。七道题构成一条完整的「从基础设施到 AI 时代」的演进链路：
+本节收录 7 道题，覆盖海外案例研究 6 个子主题：海外数据基础设施对比、Snowflake 数据共享、LinkedIn 大数据、Stripe 财务一致性、AI 智能体协议、AI Native 趋势与出海选型。七道题构成一条完整的「从基础设施到 AI 时代」的演进链路：
 
 - **基础设施层（§15.10.1 ~ §15.10.2）**：Lakehouse vs 云数仓、数据共享的工程原理；
 - **行业范式层（§15.10.3 ~ §15.10.4）**：LinkedIn 三层架构范式、Stripe 财务一致性约束；

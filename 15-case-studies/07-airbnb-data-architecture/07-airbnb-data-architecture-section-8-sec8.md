@@ -484,7 +484,7 @@ Airbnb 2020 年踩过的"本地训练好、部署后差"的坑，就是这三类
 
 ---
 
-#### §15.7.7 Airbnb 自研并开源 Airflow 的动机是什么？请说明 Airflow 的核心架构（DAG + Operator + Executor），并对比 Airflow vs Netflix Maestro vs 美团 Dolphin 三大调度系统在 DAG 模型、可扩展性、适用规模上的差异。
+#### §15.7.7 Airbnb 自研并开源 Airflow 的动机是什么？请说明 Airflow 的核心架构（DAG + Operator + Executor），并对比 Airflow vs Netflix Maestro vs Apache DolphinScheduler 三大调度系统在 DAG 模型、可扩展性、适用规模上的差异。
 
 **1. 考察点**
 
@@ -523,7 +523,7 @@ Airbnb 自研 Airflow 的核心动机是"**用 Python 把 DAG 显式化**"——
 
 **第四层：三大调度系统对比。**
 
-| 维度 | Apache Airflow | Netflix Maestro | 美团 Dolphin Scheduler |
+| 维度 | Apache Airflow | Netflix Maestro | Apache DolphinScheduler |
 | --- | --- | --- | --- |
 | 设计哲学 | 工作流即代码（Python） | 声明式配置 + 工作流即数据 | 云原生 + 国内生态适配 |
 | DAG 模型 | Python 代码动态生成 | JSON/YAML 声明式定义 | Python + UI 可视化定义 |

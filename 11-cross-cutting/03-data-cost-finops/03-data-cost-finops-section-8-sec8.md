@@ -62,7 +62,7 @@
 **第三层：融合部署的三大工程挑战。**
 
 1. **双链路口径漂移**：批处理层（Spark / Hive）和速度层（Flink）若各自维护口径，最终结果会漂移。**对策**：把口径抽成**共享 SQL / UDF 库**（如 dbt model），批与流都基于它编译；同时跑批流对账任务监控差异。
-2. **小文件与 Compaction 风暴**：Lambda 速度层持续写湖会产生大量小文件，列存 + IGC + Elasticsearch / OpenSearch 也会积压。**对策**：开启 Iceberg / Hudi 的 `rewrite_data_files`（自动 Compaction），目标文件大小 256–512 MB；监控"文件数 / 表"指标，超阈值告警。
+2. **小文件与 Compaction 风暴**：Lambda 速度层持续写湖会产生大量小文件，列存 + IGC + Elasticsearch / OpenSearch 也会积压。**对策**：开启湖表自动 Compaction（Iceberg `rewrite_data_files` / Hudi `compaction`），目标文件大小 256–512 MB；监控"文件数 / 表"指标，超阈值告警。
 3. **存算分离后的网络放大**：计算节点在不同可用区访问对象存储，每次 GET 都计费 + 跨可用区流量。**对策**：计算与存储**同可用区部署**；高频热数据用本地缓存（Alluxio / 节点级 SSD Cache）；监控 S3 GET 次数而不是只监控数据量。
 
 **第四层：头部企业的工业范式。**
@@ -291,7 +291,7 @@
 
 **手段 B：湖表 hidden partitioning + Z-Order 排序**（湖仓时代主流）
 
-- **原理**：Iceberg / Hudi / Delta 用隐藏分区（`days(ts)`、`bucket(N, col)`）让查询无需显式写分区；Z-Order / Hilbert 把多列联合排序，让列存 min/max 索引命中率高。
+- **原理**：Iceberg 用隐藏分区（`days(ts)`、`bucket(N, col)`）让查询无需显式写分区（Hudi / Delta 用显式分区列）；Z-Order / Hilbert 把多列联合排序，让列存 min/max 索引命中率高。
 - **优点**：分区 / 排序对用户透明；查询性能可保持"分区裁剪 + 列裁剪"的最优路径；与压缩、分层兼容。
 - **缺点**：Z-Order 写入开销较大（小表不划算）；hidden partitioning 需要升级到支持版本。
 - **适用场景**：OLAP 查询高频场景——按时间 + 用户 + 维度多维过滤的事实表。
@@ -407,7 +407,7 @@
 
 **阶段 1→10（3-12 个月）—— 扩展到全集团**
 
-- 迁移到湖表（Iceberg / Hudi），启用 hidden partitioning + Z-Order。
+- 迁移到湖表（Iceberg / Hudi），启用隐藏分区（Iceberg）与 Z-Order 排序。
 - 自动化 Compaction（Iceberg `rewrite_data_files`，每天低峰跑）。
 - 弹性伸缩（Karpenter + Spot）+ RI / Savings Plans 组合采购。
 - 自建 FinOps 平台（成本看板 + Showback + 异常告警）。
@@ -429,7 +429,7 @@
 | 维度 | 候选方案 | 选型建议 |
 | --- | --- | --- |
 | **湖表格式** | Iceberg / Hudi / Delta | Iceberg（中立、社区活跃）；Hudi（增量强）；Delta（Databricks 生态） |
-| **Compaction** | Iceberg rewrite / Hudi cleaner / Delta OPTIMIZE | 选对应湖表的内置命令 |
+| **Compaction** | Iceberg rewrite / Hudi compaction / Delta OPTIMIZE | 选对应湖表的内置命令 |
 | **缓存层** | Alluxio / 本地 SSD / 内存 | 中小规模：本地 SSD；大规模：Alluxio |
 | **弹性** | Karpenter / Cluster Autoscaler / 自研 | K8s 时代首选 Karpenter |
 | **采购组合** | Spot / RI / Savings Plans | 基线 RI + 弹性 Spot + 突发 On-Demand |
@@ -461,7 +461,7 @@
 
 **4. 追问预测**
 
-- **「Iceberg / Hudi / Delta 三选一怎么选？」** 答：看生态绑定——Databricks 用户选 Delta（优化最深）；AWS 用户选 Iceberg / Hudi（中立）；多云场景选 Iceberg（社区最活跃、引擎适配最多）。同样两表的开源实现都已成熟，性能差距不显著。
+- **「Iceberg / Hudi / Delta 三选一怎么选？」** 答：看生态绑定——Databricks 用户选 Delta（优化最深）；AWS 用户选 Iceberg / Hudi（中立）；多云场景选 Iceberg（社区最活跃、引擎适配最多）。同样三者的开源实现都已成熟，性能差距不显著。
 - **「Compaction 在生产环境怎么调度？」** 答：低峰时段（业务通常凌晨 2-6 点）跑批 + 独立队列 + 优先级最低。监控 compaction 任务的吞吐与完成时间，异常时自动告警。
 - **「AI 驱动的降本推荐具体怎么落地？」** 答：把账单 + 资源使用 + 业务元数据喂给 LLM，让它推荐三类优化——资源规格调整、Spot 比例调整、存储分层调整。人在回路中审核，避免误操作。
 - **「FinOps 平台自研 vs 第三方？」** 答：早期用云原生（AWS Cost Explorer / 阿里云费用中心）即可；多云 / 大规模后再考虑 Apptio / Vantage / 自研——评估 ROI 主要看"节省的人力 vs 工具费"。
@@ -598,7 +598,7 @@
 
 **第三层：大数据平台典型实现路径。**
 
-1. **Spark Dynamic Allocation**——按待背的 stage 数量动态申请 / 释放 Executor。**优点**：原生集成，无需额外组件。**缺点**：反应慢（要等 stage 启动）、对长 stage 不友好。
+1. **Spark Dynamic Allocation**——按待调度的 task（pending tasks）数量动态申请 / 释放 Executor。**优点**：原生集成，无需额外组件。**缺点**：反应慢（要等 stage 启动）、对长 stage 不友好。
 2. **Kubernetes HPA**——按 CPU / Mem / 自定义指标扩 Pod。**优点**：生态成熟。**缺点**：扩容冷启动 1-3 分钟。
 3. **Karpenter**——K8s 节点级自动扩缩容 + consolidation。**优点**：冷启动 < 1 分钟、支持 Spot。**缺点**：相对新（2024 GA）。
 4. **YARN Capacity Scheduler + 弹性队列**——Hadoop 时代的弹性方案。**优点**：与现有 Hadoop 兼容。**缺点**：扩缩容慢（分钟级）。
@@ -703,7 +703,7 @@
 
 | 挑战 | 描述 | 应对 |
 | --- | --- | --- |
-| **亿级时间序列** | 万节点 × 60s 粒度 = 14 亿时间序列 / 天，单机训练不可行 | 分布式训练（Spark MLlib / Ray）；特征工程并行化 |
+| **亿级时间序列** | 万节点 × 每节点多项指标 × 60s 粒度 ⇒ 每天亿级时间序列，单机训练不可行 | 分布式训练（Spark MLlib / Ray）；特征工程并行化 |
 | **冷启动 / 新作业** | 新上线的业务没有历史数据，模型预测靠猜 | 同类业务迁移学习；规则兜底；业务方提供预期 |
 | **业务变化** | 产品上线、季节性促销，模型没学过 | 引入业务特征（营销计划、版本发布）；定期 retrain |
 | **跨团队协调** | 多团队共用集群，预测的不只是"集群需求"还要切分"团队需求" | 多目标优化 + 公平调度（Dominant Resource Fairness） |
@@ -958,10 +958,10 @@
 
 ```
 投入：
-- 模型研发：2 人 × 6 个月 = 12 人月
+- 模型研发：2 人 × 6 个月 = 12 人月 ≈ ¥80 万（按本节维护人力 ¥80 万 / 年 ÷ 12 月 = ¥6.7 万 / 人月折算）
 - 训练 / 推理资源：50 台 × 24h × 12 个月 × 0.5 折 ≈ ¥200 万 / 年
 - 维护：1 人 × 12 个月 ≈ ¥80 万 / 年
-- 总投入 ≈ ¥280 万 / 年
+- 总投入 ≈ ¥360 万（含一次性模型研发 ¥80 万）
 
 收益：
 - 计算成本节省：30% × ¥2000 万 / 年 = ¥600 万 / 年
@@ -969,7 +969,7 @@
 - SLA 违约减少：避免的违约金 + 业务损失 ≈ ¥100 万 / 年
 - 总收益 ≈ ¥800 万 / 年
 
-ROI = (800 - 280) / 280 ≈ 186%
+ROI = (800 - 360) / 360 ≈ 122%
 ```
 
 **第五层：工业实证。**

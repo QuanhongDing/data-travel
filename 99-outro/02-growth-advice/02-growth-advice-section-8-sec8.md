@@ -330,9 +330,9 @@
 
 **5. 参考资料**
 
-- 《奈飞文化手册》（Reed Hastings & Erin Meyer）——Netflix"高密度人才 + 自由 + 责任"对"高级人才影响力"的定义。
+- 《奈飞文化手册》——Netflix"高密度人才 + 自由 + 责任"对"高级人才影响力"的定义。
 - 《Show Your Work》（Austin Kleon）——关于"如何让创意被发现"的最经典小书，覆盖写作 / 社交 / 开源的实操。
-- 《The Pragmatic Programmer》（David Thomas & Andrew Hunt）——程序员影响力构建的经典指南，业内 PM 影响 10000+ 程序员的"必读书"。
+- 《The Pragmatic Programmer》（David Thomas & Andrew Hunt）——程序员影响力构建的经典指南，业内影响 10000+ 程序员的"必读书"。
 - Reed Hastings《No Rules Rules》——Netflix 内部对"自由与责任文化"如何放大个人影响力的真实样本。
 - Amazon Leadership Principles 之「Earn Trust」「Deliver Results」——AWS 文化对"影响力构建"的具体行为预期。
 - Meta Hacker Culture 之"Code wins arguments"——Meta 用"代码与产出"代替"开会与讨论"的工程师文化，是技术影响力的极端样本。

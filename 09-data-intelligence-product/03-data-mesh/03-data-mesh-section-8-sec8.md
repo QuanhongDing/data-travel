@@ -215,7 +215,7 @@
 ```
 1. 元数据（metadata）：名称、版本、域、Owner、责任人、创建时间
 2. 服务器（servers）：物理落地位置（Snowflake、Iceberg、Kafka、API endpoint）
-3. Schema（字段表）：字段名、类型、分类（confidential/p/internal/public）、逻辑类型（PK/FK/email）、敏感度
+3. Schema（字段表）：字段名、类型、分类（confidential/pii/internal/public）、逻辑类型（PK/FK/email）、敏感度
 4. SLA：
    - 新鲜度（freshness）：数据多久刷新一次（1h/24h/real-time）
    - 可用性（availability）：99.5%/99.9%/99.99%

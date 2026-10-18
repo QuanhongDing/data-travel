@@ -15,11 +15,11 @@
 
 #### 2. 核心原理
 - **召回 Recall**：从亿级到千级，典型模型是 **双塔（Two-Tower）/ YouTube DNN / ItemCF / Swing / 多兴趣 MIND**，目标 Recall@1000 ≥ 95%。  
-- **粗排 Pre-Ranking**：从千级到百级，典型模型是 **轻量 DeepFM / COLD / LR**，要求 P99 ≤ 5 ms。  
+- **粗排 Pre-Ranking**：从千级到百级，典型模型是 **轻量 DeepFM / COLD / LR**，要求 P99 ≤ 10 ms。  
 - **精排 Ranking**：从百级到十级，典型模型是 **DeepFM / DIN / DIEN / SIM / DCN-V2 / ESSM**，要求 P99 ≤ 40 ms。  
 - **重排 Re-Ranking**：从十级到最终展示（通常 6-20 条），典型做法是 **MMR（Maximal Marginal Relevance）/ DPP / Listwise / 业务规则引擎**。  
 
-候选规模遵循 **100× ~ 10×** 递减比例，每层模型容量、特征维度、延迟预算严格匹配。
+候选规模逐层递减：召回层约 10⁵×（亿级 → 千级），粗排、精排各约 10×（千级 → 百级 → 十级）；每层模型容量、特征维度、延迟预算严格匹配。
 
 #### 3. 工程实现
 - **服务编排**：召回 → 粗排 → 精排 → 重排通常以 **gRPC / Thrift** 串联，每层独立部署、独立扩缩容；召回层常驻向量检索服务（Faiss / Milvus），粗排精排用 TF-Serving / Triton 推理，重排用规则引擎 + 轻量 DNN。  

@@ -137,7 +137,7 @@
 
 **第四层：工业落地的常见选择。** 实际生产里几乎不会只选一个：
 
-- **首选 HAN 思路 + 简化的元路径集**：阿里电商推荐的 EGES / ESMM 体系，就是按用户-商品-类目-店铺几条核心元路径分别做 GraphSAGE，然后加权聚合。这种「手工元路径 + GraphSAGE 加权」的工程门槛最低，效果稳定可控。
+- **首选 HAN 思路 + 简化的元路径集**：阿里电商推荐的 EGES 体系，就是按用户-商品-类目-店铺几条核心元路径分别做 GraphSAGE，然后加权聚合。这种「手工元路径 + GraphSAGE 加权」的工程门槛最低，效果稳定可控。
 - **HGT 用在大图 + 关系丰富的 KG 场景**：蚂蚁金融风控、R-GCN 系列在 KG 补全上仍是主流，HGT 更适合关系类型 5-20 种、节点类型 ≤ 5 种的异构图（蚂蚁相关分享本节无法给出可核验出处，引用时请自行查证）。
 - **R-GCN 专门用于 KG 推理**：在企业知识图谱、KG Completion（链接预测）任务里仍是标准选择，但生产中通常会配上 TransE / ComplEx / RotatE 作为关系打分函数。
 - **MAGNN / HGT 适合学术追求**：在工业界落地比例仍不高，主要因为工程复杂度过高。
@@ -170,7 +170,7 @@
 - Ziniu Hu et al.《Heterogeneous Graph Transformer》（WWW 2020 / HGT）——把 Transformer 位置编码扩展到异构图的代表工作。
 - Michael Schlichtkrull et al.《Modeling Relational Data with Graph Convolutional Networks》（ESWC 2018 / R-GCN）——KG 推理的基础架构。
 - 阿里《Billion-scale Commodity Embedding for E-commerce Recommendation in Alibaba》（Wang et al., KDD 2018 / EGES）——电商推荐异构图 + Side Information 拼接的工业实现。
-- 阿里《Entire Space Multi-Task Model: An Effective Approach for Estimating Post-Click Conversion Rate》（SIGIR 2018 / ESMM）——多任务 + 异构图的推荐范式。
+- 阿里《Entire Space Multi-Task Model: An Effective Approach for Estimating Post-Click Conversion Rate》（SIGIR 2018 / ESMM）——多任务推荐范式。
 - 蚂蚁集团公开分享中关于 R-GCN + 路径证据链在金融风控的落地——元路径筛选的工程经验。
 - **美团到店业务的 POI 与商家异构图** —— 公开分享中提到的元路径聚合与长尾商家推荐公开实践。
 - **京东数科的金融风控异构图建模** —— 公开材料中提到的多类型节点关系建模与团伙识别公开实践。

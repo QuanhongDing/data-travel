@@ -42,7 +42,7 @@
 **第二层：四件套逐一拆解。**
 
 - **Anchor（锚）**：表结构只有 1 个 ID 列 + 元数据列（`metadata JSONB`、`created_at`、可选 `source_system`），**严禁出现任何业务属性**。它的唯一职责是给"业务实体"一个稳定的、可在所有 Attribute/Tie 中被外键引用的标识。常见做法是 `BIGSERIAL PRIMARY KEY`，并在 `metadata` 里塞入源系统自然键（`metadata->>'natural_key' = 'CRM:CUST:123456'`）。典型适用：客户、产品、账户、合同、保单等核心主数据。
-- **Attrtribute（属性）**：每张 Attribute 表只装**一个**业务属性 + 外键指向所属 Anchor + 时态三元组 `valid_from / valid_to / loaded_at`。物理上一般建复合主键 `(anchor_id, valid_from, loaded_at)`，因为同一条业务事实可能有多次加载版本。典型适用：客户姓名、客户生日、客户手机号、客户 VIP 等级——**高频变更**的字段优先独立成 Attribute。
+- **Attribute（属性）**：每张 Attribute 表只装**一个**业务属性 + 外键指向所属 Anchor + 时态三元组 `valid_from / valid_to / loaded_at`。物理上一般建复合主键 `(anchor_id, valid_from, loaded_at)`，因为同一条业务事实可能有多次加载版本。典型适用：客户姓名、客户生日、客户手机号、客户 VIP 等级——**高频变更**的字段优先独立成 Attribute。
 - **Tie（关系）**：承载两个或多个 Anchor 之间的关系，本身**不带任何业务属性**。例如 `customer_order_tie(customer_id, order_id, valid_from, valid_to, loaded_at)`。当关系本身有属性（如"客户与门店最近到店的时间、次数"），应当新建一个 Anchor（`store_visit`）并让 Tie 关联它，而不是把属性塞进 Tie。典型适用：客户-订单、订单-商品、用户-角色等。
 - **Knot（共享查找）**：被多个 Anchor / Tie / Attribute **跨实体共享**的查找表，如 `knot_currency(id, code, name, symbol)`、`knot_country(id, iso_code, name)`。所有引用方通过 `*_knot_id` 外键指向 Knot。**只对真正"被多 Anchor 共享"的查找做 Knot**——这是常见反模式（"把性别也做成 Knot"）的边界。
 
@@ -205,7 +205,7 @@ deleted_at  TIMESTAMP,            -- 删除时态（可选，GDPR 删除时使�
 
 ```sql
 SELECT value FROM customer_name
-WHERE customer_id = :id AND valid_to IS NULL
+WHERE anchor_id = :id AND valid_to IS NULL
 ORDER BY loaded_at DESC LIMIT 1;
 ```
 
@@ -213,7 +213,7 @@ ORDER BY loaded_at DESC LIMIT 1;
 
 ```sql
 SELECT value FROM customer_name
-WHERE customer_id = :id
+WHERE anchor_id = :id
   AND valid_from <= '2020-01-01'
   AND (valid_to > '2020-01-01' OR valid_to IS NULL)
 ORDER BY loaded_at DESC LIMIT 1;
@@ -223,7 +223,7 @@ ORDER BY loaded_at DESC LIMIT 1;
 
 ```sql
 SELECT value FROM customer_name
-WHERE customer_id = :id
+WHERE anchor_id = :id
   AND valid_from <= '2020-01-01'
   AND (valid_to > '2020-01-01' OR valid_to IS NULL)
   AND loaded_at <= '2020-01-02 02:00:00'
@@ -235,7 +235,7 @@ ORDER BY loaded_at DESC LIMIT 1;
 ```sql
 -- 业务时态切片 2020-01-01，但允许 loaded_at > 2020-01-10
 SELECT value FROM customer_name
-WHERE customer_id = :id
+WHERE anchor_id = :id
   AND valid_from <= '2020-01-01'
   AND (valid_to > '2020-01-01' OR valid_to IS NULL)
   AND loaded_at >= '2020-01-10'   -- 仅看"2020-01-10 之后才被系统认知到的版本"
@@ -246,7 +246,7 @@ ORDER BY loaded_at DESC LIMIT 1;
 
 1. **不要 UPDATE 已有行**——已有行承载了"2020-01-02 跑批时系统认知的事实"，必须保留。
 2. **INSERT 新行**：`valid_from=2020-01-01, valid_to=NULL, loaded_at=2020-01-15`——表示"这条变更的业务时态是 2020-01-01，但系统直到 2020-01-15 才认知到"。
-3. **把"业务时态生效"的那条原行关闭**：`valid_to = 2020-01-01`（即"原版本业务有效期截至 2020-01-01"），但保留它的 `loaded_at=2020-01-02`。
+3. **原行不改写，两版本并存**：原行（`valid_from=2020-01-01, valid_to=NULL, loaded_at=2020-01-02`）与新行（`valid_from=2020-01-01, valid_to=NULL, loaded_at=2020-01-15`）业务时态区间相同，靠 `loaded_at` 区分——这正是把 `loaded_at` 纳入主键的意义，晚到真相无需改写原行。
 4. **下游查询按需选择时态切片**——既可以"看系统认知"（过滤 `loaded_at <= 报告日`），也可以"看业务真相"（不过滤 `loaded_at`）。
 
 **第五层：与 Data Vault 拉链表的对照。**
@@ -256,7 +256,7 @@ ORDER BY loaded_at DESC LIMIT 1;
 | 业务时态 | 通常有（`effective_date`） | 通常有 | 原生（`valid_from / valid_to`） |
 | 加载时态 | 缺 | `load_datetime / load_end_datetime` | 原生（`loaded_at`） |
 | 主键 | 通常 `(id, effective_date)` | `(hub_id, load_datetime)` | `(anchor_id, valid_from, loaded_at)` |
-| 晚到真相 | 难处理（要回写历史版本） | 通过 Satellite 多版本支持 | 原生支持（新行 + 旧行 `valid_to` 调整） |
+| 晚到真相 | 难处理（要回写历史版本） | 通过 Satellite 多版本支持 | 原生支持（新行 + 原行按 `loaded_at` 并存） |
 | 查询复杂度 | 中 | 中（PIT 视图） | 高（需三时态过滤） |
 
 bitemporal 的根本差异是：**"系统认知"与"业务真相"被显式分开**，并允许它们"不重合"（即 `loaded_at` 可以晚于 `valid_to`）。这是合规审计、监管报送、GDPR 数据主体请求等场景的唯一可靠答案。
@@ -273,7 +273,7 @@ bitemporal 的根本差异是：**"系统认知"与"业务真相"被显式分开
 
 **4. 追问预测**
 
-- **「bitemporal 模型下，GDPR 的"被遗忘权"如何落地？」** 答：用 `deleted_at` 列做"逻辑删除"——`UPDATE customer_name SET deleted_at = NOW() WHERE customer_id = :id AND valid_to IS NULL`，下游视图过滤 `deleted_at IS NULL`。物理数据保留用于审计，但所有消费场景看不到——既满足 GDPR，又不破坏 bitemporal 历史。
+- **「bitemporal 模型下，GDPR 的"被遗忘权"如何落地？」** 答：用 `deleted_at` 列做"逻辑删除"——`UPDATE customer_name SET deleted_at = NOW() WHERE anchor_id = :id AND valid_to IS NULL`，下游视图过滤 `deleted_at IS NULL`。物理数据保留用于审计，但所有消费场景看不到——既满足 GDPR，又不破坏 bitemporal 历史。
 - **「bitemporal 三元组占用多少额外存储？」** 答：每张 Attribute 表的 `valid_from / valid_to / loaded_at` 三列大约多占 24 字节/行，相对业务属性本身（通常 20–100 字节）可忽略；但行数因时态膨胀可能达到 3NF 版本的数倍到数十倍，所以**总存储膨胀主要来自行数，不是字段**（该倍数随变更频率与保留期而异，本书无法给出可溯源的统一数字，此处按【经验】档处理）。
 - **「bitemporal 索引怎么建？」** 答：主键索引 `(anchor_id, valid_from, loaded_at)` 是默认索引；高频"当前快照"查询加 `(anchor_id) WHERE valid_to IS NULL` 部分索引；时态切片查询加 `(anchor_id, valid_from, valid_to)` 复合索引。
 - **「如果只想保留 5 年历史，bitemporal 怎么归档？」** 答：按 `valid_to` 做冷热分层——近 1 年的明细留在 OLTP / 列存库，超过 1 年的归档到对象存储（S3 / OSS），定期删除已 `valid_to < now() - 5y` 且 `loaded_at < now() - 5y` 的历史版本。
@@ -593,13 +593,18 @@ Schema Drift Detection Agent：
   "张三 2020 年的姓名，以及如果我们在 2020-01-02 凌晨跑 ETL 看到的版本"
 
 LLM 输出：
-  WITH target AS (SELECT id FROM customer WHERE metadata->>'name' = '张三' LIMIT 1)
+  WITH target AS (SELECT anchor_id FROM customer_name WHERE value = '张三' AND valid_to IS NULL LIMIT 1)
   SELECT 
-    cn.value AS name_business_time,
     (SELECT value FROM customer_name 
-     WHERE anchor_id = target.id 
+     WHERE anchor_id = target.anchor_id 
        AND valid_from <= '2020-01-01' 
        AND (valid_to > '2020-01-01' OR valid_to IS NULL) 
+     ORDER BY loaded_at DESC LIMIT 1) AS name_business_time,
+    (SELECT value FROM customer_name 
+     WHERE anchor_id = target.anchor_id 
+       AND valid_from <= '2020-01-01' 
+       AND (valid_to > '2020-01-01' OR valid_to IS NULL) 
+       AND loaded_at <= '2020-01-02 02:00:00' 
      ORDER BY loaded_at DESC LIMIT 1) AS name_load_at_2020_01_02
   FROM target;
 ```
