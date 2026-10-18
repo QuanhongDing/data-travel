@@ -1,605 +1,357 @@
-> 本文件是 **10-metric-system.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](10-metric-system.md)。
+> 本文件是 **10-metric-system.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](10-metric-system-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](10-metric-system.md)。
 
 ## 4. 工程实现
 
+本节按七个小节组织：4.1 是一条 12 周的落地顺序（每一步必须给出**产物、判据**与**顺序理由**），4.2 讲每条关键技术点在**上线之后**会怎么坏（机制与失效条件，不是做法清单），4.3 给工具选型判据，4.4 给存量迁移，4.5 给可直接套用的模板，4.6 给只能动了系统才有答案的自检项，4.7 小结。模式本身、它被什么约束逼出来、代价在哪里，见 [§ 3](10-metric-system-section-3-sec3.md)，本节不复述。本节出现的工期、抽样条数与观察窗口都是【经验】值——写成区间，并注明它随什么变；产品与发布时间见 §4.3 表。
+
+**本文件的主线写给从零搭建的读者**：一个业务域、几十到上百个指标起步，Step 1 到 Step 6 是一条连续路径。**已经在存量上改造的读者可以跳过 Step 1**（盘点全量指标），从 Step 2 读起——存量改造的第一步不是盘全量，而是让定义层先对**增量**生效（详见 §4.4）。但两类读者不会就此分岔：§4.4 的表里，「立即重写并冻结」那一档要求这些指标走 Step 2–3 进平台，存量读者同样要经历 Step 3，两类读者在 Step 3 之后重新合流。
+
 ### 4.1 落地步骤
 
-#### 阶段 1 · 指标盘点与分类（0→1 第 1 周）
+**Step 1：指标盘点与分类（【经验】第 1 周，1–2 周；随存量指标数与业务域个数变）**
 
-1. **盘点现有指标**：
-   - 收集所有 BI 报表中的指标
-   - 收集所有业务方口头提及的指标
-   - 收集所有数仓 ADS 层核心指标
-   - 输出 `metric_inventory.xlsx`
-2. **指标分类**：
-   - 按业务域（电商、广告、CRM、客服、风控）
-   - 按层级（原子 / 派生 / 复合）
-   - 按生命周期（高频 / 低频 / 历史）
+- 三个来源都要取：BI 报表里的指标（从查询日志反查最近被查过的名字，不靠访谈回忆）、业务方口头提及过的指标、数仓 ADS / DWS 层的核心指标。
+- 输出 `metric_inventory.xlsx`，**一行一个「指标实例」**：同名不同实现的各占一行。列至少包含：名字、来源系统、定义位置（报表 / ADS 表 / 某段 SQL）、最近查询时间、业务提出人。
+- 按三列打标：业务域（电商、广告、CRM、客服、风控）、层级（原子 / 派生 / 复合）、生命周期（高频 / 低频 / 历史）。
+- **产物**：`metric_inventory.xlsx` + 一张独立的「同名不同实现」清单。
+- **判据**：抽 5 个【经验：随业务方个数与指标总数变，覆盖面比条数重要】业务方最常引用的指标名，每个都能在清单里指到至少一个具体实现位置；再拿查询日志反查最近 30 天【经验：随指标的查询频率变，低频指标要拉长到 90 天】被查过、而清单里没有的名字，条数应为 0——不为 0 就说明来源取漏了，从日志补齐，不要靠访谈补。
+- **为什么必须这一步 / 为什么排第一**：盘点是唯一能定「口径争议有多大」的动作，而五要素的边界（哪些修饰词要枚举、业务域怎么切）本应由盘点结果决定。跳过它直接建平台，返工落在已经填过元数据的那批指标上——不是改文档，是重填与重算。
 
-#### 阶段 2 · OSCAR 标准化（0→1 第 2-3 周）
+**Step 2：OSCAR 标准化（【经验】第 2–3 周；随修饰词枚举数与命名冲突数变）**
 
-1. **定义指标五要素**：
-   - O（业务对象）：用户、订单、商品、营销活动
-   - S（业务修饰）：用户类型、地区、渠道、设备
-   - C（业务过程）：注册、登录、下单、支付、售后
-   - A（统计周期）：自然日、自然周、自然月、滚动 N 天
-   - R（原子指标）：金额、数量、人数、次数
-2. **每个指标拆解为 OSCAR**：
-   - `GMV` = `订单金额_支付_近7日_全渠道`
-   - `DAU` = `活跃用户数_登录_自然日_全渠道`
-3. **建立指标命名规范**：
-   - `时间_修饰_过程_原子指标`
+- 定义五要素并逐指标填表：O 业务对象、S 业务修饰、C 业务过程、A 统计周期、R 原子指标（公式见主文件 §2.2.1）。
+- 套命名模板 `{统计周期}_{业务修饰}_{原子指标}_{业务对象}`；例：`近7日_PC端_订单金额_会员`、`自然日_全渠道_活跃用户数_用户`。
+- 把 Step 1 的「同名不同实现」逐条裁决：合并成一条，或确认是两条不同的指标；旧名全部进**别名映射表**（旧名 → 规范名 → 承接的指标 id）。
+- **产物**：五要素填表（每指标一行）+ 命名规范文档 + 别名映射表。
+- **判据**：同名不同实现清单上的每一条都给出了「合并 / 保留为两条」的裁决，且裁决只依据五要素、不读 SQL；随机抽 3 个【经验：随旧名总数变，别名越多越要抽，专挑你答不上来的那些】业务方口头常说的名字，能在 1 分钟内【经验：随别名表的检索方式变，靠搜索框而不是翻文档就能做到】从别名映射表定位到规范名。
+- **为什么必须这一步 / 为什么在 Step 3 之前**：平台的元数据 schema（§4.2.1）字段就是五要素，先建平台再定规范，等于把元数据表结构改一遍、再回填一遍。别名映射表在这里最容易被当成「以后再补」，但它是 Step 5 逐个消费端改道时唯一的凭据——没有它，改道只能靠人记得住旧名。
 
-#### 阶段 3 · 指标平台搭建（0→1 第 4-6 周）
+**Step 3：指标平台搭建（【经验】第 4–6 周；有实时链路或多租户权限时明显更长，单 BI + 离线物化可比这短）**
 
-1. **指标定义层**：
-   - 指标元数据（名称、口径、Owner、数据源、版本）
-   - OSCAR 五要素填入
-   - 公式（SQL / DataFrame / MetricQL）
-2. **指标计算层**：
-   - 物化表（ADS / DWS）
-   - 实时指标（Flink / Kafka）
-   - 联邦查询（Presto / Trino）
-3. **指标服务层**：
-   - 指标查询 API（gRPC / REST）
-   - 指标元数据 API
-   - 权限管理
-4. **指标管理 UI**：
-   - 指标市场（Metric Marketplace）
-   - 指标申请 / 审批 / 上线
-   - 指标看板
+- 指标**定义层**：元数据（名称、口径、Owner、数据源、版本）+ 五要素 + 公式（SQL / DataFrame / MetricQL）。
+- 指标**计算层**：物化表（ADS / DWS）、实时链路（Flink / Kafka）、联邦查询（Presto / Trino）。
+- 指标**服务层**：查询 API（gRPC / REST）、元数据 API、权限。
+- **管理 UI**：指标市场（Metric Marketplace）、申请 / 审批 / 上线、指标看板。
+- **产物**：先用 3–5 个【经验：随可端到端走通的链路数变，有实时链路时取小值——第一遍求链路通，不求指标铺满】指标把「注册 → 计算 → 查询」走通，加上定义层的 schema 与版本字段。
+- **判据**：把平台注册的某个指标与线上报表里手写的同一个指标做一次对账（同时间窗、同维度、同过滤），两边数值一致；再把「申请 → 审批 → 上线」整个走一遍，审批记录里有具名审批人与变更说明。**只建了 UI 不算产物**——UI 与审批流是最容易建了没人用的部分，判据必须落在「走过一次」上。
+- **为什么必须这一步 / 为什么在这个位置**：平台提供的是准入点，Step 2 的规范只有在准入点上才会被执行；把平台放到规范之前，规范无处落地；放到治理（Step 4）之后，则 Owner 与监控没有对象可挂。
 
-#### 阶段 4 · 指标治理（0→1 第 7-8 周）
+**Step 4：指标治理（【经验】第 7–8 周；随指标数与被评审的申请量变）**
 
-1. **指标 Owner 制度**：每个指标有业务 Owner + 数据 Owner
-2. **指标评审委员会**：定期评审新指标申请、裁剪废弃指标
-3. **指标监控**：
-   - 指标计算成功率
-   - 指标查询性能
-   - 指标数据质量（缺失率、异常率）
-4. **指标血缘**：从指标到上游表到 ETL 全链路
+- Owner 制度：每个指标一个业务 Owner + 一个数据 Owner，**具体到人**。
+- 评审委员会：定期评审新指标申请、**裁撤废弃指标**（不是只批不裁）。
+- 监控三项：指标计算成功率、指标查询性能、指标数据质量（缺失率、异常率）。
+- 血缘：从指标到上游表到 ETL 作业的可查路径。
+- **产物**：可查询的 Owner 名册、评审例会记录（含驳回理由）、监控看板与告警规则、血缘查询入口。
+- **判据**：随机抽 3 个【经验：随指标数与 Owner 覆盖度变，先抽你怀疑没人认领的那些】指标，从平台 UI 点进去能回答「谁负责、上次改是什么时候、谁在用它」；把某个指标的计算作业停一天【经验：随该指标的产出与消费周期变，喂周报的指标要停满一个周期才看得出】做演练，看告警是否在当天或次日到达值班人——只到面板、不到人，等于没有监控。
+- **为什么必须这一步**：治理挂的是 Step 3 的产物（作业、定义、血缘），所以只能在平台之后；但它不能拖到 Step 5 之后——BI 改道过程中一定会出现「这两个数哪个对」的争议，没有 Owner 与评审，争议无人裁决，改道会停在一半，而旧看板仍然在线且没人有权下线它。
 
-#### 阶段 5 · 接入 BI / AI（0→1 第 9-10 周）
+**Step 5：接入 BI / AI（【经验】第 9–10 周；随消费端个数与是否要做嵌入式分析变）**
 
-1. **BI 工具接入**：
-   - Tableau 通过 JDBC / ODBC
-   - Superset 通过 SQLAlchemy
-   - Looker 通过 LookML
-2. **AI Agent 接入**：
-   - 自然语言查询
-   - 指标异常自动归因
-   - Agent 决策（指标 + 阈值 + 行动）
-3. **嵌入式分析**：
-   - 产品内看板
-   - 移动端看板
+- BI 接入：Tableau 走 JDBC / ODBC，Superset 走 SQLAlchemy，Looker 走 LookML。
+- AI Agent 接入：自然语言查询、指标异常自动归因、Agent 决策（指标 + 阈值 + 行动）。
+- 嵌入式分析：产品内看板、移动端看板。
+- **产物**：至少一个消费端不再直接查明细表而是走指标服务；一张「消费端 → 取数入口」对照表（谁走指标 API，谁还走裸表）。
+- **判据**：拿别名映射表逐个消费端核对——同一个业务问题在两个消费端各问一次（例如 BI 看板与自然语言提问），返回的**指标名、数值、口径版本号**三者一致。不一致就说明还有消费端在自己算，哪怕它看起来已经接上了平台。
+- **为什么必须这一步 / 为什么在这个位置**：改道必须有替代物**同时**可用。先下线旧路径、后上替代物，业务方会在空档里退回自己写 SQL，而退回的人不会回来——这是这条顺序唯一的硬约束。AI 侧另有一条：模型的可选集合就是指标市场的在架清单，未登记的指标它选不出来，落地形态就是这个清单。
 
-#### 阶段 6 · 高级特性（0→1 第 11-12 周）
+**Step 6：高级特性（【经验】第 11–12 周，且通常要等平台跑完一个完整的口径变更周期；不稳定则更长）**
 
-1. **指标版本化**：多版本并存
-2. **指标权限**：行级 + 列级权限
-3. **指标 A/B 测试**：新老指标并行
-4. **指标异常检测**：自动告警 + 归因
+- 指标版本化：多版本并存，版本 + 生效时间。
+- 指标权限：行级 + 列级。
+- 指标 A/B 测试：新老口径并行跑，到点决策。
+- 指标异常检测：自动告警 + 归因（模板见 §4.5.5）。
+- **产物**：带生效时间的版本记录、权限矩阵（角色 × 行条件 × 列可见性）、A/B 结论（切换或回滚，二者都算结论）、告警规则与处置记录。
+- **判据**：抽一份半年前【经验：随口径变更的频率变，改得越勤越要往前抽】的历史报表，能回答它当时用的是哪一版口径、哪一天切的；用非授权角色查一次受限指标，返回的是**被裁剪后的结果**——返回全量再在前端隐藏，等于没做。
+- **为什么必须这一步 / 为什么放最后**：版本化的对象是「已经发生过的一次口径变更」，权限矩阵的对象是「已经存在的角色与指标」。平台还没跑完一个变更周期时，这两样只能凭空设计，设计出来的规则通常与实际不符，做完还要重做——这是它排在最后的唯一理由，不是因为不重要。
+
+**最常被跳过的是 Step 4 里的「裁撤」与「Owner 具体到人」，以及 Step 5 里的「真的把消费端改道」。** 前者的第一个症状不在上线当天：通常在平台上线后 4–8 周【经验：随月结或大促复盘周期变】的第一次跨部门对账日出现——两个部门对着仍然在线的旧看板，报出同一个指标名的两个数，而平台里没有具名 Owner 能裁决。后者的症状更晚也更贵：消费端没改道，血缘图（§4.2.5）就漏掉它们；等到第一次口径变更，通知发出去了、事故还是发生了，因为受影响的那个团队根本不在图上。
 
 ### 4.2 关键技术点
 
+每条给「做法 → 机制 → 失效条件」。失效条件一律写成**运行期可观测的信号**（值班、账单、SLO、工单、审计日志），而不是技术症状——技术症状在 [§ 3](10-metric-system-section-3-sec3.md) 已经写过。
+
 #### 4.2.1 指标元数据 Schema
 
-```yaml
-# metric_def.yaml
-metric:
-  id: "metric_001"
-  name: "近7日_PC端_订单金额_会员"
-  display_name: "近 7 日 PC 端会员订单金额"
-  type: "derived"  # atomic / derived / composite
-  oscar:
-    object: "会员"           # O
-    modifier: "PC端"         # S
-    process: "支付"          # C
-    period: "近7日"          # A
-    raw: "订单金额"          # R
-  formula:
-    sql: |
-      SELECT SUM(order.payment_amount) AS metric_value
-      FROM dwd.dwd_orders order
-      JOIN dim.dim_user user ON order.user_id = user.user_id
-      WHERE order.status = 'paid'
-        AND order.dt BETWEEN '${date_minus_7}' AND '${date_today}'
-        AND user.user_type = '会员'
-        AND order.channel = 'PC'
-  data_source:
-    tables: ["dwd.dwd_orders", "dim.dim_user"]
-    fields: ["order.payment_amount", "order.status", "order.dt", "user.user_type", "order.channel"]
-  dimensions: ["dt", "channel", "user_type", "city"]
-  owner:
-    business: "电商业务部"
-    data: "数据中台团队"
-    contact: "biz-metric-owner@example.com"
-  refresh:
-    frequency: "daily"
-    cron: "0 1 * * *"
-    sla: "T+1 09:00 前完成"
-  version: "v2.3"
-  created_at: "2024-01-15"
-  updated_at: "2025-09-20"
-  status: "active"  # active / deprecated / experimental
-```
-
+- **做法**：把口径写成可机器校验的一份元数据（YAML / JSON），三组字段：标识（id、name、display_name、type = atomic / derived / composite）、口径（oscar 五要素、formula、data_source.tables / fields、dimensions）、运维（owner.business、owner.data、refresh.cron、sla、version、valid_from、status）。模板见 §4.5.1。
+- **机制**：因为口径是文件、能进版本库并被 CI 校验，所以「同名不同义」从人工评审问题降级成一次字段校验；又因为物化作业与查询服务的 SQL 都由这份文件渲染，**新增一个指标的边际成本从「写一段 SQL」变成「填一表单」，代价是定义层从此成为所有人改口径的必经之路**——它一旦挂掉或被绕过，下游没有第二条路径可走。
+- **失效条件**：**当元数据靠一个手工维护的文件、指标数进入千级、且没有 CI 校验时，这份文件会与线上实际运行的口径失去同步**。症状不是报错：平台里 `version` 写着 v2.3，线上报表跑的是 v2.1，没人说得清哪一版在出数。可观测信号：把元数据里的 `version` / `valid_from` 与调度侧实际在跑的那份 SQL 对一遍（两者应当同批变更，对不上即已失同步）；版本库中同一个 `name` 出现在多个长期未合并的分支上。
+- **档位**：【经验】必填字段设多少随业务域的承接能力变；强制全部必填会把业务方挤到平台外面私建指标，常见折中是「核心字段硬校验 + 长尾字段警告」（§6 案例里有这一条教训）。
 #### 4.2.2 指标物化（DWS 层）
 
+- **做法**：按「日 × 维度组合」把聚合结果落表，WHERE 来自 formula、GROUP BY 来自 dimensions，两者都不手写。
 ```sql
--- DWS 层每日物化指标
 INSERT OVERWRITE TABLE dws.dws_metric_daily PARTITION (dt='${biz_date}')
-SELECT
-    '${biz_date}' AS dt,
-    channel,
-    user_type,
-    city,
-    SUM(order.payment_amount) AS gmv,
-    COUNT(DISTINCT order.user_id) AS paying_users,
-    COUNT(DISTINCT order.order_id) AS paying_orders
-FROM dwd.dwd_orders
-WHERE dt BETWEEN '${date_minus_30}' AND '${biz_date}'
-  AND status = 'paid'
+SELECT '${biz_date}' AS dt, channel, user_type, city,
+       SUM(o.payment_amount) AS gmv, COUNT(DISTINCT o.user_id) AS paying_users, COUNT(DISTINCT o.order_id) AS paying_orders
+FROM dwd.dwd_orders o
+WHERE o.dt BETWEEN '${date_minus_30}' AND '${biz_date}' AND o.status = 'paid'
 GROUP BY channel, user_type, city;
 ```
-
+- **机制**：因为作业的 WHERE / GROUP BY 由元数据渲染，**口径变更只改一处、重算一次**；代价是物化表的 schema 变成了元数据的函数——加一个维度不再是「加个字段」，而是一次 DDL 加一批历史分区重算，它会以变更单的形式进排期，而不是以一次提交的形式进代码。
+- **失效条件**：**当物化的维度组合远多于被查询的组合、且回收机制缺失时，成本出现在账单与调度队列上、不出现在查询延迟上**——被物化的组合都很快，慢的是没被物化的长尾。症状：调度队列每天跑满，而多数分区从来没有被查过。发现它的人通常是看成本周报或调度值班的人，而不是使用者。
+- **档位**：【推算】物化面积 = 指标数 × 维度组合数（4 个维度各 10 个取值即 10⁴ 种组合；乘 100 个指标就是 10⁶ 行/天，按你自己的维度基数重算）。落地时的操作判据不是这个乘积，而是**「新增一个维度要重算多少个历史分区」**——把它写进变更单。
 #### 4.2.3 实时指标（Flink）
 
+- **做法**：按事件时间开窗、用状态与水印处理乱序与迟到；结果分别写 KV（供大屏读当前值）、写消息队列（供下游订阅）、写结果表（供回溯与对账）；实时与离线的聚合语句由同一份元数据渲染，差异只在引擎。
 ```java
-/**
- * 实时 GMV 指标 Flink Job
- */
-public class GMVStreamingJob {
-    public static void main(String[] args) throws Exception {
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        
-        // 1. 消费支付事件
-        DataStream<PaymentEvent> payments = env
-            .addSource(new FlinkKafkaConsumer<>("dwd.payment.events", new PaymentDeserializer(), kafkaProps))
-            .name("Payment Source");
-        
-        // 2. 按 (channel, user_type, dt) 分组聚合
-        DataStream<MetricSnapshot> metrics = payments
-            .keyBy(p -> Tuple.of(p.channel, p.userType))
-            .window(TumblingEventTimeWindows.of(Time.days(1)))
-            .reduce(new GMVAggregate(), new GMVWindowFunction())
-            .name("GMV Aggregate");
-        
-        // 3. 写 Redis（实时查询）+ Kafka（下游）
-        metrics.addSink(new RedisMetricSink()).name("Redis Sink");
-        metrics.addSink(new FlinkKafkaProducer<>("dwd.metric.gmv", new MetricSerializer(), kafkaProps))
-              .name("Kafka Sink");
-        
-        env.execute("GMV Streaming Job");
-    }
-}
+DataStream<MetricSnapshot> metrics = payments
+    .keyBy(p -> Tuple.of(p.channel, p.userType))
+    .window(TumblingEventTimeWindows.of(Time.days(1)))
+    .reduce(new GMVAggregate(), new GMVWindowFunction());
+metrics.addSink(new RedisMetricSink());                        // 大屏读当前值
+metrics.addSink(new FlinkKafkaProducer<>("dwd.metric.gmv"));    // 下游订阅
 ```
+- **机制**：因为两份语句同源渲染，口径只存在一份、每次变更只重新渲染这两份（为什么同源能消除差异，机制见 §3.2.4）。落地侧的收益是可以计量的：口径变更时重新渲染两份 SQL 就够了，不必在两个值班团队之间排一次联调。
+- **失效条件**：**当水印窗口与业务迟到分布不匹配、而迟到率又没有作为监控项时，实时数会在无人察觉时偏低**，且偏差不随日期收敛。症状：大屏实时值与 T+1 离线值差几个百分点【经验：差值大小随迟到率与去重口径变，量级不是重点，不收敛才是】。排查要先看侧输出的迟到事件计数——它稳定为零而差异仍在，说明差异不来自迟到，而来自「两边已经不是同一份定义」；不先做这个分流，两个团队只会互相推给对方。
+- **档位**：【经验】水印窗口随事件迟到分布变；取值前先量一次迟到分位数，不要照抄别处的窗口。
+#### 4.2.4 指标查询服务
 
-#### 4.2.4 指标查询服务（FastAPI）
-
-```python
-"""
-指标查询服务：统一入口
-"""
-from fastapi import FastAPI, Query
-from typing import List, Optional
-
-app = FastAPI()
-
-
-@app.get("/api/v1/metric/{metric_name}/query")
-async def query_metric(
-    metric_name: str,
-    dimensions: List[str] = Query(default=[]),
-    filters: Optional[dict] = None,
-    period: str = Query(default="last_7_days")
-):
-    # 1. 查指标元数据
-    metric = metric_registry.get(metric_name)
-    if not metric:
-        raise HTTPException(404, f"Metric {metric_name} not found")
-    
-    # 2. 校验维度与过滤器
-    validate_dimensions(dimensions, metric)
-    validate_filters(filters, metric)
-    
-    # 3. 翻译为 SQL
-    sql = metric_to_sql(metric, dimensions, filters, period)
-    
-    # 4. 执行查询
-    result = execute_sql(sql, metric["data_source"])
-    
-    # 5. 返回结果
-    return {
-        "metric": metric_name,
-        "definition": metric["display_name"],
-        "result": result,
-        "sot_link": f"/api/v1/metric/{metric_name}"
-    }
-```
-
+- **做法**：消费端只提交「指标名 + 维度 + 时间范围 + 过滤」；服务侧依次做：读元数据 → 校验维度与过滤是否在枚举内 → 渲染 SQL → 执行 → 返回数值 + 口径版本号。同时提供元数据查询与血缘查询接口（gRPC / REST）。模板见 §4.5.6。
+- **机制**：因为维度与过滤在服务侧按元数据的枚举校验，「这个维度能不能和这个指标一起查」变成一个可以被**拒答**的判断——错误从「下游拿到一个看起来对的数」提前成「调用方拿到一个明确的错误码」。程序作为消费端（AI Agent、产品后端）能安全接进来的前提就是这条：人看得出来不对，程序看不出来。
+- **失效条件**：**当维度取值没有在元数据里枚举、而服务端对未知取值采取「照传下去」的策略时，一次维表新增枚举值会让部分渠道静默少算**。症状：查询成功率正常、数据质量监控也不报（没有缺失行、没有报错），差异只在对账时暴露。可观测信号：给「未在枚举内的维度取值」单开一个计数并告警，它应当恒为 0。
+- **档位**：【经验】返回体里带口径版本号是这一条里最便宜的一个字段——成本一行，收益是历史对账时能定位到版本。
 #### 4.2.5 指标血缘
 
-```sql
--- 指标血缘：从指标到表到 ETL
-CREATE TABLE metric_lineage (
-    metric_id STRING,
-    metric_name STRING,
-    upstream_table STRING,
-    upstream_field STRING,
-    etl_job STRING,
-    etl_owner STRING,
-    dependency_level INT  -- 1=直接依赖, 2=间接依赖
-);
-```
-
+- **做法**：建立「指标 → 上游表 → 上游字段 → ETL 作业 → 作业 Owner → 依赖层级（直接 / 间接）」的可查询关系；优先从渲染出的 SQL 自动解析生成，人工登记只用于补自动解析不到的部分（脚本、外部导入）。模板见 §4.5.7。
+- **机制**：因为血缘与口径同源产生，变更单可以自动带上影响面——**「改这个会碰到谁」从变更人的记忆里搬到变更单上**，代价是血缘的完整度被渲染链路封顶：只要有人绕过指标服务，图上就少一个节点，而图不会自己告诉你少了谁。
+- **失效条件**：**当有消费端直接查明细表绕过指标服务时，血缘图是对的、但影响面是不完整的**。症状：一次口径变更按血缘通知了下游团队，而一个自己写 SQL 的团队不在图上，第二天才发现数不对。可观测信号：BI 与调度侧「直接查明细表」的查询量（§4.6 有巡检项）——这个量不降，血缘的可信度就随绕过率一起下降。
+- **档位**：【经验】依赖层级分几档随链路长度变；至少要能区分「直接依赖（今天就会坏）」与「间接依赖（下个周期才会坏）」，否则通知没有轻重之分。
 #### 4.2.6 指标权限
 
-```yaml
-# 指标行级权限示例
-metric:
-  name: "GMV"
-  row_level_security:
-    rules:
-      - role: "财务"
-        condition: "city IN ('北京', '上海', '广州', '深圳')"
-      - role: "销售"
-        condition: "region = '${user.region}'"
-      - role: "管理层"
-        condition: "TRUE"  # 无限制
-  column_level_security:
-    rules:
-      - role: "客服"
-        hidden_fields: ["payment_amount", "user_phone"]
-```
+- **做法**：两套规则分开写：行级（角色 → 条件，如 `city IN ('北京','上海')`，或跟调用者属性走的 `region = '${user.region}'`）与列级（角色 → 隐藏字段）。两组规则在服务侧渲染 SQL 时拼接，**不在消费端（BI 的行级安全、看板过滤）实现**。模板见 §4.5.7。
+- **机制**：因为权限是渲染链路的一部分，「定义可见范围」与「数据可取范围」才能分开——定义可以进指标市场被检索，数据仍留在各域。这是联邦式治理能被接受的技术前提：只共享定义的人不必交出数据。
+- **失效条件**：**当权限只在消费端实现、服务侧不校验时，任何拿到 API 的调用方都能取到全量**。症状：BI 上一切正常，一个非授权脚本直接调接口拿到了未裁剪的数据。可观测信号：审计日志里「单账号单次取数结果行数远大于其在看板上的可见范围」——把校验放到服务侧之后，这类差异应当归零。
+- **档位**：【经验】用 `${user.region}` 这类跟随调用者属性的写法，比给每个区域各配一条规则省维护，但要求身份属性在网关层就已解析完成。
+#### 4.2.7 指标版本化与 A/B
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+- **做法**：定义不原地改：新增版本 + 生效时间（valid_from），查询可显式声明版本；口径变更先进入 A/B 并存（新老各出一份数），确认后才把新版本置为 active，并给 A/B 设**结束条件与责任人**。
+- **机制**：因为版本与生效时间写在定义文件里、由查询服务按 `valid_from` 选版本（机制见 §3.2.8），回溯不需要人工确认或离线备份；落地侧真正省下的是会议时间——财务与业务可以在同一张图上看到两个口径的差，而不是各自跑数、再在会上对数。
+- **失效条件**：**当 A/B 没有结束条件与责任人时，两版会无限期并存**，而后来的人只会看到默认返回的那一版，另一版成了没人清理的静默分叉。症状：过一段时间后有人问「这个指标为什么有两个数」。可观测信号：统计处于并存 / experimental、且已超过一个完整业务周期【经验：月频业务取一个季度量级，随结算周期变】的版本数，这个数应接近 0。
+- **档位**：【经验】并存多久取决于下游消费端数量——每个下游都要各自确认切换，返工面积随引用数扩散。
+#### 4.2.8 指标异常检测与归因
 
-#### 4.3.1 阿里 OneData / DataPhin
+- **做法**：先做确定性部分——时序基线（含周内效应）→ 预测区间 → 越界判定 → 按维度下钻算贡献度 → 取 TopN；LLM 只做最后一步的自然语言转述与工单摘要（模板见 §4.5.5）。告警通道（Webhook / 事件总线）与工单系统对接。
+- **机制**：因为判定与分解都不依赖模型、只有转述依赖模型，模型换代不会改变「哪一天异常、主要来自哪个维度」这个结论；**告警的可信度因此不随模型版本漂移**——这是自动巡检能被值班接受的必要条件。
+- **失效条件**：**当基线用绝对阈值而不是同期 / 同周内日基线、而业务有明显周期性时，每个周一与每个大促日都会告警**，值班会在几周内开始批量忽略这个通道。症状：告警数不降，而「被处置比例」（关闭时是否填写原因）下降——通道还在，信任没了，这是最贵的一种失效。这个比例跌破一半【经验：具体阈值随告警频率与排班人数变】时，先修基线，不要加告警规则。
+- **档位**：【经验：TopN 取 3–5 个，随维度基数与看板宽度变】；灵敏度用历史告警的处置率反推，比先拍一个百分比更省事。
 
-- **DataPhin**：阿里云数据中台，集成 OSCAR 指标法
-- **Quick BI**：阿里云 BI，内置 OneMetric
-- **OneService**：指标查询 API
+### 4.3 工具链与平台
 
-#### 4.3.2 字节火山引擎指标平台
+下表按类别给候选与判据。候选列里的发布时间为【公开：各厂商 / 项目的官方发布说明；本表只记到年，且**不区分预览与正式可用**】——年份的用途是让你排出先后与量级，**写进你自己的文档前，请按「产品名 + release notes」到官方文档核准**（同一产品把预览年与 GA 年记成同一年是常见情况）。**本章各处引用这些产品与时间时以本表为准**，也可按「产品名 + semantic model / metrics spec / API」自行检索核验其能力边界。
 
-- **DataFinder**：火山引擎指标平台
-- **指标树**：业务可理解的指标分类
-
-#### 4.3.3 美团指标平台
-
-- **指标平台 + 指标树**：业务域 × 原子指标双维分类
-- **WWM（Wide Width Model）**：宽表建模 + 指标平台
-
-#### 4.3.4 开源 Semantic Layer（2023-2025 主流）
-
-| 产品 | 发布时间 | 特点 |
-| --- | --- | --- |
-| **dbt Semantic Layer** | 2023 GA | dbt 官方，MetricFlow 引擎 |
-| **Cube** | 2017 开源 | JS / TS，REST API，MetricQL |
-| **Airbnb Minerva** | 开源 | 大规模指标平台 |
-| **Cube Cloud** | 2020 | Cube 商业版 |
-| **MetricFlow** | 2022 开源 | dbt 旗下，Python |
-| **LookML** | 2012 推出 | Looker 内置 |
-| **Preset / Apache Superset** | 开源 | BI + 部分语义层 |
-| **Lightdash** | 开源 | LookML 风格 + dbt 集成 |
-| **AtScale** | 商业 | 企业级 Semantic Layer |
-| **Sisense** | 商业 | AI 增强 BI |
-| **Mode** | 商业 | Notebook + 指标层 |
-
-#### 4.3.5 云厂商 AI 原生指标（2024-2025）
-
-| 厂商 | 产品 | 发布时间 | 特点 |
+| 类别 | 候选（含发布时间，如已知） | 选型判据（在什么约束下选哪个） | 不选它的代价 |
 | --- | --- | --- | --- |
-| **Snowflake** | **Cortex Analyst** | 2024 GA | 自然语言 → SQL，基于指标语义层 |
-| **Databricks** | **Genie** | 2024 GA | 自然语言 → SQL + 图表，Unity Catalog 集成 |
-| **Microsoft** | **Fabric Copilot** | 2024 | 自然语言 + Power BI |
-| **Google** | **Gemini in Looker** | 2024 GA | 自然语言查询 |
-| **AWS** | **Amazon Q in QuickSight** | 2024 GA | 自然语言 + 异常归因 |
-| **ThoughtSpot** | **Sage** | 2023 | 自然语言搜索式 BI |
-| **AI21** | **Maestro** | 2024 | LLM 增强 BI |
-| **Palantir** | **Foundry AIP** | 2024 | Ontology + 自然语言 |
+| 一站式指标平台（国内大厂系） | 阿里 DataPhin（数据中台，集成 OSCAR 指标法）、Quick BI（内置 OneMetric）、OneService（指标查询 API）；字节火山引擎 DataFinder（指标树；另见 §6 案例 10.2 的 Bytemetric）；美团指标平台（业务域 × 原子指标双维分类的指标树 + WWM 宽表建模） | 判据：域内是否已有统一数仓与调度、组织是否接受「指标全在平台注册」；看它的文档里有没有「指标定义 / 指标市场 / 口径审批」三节，只有定义一节的不算一站式 | 五要素与审批要自己在元数据服务里补；补出来的通常只有定义、没有市场与审批，指标一多又是新的一张清单 |
+| 开源语义层 | dbt Semantic Layer（2023 GA，由 MetricFlow 引擎驱动；MetricFlow 2022 开源）、dbt + Dagster（编排 + 指标开发）、Cube（2017 开源，MetricQL）、Cube.js、Cube Cloud（2020）、Airbnb Minerva（开源）、Lightdash、Apache Superset（BI + 部分语义层）、Preset（Superset 商业版）、Metabase、LookML（Looker，2012 推出） | 判据：口径要不要与转换 / 调度同仓（dbt 系合适）、要不要一句查询同时打到实时与批量源（Cube 系合适）、是否必须与已有 BI 的建模方式同构（LookML）；核验入口是看它的文档里「指标定义文件」与「查询接口」是否分成两节 | 定义与消费锁在同一个 BI 里；第二个消费端（AI、程序、另一个 BI）取不到同一份定义，又回到各自复制 SQL |
+| 商业语义层 | AtScale、Sisense、Mode | 判据：有强合规 / 支持诉求，且愿意把定义层的运维（排期、值班、升级）交给厂商 | 排期与值班要自己扛——自研的真正门槛不在开发，而在长期维护与未来迁移 |
+| 云厂商 AI 原生 | Snowflake Cortex Analyst（2024 GA）、Databricks Genie（2024 GA）、Microsoft Fabric Copilot（2024）、Google Gemini in Looker（2024 GA）、Amazon Q in QuickSight（2024 GA）、ThoughtSpot Sage（2023）、AI21 Maestro（AI21 Labs，2024；与 Netflix 的工作流编排 Maestro 同名不同物）、Palantir Foundry AIP（2024） | 判据：先读**前置条件**再读能力清单——是否要求先注册语义模型文件、是否与容量档位 / 租户开关绑定；前置条件决定你要先做多少准备 | 把自然语言入口直接接到裸表上，答案不可枚举、也无法拒答 |
+| 查询引擎 | Apache Hive / Spark SQL（离线数仓）、Presto / Trino（联邦）、ClickHouse / Apache Doris / Apache Druid / StarRocks（OLAP）、DuckDB（嵌入式） | 判据：延迟目标与数据量（OLAP 是物化与实时之外的物理底座）、要不要跨源（联邦）、查询是否要嵌进单进程（嵌入式） | 物化与实时都没有落地处，只能回落到「查询时现场聚合明细」 |
+| 元数据与血缘存储 | 平台内置表 / 独立元数据服务（以 API 对外提供血缘的那一类，例如 [数据血缘与影响分析](../../11-cross-cutting/05-lineage-and-impact/05-lineage-and-impact.md) 里讲的 DataHub 形态） | 判据：血缘要不要被指标平台之外的系统消费（数据目录、影响面分析、CI 门禁）；要 → 独立服务 + 开放 API，不要 → 平台内置表 | 血缘只在一个 UI 里可见；改表的人查不到、CI 也拦不住 |
 
-#### 4.3.6 开源工具
+**最容易被误选的是第 2 类里的一个具体形态：拿一个自带指标层的 BI 工具当「语义层」。** 它零额外组件、当天见效——这正是它容易被选中的原因。后果是定义层的所有权被绑在一个消费端上：第二个消费端要复用时只能复制 SQL，于是口径分叉从「平台内看不见」变成「跨消费端」，而原来的 BI 仍然是对的、仍然在被引用，没有人会主动去修。判定方法（当场可做）：看这个工具的指标定义能不能被**非本工具**的系统消费——定义只存在于该工具的项目文件里、没有对外接口，那它就不是定义层，只是报表的另一种写法。这类能力的边界见 [§ 3.2.2](10-metric-system-section-3-sec3.md)，此处要的是选型判据。
 
-- **dbt + MetricFlow**：开源 Semantic Layer
-- **Cube.js**：开源 Semantic Layer + 实时分析
-- **Apache Superset**：开源 BI，部分语义层
-- **Metabase**：开源 BI
-- **Lightdash**：开源 BI + 指标层
-- **Preset**：Superset 商业版
-- **Dagster + dbt**：数据编排 + 指标开发
+### 4.4 存量迁移
 
-#### 4.3.7 大数据查询引擎
+这一节写给「已经有一批指标在跑」的读者。目标不是把旧指标全改成新口径，而是**让新的写入端先生效，同时用最小的对账成本把存量的争议显性化**。顺序上先卡增量、再清存量：定义层对增量生效之后，存量是有限集合、会随时间自然萎缩；反过来做，你会一边清、一边长出新的（机制见 §3.1，代价记录见 §6 案例 10.1）。
 
-- **Apache Hive / Spark SQL**：离线数仓
-- **Presto / Trino**：联邦查询
-- **ClickHouse**：OLAP 实时查询
-- **Apache Doris**：实时 OLAP
-- **Apache Druid**：亚秒级 OLAP
-- **StarRocks**：高性能 OLAP
-- **DuckDB**：嵌入式 OLAP
+**① 先做什么：对账，不是重建（可回退，一周内【经验：随计算链路长度与对账口径的复杂度变】见效）**
+- 选 3–5 个【经验：随当月口径争议数与业务域个数变】当月被引用最多、争议最大的指标，用 Step 2 的五要素重写一遍，与现有实现**并行**跑；不下线任何报表、不改任何线上 SQL。
+- 产出：一张差异清单（指标 × 差异日期 × 差异幅度 × 归类）。
+- 差异必须归到三类之一：**口径不同**（过滤条件、维度枚举、时间窗）、**数据源不同**（表 / 字段 / 时间口径）、**实现 bug**。归不进任何一类的，是还没找到原因，不要塞进「其他」。
+- 判据：清单上每一条都被归到三类之一；若超过一半【经验：随盘点的覆盖率变，盘点漏得越多这个比例越高】归不进去，说明 Step 1 的盘点漏了实现位置——回去补，不要继续往后做。
+- 为什么可回退：它新增的只有一份并行计算和一张清单，不生效就删掉，业务侧无感。存量迁移里所有「这件事能不能退」的问题，答案都由这一步是否做过来决定。
 
-### 4.4 代码 / 示例
+**② 历史资产怎么分类处理：三档，判据是「被谁消费」与「最近被查过没有」**
+这两个数都能从查询日志里取，不需要访谈。
 
-#### 4.4.1 dbt Semantic Layer 指标定义（YAML）
+| 档 | 特征 | 怎么处理 |
+| --- | --- | --- |
+| 立即重写并冻结 | 高争议 × 高频（被多个消费端引用） | 走 Step 2–3 进平台；旧实现标 deprecated，并在**看板上**打标「此口径将于 X 日切到平台」——期限要写出来，不是「尽快」 |
+| 只改动的部分 | 中频、边界清楚（改动时能明确知道改的是哪一段） | 不整体重写，只在该指标下次变更时「顺手纳管」：改到的部分必须走新定义，未改的部分原地不动并挂账 |
+| 打标挂账 | 低频长尾（一个月内没有业务日活使用） | 不改，加「未纳管」标记，并在指标市场里以只读条目登记（名字 + Owner + 指向原实现的位置） |
 
+反例是把「全部返工」当默认档：成本随指标数线性上升，而收益集中在头部少数指标上；更糟的是它拖长周期，让「先卡增量」这个真正有效的动作停在半路，最后两边都没做完。
+
+**③ 双轨怎么维持、维持多久**
+- 双轨 = 旧实现继续跑 + 新指标服务并行；每天跑一次对账（同指标、同参数、同时间窗），差异写进第①步那张清单，不要另开一张。
+- 三项固定成本必须事先认下来：两份计算资源、两个 Owner（旧实现的责任人不能因为即将下线就撤掉——撤掉之后差异清单没人认领）、以及一次差异仲裁的例会节奏（【经验】每周一次，随差异条目数加密或拉长）。
+- **必须给双轨设退出日期。** 没有退出日期的双轨不会自己结束，它的典型终局是：没人记得旧实现为什么还在，但它每月都在出数，且和平台差一点。
+- 维持时长【经验】：单个指标从切到退出以周计（1–4 周），整个业务域以月计（3–12 个月）【随消费端个数变，消费端越多越长；与技术难度关系不大】。
+
+**④ 退出双轨的三个信号（同时满足才退，缺一条不退）**
+1. **连续若干周期零差异**：对账连续 N 个周期无差异，【经验】7–30 天【随指标是日频、周频还是月频变】；
+2. **消费端全部改道**：按访问日志核对，旧取数入口的查询量已无业务日活使用；且「消费端 → 取数入口」对照表里没有仍指向旧实现的活跃消费端；
+3. **旧实现的具名 Owner 签字**：下线旧实现是一次变更，变更要有人签字。这一条最常被省掉；省掉的后果是旧实现会在下一次紧急需求时被「临时恢复」，而恢复它的人并不知道它没被纳管。
+
+**⑤ 退出之后**：把旧实现下线，而不是留作「备用」。留着一对差异未知的双实现，等于把双轨永久化，并且给下一次口径变更埋了一个不在血缘图上的响应者。
+
+### 4.5 模板 / 示例
+
+#### 4.5.1 指标元数据 Schema（YAML）
+```yaml
+metric:
+  id: metric_001
+  name: 近7日_PC端_订单金额_会员          # {统计周期}_{业务修饰}_{原子指标}_{业务对象}
+  display_name: 近 7 日 PC 端会员订单金额
+  type: derived                           # atomic / derived / composite
+  oscar: {object: 会员, modifier: PC端, process: 支付, period: 近7日, raw: 订单金额}
+  formula:
+    sql: |
+      SELECT SUM(o.payment_amount) AS metric_value
+      FROM dwd.dwd_orders o JOIN dim.dim_user u ON o.user_id = u.user_id
+      WHERE o.status = 'paid' AND o.dt BETWEEN '${date_minus_7}' AND '${date_today}'
+        AND u.user_type = '会员' AND o.channel = 'PC'
+  data_source: {tables: [dwd.dwd_orders, dim.dim_user], fields: [o.payment_amount, o.status, o.dt, u.user_type, o.channel]}
+  dimensions: [dt, channel, user_type, city]
+  owner: {business: 电商业务部, data: 数据中台团队, contact: biz-metric-owner@example.com}
+  refresh: {frequency: daily, cron: "0 1 * * *", sla: "T+1 09:00 前完成"}
+  version: v2.3, valid_from: 2025-01-01, status: active   # active / deprecated / experimental
+```
+**怎么用**：`oscar` 与 `dimensions` 两格必须由业务方确认，其余字段数据团队填；`${date_minus_7}` 这类占位符换成你调度器的模板语法；`contact` 填组邮箱而不是个人邮箱（人一离职这个字段就失效）；`version` / `valid_from` / `status` 三格不要照抄成常量——它们是 §4.2.7 版本化的落点，第一次口径变更就要用到。
+#### 4.5.2 dbt Semantic Layer 指标定义（YAML）
 ```yaml
 # models/metrics/metrics.yml
 version: 2
-
-models:
-  - name: orders
-    description: "订单事实表"
-
 metrics:
   - name: gmv_7d
     description: "近 7 日 GMV"
     type: simple
-    type_params:
-      measure: order_payment_amount
-    filter: |
-      {{ Dimension('order__status') }} = 'paid'
+    type_params: {measure: order_payment_amount}
+    filter: "{{ Dimension('order__status') }} = 'paid'"
     agg_time_dimension: order_dt
     expr: "SUM(order_payment_amount)"
     window: 7 days
-    
-  - name: gmv_7d_pc
-    description: "近 7 日 PC 端 GMV"
-    type: simple
-    type_params:
-      measure: order_payment_amount
-    filter: |
-      {{ Dimension('order__status') }} = 'paid' AND
-      {{ Dimension('order__channel') }} = 'PC'
-    agg_time_dimension: order_dt
-    
-  - name: conversion_rate_7d
-    description: "近 7 日转化率"
-    type: ratio
-    type_params:
-      numerator: first_purchase_users_7d
-      denominator: register_users_7d
+  - {name: gmv_7d_pc, description: "近 7 日 PC 端 GMV", type: simple, type_params: {measure: order_payment_amount}, filter: "{{ Dimension('order__status') }} = 'paid' AND {{ Dimension('order__channel') }} = 'PC'"}
+  - {name: conversion_rate_7d, description: "近 7 日转化率", type: ratio, type_params: {numerator: first_purchase_users_7d, denominator: register_users_7d}}
 ```
-
-#### 4.4.2 Cube 指标定义（JavaScript）
-
+**怎么用**：注意这份文件里没有任何作业——口径与调度分离，这正是定义层与「报表的另一种写法」的分界（判据见 §4.3 表末）；`window: 7 days` 是滚动窗还是自然周，必须与元数据里 A（统计周期）那一格一致，两处不一致时以元数据为准并同步改这里；`type: ratio` 的分子分母各自必须是已登记的指标，否则复合指标会绕过定义层直接引用字段。
+#### 4.5.3 Cube 指标定义（JavaScript）
 ```javascript
-// schema/Orders.js
 cube(`Orders`, {
   sql: `SELECT * FROM dwd.orders`,
-  
   measures: {
-    // 原子指标
-    paymentAmount: {
-      sql: `payment_amount`,
-      type: `sum`,
-      title: "订单金额"
-    },
-    
-    payingUsers: {
-      sql: `user_id`,
-      type: `countDistinct`,
-      title: "支付用户数"
-    },
-    
-    payingOrders: {
-      sql: `order_id`,
-      type: `countDistinct`,
-      title: "支付订单数"
-    },
-    
-    // 派生指标
-    gmv7d: {
-      sql: `${Orders.paymentAmount}`,
-      type: `sum`,
-      title: "近 7 日 GMV",
-      filters: [
-        { sql: `${CUBE}.status = 'paid'` }
-      ]
-    },
-    
-    // 复合指标
-    arpu7d: {
-      sql: `${Orders.paymentAmount} / ${Orders.payingUsers}`,
-      type: `number`,
-      title: "ARPU"
-    }
+    paymentAmount: { sql: `payment_amount`, type: `sum`, title: "订单金额" },            // 原子
+    payingUsers:   { sql: `user_id`,        type: `countDistinct`, title: "支付用户数" }, // 原子
+    gmv7d:  { sql: `${Orders.paymentAmount}`, type: `sum`, title: "近 7 日 GMV",          // 派生
+              filters: [{ sql: `${CUBE}.status = 'paid'` }] },
+    arpu7d: { sql: `${Orders.paymentAmount} / ${Orders.payingUsers}`, type: `number`, title: "ARPU" } // 复合
   },
-  
   dimensions: {
-    channel: {
-      sql: `channel`,
-      type: `string`,
-      title: "渠道"
-    },
-    userType: {
-      sql: `user_type`,
-      type: `string`,
-      title: "用户类型"
-    }
+    channel:  { sql: `channel`,   type: `string`, title: "渠道" },
+    userType: { sql: `user_type`, type: `string`, title: "用户类型" }
   }
 });
 ```
-
-#### 4.4.3 自然语言查询（Snowflake Cortex Analyst）
-
+**怎么用**：`measures` 里的三层注释对应主文件 §2.1 的原子 / 派生 / 复合分类，照它分组能避免派生链越接越长；`dimensions` 只登记业务认可的枚举维度——未登记的取值会在查询侧被拒答（§4.2.4 的失效条件正是这条机制的反面）；`title` 是给业务方看的显示名，不要拿它当唯一标识，标识用 `name`。
+#### 4.5.4 自然语言查询（Snowflake Cortex Analyst）
 ```python
-"""
-用 Cortex Analyst 做自然语言查询
-"""
 import snowflake.cortex as cortex
 from snowflake.connector import connect
-
 conn = connect(...)
-
-# 1. 注册指标语义模型（YAML）
-yaml_model = """
+semantic_model = """
 name: gm_analytics
-description: GMV & 用户分析
-
 tables:
   - name: orders
-    measures:
-      - name: gmv
-        sql: "SUM(payment_amount)"
-        description: "GMV"
-    dimensions:
-      - name: channel
-        sql: "channel"
-      - name: user_type
-        sql: "user_type"
-    time_dimensions:
-      - name: order_dt
-        sql: "order_dt"
+    measures:        [{name: gmv, sql: "SUM(payment_amount)", description: "GMV"}]
+    dimensions:      [{name: channel, sql: "channel"}, {name: user_type, sql: "user_type"}]
+    time_dimensions: [{name: order_dt, sql: "order_dt"}]
 """
-
-# 2. 自然语言查询
-question = "过去 7 天 PC 端新用户的 GMV 是多少？"
-sql = cortex.Analyst.generate_sql(
-    semantic_model=yaml_model,
-    question=question,
-    account="...",
-    user="..."
-)
-print(sql)
-
-# 3. 执行
+sql = cortex.Analyst.generate_sql(semantic_model=semantic_model,
+                                  question="过去 7 天 PC 端新用户的 GMV 是多少？",
+                                  account="...", user="...")
 result = conn.cursor().execute(sql).fetchall()
-print(result)
 ```
-
-#### 4.4.4 指标异常检测（Prophet + LLM）
-
+**怎么用**：先注册语义模型、再提问，这个顺序不能反——模型的可选集合就是语义模型的内容，没登记的内容它选不出来（这一步是 §4.2.4 的枚举校验在自然语言入口上的对应物）；把「提问 → SQL → 结果」三段都记进日志，出问题时才分得清是「选错指标」还是「执行出错」；接口名与前缀以该产品官方文档当前版本为准。
+#### 4.5.5 指标异常检测（Prophet + LLM）
 ```python
-"""
-指标异常自动检测 + 自然语言解释
-"""
 from prophet import Prophet
-import openai
-
-
-def detect_and_explain(metric_name, history_df):
-    # 1. Prophet 异常检测
-    model = Prophet(yearly_seasonality=True, weekly_seasonality=True)
-    model.fit(history_df)
-    future = model.make_future_dataframe(periods=7)
-    forecast = model.predict(future)
-    
-    # 2. 判定异常
-    anomalies = []
-    for i, row in history_df.iterrows():
-        f = forecast.iloc[i]
-        if row["y"] > f["yhat_upper"] or row["y"] < f["yhat_lower"]:
-            anomalies.append({
-                "dt": row["ds"],
-                "actual": row["y"],
-                "expected": f["yhat"],
-                "deviation": abs(row["y"] - f["yhat"]) / f["yhat"]
-            })
-    
-    # 3. LLM 解释
-    if anomalies:
-        prompt = f"""
-你是数据分析专家。指标 {metric_name} 在以下日期出现异常：
-
-{anomalies}
-
-请分析可能的业务原因（如促销、季节性、系统故障等），并给出建议。
-"""
-        resp = openai.chat.completions.create(
-            model="gpt-4o",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        explanation = resp.choices[0].message.content
-    else:
-        explanation = "指标运行正常，未检测到异常。"
-    
-    return {
-        "anomalies": anomalies,
-        "explanation": explanation
-    }
+def detect_and_explain(metric_name, history_df, drill_down, llm_describe):
+    model = Prophet(yearly_seasonality=True, weekly_seasonality=True).fit(history_df)
+    fc = model.predict(model.make_future_dataframe(periods=7))
+    joined = history_df.merge(fc[["ds", "yhat", "yhat_lower", "yhat_upper"]], on="ds")
+    anomalies = joined[(joined.y > joined.yhat_upper) | (joined.y < joined.yhat_lower)]
+    # 确定性部分：按维度下钻算贡献度、取 Top3（不依赖模型）；LLM 只做转述
+    top = sorted(drill_down(metric_name, anomalies["ds"].tolist()),
+                 key=lambda d: -abs(d["contribution"]))[:3]
+    return {"anomalies": anomalies[["ds", "y", "yhat"]].to_dict("records"),
+            "explanation": llm_describe(metric_name, top)}
 ```
-
-#### 4.4.5 指标平台（FastAPI 简化版）
-
+**怎么用**：判定只与 `yhat_lower / yhat_upper` 比较，不要把阈值写成固定的百分比；下钻与排序必须在调用模型之前完成（跳过这一步就是 §4.2.8 的失效条件）；`llm_describe` 的输入只给分解结果，不要给它整张历史表，否则解释会随数据长度漂移，同一异常换一天问就是另一套说法。
+#### 4.5.6 指标平台（FastAPI 简化版）
 ```python
-"""
-指标平台核心 API
-"""
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
-
 app = FastAPI(title="Metric Platform")
-
-
 class MetricDefinition(BaseModel):
-    name: str
-    type: str  # atomic / derived / composite
-    oscar: dict
-    formula_sql: str
-    data_source: List[str]
-    dimensions: List[str]
-    owner: dict
-    refresh: dict
-
-
-class MetricQueryRequest(BaseModel):
-    metric_name: str
-    dimensions: List[str] = []
-    filters: dict = {}
-    period: str = "last_7_days"
-
-
-metrics_db = {}
-
-
+    name: str; type: str                # atomic / derived / composite
+    oscar: dict; formula_sql: str
+    data_source: list[str]; dimensions: list[str]
+    owner: dict; refresh: dict; version: str
+class MetricQueryRequest(BaseModel):    # 消费端能提交的全部内容
+    metric_name: str; dimensions: list[str] = []
+    filters: dict = {}; period: str = "last_7_days"
+metrics_db: dict[str, MetricDefinition] = {}
 @app.post("/api/v1/metric")
 async def create_metric(metric: MetricDefinition):
-    """注册新指标"""
     if metric.name in metrics_db:
-        raise HTTPException(409, "Metric already exists")
-    metrics_db[metric.name] = metric.dict()
+        raise HTTPException(409, "Metric already exists")   # 在这里挡住「同名不同义」
+    metrics_db[metric.name] = metric
     return {"status": "created", "name": metric.name}
-
-
 @app.post("/api/v1/metric/query")
 async def query_metric(req: MetricQueryRequest):
-    """查询指标"""
     metric = metrics_db.get(req.metric_name)
-    if not metric:
-        raise HTTPException(404, "Metric not found")
-    
-    # 1. 翻译为 SQL
-    sql = metric_to_sql(metric, req.dimensions, req.filters, req.period)
-    
-    # 2. 执行查询
-    result = execute_query(sql)
-    
-    return {
-        "metric": req.metric_name,
-        "definition": metric["oscar"],
-        "sql": sql,
-        "result": result
-    }
-
-
+    if not metric: raise HTTPException(404, "Metric not found")
+    validate_dimensions(req.dimensions, metric)     # 枚举外的维度取值 → 拒答，不静默少算
+    sql = metric_to_sql(metric, req)                # 由元数据渲染，消费端不写 SQL
+    return {"metric": req.metric_name, "sql": sql, "version": metric.version,
+            "result": execute_sql(sql), "sot_link": f"/api/v1/metric/{req.metric_name}"}
 @app.get("/api/v1/metric/search")
 async def search_metrics(q: str):
-    """指标搜索（自然语言）"""
-    # LLM 辅助搜索
-    candidates = llm_search(q, list(metrics_db.keys()))
-    return candidates
-
-
+    return llm_search(q, list(metrics_db))          # 自然语言检索：只在已登记指标里选
 @app.get("/api/v1/metric/{name}/lineage")
 async def get_lineage(name: str):
-    """指标血缘"""
     metric = metrics_db.get(name)
     if not metric:
         raise HTTPException(404, "Metric not found")
-    return trace_lineage(metric)
+    return trace_lineage(metric)                    # 影响面查询（§4.2.5）
 ```
+**怎么用**：`metrics_db` 换成真正的元数据存储（这里用字典只是为了让注册、查询、检索与血缘四条路径能读完）；`query_metric` 里的顺序不能换——先校验维度与过滤、再渲染 SQL，反了就等于把未登记的取值放进 WHERE（§4.2.4 的失效条件）；`409` 与查询侧的枚举校验必须落地为**拒绝**——返回空结果或忽略非法参数，等于把错误推给下游；`search_metrics` 只把已登记指标交给 `llm_search`，没登记的它选不出来；这个骨架不含权限与 A/B 并存，落地时按 §4.2.6、§4.2.7 补。
+#### 4.5.7 指标血缘 DDL 与指标权限（SQL / YAML）
+```sql
+CREATE TABLE metric_lineage (        -- 指标 → 上游表 → 字段 → 作业 → Owner；由渲染出的 SQL 自动解析写入
+  metric_id STRING, metric_name STRING, upstream_table STRING, upstream_field STRING,
+  etl_job STRING, etl_owner STRING, dependency_level INT);   -- 1 = 直接依赖（今天就会坏）/ 2 = 间接依赖
+```
+**怎么用**：这张表由渲染出的 SQL 自动解析写入，人工登记只补脚本与外部导入那部分；`etl_owner` 必须填到具体人——空着的话，「改这个会碰到谁」还是回到口头通知（§4.2.5）；`dependency_level` 先只分两档，档数多了没人维护，通知反倒没有轻重。
+```yaml
+metric: GMV
+row_level_security:
+  rules: [{role: 财务, condition: "city IN ('北京','上海')"},
+          {role: 销售, condition: "region = '${user.region}'"},
+          {role: 管理层, condition: "TRUE"}]
+column_level_security: {rules: [{role: 销售, hidden_fields: [gross_margin]}]}
+```
+**怎么用**：三档角色与条件只是起点——先定清「一个人同时属于多个角色」时的合并语义（取并集还是取最严），再加区域；`hidden_fields` 走服务侧渲染裁剪，不要下发给 BI 的行级安全或看板过滤器（§4.2.6）；`${user.region}` 要求身份属性在网关层已解析完成，否则把它退化成按调用方登记的静态规则。
 
----
+### 4.6 自检清单
+
+本节只保留**必须动了系统才有答案**的动作。建模层面的对错（粒度是否合理、模式是否选得对、派生层数是否过深）不在这里复查——那些问题坐下来想就能判断，逐条见 [§ 3.7](10-metric-system-section-3-sec3.md)。
+
+- [ ] 抽 3 个【经验：随指标总数与平台纳管比例变，先抽最近改过口径的】指标，把平台渲染出的 SQL 与线上仍在跑的旧 SQL 各执行一次（同时间窗、同维度），比对总行数与合计值——不一致说明写入端还没收拢。
+- [ ] 拿别名映射表随机抽 5 个【经验：随别名总数变，抽到出现答不上来的名字为止】旧名，通过查询服务解析，看返回的是不是同一个数。
+- [ ] 把某个维度传一个**未登记的取值**（如 `channel = 'webx'`）调一次查询 API，看返回的是错误码，还是静默的空结果 / 少算结果。
+- [ ] 在一个高频物化表上**加一个维度**做演练：变更单里写了要重算多少历史分区吗？实际重算耗时多少？
+- [ ] 把某个指标的计算作业停一天【经验：随该指标的产出周期变，周频指标要停满一个周期】，看告警多久到达值班人、到达的是谁——只到面板不到人等于没有监控。
+- [ ] 取一个指标，按血缘列出下游通知名单；再与「实际发现异常并来问的团队」比对，差集就是血缘漏掉的消费端。
+- [ ] 用非授权角色调一次受限指标的 API，看返回是被裁剪后的结果还是全量。
+- [ ] 统计处于并存 / experimental 状态的指标版本数，以及每一版挂了多久、有没有结束条件与责任人。
+- [ ] 看告警通道近一个月【经验：至少要覆盖一个完整的值班轮次，随排班周期变】的「被处置比例」（关闭时是否填了原因）；跌破一半【经验：随告警频率与排班人数变】，先修基线而不是加规则。
+- [ ] 统计 BI 与调度侧直接查明细表（绕过指标服务）的查询量，这个量决定血缘图的可信度。
+- [ ] 对已宣布下线的旧实现做一次下线验证：调度里还有没有它的作业、看板里还有没有它的字段、有没有人以「临时恢复」为名重开过。
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一决定成败的环节是 **Step 5 的「把消费端真的改道」**。在它完成之前，规范、平台、监控、血缘都可以与旧的实现并存而不改变任何一个数字——看板照旧、口径照旧，唯一变化的是多了一套需要人维护的东西；改道一旦完成，指标一致就从「纪律」变成了架构属性，血缘与监控也才有了完整的作用面。代价是它天然排得靠后：替代物必须先可用（Step 3）、争议必须先有裁决人（Step 4），这两条没满足就改道，业务方会在空档里退回自己写 SQL，而且不再回来。
+>
+> 配合 [§ 2 核心原理](10-metric-system.md)、[§ 3 设计模式与范式](10-metric-system-section-3-sec3.md) 与 [§ 6 落地实践](10-metric-system-section-6-sec6.md) 阅读。

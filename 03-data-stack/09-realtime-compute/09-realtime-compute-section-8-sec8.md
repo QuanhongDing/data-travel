@@ -195,7 +195,7 @@
 **第二层：Chandy-Lamport 算法在 Flink 中的落地。** Chandy-Lamport 是 1985 年提出的分布式快照算法，Flink 用它实现"全局一致的状态快照"：
 
 - **Barrier**：Flink 在数据流里插入特殊的 Barrier 标记，作为 Checkpoint 的边界。
-- **Barrier 对齐（Alignment）**：当算子收到所有输入分区的 Barrier 后，才触发该算子的快照。这样保证**快照里"事件与事件"的关系与原数据一致"。
+- **Barrier 对齐（Alignment）**：当算子收到所有输入分区的 Barrier 后，才触发该算子的快照。这样保证**快照里"事件与事件"的关系与原数据一致**。
 - **快照（Snapshot）**：Barrier 对齐后，算子把当前状态 + 输入 Buffer 异步写入持久存储（远端 HDFS/S3）。
 - **恢复**：JobManager 在 Failover 时选择最近完成的 Checkpoint，从 Source 重放 Barrier 之后的事件，重建整个状态。
 

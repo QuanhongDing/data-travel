@@ -39,10 +39,10 @@
 
 **4. 追问预测**
 
-- **「Flink Reactive Mode 怎么用？」**」** 答：开启 `scheduler-mode: reactive`，配置 `scheduling.source.assignments` 与 `taskmanager.numberOfTaskSlots`，Flink 自动按 Slot 利用率扩缩容。
-- **「Kafka 缩分区怎么办？」**」** 答：先扩分区（如 12 → 24），做 partition reassignment 让数据均匀分布；老 consumer 自然迁移到新分区；老的 12 分区仍可消费但不再写入。
-- **「如何保证弹性时不丢数据？」**」** 答：① Flink 用 exactly-once + checkpoint；② Kafka 用 `acks=all` + 幂等 producer；③ 业务层做幂等消费。
-- **「云原生 Flink 的成本怎么算？」**」** 答：存算分离 + 抢占式 Spot 实例 + 自动缩容，按实际使用计费；一般可比 YARN 模式降本 30%–50%。
+- **「Flink Reactive Mode 怎么用？」** 答：开启 ，配置  与 ，Flink 自动按 Slot 利用率扩缩容。
+- **「Kafka 缩分区怎么办？」** 答：先扩分区（如 12 → 24），做 partition reassignment 让数据均匀分布；老 consumer 自然迁移到新分区；老的 12 分区仍可消费但不再写入。
+- **「如何保证弹性时不丢数据？」** 答：① Flink 用 exactly-once + checkpoint；② Kafka 用  + 幂等 producer；③ 业务层做幂等消费。
+- **「云原生 Flink 的成本怎么算？」** 答：存算分离 + 抢占式 Spot 实例 + 自动缩容，按实际使用计费；一般可比 YARN 模式降本 30%–50%。
 
 **5. 参考资料**
 
@@ -109,10 +109,10 @@
 
 **4. 追问预测**
 
-- **「ClickHouse 内存熔断具体怎么配？」**」** 答：用 `max_memory_usage`（单查询）+ `max_memory_usage_for_user`（单用户）+ `max_server_memory_usage`（全集群）；超阈值查询被 kill，错误码 `MEMORY_LIMIT_EXCEEDED`。
-- **「ProxySQL 在 ClickHouse 上的角色？」**」** 答：ProxySQL 可做 SQL 路由、读写分离、慢查询拦截；ClickHouse 也有自己的 Proxy（内置）；自研 Gateway 更灵活。
-- **「如何熔断？」**」** 答：限流算法（令牌桶 / 漏桶）+ 熔断算法（滑动窗口 + 半开恢复）+ 优先级队列；用 Sentinel 做分布式熔断。
-- **「多租户 ClickHouse 怎么计费？」**」** 答：按扫描字节数 / CPU 时间 / 存储容量三维度计费；按租户生成账单；用 `system.query_log` 统计。
+- **「ClickHouse 内存熔断具体怎么配？」** 答：用 （单查询）+ （单用户）+ （全集群）；超阈值查询被 kill，错误码 。
+- **「ProxySQL 在 ClickHouse 上的角色？」** 答：ProxySQL 可做 SQL 路由、读写分离、慢查询拦截；ClickHouse 也有自己的 Proxy（内置）；自研 Gateway 更灵活。
+- **「如何熔断？」** 答：限流算法（令牌桶 / 漏桶）+ 熔断算法（滑动窗口 + 半开恢复）+ 优先级队列；用 Sentinel 做分布式熔断。
+- **「多租户 ClickHouse 怎么计费？」** 答：按扫描字节数 / CPU 时间 / 存储容量三维度计费；按租户生成账单；用  统计。
 
 **5. 参考资料**
 
@@ -190,10 +190,10 @@
 
 **4. 追问预测**
 
-- **「如何设计自愈的「**安全边界**」？」**」** 答：① 只对「**确定性强 + 可逆 + 影响小**」的操作自动化；② 自愈动作必须写审计日志；③ 必须有「**自动恢复（Auto-Rollback）**」机制。
-- **「AIOps 与传统运维的区别？」**」** 答：AIOps 用 ML 替代规则告警，覆盖更广；传统运维依赖人工经验阈值和 Runbook；AIOps 不是替代而是叠加。
-- **「混沌实验怎么做？」**」** 答：从「**测试环境 → 预发环境 → 生产小流量**」逐步放量；先小范围实验验证自愈；再扩大范围；任何生产混沌必须配回滚预案。
-- **「自愈效果怎么度量？」**」** 答：用「**MTTR（平均恢复时间）**」+「**自愈成功率**」+「**误愈影响**」三个指标持续跟踪。
+- **「如何设计自愈的「安全边界」？」」 答：① 只对「确定性强 + 可逆 + 影响小」的操作自动化；② 自愈动作必须写审计日志；③ 必须有「自动恢复（Auto-Rollback）**」机制。
+- **「AIOps 与传统运维的区别？」** 答：AIOps 用 ML 替代规则告警，覆盖更广；传统运维依赖人工经验阈值和 Runbook；AIOps 不是替代而是叠加。
+- **「混沌实验怎么做？」」 答：从「测试环境 → 预发环境 → 生产小流量**」逐步放量；先小范围实验验证自愈；再扩大范围；任何生产混沌必须配回滚预案。
+- **「自愈效果怎么度量？」」 答：用「MTTR（平均恢复时间）」+「自愈成功率」+「误愈影响**」三个指标持续跟踪。
 
 **5. 参考资料**
 
@@ -267,10 +267,10 @@
 
 **4. 追问预测**
 
-- **「Flink 反压怎么快速定位？」**」** 答：Flink Web UI 看 Subtask 反压状态；Metrics 看 `flink_taskmanager_network_buffer_pool`；从 Sink 反向追第一个不反压的 Subtask。
-- **「Kafka 消息丢失怎么办？」**」** 答：① 改 `acks=all`；② 改 Producer 幂等；③ 改 Consumer 手动 commit；④ 必要时从历史重放。
-- **「实时数据回补怎么？」**」** 答：① 找上游 Kafka 主题；② 按业务时间重放；③ 走幂等（Unique Key + Merge）；④ 验证下游数据。
-- **「怎么让实时故障早发现？」**」** 答：① 端到端延迟监控（上游事件时间 vs 下落库时间差）；② 反压 + Lag 实时告警；③ 质量分数实时计算。
+- **「Flink 反压怎么快速定位？」** 答：Flink Web UI 看 Subtask 反压状态；Metrics 看 ；从 Sink 反向追第一个不反压的 Subtask。
+- **「Kafka 消息丢失怎么办？」** 答：① 改 ；② 改 Producer 幂等；③ 改 Consumer 手动 commit；④ 必要时从历史重放。
+- **「实时数据回补怎么？」** 答：① 找上游 Kafka 主题；② 按业务时间重放；③ 走幂等（Unique Key + Merge）；④ 验证下游数据。
+- **「怎么让实时故障早发现？」** 答：① 端到端延迟监控（上游事件时间 vs 下落库时间差）；② 反压 + Lag 实时告警；③ 质量分数实时计算。
 
 **5. 参考资料**
 
@@ -353,10 +353,10 @@
 
 **4. 追问预测**
 
-- **「Session Cluster vs Per-Job Cluster 怎么选？」**」** 答：低延迟小作业用 Session（启动快）；大状态 / 关键作业用 Per-Job（隔离强）；混合用 Application Cluster。
+- **「Session Cluster vs Per-Job Cluster 怎么选？」** 答：低延迟小作业用 Session（启动快）；大状态 / 关键作业用 Per-Job（隔离强）；混合用 Application Cluster。
 - **冷存储怎么办？」** 答：用 Kafka MirrorMaker / Cluster Linking 做跨集群同步；ClickHouse 用 Distributed Table 做跨集群查询。
-- **「吵闹邻居（Noisy Neighbor）怎么解决？」**」** 答：① 限速（Quota）+ 限并发（Semaphore）；② 资源预留（Resource Reserve）；③ 大租户迁独立集群；④ 用 ClickHouse Resource Groups / Flink Slot 共享池。
-- **「多租户审计怎么做？」**」** 答：所有租户操作走统一审计（CloudTrail / Ranger Audit / Kafka Audit）；按 `tenant_id` 标记日志；用 SIEM 集中分析。
+- **「吵闹邻居（Noisy Neighbor）怎么解决？」** 答：① 限速（Quota）+ 限并发（Semaphore）；② 资源预留（Resource Reserve）；③ 大租户迁独立集群；④ 用 ClickHouse Resource Groups / Flink Slot 共享池。
+- **「多租户审计怎么做？」** 答：所有租户操作走统一审计（CloudTrail / Ranger Audit / Kafka Audit）；按  标记日志；用 SIEM 集中分析。
 
 **5. 参考资料**
 
@@ -431,10 +431,10 @@
 
 **4. 追问预测**
 
-- **「实时血缘与权限怎么联动？」**」** 答：① 实时血缘采集到「**某字段变更**」事件；② 权限系统订阅事件，自动重新评估下游访问策略；③ 若策略变更导致部分用户失去访问权限，自动通知。
-- **「ABAC vs RBAC 怎么选？」**」** 答：ABAC 按属性（用户属性 + 数据属性 + 环境属性）动态授权，适合复杂场景；RBAC 按角色，简单直接。湖仓场景常用「**RBAC + ABAC 组合**」——核心权限 RBAC，动态场景 ABAC。
-- **「动态策略够不够用？」**」** 答：动态策略（OPA / Cedar）足够灵活，但必须配策略版本 + 变更审计 + 测试框架，否则策略失控。
-- **「灵活性与安全性怎么量化？」**」** 答：用「**自助服务上线时间**」（灵活性）+「**安全事件数**」（安全性）两个指标跟踪。健康平台两者都低。
+- **「实时血缘与权限怎么联动？」」 答：① 实时血缘采集到「某字段变更**」事件；② 权限系统订阅事件，自动重新评估下游访问策略；③ 若策略变更导致部分用户失去访问权限，自动通知。
+- **「ABAC vs RBAC 怎么选？」」 答：ABAC 按属性（用户属性 + 数据属性 + 环境属性）动态授权，适合复杂场景；RBAC 按角色，简单直接。湖仓场景常用「RBAC + ABAC 组合**」——核心权限 RBAC，动态场景 ABAC。
+- **「动态策略够不够用？」** 答：动态策略（OPA / Cedar）足够灵活，但必须配策略版本 + 变更审计 + 测试框架，否则策略失控。
+- **「灵活性与安全性怎么量化？」」 答：用「自助服务上线时间」（灵活性）+「安全事件数**」（安全性）两个指标跟踪。健康平台两者都低。
 
 **5. 参考资料**
 
@@ -527,10 +527,10 @@
 
 **4. 追问预测**
 
-- **「Prometheus vs InfluxDB 怎么选？」**」** 答：Prometheus 适合短保留 + 多维标签 + 拉模式；InfluxDB 适合长保留 + 时序聚合 + 推模式。超大规模建议 Prometheus + Thanos（长保留）。
-- **「Flink Metrics Reporter 怎么接 Prometheus？」**」** 答：Flink 自带 Prometheus Reporter；通过 `flink-conf.yaml` 配置 `metrics.reporter.prom.factory.class`；Prometheus 拉取 9249 端口。
-- **「如何避免告警风暴？」**」** 答：① 告警聚合（同根因合并）；② 告警抑制（上下游）；③ 告警静默（维护窗口）；④ 动态阈值（分位数）。
-- **「监控系统的可观测性本身怎么监控？」**」** 答：用 Meta Monitoring（监控监控系统）：Prometheus 自监控 + AlertManager 自监控 + 演练告警。
+- **「Prometheus vs InfluxDB 怎么选？」** 答：Prometheus 适合短保留 + 多维标签 + 拉模式；InfluxDB 适合长保留 + 时序聚合 + 推模式。超大规模建议 Prometheus + Thanos（长保留）。
+- **「Flink Metrics Reporter 怎么接 Prometheus？」** 答：Flink 自带 Prometheus Reporter；通过  配置 ；Prometheus 拉取 9249 端口。
+- **「如何避免告警风暴？」** 答：① 告警聚合（同根因合并）；② 告警抑制（上下游）；③ 告警静默（维护窗口）；④ 动态阈值（分位数）。
+- **「监控系统的可观测性本身怎么监控？」** 答：用 Meta Monitoring（监控监控系统）：Prometheus 自监控 + AlertManager 自监控 + 演练告警。
 
 **5. 参考资料**
 

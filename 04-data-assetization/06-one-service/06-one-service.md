@@ -241,7 +241,7 @@ GET /api/v1/metric/gmv?dim=date&filter=is_new_user:true,city:beijing&time_range=
 
 1. **行级权限**：WHERE 条件按用户权限过滤。
 2. **列级权限**：敏感字段脱敏。
-3. **指标级权限：禁止访问某些指标。
+3. **指标级权限：禁止访问某些指标。**
 
 ### 2.4 与相邻概念的关系
 

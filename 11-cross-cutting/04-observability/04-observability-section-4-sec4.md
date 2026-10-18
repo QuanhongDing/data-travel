@@ -1,526 +1,336 @@
-> 本文件是 **04-observability.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](04-observability.md)。
+> 本文件是 **04-observability.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3 设计模式与范式](04-observability-section-3-sec3.md) 里选定的做法装进一个真实组织：顺序、判据、产物、存量迁移与退出条件。完整章节请回到 [index](04-observability.md)。
 
 ## 4. 工程实现
 
+§3 回答的是「选哪一种判定方式、它的成本记在谁账上」；本节回答另一个问题：**在你已经选定之后，怎么把它装进一个已经有调度、有存量表、有值班表的组织里**。因此每一步都写成三件东西——**产物**（这一步结束时手上多出来的、可被检查的东西）、**判据**（怎么在做的过程中发现自己偏了）、**为什么必须这一步**（顺序理由：省掉它会让后面哪一步返工）。
+
+本文件对两类读者分开写：**从零搭建**的读者按 4.1 的顺序走一遍即可；**在存量上改造**的读者（多数团队属于这一类，因为调度、监控、资产清单大多已经在跑）先读 4.4 把历史资产分类，再回到 4.1 只做与选中类别有关的那几步——否则会在成千上万张无人读取的冷表上平均用力，把预算花光，却没有一行告警落到关键资产上。4.2 给技术点与其失效条件，4.3 给选型判据，4.5 给可套用的模板，4.6 给一份必须动了系统才有答案的自检清单。
+
 ### 4.1 落地步骤
 
-**Step 1：指标体系建设（2-4 周）**
+**Step 1：指标体系建设（2–4 周【经验：随首批纳入的核心表数量变，也随采集是否读数据内容而变——只读产出元信息的采集可以按天铺开，读内容的采集要按周算】）**
 
-1. 定义五大支柱指标（Freshness / Volume / Schema / Quality / Lineage + Distribution）。
-2. 为每张核心表配置指标采集。
-3. 接入时序存储（Prometheus / TSDB）。
-4. 配置可视化（Grafana / 自研看板）。
+1. 定义五大支柱指标（Freshness / Volume / Schema / Quality / Lineage + Distribution），并为每一个写下它的**判定单元**（表级还是字段级）与采集口径。
+2. 为每张核心表配置采集：只读产出元信息的（最大更新时间、行数）先全量铺开；读内容的（空值率、唯一率、分位数）只铺在关键字段上。
+3. 接入时序存储（Prometheus / 自研 TSDB），标签里必须带 `asset_id`（`db.table` 或 `db.table.column`）。
+4. 配置可视化（Grafana / 自研看板）：每张核心表一页，先让人能手工看到「这张表昨天几点出的、出了多少行」。
 
-**Step 2：异常检测（2-4 周）**
+- **产物**：一份**指标字典**（指标名 / 判定单元 / 是否读内容 / 采集频率 / 归属 Owner），加一个能按表名查到最新值的看板。字典是后面所有步骤的共同坐标——异常检测从它取序列，告警从它取标签，血缘从它取 `asset_id`。
+- **判据**：抽 3 张核心表【经验：抽样数量随核心表规模调整，规模大时按业务域各抽一张】，把看板上的 freshness 与自己登录仓库跑一次 `MAX(update_time)` 的结果对齐——差值应当等于采集延迟，而不是零误差（差出量级说明两边的时间口径不是同一个时钟）；再挑 1 张当天应当产出、实际没产出的表【经验：1 张即够，这一步验证的是「无数据」会不会被发现，不是覆盖率】，看它显示为「逾期」还是显示为「无数据」，后者说明面板在故障时是静默的。
+- **为什么必须这一步，以及为什么在第一位**：**它是唯一一步只需要只读权限的**。先把只读的那层铺出来，付出去的是查询账单，出错也只是看板难看，不动生产写入。若先做告警或自动修复，你会在没有资产标识、没有判定单元的情况下开始写规则，而那份规则到 Step 2 必须重写一遍。
 
-1. 静态阈值（关键规则）。
-2. 动态阈值（3-sigma / IQR）。
-3. ML 异常检测（孤立森林 / Prophet / LSTM-AE）。
-4. 异常分级（P0/P1/P2/P3）。
+**Step 2：异常检测（2–4 周【经验：静态阈值可以几天上线，基线类要等历史窗口攒够，模型类还要一轮调参与回放】）**
 
-**Step 3：告警与 oncall（2-4 周）**
+1. 静态阈值（关键规则）：先给「绝对不能不适时产出」的那几张表写上固定阈值，作为底线。
+2. 动态阈值（3-sigma / IQR）：在同一条历史序列上做窗口统计，历史点数不足一个窗口时不出判定——这正是新表头几周只有规则可用的机制原因【经验：这段冷启动期的长度等于窗口长度，随产出频率与节律稳定性变】。
+3. ML 异常检测（孤立森林 / Prophet / LSTM-AE）：孤立森林吃多列拼成的矩阵（freshness + row_count + 空值率），Prophet 与 LSTM-AE 吃单条长序列。
+4. 异常分级（P0 / P1 / P2 / P3【经验：级别数与各级门槛随组织的值班能力变；值班人数少时要合并级别，否则每一级都没有明确的接收人】）。
 
-1. 告警路由（钉钉 / 飞书 / PagerDuty）。
-2. oncall 排班（Follow-the-sun）。
-3. Runbook（每个告警的处置手册）。
-4. MTTR 度量与复盘。
+- **产物**：一张**判定规则表**——每行写明判哪个指标、判定单元、方法（静态 / 基线 / 模型）、当前阈值或基线窗口、这条规则触发时叫醒谁。分级定义写在最后两列里，和规则同一张表；单独写的那份分级文档没有人会去更新。
+- **判据**：做两次回放。第一次把最近一次真实事故当天的时间序列喂进判定链，看它是否在业务方打电话之前触发；第二次把一次大促日喂进去，看它触发了几条、其中几条是真的【经验：可接受的误报比例随值班承受力变，先记录基线，不要一开始就设目标】。两次都做了才算这一步做对；只做第一次，你会得到一套「很灵敏」的判定链。
+- **为什么必须这一步，以及为什么必须在告警之前**：因为**阈值上线后第一次被半夜叫醒的是谁，决定了这条阈值下一次会被改多松**。分级与接收人没定完就开告警，第一周会全部消耗在解释「这条为什么叫我」上，之后团队的动作是整体调松阈值；一次调松之后，想把灵敏度调回来要重走一遍信任建设。
 
-**Step 4：血缘集成（4-8 周）**
+**Step 3：告警与 oncall（2–4 周【经验：随要覆盖的告警条数与 Runbook 涉及的处置动作数而变】）**
 
-1. 自动血缘采集（OpenLineage / DataHub）。
-2. 血缘可视化（字段级）。
-3. 血缘 + 指标联动（异常 → 血缘定位 → 通知上游）。
-4. 影响分析（上游变更 → 下游感知）。
+1. 告警路由（钉钉 / 飞书 / PagerDuty）：P0 走能叫醒人的通道，P1 走即时消息，P2 走工单或邮件。
+2. oncall 排班（Follow-the-sun）：排出值班表，并把「哪条告警归哪个组」的映射写上，映射的落点是**能改上游产出的人**。
+3. Runbook：每条告警一页，写清触发条件、第一步查什么（给具体查询，不给方向）、谁有权改上游、什么条件下升级。
+4. MTTR 度量与复盘：把从触发到恢复的时间按告警类型分组统计。
 
-**Step 5：智能化升级（4-8 周）**
+- **产物**：一张值班表（含告警到人的映射）+ 每条告警对应的 Runbook + 每周统计的 MTTD / MTTR。
+- **判据**：抽 3 条 P0 / P1 告警【经验：抽样要覆盖到最高级别】，让当周值班的人在**不看文档**的前提下口述处置的前三步；口述不出来的那条，其 Runbook 视为不存在。再逐条核对：这条告警的接收人是否在值班表里，以及这个人有没有改上游产出的权限。
+- **为什么必须这一步**：它是唯一一步**先要有人认领、才谈得上技术**的。Step 2 的判定链可以在没有主人的情况下跑得很好——正因为如此，「这条告警其实没有人负责」会被一直掩盖，直到某个半夜群里没有人应。顺序上它还必须排在 Step 4 之前：血缘能算出影响面，却算不出「这次回滚由谁批」；没有按人认领的映射，血缘接进来之后只是把同一份清单又发给了同一群人。拖到 Step 5 再补，Agent 的第一个回滚动作就要临时找审批人——而审批人不在值班表上时，那个动作只能被跳过。
 
-1. 接入 AIOps（异常自动归因）。
-2. LLM 辅助（自然语言查询异常、生成 Runbook）。
-3. Agent 自动修复（试点）。
-4. RAG 集成（业务方自助查询）。
+**Step 4：血缘集成（4–8 周【经验：随要接入的作业类型与数据源数量而变，脚本任务与动态 SQL 会显著拉长】）**
 
-**Step 6：SLA 与流程（持续）**
+1. 自动血缘采集（OpenLineage / DataHub）：优先从作业定义与查询日志里解析，人工只做补充与校正；解析不出来的（动态 SQL、脚本任务）单独打标挂账，不要静默跳过。
+2. 血缘可视化（字段级）：先做到表级能查，再逐批补到字段级；哪一批先补，由「这个字段有没有下游指标」决定。
+3. 血缘 + 指标联动：告警触发时自动带出上游与下游清单，而不是让人另开一张图去查。
+4. 影响分析：把上游变更的影响面查询接到发布流程上，让人在改之前能看到清单。
 
-1. 与业务方谈 SLA。
-2. 月度 SLA 评审。
-3. Postmortem 文化。
-4. 度量指标：覆盖率、MTTD、MTTR、误报率。
+- **产物**：一张可查询的依赖关系表（表 → 下游表、字段 → 下游字段）+ 改造过的告警模板（每条告警自带上下游）。后者是这一步唯一能被值班员感知到的产出。
+- **判据**：抽 3 条最近一周的告警【经验】，看接收人手里有没有上下游清单——若值班员还要自己开另一个系统查依赖，说明血缘只接进了图，没接进告警通路。再在测试环境手工改一个字段名，看影响面清单是否包含引用该字段的下游指标与看板，而不只是下游表名。
+- **为什么必须这一步，以及为什么排在这里**：它的输入是前三步的产出——指标给它要标注的资产，告警给它要收敛的根因。排在更前面，血缘会因为没有消费者而变成一张没人打开的图；放得更晚，Step 2 的分级路由会把同一个根因发给 N 个团队，值班会在第一周就失去对分级的信任。
+
+**Step 5：智能化升级（4–8 周【经验：判定链数周内可试点，归因链要等血缘覆盖可度量，处置链在回滚条件验证通过前不要开】）**
+
+1. 接入 AIOps（异常自动归因）：在血缘图上做反向遍历与概率排序，输出候选根因列表，而不是一句结论。
+2. LLM 辅助（自然语言查询异常、生成 Runbook）：把异常上下文与血缘片段交给模型生成初稿，Runbook 由值班员改定后入库。
+3. Agent 自动修复（试点）：先只开白名单动作（重跑、回刷、通知），每个动作必须有幂等保证与回滚条件。
+4. RAG 集成（业务方自助查询）：把告警记录、Runbook、血缘与指标字典建成检索库，让业务方自己问「这张表昨天为什么慢」。
+
+- **产物**：一份**归因正确率的记录**（每次归因后回头标注对不对）+ 一份**自动动作白名单**（每个动作带幂等说明、回滚命令、允许的最大影响面）+ 一套业务方自助查询的检索库。
+- **判据**：把过去 10 次已结案的事故【经验】喂进归因链，人工核对正确答案是否落在 Top-3【经验：K 随候选列表的长度与人工核对成本变】里；再让 Agent 在预发环境执行一次白名单动作并执行回滚，回滚失败的动作从白名单里删掉。**归因正确率没被记录过、回滚没被执行过一次，就不要开处置链**——判定错了只是误报，处置错了是改坏生产。
+- **为什么必须这一步，以及为什么排在血缘之后**：归因链在血缘不全时为什么比没有结论更贵，是模式本身的失效条件，见 [§ 3](04-observability-section-3-sec3.md) §3.2.5；这里只说实施期的两个顺序理由。其一，它要等 Step 4 把上下游清单接进告警模板之后再进来——否则同一次事故会在告警里和归因结论里各给一套上下游，值班得先花时间判断该信哪一套。其二，它要等 Step 3 先把值班员用起来：判定链此时已经能回答「哪张表不对」，告警路由也已经把这件事交到一个有权改上游的人手上，归因链在此刻错了，代价只是那个人多查一条线索；而如果它先于判定链成为值班的入口，等血缘补全再想把它降回「参考」，要重新说服已经用过它的那批人。它也不替代任何前序步骤：归因链的输入是前四步产出的指标、事件与图，换模型换不掉输入，所以这一步的任何升级都排在补血缘之后而不是替代补血缘。这一步还带来一个前四步都没有的产物要点——**归因正确率的记录要有人真的填**：每次结案后由当周值班员回填「Top-3 里有没有正确答案」与「按候选排查多花了几小时」两列，两列填不出人名的，说明这条链还没有使用者，关掉它比继续跑更省。
+
+**Step 6：SLA 与流程（持续，无终点）**
+
+1. 与业务方谈 SLA：SLI 定在业务方能感知的量上（「报表几点能出、数据对不对」），不是「平台发了多少条告警」。
+2. 月度 SLA 评审：固定议程——错误预算消耗、破线事件、误报率、下月的例外申请。
+3. Postmortem 文化：复盘只追机制、不追人，每条复盘产出一条可执行的改造项。
+4. 度量指标：覆盖率、MTTD、MTTR、误报率——四个一起度量。只度量其中一个都会把系统推向畸形：只度量 MTTR 会把告警关掉，只度量覆盖率会让面板变绿。
+
+- **产物**：对外公布的 SLI / SLO（含错误预算）+ 月度评审的固定议程 + 错误预算耗尽后的处置约定（冻结哪些变更、谁有权批例外）。
+- **判据**：取上一个月，把错误预算的消耗与实际发生的事故对齐。若「预算没耗尽但业务方投诉过」，说明 SLI 选的不是用户感知的那个量【推算：错误预算 = 1 − SLO，SLO 取 99.9% 时月度可破线时间约为 30 天 × 24 小时 × 60 分钟 × 0.1% ≈ 43 分钟——用这个尺子去比对上月实际破线时长，就能看出 SLI 是否选错】；若预算经常提前耗尽，说明 SLO 定在市场买不到的水平上。
+- **为什么必须这一步**：它是唯一一步没有终点的。前五步的产物——阈值、Runbook、白名单——都是人写下的，会随人员轮换而失效；SLA 评审是把它们变成「有日期、有主持人、有结论」的约定的唯一机制。
+
+**最常被跳过的是 Step 3 的 Runbook 与 Step 2 的分级定义**（两者通常被合并成一句「先上告警再说」）。它不会在第一周出问题——第一周大家都新鲜，都会看一眼。第一个症状通常出现在**第一次人员轮换或第二次大促**【经验：具体时点随组织的轮换节奏与业务活动频率变】：阈值被整体调松、告警群被静音，而没有人记得当初为什么把那条 P0 定在 3σ 上。届时手上剩下的是一堆指标，而不是一套能被人接手的判定。
 
 ### 4.2 关键技术点
 
-**1. 指标采集架构**：
+**1. 指标采集架构**
+
+- **做法**：按 `asset_id` 建标签，把五大支柱各注册成一条时序（`data_freshness_seconds` / `data_volume_rows` / `data_quality_rate` / `data_schema_columns` / `data_distribution_psi`）；单值类用 Gauge，分布类用 Histogram；采集函数在一次遍历里读元数据、算指标、写入（骨架见 4.5 模板 2）。
+- **机制**：因为标签在设计上就等于资产标识，**告警表达式只需写一次就能作用于全部资产**——这是「新建一张表不需要新建一条告警规则」的原因；反过来，标签基数（资产数 × 字段数 × 指标数）直接决定时序库的内存与索引开销，字段级指标一旦全量铺开，同一套采集代码的代价会跳一个量级。
+- **失效条件**：**当每轮写入的点数逼近所选时序库单实例的写入与索引预算时，监控会先在自己身上失效**。症状是面板出现数据空洞、查询超时，而值班看到的第一个信号不是「某张表异常」，而是「看不到任何表」——故障从数据侧转移到了观测侧。判据：算一次「资产数 × 字段数 × 指标数 ÷ 采集周期」，与所选时序库官方文档给出的写入速率和活跃序列上限对齐。
+- **档位**：【经验：标签基数与写入点数的量级随所选时序库的容量模型变化，本节不给具体数值，请以该时序库官方文档当前版本为准】
+
+**2. 异常检测引擎**
+
+- **做法**：在同一份历史序列上叠三种检测器——3-sigma（|x − μ| > 3σ）与 IQR 用于单变量，历史点数不足一个窗口时不出判定；孤立森林用于多列拼成的矩阵；PSI / KS 用于分布漂移。检测器输出布尔值或异常分，再由 4.1 Step 2 的规则表映射到 P0–P3。
+- **机制**：因为检测器读的是自己写下的历史序列而不是数据内容，**在同一张表上叠加更多算法不会增加采集成本**——这让「先上多种算法、后调灵敏度」这条实施路径成立。代价是这些算法从同一段历史学基线，**会在同一次节律变化上同时失效**：误报不是互相独立的事件，所以「多上几个模型投票」并不能降误报。
+- **失效条件**：**当历史窗口跨越了一次业务节律变化（改版、大促、上新、季节性活动）时，窗口会把变化前的节律当成「正常」**——表现为告警条数与业务活动日历同形：最忙的那天报一片，最该报的那天什么也不报。判据：把最近一个月【经验：窗口取一个完整业务周期，至少要跨过一次大促或月末结算】的告警条数按天画出来、叠上业务活动日历，两者同形即说明基线里混进了节律；此时的修法是一次跨团队交接——由维护业务日历的那一方（通常是运营或交易团队）把大促与月末结算的日期表交出来，基线按这张日历分段重算，值班手册里写的应该是「大促期间看哪一段基线」，而不是一条被临时放宽、事后没人改回去的阈值。
+- **档位**：【经验：历史窗口先按覆盖一个完整业务周期取（例如四周），再按产出频率与节律稳定性调整；冷启动期判不出来的那段长度由窗口长度决定，不另给固定值】。3-sigma、IQR、孤立森林、PSI 与 KS 均为通用统计与机器学习方法【公开：统计学与机器学习教科书中的通用方法，不属于任何厂商专有技术】。
+
+**3. 告警分级与路由**
+
+- **做法**：分级写在告警规则的标签上（`severity: P0/P1/P2/P3`），路由写在路由段里（P0 → 能叫醒人的通道，P1 → 即时消息，P2 → 工单 / 邮件）；分组键取 `alertname + team`，各分级的重复间隔分别设置（YAML 骨架见 4.5 模板 3）。
+- **机制**：因为分级写在规则上而不是路由上，**改一条告警的级别不需要动路由配置**，分级因此可以被逐条修订而不引发路由回归；因为分组键里带了团队，同一根因在被血缘收敛之后只会叫醒一个组（收敛关系见 [§ 3](04-observability-section-3-sec3.md) §3.4 的组合二），N 个下游不会变成 N 次叫醒。**接收人是不是真的有权改上游，是这一层唯一无法自证的约束**——路由配置永远配得成功，配错的时候配置本身也不报错；这条约束怎么落成一张「告警 → 人」的映射表、以及谁来维护它，见 4.1 Step 3。
+- **失效条件**：**当「建表的团队」与「产出数据的团队」不是同一个时**（数据平台建表、业务团队写数据，或跨 BU 依赖），分组键里的 `team` 会把告警稳定地发到没有写权限的那一组——症状是每条 P0 都在两个群之间被转一次，而转群的时间被算进了 MTTR。判据：抽上周 10 条 P0【经验】，统计从触发到有人第一次回应的转群次数，转群次数为零才说明归属对了。
+- **档位**：【经验：P1 的重复间隔从小时级起步，随该级别故障的可容忍时长与值班人数调整；P0 的 `for` 时长应短于你对外承诺的 MTTD】
+
+**4. 根因分析（基于血缘）**
+
+- **做法**：把依赖关系读成 `{节点: [(上游, 边类型)]}`，从异常节点反向遍历，遇到没有上游的节点即记为一个根因候选，按距离排序取前 K 个（骨架见 4.5 模板 5）；深度上限是一个显式参数，不是一个隐藏在代码里的默认值。
+- **机制**：因为图是持久的、深度上限是参数，**同一次事故可以在不同上限下重跑、得到不同粒度的候选列表**——先用浅深度给出「最近的可疑上游」让人立刻动手，再用深深度兜底。这条性质只有一个前提：图是无环的。一旦依赖里出现环（A 的产出被回灌进 B，B 又喂回 A），「没有上游的节点」可能根本不存在，遍历会走满上限后返回空列表——症状是「归因什么都没给」，而不是「归因给错了」。
+- **失效条件**：**当血缘的边只做到表级时，反向遍历会在第一个共享的上游表停下**，那张被上百个字段引用的宽表会被报成根因。症状很具体：归因结论长期停在「源头表」，而真正的变更（某个字段的口径或类型）从未出现在候选列表里。判据：拿一次已经查清的事故跑一遍，看正确答案是否在 Top-K 内；不在，是粒度不够，不是排序算法不够好。
+- **档位**：【经验：深度上限按自身链路的典型层数取，量级为个位数到十几；K 随候选列表的人工核对成本调整】
+
+### 4.3 工具链与平台
+
+下表按「你缺的是哪一层」分类。每一类给候选、选型判据（在什么约束下选哪个）与不选它的代价。产品名只列明确存在且仍在演进的那些；各家能力与计费口径请以官方文档当前版本为准。
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 指标与时序 | Prometheus、Grafana、自研看板 | 判定单元是「表 + 批次」、采集只读产出元信息时选自建时序：成本随表数走，标签基数可控，且不把数据送出边界 | 为这一层另外买 SaaS，等于为已有能力付第二份钱，而采集查询仍然跑在自己的仓库上 |
+| 规则式数据质量 | Great Expectations、Soda Core / Soda Cloud、Apache Griffin | 失效属于「你已经想到的那类」、且必须上线当天生效时选它；规则与转换同源时（dbt tests 一类）维护成本最低 | 只靠规则，覆盖率上限等于规则条数；表多且口径各自为政的组织写不过来 |
+| 元数据与血缘 | DataHub、Apache Atlas、OpenLineage、Marquez | 失效以「结构变了 / 依赖没了 / Owner 走了」为主、且要覆盖全量资产时选事件驱动的元数据平台；OpenLineage 是一份事件契约，需要有消费方 | 拿元数据平台当可观测平台用：面板上会长出覆盖率与变更记录，却不回答「这批数据对不对」 |
+| 商业数据可观测 SaaS | Monte Carlo Data、Bigeye、Anomalo、Mona、Soda Cloud、Univocity、Datafold | 团队没有历史基线、也不想养采集与检测工程，且数据落在以只读查询为接口的云数仓上时选它——冷启动接近零 | 自己从零攒基线要等满一个业务周期才有判定，这段空窗没有任何覆盖；反过来，定制表占比高时它报的不是要紧的 |
+| 告警路由与值班 | PagerDuty、钉钉、飞书 | 按「这条告警需不需要叫醒人」选通道；P0 通道必须能穿透静音与免打扰 | 把 P0 发进普通群聊，等于把 MTTD 交给别人的在线状态 |
+| AI / LLM 应用可观测 | Datadog AI Observability、New Relic AI、Langfuse、LangSmith、Arize Phoenix | 被观测对象本身就是 LLM 应用（检索质量、调用链、Token 成本）时选它；与被观测应用同栈可以省掉自建埋点 | 用数据侧指标观测 LLM 应用，会漏掉检索质量与调用失败，而这两个恰是它最常见的失效 |
+| 智能化升级能力 | Monte Carlo + RAG、Mona AI Quality Copilot、Anomalo Autonomous | 告警产出速度已超过人工分诊速度、且血缘覆盖可度量时，先开判定链与收敛，再谈归因 | 在血缘不可信时开归因，得到的是自信的错误方向；在回滚未验证时开处置，事故不可逆 |
+
+最容易误选的是把**元数据与血缘平台**当成**可观测性平台**来采购或部署。它们在装完之后都会长出漂亮的资产页、覆盖率统计与变更记录，看起来已经「有了可观测性」；但判定输入是事件不是值，业务方问的「昨天这张表算得对不对」仍然无人回答——而这个问题的输入是指标与基线。判据在装完后的第一次资产盘点里就能拿到：**资产页上「最新产出时间」这一列，是元数据平台推出来的，还是指标采集算出来的？** 只有前者时，它回答的是「谁改了这张表」，答不出「它昨天几点出的、出了多少行」——当初想靠指标与基线补上的那一层仍然空着，而采购的预算已经花在了资产页上。
+
+第二容易被误选的是**为「字段级全覆盖」选方案**。字段级指标会让标签基数与账单同步上一个量级，而真正出问题的往往集中在少数字段上；先做「结构事件覆盖全部字段 + 内容指标只覆盖关键字段」，比反过来更早看见故障。
+
+### 4.4 存量迁移
+
+存量改造和从零搭建的分岔点在第一步：从零搭建可以自由定义资产标识与判定单元，存量改造只能先去**已经存在的系统里**把事实抽出来。以下五段按执行顺序写。
+
+**① 先做只读的那一层，并保证它是可回退的**
+
+第一个动作不是装平台，是把既存信息抽出来：调度系统的作业依赖、查询日志里的读写关系、元数据库里的表与字段。这三样都是既成事实，读它们不改变任何生产行为。同时只为**已经排进值班范围的表**（也就是有人会为它的产出负责的那些）开采集。
+
+- **可回退**的含义要落到具体动作：把采集器关掉、看板删掉，生产侧没有任何东西需要回滚。这一点反过来决定了第一步的选型——任何需要改作业、加钩子、动调度的做法都不该放在第一步。
+- **判据**：把抽出来的资产清单与调度系统里实际在跑的任务做一次对账，抽 10 张表【经验：抽样数量按清单规模取，规模大时按业务域分层抽】，看有没有多出来的（已下线仍在清单里）与漏掉的（在跑但没进清单）。两者都为零再继续。
+
+**② 历史资产三分类，不是全部返工**
+
+| 类别 | 识别判据（可执行） | 处理方式 | 为什么这样分 |
+| --- | --- | --- | --- |
+| A 关键在役 | 近 90 天【经验】有下游作业读写、有 Owner、有对外承诺的产出时间 | 全部返工：补登记（Owner / 口径 / 产出时间）+ 接指标 + 接血缘 + 进告警路由 | 这类资产的事故有明确受害者，投入能立刻被衡量 |
+| B 在役但无明确下游 | 近 90 天【经验：与 A 行同口径，随数据生命周期与行业合规要求调整】有产出，但查询日志里找不到下游作业，也没有人认领 | 打标挂账：在检索与资产清单里显式标注「未治理」，只接最小元数据采集（新鲜度 + 行数），不写规则、不进 P0 告警 | 给它配全套等于把预算摊薄到没有受害者的资产上 |
+| C 冷表 / 归档 | 近 90 天既无写入也无读取【经验：窗口随数据生命周期与行业合规要求调整】 | 挂账 + 显式排除：不接采集，但在覆盖率的分母里单列 | 冷表接采集会持续产生「无数据」类噪声，而这类噪声会把真故障淹没 |
+
+分类的动作必须在**资产清单里落成字段**（一列 `治理状态`），不能只停留在会议结论上：后面每一次覆盖率统计、每一次盘点都会重新问一遍同样的问题。
+
+**③ 双轨怎么维持、维持多久**
+
+迁移期的双轨不是「新旧两套平台并行」，而是**两套判定并行、只有一套能叫醒人**：
+
+- 老一套（人工规则 / 既有脚本）继续承担告警；新一套只记录、不告警，两边结果都存下来做逐条比对。
+- 双轨的时长不按日历定，按**覆盖证据**定：当新判定在回放中已经覆盖老规则能发现的所有事故类型，且老规则每一次被触发时都能找到对应的新判定条目，才具备退出条件。
+- 双轨的真实成本有两块：**两份账单**（采集与存储），以及**值班要知道半夜响的是哪一套**。后者更贵，所以双轨期越短越好，并且必须在值班手册里写明「本轮只有老一套叫醒人」——不写清楚，值班会同时响应两套，MTTR 反而上升。
+
+**④ 什么信号说明可以退出双轨**
+
+四条同时成立才退：
+
+1. **回放通过**：把过去三个月【经验：窗口至少覆盖一次大促或月末结算】的告警日志逐条标注「新判定会不会也报」，没有被老规则抓到而新判定漏掉的类型。
+2. **误报已被分类**：误报率在可接受范围内，并且误报的形态已被归到「节律类 / 采样类 / 阈值类」三类之一——未分类的误报会在大促时集中爆发。
+3. **归属已确认**：要保留的每条告警都有一个人认领，且这个人有权改上游产出。
+4. **老规则有明确去向**：每条规则要么迁移到新判定、要么降级为兜底规则、要么删除。不允许「先留着」——留下的是无人维护的规则，它们会持续产生噪声并消耗团队对整套系统的信任。
+
+**⑤ 有些东西可以永远不迁移**
+
+冷表、归档表、一次性分析产物不接检测，是合理选择。前提是**它们的状态被显式标注**：在资产清单与检索结果里写明「未接入监控」，并让覆盖率的分母把它们单列。不标注的代价不是「漏监控」，而是**治理注意力被持续消耗**——每次资产盘点都要重新判断一次这些表要不要管，而这个判断每年都要重做一遍。
+
+### 4.5 模板 / 示例
+
+**模板 1：指标字典（Step 1 的产物）**
+
+| 指标名 | 判定单元 | 是否读内容 | 采集频率 | 归属 Owner | 告警级别 |
+| --- | --- | --- | --- | --- | --- |
+| freshness | `db.table` | 否 | 按调度节律 | 产出方 | 待定 |
+| row_count | `db.table` | 否 | 按调度节律 | 产出方 | 待定 |
+| null_rate | `db.table.column` | 是（仅关键字段） | 按业务周期 | 产出方 | 待定 |
+
+**怎么用**：前三列必须填。判定单元决定这条指标最多能定位到哪一级（表级查不出「哪个字段错了」）；「是否读内容」决定采集的账单形状，不填这一列，容量规划无从谈起。最后一列先留空，等 4.1 Step 2 的分级定下来再回填。
+
+**模板 2：采集与检测骨架（Python，示例：完整可观测性平台）**
 
 ```python
-# metrics_collector.py
-# 采集五大支柱指标
-from prometheus_client import Gauge, Histogram
-
-freshness_gauge = Gauge(
-    'data_freshness_seconds',
-    'Data freshness in seconds',
-    ['database', 'table', 'column']
-)
-
-volume_gauge = Gauge(
-    'data_volume_rows',
-    'Number of rows',
-    ['database', 'table']
-)
-
-quality_gauge = Gauge(
-    'data_quality_rate',
-    'Data quality metric rate (0-1)',
-    ['database', 'table', 'column', 'metric_type']
-)
-
-schema_gauge = Gauge(
-    'data_schema_columns',
-    'Number of columns',
-    ['database', 'table']
-)
-
-distribution_gauge = Gauge(
-    'data_distribution_psi',
-    'Population Stability Index (PSI)',
-    ['database', 'table', 'column']
-)
-
-
-def collect_metrics(table_metadata):
-    db, table = table_metadata.database, table_metadata.table
-    
-    # Freshness
-    last_update = get_last_update_time(db, table)
-    freshness = (now() - last_update).total_seconds()
-    freshness_gauge.labels(db, table, '*').set(freshness)
-    
-    # Volume
-    row_count = get_row_count(db, table)
-    volume_gauge.labels(db, table).set(row_count)
-    
-    # Quality
-    for column in table_metadata.columns:
-        null_rate = compute_null_rate(db, table, column)
-        unique_rate = compute_unique_rate(db, table, column)
-        quality_gauge.labels(db, table, column, 'null_rate').set(null_rate)
-        quality_gauge.labels(db, table, column, 'unique_rate').set(unique_rate)
-    
-    # Schema
-    schema_gauge.labels(db, table).set(len(table_metadata.columns))
-    
-    # Distribution
-    for column in table_metadata.numeric_columns:
-        psi = compute_psi(db, table, column)
-        distribution_gauge.labels(db, table, column).set(psi)
-```
-
-**2. 异常检测引擎**：
-
-```python
-# anomaly_detection.py
-from sklearn.ensemble import IsolationForest
+# collect_and_detect.py —— 五大支柱采集 + 3-sigma 判定
+# Prometheus 客户端与孤立森林的接口以各自官方文档当前版本为准
+from prometheus_client import Gauge, start_http_server
 import numpy as np
 
-class AnomalyDetector:
-    def __init__(self):
-        self.iso_forest = IsolationForest(contamination=0.01)
-        self.is_trained = False
-    
-    def detect_3sigma(self, history: list, current: float) -> bool:
-        """3-sigma 检测"""
-        if len(history) < 30:
-            return False
-        mean = np.mean(history)
-        std = np.std(history)
-        return abs(current - mean) > 3 * std
-    
-    def detect_iqr(self, history: list, current: float) -> bool:
-        """IQR 检测"""
-        if len(history) < 30:
-            return False
-        q1, q3 = np.percentile(history, [25, 75])
-        iqr = q3 - q1
-        return current > q3 + 1.5 * iqr or current < q1 - 1.5 * iqr
-    
-    def detect_with_ml(self, history_matrix: np.ndarray) -> list:
-        """孤立森林检测（多维）"""
-        if not self.is_trained:
-            self.iso_forest.fit(history_matrix)
-            self.is_trained = True
-        predictions = self.iso_forest.predict(history_matrix)
-        # -1 = 异常, 1 = 正常
-        return [i for i, p in enumerate(predictions) if p == -1]
-    
-    def detect_drift(self, baseline: np.ndarray, current: np.ndarray) -> float:
-        """分布漂移检测（PSI）"""
-        eps = 1e-10
-        psi_values = []
-        for i in range(min(baseline.shape[1], current.shape[1])):
-            hist_baseline, _ = np.histogram(baseline[:, i], bins=10)
-            hist_current, _ = np.histogram(current[:, i], bins=10)
-            p = hist_baseline / hist_baseline.sum() + eps
-            q = hist_current / hist_current.sum() + eps
-            psi = np.sum((p - q) * np.log(p / q))
-            psi_values.append(psi)
-        return max(psi_values) if psi_values else 0
+freshness  = Gauge("data_freshness_seconds", "freshness", ["asset_id"])
+volume     = Gauge("data_volume_rows", "rows", ["asset_id"])
+quality    = Gauge("data_quality_rate", "null/unique rate", ["asset_id", "metric"])
+schema_col = Gauge("data_schema_columns", "column count", ["asset_id"])
+psi_gauge  = Gauge("data_distribution_psi", "PSI", ["asset_id", "column"])
+
+WINDOW = 30   # 历史窗口【经验：随产出频率与节律稳定性变，见 4.2】
+
+def collect(asset, meta):
+    """asset: 'db.table'；meta 从元数据库读出（不读数据内容）"""
+    freshness.labels(asset).set(meta.seconds_since_last_update)
+    volume.labels(asset).set(meta.row_count)
+    schema_col.labels(asset).set(len(meta.columns))
+    for col in meta.key_columns:        # 读内容的部分只铺在关键字段上
+        quality.labels(asset, f"{col}.null_rate").set(meta.null_rate(col))
+
+def detect_3sigma(history, current):
+    if len(history) < WINDOW:           # 不足一个窗口就不出判定（冷启动期）
+        return False
+    return abs(current - np.mean(history)) > 3 * np.std(history)
 ```
 
-**3. 告警分级与路由**：
+**怎么用**：把 `collect` 里读元信息与读内容的两部分分开——只有后者需要按字段数收窄；`WINDOW` 与 `3` 是要按自己节律调的参数【经验：窗口先覆盖一个完整业务周期，倍数先用通用默认值、再按回放结果调】，不是照抄的值。这段只负责产出与判定，告警与路由在模板 3。
+
+**模板 3：告警分级与路由（Alertmanager 配置片段）**
 
 ```yaml
-# alert_rules.yaml（Alertmanager 配置）
 groups:
-  - name: data_quality_p0
+  - name: data_slo
     rules:
-      - alert: CriticalDataFreshnessBreach
-        expr: data_freshness_seconds > 3600
-        for: 5m
-        labels:
-          severity: P0
-          team: data-platform
+      - alert: FreshnessBreachP0
+        expr: data_freshness_seconds > 3600   # 阈值【经验：按每张表承诺的产出时间逐条覆盖】
+        for: 5m                               # 【经验：应短于你承诺的 MTTD】
+        labels: {severity: P0, team: data-platform}
         annotations:
-          summary: "Critical data is stale for {{ $labels.table }}"
           runbook: "https://wiki.example.com/runbook/data-stale"
-    
-  - name: data_quality_p1
-    rules:
-      - alert: DataVolumeAnomaly
-        expr: |
-          abs(data_volume_rows - avg_over_time(data_volume_rows[1h] offset 1d))
-            > 3 * stddev_over_time(data_volume_rows[1h] offset 1d)
-        for: 10m
-        labels:
-          severity: P1
-          team: data-platform
-  
-  - name: data_quality_p2
-    rules:
-      - alert: SchemaDriftDetected
-        expr: changes(data_schema_columns[1h]) > 0
-        for: 5m
-        labels:
-          severity: P2
-          team: data-platform
-
-# 告警路由
 route:
-  group_by: ['alertname', 'team']
-  group_wait: 30s
-  group_interval: 5m
-  repeat_interval: 4h
-  receiver: 'default'
+  group_by: ['alertname', 'team']      # 同根因先收敛，再通知
+  group_wait: 30s                      # 【经验：按噪声量与通知延迟容忍调整】
+  repeat_interval: 4h                  # 【经验：按级别分别设置】
   routes:
-    - match:
-        severity: P0
-      receiver: 'pagerduty-p0'
-      group_wait: 10s
-    - match:
-        severity: P1
-      receiver: 'dingtalk-p1'
-    - match:
-        severity: P2
-      receiver: 'email-p2'
-
+    - {match: {severity: P0}, receiver: pager}
+    - {match: {severity: P1}, receiver: im}
 receivers:
-  - name: 'pagerduty-p0'
-    pagerduty_configs:
-      - service_key: ${PAGERDUTY_KEY}
-  - name: 'dingtalk-p1'
-    webhook_configs:
-      - url: ${DINGTALK_WEBHOOK}
-  - name: 'email-p2'
-    email_configs:
-      - to: 'data-platform@example.com'
+  - name: pager
+    pagerduty_configs: [{service_key: "${PAGERDUTY_KEY}"}]
 ```
 
-**4. 根因分析（基于血缘）**：
+**怎么用**：`expr` 的阈值不要全表统一，按每张表承诺的产出时间逐条覆盖；`team` 标签必须填成**有写权限改上游的那一组**（见 4.2 第 3 条）；`repeat_interval` 按各分级的可容忍时长分设。`${...}` 是环境变量占位，换成你自己的密钥管理方式。
+
+**模板 4：血缘事件（OpenLineage 一类规范的接法）**
 
 ```python
-# root_cause_analysis.py
+# 在 ETL 结束的位置发出血缘事件：作业名 + 实际读写的对象
+from openlineage.client import OpenLineageClient   # 接口以官方文档当前版本为准
+from openlineage.client.event import RunEvent, RunState, Run, Job, Dataset
+from openlineage.client.event import InputDataset, OutputDataset
+
+client = OpenLineageClient("http://lineage-service:5000")
+
+def emit(job, inputs, outputs):
+    client.emit(RunEvent(
+        eventType=RunState.COMPLETE,
+        run=Run(runId=new_uuid()),
+        job=Job(namespace="spark", name=job),
+        inputs=[InputDataset(dataset=Dataset(namespace=n, name=d)) for n, d in inputs],
+        outputs=[OutputDataset(dataset=Dataset(namespace=n, name=d)) for n, d in outputs],
+        producer="etl",
+    ))
+```
+
+**怎么用**：`inputs` / `outputs` 必须写**实际读写的对象**，不是设计文档里的对象；解析不出来的作业（动态 SQL、脚本任务）要单独标记为盲区，而不是干脆不发事件——「不知道有盲区」比盲区本身更贵。
+
+**模板 5：根因候选（血缘反向遍历）**
+
+```python
 from collections import deque
 
-def find_root_cause(lineage_graph, anomaly_node, max_depth=10):
-    """
-    在血缘图中反向追溯根因。
-    lineage_graph: {node: [(parent, edge_type), ...]}
-    anomaly_node: 异常的节点（如一张表）
-    """
-    visited = set()
+def root_candidates(graph, anomaly_node, max_depth=10, top_k=5):
+    """graph: {node: [(upstream, edge_type), ...]}；返回按距离排序的候选根因"""
+    seen, out = set(), []
     queue = deque([(anomaly_node, 0, [anomaly_node])])
-    root_causes = []
-    
     while queue:
         node, depth, path = queue.popleft()
-        if depth > max_depth:
+        if node in seen or depth > max_depth:
             continue
-        if node in visited:
+        seen.add(node)
+        ups = graph.get(node) or []
+        if not ups:                      # 没有上游：候选根因
+            out.append({"node": node, "path": path, "distance": depth})
             continue
-        visited.add(node)
-        
-        parents = lineage_graph.get(node, [])
-        if not parents:
-            # 没有上游，是根因
-            root_causes.append({
-                "node": node,
-                "path": path,
-                "distance": depth
-            })
-            continue
-        
-        for parent, edge_type in parents:
-            queue.append((parent, depth + 1, path + [parent]))
-    
-    # 按距离排序，取最近根因
-    root_causes.sort(key=lambda x: x["distance"])
-    return root_causes[:5]
+        for up, _ in ups:
+            queue.append((up, depth + 1, path + [up]))
+    return sorted(out, key=lambda x: x["distance"])[:top_k]
 ```
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+**怎么用**：`max_depth` 与 `top_k` 按自己链路的层数设【经验：深度上限取链路典型层数加一档余量，K 随人工核对成本调整，先给小数再按命中情况放宽】；这张图必须**能区分表级与字段级**，只有表级的图会把宽表报成根因。这段只产出候选，正确率要靠 4.1 Step 5 的记录表来度量。
 
-**开源工具**：
+**模板 6：LLM 归因与 Agent 处置的 Prompt（示例：基于 LLM 的异常归因）**
 
-| 工具 | 定位 | 优势 | 劣势 |
-| --- | --- | --- | --- |
-| **Prometheus** | 时序数据库 + 监控 | 生态丰富 | 大数据场景需配合 |
-| **Grafana** | 可视化 | 强大、灵活 | 配置复杂 |
-| **Apache Griffin** | 大数据 DQ | Spark 集成 | 社区相对小 |
-| **DataHub** | 元数据 + 血缘 | LinkedIn 出品、活跃 | 学习曲线 |
-| **Apache Atlas** | 元数据 + 血缘 | Hadoop 生态 | 文档较少 |
-| **OpenLineage** | 统一血缘规范 | 跨工具 | 实施中 |
-| **Marquez** | 血缘 + 元数据 | OpenLineage 核心 | 部署复杂 |
-| **Soda Core** | 配置化 DQ | 易上手 | 大数据有限 |
-| **Great Expectations** | 声明式 DQ | 生态丰富 | 配置复杂 |
+```text
+你是数据可观测性值班助手。仅基于以下输入作答，不要补充输入里没有的信息。
 
-**商业 SaaS**：
+## 异常
+{指标名、当前值、基线、触发时间}
+## 血缘（上游 / 下游）
+{从血缘服务取到的字段级清单}
+## 最近变更
+{该链路近 {时间窗口} 的变更事件}
 
-| 工具 | 定位 | 关键能力 |
-| --- | --- | --- |
-| **Monte Carlo Data** | Data Observability 龙头 | 五大支柱 + 字段级血缘 + ML + RAG 集成 |
-| **Bigeye** | Data Observability | 深度集成 Snowflake / Databricks |
-| **Mona** | AI-first 可观测性 | AI Quality Copilot、自动归因 |
-| **Anomalo** | 自动异常检测 | 无需规则、纯 ML |
-| **Datafold** | Diff + 回归测试 | 数据版本对比 |
-| **Soda Cloud** | SaaS DQ | 与 Soda Core 协同 |
-| **Univocity** | 商业 DQ + 可观测性 | 中国本土化 |
-
-**AI 时代新工具（2024-2025）**：
-
-- **Monte Carlo + RAG**：可观测性知识库接入 LLM。
-- **Mona AI Quality Copilot**：自然语言查询异常。
-- **Anomalo Autonomous**：完全无配置。
-- **Datadog AI Observability**：LLM 应用监控。
-- **New Relic AI**：LLM 调用链路追踪。
-- **Langfuse / LangSmith**：LLM 应用可观测性。
-- **Arize Phoenix**：LLM 评估 + 可观测性。
-
-### 4.4 代码 / 示例
-
-**示例 1：完整的可观测性平台（Python + Prometheus）**
-
-```python
-# observability_platform.py
-import time
-from prometheus_client import start_http_server, Gauge
-from prometheus_client.exporter import PrometheusExpositionHandler
-from sklearn.ensemble import IsolationForest
-import numpy as np
-
-class DataObservabilityPlatform:
-    def __init__(self):
-        self.freshness_gauge = Gauge('data_freshness_seconds', 'Freshness', ['db', 'table'])
-        self.volume_gauge = Gauge('data_volume_rows', 'Volume', ['db', 'table'])
-        self.quality_gauge = Gauge('data_quality_rate', 'Quality', ['db', 'table', 'column', 'metric'])
-        self.schema_gauge = Gauge('data_schema_columns', 'Schema columns', ['db', 'table'])
-        self.anomaly_score = Gauge('data_anomaly_score', 'Anomaly score', ['db', 'table'])
-        
-        self.history = {}  # 存储历史指标
-        self.anomaly_detector = AnomalyDetector()
-    
-    def collect(self, db, table):
-        """采集五大支柱指标"""
-        # 1. Freshness
-        last_update = self._get_last_update(db, table)
-        freshness = time.time() - last_update
-        self.freshness_gauge.labels(db, table).set(freshness)
-        
-        # 2. Volume
-        row_count = self._get_row_count(db, table)
-        self.volume_gauge.labels(db, table).set(row_count)
-        
-        # 3. Quality
-        for column in self._get_columns(db, table):
-            null_rate = self._compute_null_rate(db, table, column)
-            unique_rate = self._compute_unique_rate(db, table, column)
-            self.quality_gauge.labels(db, table, column, 'null_rate').set(null_rate)
-            self.quality_gauge.labels(db, table, column, 'unique_rate').set(unique_rate)
-        
-        # 4. Schema
-        col_count = len(self._get_columns(db, table))
-        self.schema_gauge.labels(db, table).set(col_count)
-        
-        # 5. Anomaly Detection
-        history = self.history.setdefault(f"{db}.{table}", [])
-        history.append({
-            'timestamp': time.time(),
-            'freshness': freshness,
-            'row_count': row_count,
-            'quality_avg': np.mean([
-                self.quality_gauge.labels(db, table, c, 'null_rate')._value.get()
-                for c in self._get_columns(db, table)
-            ])
-        })
-        
-        # 保留最近 1000 条历史
-        if len(history) > 1000:
-            history.pop(0)
-        
-        # 异常检测
-        if len(history) > 30:
-            anomaly_score = self._detect_anomaly(history)
-            self.anomaly_score.labels(db, table).set(anomaly_score)
-            
-            if anomaly_score > 0.8:
-                self._trigger_alert(db, table, anomaly_score)
-    
-    def _detect_anomaly(self, history):
-        """异常检测"""
-        features = np.array([
-            [h['freshness'], h['row_count'], h['quality_avg']]
-            for h in history[-100:]
-        ])
-        
-        return self.anomaly_detector.detect_3sigma(
-            features[:-1, 0].tolist(),
-            features[-1, 0]
-        )
-
-if __name__ == '__main__':
-    start_http_server(8000)
-    platform = DataObservabilityPlatform()
-    
-    while True:
-        for table in ['orders', 'users', 'products']:
-            platform.collect('prod', table)
-        time.sleep(60)
+输出三条，不得合并：
+1. 观测到的事实（只写输入里有的）
+2. 候选根因（最多 3 个，每个注明依据的是哪一条输入；依据不足就写"依据不足"）
+3. 建议的下一步人工动作（只允许查询类动作）
 ```
 
-**示例 2：基于 OpenLineage 的血缘采集**
+**怎么用**：`{}` 是必须由系统填入的槽位，别把整段当一次性 Prompt 手填；`{时间窗口}` 按自己的变更频率取（先取一个批次周期）【经验】。第 3 条的「只允许查询类动作」是这条 Prompt 的关键约束——把处置权留在人手里，处置链才与归因链分开（两者风险量级不同，见 4.1 Step 5）。第 2 条的候选上限（3 个）也是可调参数【经验：随你愿意人工核对的数量调整，宁可少而准】。若用代码调用，形如 `client.messages.create(model=..., max_tokens=..., messages=[...])`，`max_tokens` 要按输出结构留足余量以免被截断：**模型 id、参数名与接口以官方文档当前版本为准**，不要照抄任何写死的版本号。
 
-```python
-# openlineage_integration.py
-from openlineage.client import OpenLineageClient
-from openlineage.client.event import (
-    RunEvent, RunState, Run, Job, Dataset, 
-    Symlinks, Ownership, InputDataset, OutputDataset
-)
+**模板 7：自动动作白名单（Agent 自动修复的上线前置）**
 
-client = OpenLineageClient("http://marquez:5000")
+| 动作 | 是否幂等 | 回滚命令 | 允许的最大影响面 | 审批人 |
+| --- | --- | --- | --- | --- |
+| 重跑失败作业 | 是 | 无需回滚 | 单个作业 | 值班 |
+| 回刷指定分区 | 是 | 重新回刷上一版分区 | 单表单分区 | 值班 + Owner |
+| 通知上游 Owner | 是 | 无需回滚 | 不适用 | 值班 |
 
-def emit_lineage_event(job_name, inputs, outputs, run_state=RunState.COMPLETE):
-    """发送血缘事件"""
-    event = RunEvent(
-        eventType=run_state,
-        eventTime=datetime.now().isoformat(),
-        run=Run(runId=str(uuid.uuid4())),
-        job=Job(namespace="spark", name=job_name),
-        inputs=[InputDataset(dataset=d) for d in inputs],
-        outputs=[OutputDataset(dataset=d) for d in outputs],
-        producer="spark-observability",
-    )
-    client.emit(event)
+**怎么用**：回滚列为空的动作不得进白名单——这是白名单唯一的硬门槛；「允许的最大影响面」必须写成可被程序判断的条件（分区数、下游数量），写成「影响面小」等于没有约束。
 
+### 4.6 自检清单
 
-# 在 Spark ETL 中使用
-def spark_etl_with_lineage():
-    df_orders = spark.read.parquet("s3://lake/orders/")
-    df_users = spark.read.parquet("s3://lake/users/")
-    
-    # 业务逻辑
-    df_joined = df_orders.join(df_users, "user_id")
-    
-    # 输出血缘
-    emit_lineage_event(
-        job_name="etl_orders_users_join",
-        inputs=[
-            Dataset(namespace="s3://lake", name="orders"),
-            Dataset(namespace="s3://lake", name="users"),
-        ],
-        outputs=[
-            Dataset(namespace="s3://warehouse", name="dwd_orders"),
-        ],
-    )
-    
-    df_joined.write.parquet("s3://warehouse/dwd_orders/")
-```
+- [ ] 抽 3 张核心表【经验：抽样数量随核心表规模调整】，在同一时刻分别取看板值与手工 `SELECT MAX(update_time)` / `COUNT(*)`，两数是否在采集延迟之内一致？
+- [ ] 主动停掉采集器 30 分钟【经验】，看面板把该表显示为「逾期」还是「正常」？显示为正常的那一层必须改掉——故障期的静默比没有监控更贵。
+- [ ] 把最近一次大促的判定结果导出，逐条标注真报 / 误报，并归到「节律类 / 采样类 / 阈值类」；分不出类就先建模，不要先调阈值。
+- [ ] 抽 3 条 P0【经验：抽样数量按告警量调整，量少时全查】，统计从触发到有人第一次回应的转群次数；不为零，说明 `team` 标签指错了组。
+- [ ] 让当周值班的人不看文档口述某条告警的前三步处置动作；口述不出来就重写 Runbook。
+- [ ] 在测试环境改一个字段名，跑一遍发布流程，看影响面清单是否包含下游字段与看板，而不只是表名。
+- [ ] 把告警日志与事故记录做一次对账：每条事故能不能在告警里找到对应条目？找不到的那条，判定链缺哪个输入？
+- [ ] 让 Agent 在预发环境执行一次白名单动作，再执行一次回滚；回滚失败或不可重入的动作当天从白名单删除。
+- [ ] 从资产清单里抽 10 张【经验：抽样数量按资产规模调整，规模大时按业务域分层抽】标记为「未治理」的表，确认它们确实被排除在覆盖率分子之外；还在分子里，说明覆盖率是虚高的。
+- [ ] 双轨期抽查：同一天的新旧两套判定结果逐条对齐，看新判定是否漏掉了老规则能发现的任何一条。
+- [ ] 挑一条有下游消费的资产走一次下线演练（停产出 + 通知 + 观察），确认血缘算出的下游清单与实际的断供影响一致。
+- [ ] 用一次构造异常（改一张测试表的分区）计时：触发 → 通知 → 定位到上游，各段耗时与面板上的 MTTD / MTTR 是否对得上？
 
-**示例 3：基于 LLM 的异常归因**
+### 4.7 小结
 
-```python
-# llm_root_cause.py
-import os
-from anthropic import Anthropic
-
-client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-
-def explain_anomaly_with_llm(anomaly_data, lineage_data, metrics_history):
-    """用 LLM 解释异常"""
-    
-    prompt = f"""
-你是一个资深数据可观测性专家。请基于以下信息分析异常根因。
-
-## 异常指标
-{anomaly_data}
-
-## 血缘信息
-{lineage_data}
-
-## 历史指标趋势
-{metrics_history}
-
-请按以下结构回答：
-1. **异常描述**：发生了什么
-2. **可能根因**：列出 3 个最可能的原因
-3. **建议修复方案**：每个根因对应的修复步骤
-4. **预防措施**：如何避免类似问题
-"""
-    
-    response = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=2000,
-        messages=[{"role": "user", "content": prompt}]
-    )
-    
-    return response.content[0].text
-
-
-# Agent 自动修复（基于 LangChain）
-from langchain.agents import create_agent
-
-def auto_remediation_agent(anomaly_alert):
-    agent = create_agent(
-        tools=[
-            "restart_spark_job",
-            "backfill_data",
-            "notify_oncall",
-            "rollback_data",
-        ],
-        llm="claude-3-5-sonnet-20241022",
-    )
-    
-    response = agent.invoke({
-        "input": f"""
-        收到异常告警：{anomaly_alert}
-        请按以下流程处理：
-        1. 分析异常类型
-        2. 查询血缘定位根因
-        3. 选择合适的修复工具
-        4. 执行修复（优先选可重试操作）
-        5. 验证修复结果
-        6. 通知 oncall（如修复失败）
-        """
-    })
-    
-    return response
-```
-
----
+> 本节小结：整套落地过程里唯一决定成败的环节，是**把判定挂到一个「有权改上游产出的人」身上**——它由 4.1 的 Step 3（归属与 Runbook）与 Step 4（血缘接进告警通路）共同完成。没有这一步，前两步产出的指标与判定再准，也只是把故障从「业务方打电话」变成「群里多一条消息」：没有人被明确要求处理，也没有人有权动手。相比之下，加算法、换平台、扩指标都可以在任意时刻补上，而归属一旦定错，修正它需要先说服一整个团队承认自己的产出写在别人的值班表上。
+>
+> 配合 [§ 2 核心原理](04-observability.md)、[§ 3 设计模式与范式](04-observability-section-3-sec3.md) 与 [§ 6 落地实践](04-observability-section-6-sec6.md) 阅读。

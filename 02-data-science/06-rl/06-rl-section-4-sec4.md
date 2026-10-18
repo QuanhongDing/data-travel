@@ -1,566 +1,303 @@
-> 本文件是 **06-rl.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](06-rl.md)。
+> 本文件是 **06-rl.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](06-rl-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](06-rl.md)。
 
 ## 4. 工程实现
 
+[§ 3](06-rl-section-3-sec3.md) 回答的是"在给定约束下该选哪个模式"。本节回答的是另一组问题：模式选定之后第一周做什么、每一步结束时手上应该多出什么、怎么在做了一半的时候就知道偏了，以及在一个已经有规则引擎或监督模型在跑、已经有若干年决策日志的系统上怎么改装。
+
+读者分两类，入口不同：**从零搭建**（新业务、没有线上决策系统）按 4.1 顺序读，那八步就是它的工期表；**在存量上改造**（已有线上决策链路）先读 4.4，它给的是"不改线上决策的前提下先补哪些字段、历史日志怎么分类、双轨怎么退出"。两类读者都要读 4.2 与 4.6——前者写运行期会坏在哪里，后者写坏之前能查什么。
+
 ### 4.1 落地步骤
 
-**Step 1：业务问题抽象为 MDP**
+**Step 1：业务问题抽象为 MDP（1–2 周【经验：随状态特征的可获得性变，需要新埋点时会更长】）**
 
-- 把业务问题转化为 $(\mathcal{S}, \mathcal{A}, P, R, \gamma)$。
-- 明确：状态空间、动作空间、奖励信号、折扣因子。
-- 输出：**MDP 设计文档**。
+- 写全 $(\mathcal{S}, \mathcal{A}, P, R, \gamma)$，并额外补一格"**不在模型里的东西**"：哪些现实因素被当作环境的一部分而不进状态。
+- 动作空间写清是离散、连续，还是"生成一段文本"——这三种对应完全不同的算法族（[§ 3.3](06-rl-section-3-sec3.md) 决策表）。
+- **产物**：MDP 设计文档（S/A/R/γ 四格 + 不含项说明 + 状态特征的数据来源表）。
+- **判据**：从线上随机抽 3 条真实请求【经验：随状态维度变，维度越高越要多抽才能覆盖】，逐条回答"它落到文档里的哪个状态、当时可选的动作集合是什么"；有任意一条答不上来，就是状态定义漏了维度。
+- **为什么必须这一步**：状态与动作的定义直接决定决策日志表的主键与字段。`propensity` 与行为策略版本只可能在决策发生的那一刻被记录，事后无法补（机制见 [§ 3.2.5](06-rl-section-3-sec3.md)）。MDP 文档晚一周定稿，可用于离线训练的日志就晚一周开始积累。
 
-**Step 2：环境搭建（模拟器 / 真实环境）**
+**Step 2：环境搭建（模拟器 / 真实环境）（2–6 周【经验：随仿真保真度与并行度要求变】）**
 
-- 搭建模拟器（Gym / MuJoCo / 自研）。
-- 或直接在生产环境（成本高、风险大）。
-- 输出：**环境接口 + 数据采集**。
+- 优先搭模拟器或回放环境（Gymnasium 接口是多数框架的事实接口）；确需真实环境时，先做成"可回滚沙盒 + 小流量"。
+- 同步建立**历史数据集**：把已有决策日志导出成训练可用格式，字段至少含上下文、动作、奖励、`propensity`、行为策略版本。
+- **产物**：环境接口 + 一份带行为策略版本的离线数据集。
+- **判据**：同一批动作分别在模拟器与历史回放上执行，比较 3 个关键状态特征的均值与分位数【经验：随特征维度与模拟器保真度变，特征越多越该多比几个】，差异是否在容差内；超差说明模拟器的状态定义与线上不是同一个东西。
+- **为什么必须这一步**：奖励函数只有在环境里跑过才知道能不能被优化。纸上推演发现不了"这个奖励在第一步就能被刷满"，把环境放在奖励设计之前，是为了让奖励的每次修改都有地方验证。
 
-**Step 3：奖励函数设计**
+**Step 3：奖励函数设计（1–3 周【经验：随业务量的可测量程度变】）**
 
-- 与业务 KPI 严格对齐。
-- 奖励塑形（Reward Shaping）。
-- 多重奖励 + 约束（避免奖励黑客）。
-- 输出：**奖励函数 + 评估指标**。
+- 先写清"业务量 → 奖励"的映射，再写奖励公式；二者写不进同一段说明，说明奖励还不能上线。
+- 奖励塑形（Reward Shaping）；多重奖励 + 约束（避免奖励黑客）；过程奖励与终局奖励的分工。
+- 做敏感性分析：奖励每一项单独上下调一个量级，看策略排序是否反转。
+- **产物**：奖励函数 + 评估指标 + 敏感性分析表。
+- **判据**：抽 20 条"奖励最高"的轨迹【经验：随轨迹易读性变】人工看一遍，是否出现高奖励低价值行为（无意义长回答、只做最便宜的达成动作）。这是[§ 3.5](06-rl-section-3-sec3.md) 反模式 6 唯一能在训练前拦住的机会。
+- **为什么必须这一步**：训练之后再改奖励，之前所有实验曲线全部作废——那不是"重新调参"，是**从数据与验证口径开始重做**；落到操作上，意味着把奖励函数的版本号冻结、重跑实验并重走一次评审，而不是改一行常量。
 
-**Step 4：算法选型与基线**
+**Step 4：算法选型与基线（1–2 周【经验：随基线可得性变】）**
 
-- 用 §3.2 决策表选 1-3 个候选算法。
-- 跑基线（随机策略 / Behavior Cloning / 监督学习）。
-- 输出：**基线报告**。
+- 按 [§ 3.3](06-rl-section-3-sec3.md) 决策表选 1–3 个候选算法【经验：随算力预算与评估成本变，预算越紧越要先靠决策表收窄】，不要只选一个。
+- 基线至少三份【经验：随现有系统的可复现程度变，线上那套跑不起来时用它的历史决策日志代替】：随机策略、Behavior Cloning（BC），以及**现在线上跑着的那套规则或监督模型**。
+- **产物**：基线报告——每个基线在留出评估集上的回报分布，不是单点值。
+- **判据**：能不能回答"不换算法、只调超参，能不能超过这个基线"。答不出来，说明基线跑得不够，而不是模型不够强。
+- **为什么必须这一步且在选型之前**：没有基线，之后所有"提升了"都无从判断；而且基线必须在本轮候选算法调参之前跑完——它是后面全部对比的公共参照，晚跑一次就要重跑所有已完成的实验。
 
-**Step 5：策略训练**
+**Step 5：策略训练（2–8 周【经验：随环境交互成本与 on/off-policy 路线变】）**
 
-- 训练循环：环境交互 → 数据采集 → 模型更新。
-- 监控：累积奖励、策略熵、价值损失、KL 散度。
-- 输出：**训练曲线 + 模型 checkpoint**。
+- 训练循环：环境交互 → 数据采集 → 模型更新。监控累积奖励、策略熵、价值损失、KL 散度。
+- 每次训练记录三样东西：**数据版本号、奖励函数版本、代码 commit**。
+- **产物**：训练曲线 + 模型 checkpoint + 上面三样版本号。
+- **判据**：跑 3 个随机种子【经验：随方差与决策后果变，后果越重越多】，看评估曲线的分位数是否重叠；再从任意一次 checkpoint 恢复，看能否复现同一评估值——复现不了，说明评估口径里混进了未记录的随机性。
+- **为什么必须这一步**：多随机种子不是学术洁癖，它是让"这次训练不好"与"这个配置不行"可区分——前者退回重跑，后者要改配置并重跑对照。只有一条曲线时，训练任务的工单只能被反复重启，没有人签得了"这个配置可以上线"；而下一步的决策会一直带着这个不确定性。
 
-**Step 6：策略评估**
+**Step 6：策略评估（2–4 周【经验：随业务周期长度变】）**
 
-- 离线评估：在历史数据上回放（Offline RL Eval）。
-- 模拟评估：在模拟器中测试（Sim Eval）。
-- A/B 测试：小流量真实环境测试。
-- 输出：**评估报告**。
+- 三条链路都要走：离线评估（历史数据回放）、模拟评估（模拟器中跑）、A/B 测试（小流量真实环境）。
+- 影子模式在这里第一次登场：策略并行运行、记录决策，但不生效。
+- **产物**：评估报告——三条链路各自的结论，以及**它们互相矛盾的地方**。
+- **判据**：影子运行窗口是否覆盖了一个完整业务周期（含周末与流量峰值）【经验：至少一个完整业务周期，随业务的季节性强度变】；评估报告里三条链路互相矛盾的地方，有没有被逐条写出、并附上"先查哪条"的动作。评估集该怎么切分属设计期检查，不在此重复（见 [§ 3.7](06-rl-section-3-sec3.md)）。
+- **为什么必须这一步**：三条链路各自接了不同的管道（历史回放 / 环境 / 线上特征管道），所以结论打架时能直接指认是哪一段管道或哪一批数据的问题，而不是挑最好看的那条：先查特征管道，再查分布距离。三条都一致时也别直接放行，先确认评估集近期没有被谁换过——换过就不算三条独立证据。
 
-**Step 7：策略上线**
+**Step 7：策略上线（1–2 周 + 灰度期【经验：随发布审批层级与灰度分段数变，审批层级越多、分段越细，灰度期越长】）**
 
-- 影子模式（Shadow Mode）：先跑但不生效。
-- 灰度发布：小流量验证。
-- 实时监控：累积奖励、Q 值分布、状态分布。
-- 输出：**上线报告 + 监控 dashboard**。
+- 发布路径写进发布流审批：影子模式（Shadow Mode）→ 灰度发布 → 分阶段放量；**每阶段的止损线要带具体数值、审批人和值守人**，写不进审批单的就按没有处理。
+- 实时监控：累积奖励、Q 值分布、状态分布、`policy_version`。
+- **产物**：上线报告 + 监控 dashboard + **一份被真实执行过的回滚脚本**。
+- **判据**：止损线是写在发布流程里（超线自动回退），还是只写在文档里；回滚脚本最近一次被实际执行是什么时候——只在文档里演练过不算。
+- **为什么必须这一步**：省掉这一步，第一次真实反馈会同时以值班告警和客服工单的形式到达，而那时没有一条已在灰度里验证过的小流量路径可以退回去，回滚脚本也从未被真实执行过。[§ 3.5](06-rl-section-3-sec3.md) 反模式 8 的成本差不是"要不要谨慎"，而是"这次失败发生在影子里，还是发生在全量流量上"。
 
-**Step 8：闭环与迭代**
+**Step 8：闭环与迭代（持续）**
 
-- 反馈回流：真实奖励回流到训练数据。
-- 漂移检测：环境分布变化。
-- 定期重训：周 / 月粒度。
-- 输出：**持续迭代 pipeline**。
+- 反馈回流：真实奖励回流到训练数据；漂移检测：环境分布变化；定期重训。
+- 重训的触发条件写成**数据与指标**（奖励链路断供、状态分布漂移超阈值、效果衰减），不写成日历。
+- **产物**：持续迭代 pipeline + 漂移检测指标 + 重训触发规则。
+- **判据**：抽最近一个月的决策日志，`policy_version` 的分布能否被解释？如果只有一个版本且几个月没变，说明线上跑的其实已经是一套静态策略。
+- **为什么必须这一步**：RL 与监督模型的运维差别就在这里——环境会变，策略失效是渐进的，没有闭环就没有人会发现。
+
+**最常被跳过的是 Step 4 的基线，第二是 Step 6 的影子模式。** 跳过基线的症状不在训练期出现，而在**第一次季度复盘**上：被问"这一版比上一版好在哪"，答不出可比数字，只能拿绝对指标讲故事。跳过影子模式的症状更早也更贵——第一次真实反馈就是一次事故，而且此时连"策略是不是原因"都分不清，因为没有任何并行对照数据可看。
 
 ### 4.2 关键技术点
 
-**环境关键技术**：
+每条按「做法 / 机制 / 失效条件 / 档位」写。机制句一律落在**实施期才存在的东西**上（值班、账单、审批流、上线回滚、谁的工单、监控面板上的哪条曲线），而不是算法本身的性质——后者属于 [§ 3](06-rl-section-3-sec3.md)。
 
-1. **模拟器（Gym / MuJoCo / Isaac Gym）**：训练的核心，模拟器越真实训练越好。
-2. **Domain Randomization**：随机化环境参数，提升鲁棒性。
-3. **Sim-to-Real**：从模拟器迁移到真实环境。
-4. **环境并行化**：多环境并行采样，提升训练效率。
+**环境四件套：模拟器 / Domain Randomization / Sim-to-Real / 环境并行化**
 
-**训练关键技术**：
+- **做法**：模拟器优先；对无法精确建模的参数做随机化；从仿真迁移到真实时先在受限条件下验证；用多环境并行采样提高吞吐。
+- **机制**：因为并行采样把"数据生产"从单进程串行变成 N 个环境同时推进，所以同一段 wall-clock 能产出约 N 倍 rollout——这条只在采集确实是瓶颈时才成立。
+- **失效条件**：**当并行度超过 CPU/GPU 配比后**，采集不再是瓶颈，更新与策略前向成为瓶颈，继续加环境的边际收益归零。症状写在训练吞吐面板上：环境步数/秒不再随并行度上升，而 GPU 利用率掉下来——第一个发现它的是盯吞吐曲线的值班人，不是算法负责人。
+- **档位**：【经验：并行度上限随单个仿真步的 CPU 成本与 batch 大小变】。
 
-5. **Replay Buffer**：存储 $(s, a, r, s', done)$，Off-Policy 训练用。
-6. **Target Network**：稳定 Q 值估计，定期更新。
-7. **Prioritized Experience Replay**（PER）——按优先级采样，提升学习效率。
-8. **N-Step Return**：多步 TD target，平衡偏差方差。
-9. **GAE（Generalized Advantage Estimation）**——Advantage 的平滑估计。
-10. **梯度裁剪（Gradient Clipping）**——防止梯度爆炸。
-11. **学习率调度**：Warmup + Decay。
-12. **熵正则化**：鼓励探索，防止策略过拟合。
-13. **奖励标准化（Reward Normalization）**：稳定训练。
+**经验复用：Replay Buffer / Target Network / PER / N-Step Return**
 
-**LLM RL 关键技术**：
+- **做法**：经验落表（`state / action / reward / next_state / done / behavior_policy_version`）；Target Network 定期同步；PER 按 TD 误差采样；N-Step Return 平衡偏差方差。
+- **机制**：因为经验是以"带版本号的表"入库，而不是留在内存队列里，所以训练可以中断续跑、可以反查"这条经验是哪一版策略产生的"——这决定了事后能不能做 off-policy 修正。
+- **失效条件**：**当入库时没写行为策略版本，或不同实验共用同一个缓冲区**时，事后要做修正或重算会发现数据不可用，且不可逆。症状出现在一次"复现实验"的工单里：同配置复跑结果对不上，而双方都拿不出这段数据的来源版本。
+- **档位**：【经验：缓冲区容量随状态维度与内存预算变，没有通用值】。
 
-14. **RLHF Pipeline**：
-    - Step 1: SFT（监督微调）。
-    - Step 2: 训练奖励模型（RM）。
-    - Step 3: PPO 训练。
-15. **DPO（Direct Preference Optimization）**：
-    - 直接用偏好数据训练，无需 RM + RL。
-    - 更稳定、更简单。
-16. **GRPO（Group Relative Policy Optimization）**：
-    - 用组内相对优势，去掉 Critic。
-    - 显存需求降低，适合 LLM 大模型。
-17. **Process Reward Model（PRM）**：
-    - 在推理步骤级别给奖励。
-    - 提升 LLM 推理能力。
+**数值与优势：GAE / 梯度裁剪 / 学习率调度（Warmup + Decay）/ 奖励标准化 / 熵正则化**
 
-**Agent RL 关键技术**：
+- **做法**：GAE 用 λ 平滑优势；梯度裁剪设上界；学习率 warmup 后衰减；奖励标准化；熵项作为探索正则。
+- **机制**：因为这五项都是"防止某一次更新把策略推飞"的护栏，而护栏只在无人值守的长训练里才起作用，所以它们的配置要和**训练任务的审批流**绑在一起——谁能改、改完要不要重跑对照实验，得写进流程而不是只写在代码注释里。
+- **失效条件**：**当团队用"换随机种子就好了"结案时**，这套护栏实际上已经失效——不是某一条被调坏，而是没有人知道真实分布。症状：issue 里同一配置两次结果差异巨大，复盘结论是"再跑一次看看"；观测信号是同配置三次运行的评估曲线分位数宽度。
+- **档位**：【经验：clip 上界与 warmup 步数随 batch 大小和模型规模变】。
 
-18. **Tool Use RL**：训练 Agent 选择 + 调用 Tool。
-19. **Multi-Step Reasoning RL**：训练 Agent 多步推理。
-20. **Self-Reflection RL**：训练 Agent 自我反思。
-21. **Curriculum Learning**：由易到难训练。
-22. **Process Supervision**：过程监督（每步奖励）vs Outcome Supervision（最终奖励）。
+**LLM 偏好对齐链路：RLHF Pipeline（SFT → RM → PPO）/ DPO / GRPO / PRM**
 
-**部署关键技术**：
+- **做法**：PPO 路线四模型驻留（policy / reference / reward / critic）；DPO 去掉 RM 与 critic；GRPO 去掉 critic，用同 prompt 组内相对得分；PRM 在步骤级给奖励。显存账见 [§ 3.2.9](06-rl-section-3-sec3.md)。
+- **机制**：因为 reference 权重在整条链路里必须冻结，所以它一旦被误覆盖，KL 与偏好胜率会同时单向漂移**而不会报任何错**——这条链路的正确性靠版本固定维持，不靠报错。
+- **失效条件**：**当训练脚本从"最新 checkpoint"而不是固定路径加载 reference 时**，多机训练里只要有一台先更新，偏好胜率就会在随后几百步里缓慢上翘。症状：偏好胜率与真实任务成功率开始背离，而 loss 曲线一切正常；第一个发现它的是抽检线上输出的标注同学。
+- **档位**：显存账为【推算】，推导链见 [§ 3.2.9](06-rl-section-3-sec3.md)。
 
-23. **模型服务**：TF Serving、Triton、Ray Serve、vLLM。
-24. **在线决策**：低延迟实时决策（毫秒级）。
-25. **A/B 测试**：RL 策略 vs Baseline。
-26. **影子模式**：策略并行运行但不生效。
+**Agent RL：Tool Use RL / Multi-Step Reasoning RL / Self-Reflection RL / Curriculum Learning / Process Supervision（对 Outcome Supervision）**
+
+- **做法**：把一条"状态-动作-观测"序列作为训练原子单位；工具调用放进可回滚沙盒；由易到难排课程；奖励可以是每步的过程监督，也可以只在终局给（outcome）。
+- **机制**：验证器一旦成为奖励的唯一来源，它就从训练脚本的一个依赖升级成一条生产链路——它挂在谁的值班表上、它的版本变更走不走审批，直接决定训练信号稳不稳；而它挂了训练日志不会报错，只会表现为奖励恒为 0 或恒满。
+- **失效条件**：**当课程推进速度快过验证器能覆盖的题型时**，训练会静默退回到"只优化验证器覆盖的那部分任务"。症状：训练集通过率上升而抽检的真实任务成功率不动；数据侧信号是用例库/标注库的版本号在训练日志里几天没变。
+- **档位**：【经验：课程档位与沙盒并发数随任务步数与工具成本变】。
+
+**上线链路：模型服务 / 在线决策 / A/B 测试 / 影子模式**
+
+- **做法**：策略以服务形式提供（TF Serving / Triton / Ray Serve / vLLM 等，选型判据见 4.3）；在线决策走低延迟同步调用；A/B 测试与影子模式分别承担"对比"与"只记录不生效"。
+- **机制**：因为影子模式只记录、不发号施令，所以第一次真实反馈是"离线指标与影子指标的差"，而不是用户损失——它的价值在于把最贵的那次失败搬到没有后果的地方。
+- **失效条件**：**当影子流量与线上流量不同源（例如影子只在低峰跑）时**，影子结论不能外推；放量后指标与预估不一致时，没有依据判断是策略问题还是流量问题。观测信号：灰度首日指标与影子预估的差距，随流量占比上升而放大，而不是收敛。
+- **档位**：【经验：在线决策的延迟预算随场景变——广告与推荐重排通常在几十毫秒内就要给出决策，超出预算的策略会被降级为批量计算】。
 
 ### 4.3 工具链与平台
 
-**RL 框架**：
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 经典 RL 框架 | Stable Baselines3 / RLlib / Tianshou / Acme / Spinning Up / CleanRL / TorchRL | 单机做基线实验，选 CleanRL 或 Spinning Up（单文件、可逐行核对）；要在已有 Ray 集群上扩并行，选 RLlib；要跟 PyTorch 生态与新编译特性对齐，选 TorchRL；要对齐论文的官方实现，选 Acme；要现成的经典算法集合快速起步，选 Stable Baselines3 或 Tianshou | 一上来就用分布式框架搭 PoC：环境接口与日志格式被框架锁定，之后换框架等于把数据重采一遍 |
+| 模拟器 | Gymnasium / MuJoCo / Isaac Gym / WebArena / SWE-bench / AgentBench | 接口层先统一到 Gymnasium API（多数框架的事实接口）；物理与机器人仿真选 MuJoCo，需要 GPU 并行且环境可承受重依赖时选 Isaac Gym；Agent 类任务选 WebArena / SWE-bench / AgentBench——它们的任务来自真实网站与真实代码仓库，成败可自动判定 | 自研模拟器：保真度不足时训出的策略在真机上不可用，而自研模拟器的维护成本会长期挤占算法迭代 |
+| LLM RL 工具 | TRL / DeepSpeed-Chat / LLaMA-Factory / OpenRLHF / trlx / RLHFWorkflow | 单机或中小规模跑 DPO / GRPO，首选 TRL（与 transformers 同栈）；多机大规模 PPO 训练，选 OpenRLHF 或 DeepSpeed-Chat；要"配置即流水线"的微调选 LLaMA-Factory；trlx 与 RLHFWorkflow 属早期实现，新项目接入前请以各自官方仓库的当前维护状态为准 | 手写 PPO 训练循环：四模型驻留、ratio 与 KL 的实现细节（尤其是 reference 何时冻结）写错时不会报错，只表现为"训完更差" |
+| Bandit 库 | MABwiser / Vowpal Wabbit / scikit-learn（作为回报模型，不是 Bandit 求解器） | 已有 VW 特征管道且要做 Contextual Bandit，选 Vowpal Wabbit；要在 Python 里做离线策略评估与简单 Bandit，选 MABwiser；scikit-learn 未提供 Bandit 求解接口，它通常被用来训练 Bandit 里的回报模型——用到时请以该库当前官方文档为准 | 用 Bandit 全量替代 A/B：探索流量直接计入业务损失，而且没有"该停就停"的停机判据 |
+| Offline RL | d3rlpy / CORL / RLtools | 要在工业代码里跑标准离线算法（CQL / IQL / TD3+BC），选 d3rlpy；要横向复现多个算法对照论文，选 CORL；嵌入式或实时控制这类 C++ 环境，选 RLtools | 用在线框架改造成离线：采样与环境依赖被保留下来，而离线最需要的保守项与评估口径反而要自己补 |
+| 策略服务与低延迟推理 | TF Serving / Triton / Ray Serve / vLLM | 策略是常规数值网络、要低延迟同步打分，选 TF Serving 或 Triton（批合并成熟）；已有 Ray 集群、训练与推理想同一套运维，选 Ray Serve；策略是 LLM 且推理开销主要在生成，选 vLLM 一类高吞吐推理服务 | 把策略的推理塞进训练脚本：没有批合并与超时控制，延迟抖动会在业务高峰被放大成可用性问题 |
+| 训练平台与实验管理 | Weights & Biases / MLflow（+ Ray）/ 阿里云 PAI / AWS DeepRacer / Google Vertex AI（RL 相关能力的当前状态以官方文档为准） | 看指标曲线与超参对比选 W&B；已有自建 MLflow 且要打通模型注册表，选 MLflow + Ray；受合规与网络约束选云厂商托管训练平台（PAI 一类）；DeepRacer 只适合教学与小规模演示，不是生产训练平台 | 用笔记本目录管理实验：三个月后没人能说清哪条曲线对应哪份数据与哪版奖励函数 |
+| 前沿算法与新模型（2024–2025） | GRPO（DeepSeek 2024）/ OpenAI o1 与 o3（2024）/ Anthropic Constitutional AI（2022–2024）/ Agent Q（2024）/ Reflexion（2023–2024）/ Voyager（NVIDIA 2023）/ DeepSeek-R1（2025）/ Qwen2.5 的 RL 后训练（阿里 2024）/ MAVIS（2024）/ RStar-Math（Microsoft 2024） | 这一行不是"工具"，是可对照的**实现与方法**：要看实现就去对应官方仓库看当前状态，要看方法就去读公开技术报告。把它当"可直接引入的组件"之前，先确认许可、维护状态与是否与你的训练栈同版本 | 把公开报告里的方法名当成"拿来即用组件"：论文里的采样规模与奖励设计往往不在同一页，直接照搬会得到一条跑得通但不收敛的训练脚本 |
 
-- **Stable Baselines3**（Python / 开源）——经典 RL 算法集合（DQN / PPO / SAC）。
-- **RLlib**（Ray / 开源）——分布式 RL 框架。
-- **Tianshou**（Python / 开源）——PyTorch 实现的 RL 框架。
-- **Acme**（DeepMind / 开源）——DeepMind RL 框架。
-- **Spinning Up**（OpenAI / 开源）——RL 入门 + 实现。
-- **CleanRL**（开源）——单文件 RL 实现，适合学习。
-- **TorchRL**（PyTorch / 开源）——PyTorch 官方 RL 库。
+表里最容易被误选的是**训练平台**那一行里的 AWS DeepRacer：它面向教学与竞赛，把"能跑起来"当成目标，而生产要的是可复现、可审计、能与既有模型注册表打通。误选它的典型后果是团队第一次要做"三个月前那次实验用的是哪份数据"时答不出来。
 
-**模拟器**：
+### 4.4 存量迁移
 
-- **Gymnasium**（OpenAI / 开源）——RL 模拟器事实标准。
-- **MuJoCo**（DeepMind / 开源）——物理仿真。
-- **Isaac Gym**（NVIDIA / 开源）——GPU 并行仿真。
-- **WebArena**（CMU / 开源）——Agent Web 环境。
-- **SWE-bench**（Princeton / 开源）——Agent 代码环境。
-- **AgentBench**（THU / 开源）——Agent 综合评测。
+这一节面向的是：线上已经有规则引擎或监督模型在决策，也有若干年决策日志，既不能停机、也不打算替换现有系统。
 
-**LLM RL 工具**：
+**① 先做哪一步：只加记录，不改决策（2–4 周【经验：随日志表改造难度变】）**
 
-- **TRL**（HuggingFace / 开源）——Transformer RL 库（PPO / DPO / GRPO）。
-- **DeepSpeed-Chat**（Microsoft / 开源）——LLM RLHF 训练。
-- **LLaMA-Factory**（开源）——LLM 微调 + DPO/PPO。
-- **OpenRLHF**（开源）——高性能 RLHF 训练。
-- **trlx**（CarperAI / 开源）——早期 RLHF 库。
-- **RLHFWorkflow**（开源）——RLHF 工作流。
+- 在现有决策路径后面挂一个影子服务：它照常算分、照常记录，但返回值不被消费。
+- 同时给决策日志补字段：`propensity`、`behavior_policy_version`、`policy_version`，以及**当时的完整可选动作集合**。动作集合最容易被漏——离线评估需要知道"当时还有哪些选择没被选"，只记被选中的那个是不够的。
+- **可回退**：影子服务下线即可，线上决策路径一行没动，随时能退回改造前的状态。
+- **见效点**：这一步不产出任何指标改善，它产出的是**数据**。但它决定了后面能不能走离线路线，而且它的产出是唯一无法靠加班补回来的东西。
 
-**Bandit 库**：
+**② 历史资产分三类处理，不要"全部返工"**
 
-- **MABwiser**（Python / 开源）——Multi-Armed Bandit。
-- **Vowpal Wabbit**（Microsoft / 开源）——Bandit + Contextual Bandit。
-- **scikit-learn**（部分 Bandit 支持）。
+| 类型 | 特征 | 处理 |
+| --- | --- | --- |
+| 可直接用 | 日志含 `propensity` 与行为策略版本，动作集合完整 | 用于离线 RL 与离线策略评估 |
+| 只能做基线 | 有曝光、点击、成交，但没有 `propensity` | 只能训 Behavior Cloning 或监督基线；**不要拿它做 off-policy 修正**——没有意图概率的日志，修正项无从计算 |
+| 打标挂账 | 只有聚合报表，没有请求级记录 | 标记为不可用并登记在册，不投入返工；新埋点积累一段时间后它自然被替代 |
 
-**Offline RL**：
+对第三类**不要重放旧作业去补数据**：RL 需要的是决策发生那一刻的策略与可选集合，任何事后重建都只是推测——推测出来的 `propensity` 会让离线评估看起来能跑，却给出错误结论。
 
-- **d3rlpy**（Python / 开源）——Offline RL + Online RL。
-- **CORL**（开源）——Offline RL 算法集合。
-- **RLtools**（开源）——RL 工具。
+**③ 迁移期的双轨：维持多久、成本落在哪**
 
-**训练平台**：
+- 双轨的定义：现行规则或监督模型继续真实决策，RL 影子并行打分并记录。
+- 成本不在算力，在**特征管道要维护两套**：在线特征（低延迟、可能带当日实时状态）与训练特征（T+1 批量、口径更全）。两套不一致时，影子跑出的漂亮结果不可信。
+- 因此双轨期必须有一个**T+1 对账**动作：每天抽若干条决策【经验：随决策量与特征维度变，量越大、维度越高抽样越少】，用两条管道各算一遍输入，比对差异。
+- 维持时长【经验：至少覆盖一个完整业务周期 + 一个流量峰值周期，随业务的季节性强度变】。季节性强的业务（大促、财年末）必须覆盖到峰值，否则影子里根本没有高峰样本。
 
-- **Weights & Biases**——实验管理 + RL 训练可视化。
-- **MLflow + Ray**——分布式 RL 训练。
-- **Alibaba PAI**（阿里云）——RL 训练支持。
-- **AWS DeepRacer**——自动驾驶 RL 平台。
-- **Google Vertex AI RL**——托管 RL 平台。
+**④ 什么信号说明可以退出双轨**
 
-**2024-2025 新工具**：
+- 影子预估回报与线上实际回报的偏差，在连续若干天窗口内稳定落在容差内。容差要由**业务损失容忍度反推**，不要拍一个整数。
+- 特征对账连续通过，且训练特征管道已经能在 T+1 内稳定产出。
+- 退出不是一次性切换，而是**按流量分段放量**，每段设止损线；某一段触发止损线就回到上一段，而不是退回双轨——上一段已经是验证过的稳态。
 
-- **GRPO**（DeepSeek 2024）——LLM 推理训练主流。
-- **OpenAI o1 / o3**（2024）——大规模 RL 训练 LLM 推理。
-- **Anthropic Constitutional AI**（2022-2024）——RLAIF 范式。
-- **Agent Q**（2024）——Agent 搜索 + RL。
-- **Reflexion**（2023-2024）——Agent 自我反思。
-- **Voyager**（NVIDIA 2023）——Minecraft 终身学习 Agent。
-- **DeepSeek-R1**（2025）——GRPO 训练的 LLM 推理模型。
-- **Qwen2.5 RL**（阿里 2024）——RLHF + GRPO 训练。
-- **MAVIS**（2024）——数学专用 RL 训练。
-- **RStar-Math**（Microsoft 2024）——数学推理 RL。
+**反例信号（看起来像可以退出，其实不能）**：影子指标显著好于线上，但特征对账一直没做。此时好出来的那部分差距很可能只是训练特征口径更全，不是策略更强——一旦放量，这部分"优势"会消失，而止损线已经不知道该怎么设。
 
-### 4.4 代码 / 示例
+### 4.5 模板 / 示例
+
+以下六段是可直接套用的骨架，覆盖从单步决策到 Agent 工具调用的完整梯度。**删减原则**：示例里的模型结构、超参区间都可以换成你自己的；标了注释的那几行不要省。
 
 **示例 1：Contextual Bandit（推荐粗排）**
 
 ```python
-import numpy as np
 from vowpalwabbit import pyvw
-
-# Contextual Bandit（Vowpal Wabbit）
-class ContextualBandit:
-    def __init__(self, n_arms, n_features):
-        self.n_arms = n_arms
-        self.n_features = n_features
-        self.vw = pyvw.vw("--cb_explore_adf --epsilon 0.1")
-
-    def predict(self, context_features: list[list[float]]) -> int:
-        """预测最优 arm"""
-        examples = []
-        for arm_id in range(self.n_arms):
-            # 每个 arm 一个 example，共享 context
-            example = "|f features_" + " ".join(
-                f"{i}:{v}" for i, v in enumerate(context_features[0])
-            )
-            if arm_id > 0:
-                example = "shared |f" + " ".join(
-                    f"{i}:{v}" for i, v in enumerate(context_features[0])
-                )
-            examples.append(example)
-
-        return self.vw.predict(examples)
-
-    def update(self, context_features, chosen_arm, reward):
-        """在线更新"""
-        # VW 的在线学习接口
-        self.vw.learn(context_features, chosen_arm, reward)
+vw = pyvw.vw("--cb_explore_adf --epsilon 0.1")   # 探索率在这里是业务参数，不是超参
+# 一条 query：第一个 example 带 shared 前缀（上下文），其余每个 arm 一条
+examples = ["shared |u user_ctr_7d:0.03 hour:20",
+            "|a arm_id=1 price_band:2",
+            "|a arm_id=2 price_band:3"]
+action = vw.predict(examples)        # 选择本次要展示的 arm
+# 拿到真实反馈后回灌；回灌那一步的调用签名随库版本变动，按当前官方文档核验后再接
 ```
+
+**怎么用**：特征与 arm 的写法照抄结构、数值换成你自己的；探索率那一格要和流量预算商量，不能只由算法同学定。**反馈回灌那一格写错不会报错，只会让模型永不更新**——接完之后抽一天看模型输出是否随反馈变化，这是它唯一的验收动作。
 
 **示例 2：DQN（CartPole）**
 
 ```python
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import numpy as np
-import random
-from collections import deque
-import gymnasium as gym
-
-class DQN(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden=64):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(state_dim, hidden),
-            nn.ReLU(),
-            nn.Linear(hidden, hidden),
-            nn.ReLU(),
-            nn.Linear(hidden, action_dim)
-        )
-
-    def forward(self, x):
-        return self.net(x)
-
-class ReplayBuffer:
-    def __init__(self, capacity=10000):
-        self.buffer = deque(maxlen=capacity)
-
-    def push(self, state, action, reward, next_state, done):
-        self.buffer.append((state, action, reward, next_state, done))
-
-    def sample(self, batch_size):
-        return random.sample(self.buffer, batch_size)
-
-    def __len__(self):
-        return len(self.buffer)
-
-# 训练
 env = gym.make("CartPole-v1")
-state_dim = env.observation_space.shape[0]
-action_dim = env.action_space.n
-
-policy_net = DQN(state_dim, action_dim)
-target_net = DQN(state_dim, action_dim)
-target_net.load_state_dict(policy_net.state_dict())
-optimizer = optim.Adam(policy_net.parameters(), lr=1e-3)
-buffer = ReplayBuffer(10000)
-
-epsilon = 0.1
-gamma = 0.99
-batch_size = 64
-target_update = 10
-
-for episode in range(500):
-    state, _ = env.reset()
-    total_reward = 0
+policy, target = DQN(4, 2), DQN(4, 2)
+target.load_state_dict(policy.state_dict())      # 没有这一步，TD 目标自己在动
+buf = deque(maxlen=10000)                        # 生产环境把它换成落表 + behavior_policy_version
+for ep in range(500):
+    s, _ = env.reset()
     for t in range(200):
-        # ε-greedy
-        if random.random() < epsilon:
-            action = env.action_space.sample()
-        else:
-            with torch.no_grad():
-                q_values = policy_net(torch.tensor(state, dtype=torch.float32))
-                action = q_values.argmax().item()
-
-        next_state, reward, done, _, _ = env.step(action)
-        buffer.push(state, action, reward, next_state, done)
-        total_reward += reward
-
-        if len(buffer) > batch_size:
-            # 采样训练
-            batch = buffer.sample(batch_size)
-            states, actions, rewards, next_states, dones = zip(*batch)
-            states = torch.tensor(np.array(states), dtype=torch.float32)
-            actions = torch.tensor(actions, dtype=torch.int64)
-            rewards = torch.tensor(rewards, dtype=torch.float32)
-            next_states = torch.tensor(np.array(next_states), dtype=torch.float32)
-            dones = torch.tensor(dones, dtype=torch.float32)
-
-            q_values = policy_net(states).gather(1, actions.unsqueeze(1)).squeeze(1)
-            next_q_values = target_net(next_states).max(1)[0].detach()
-            target = rewards + gamma * next_q_values * (1 - dones)
-
-            loss = nn.MSELoss()(q_values, target)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-        if done:
-            break
-        state = next_state
-
-    # 更新 target network
-    if episode % target_update == 0:
-        target_net.load_state_dict(policy_net.state_dict())
-
-    print(f"Episode {episode}, Reward: {total_reward}")
+        a = env.action_space.sample() if random.random() < 0.1 else \
+            policy(torch.tensor(s).float()).argmax().item()
+        s2, r, done, _, _ = env.step(a)
+        buf.append((s, a, r, s2, done)); s = s2
+        if done: break
+    if ep % 10 == 0:                             # target 同步周期
+        target.load_state_dict(policy.state_dict())
 ```
+
+**怎么用**：`DQN(4, 2)` 两格是状态维度与动作数，照你的环境改；缓冲区与 target 同步周期照抄区间即可。真正要改的是 `buf` 这一行——demo 里用内存队列没问题，**生产里必须换成带 `behavior_policy_version` 的表**，这一格省掉，以后所有离线复算就都做不了。
 
 **示例 3：PPO（连续动作 - Pendulum）**
 
 ```python
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.distributions import Normal
-import gymnasium as gym
-
-class PPOActorCritic(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden=64):
-        super().__init__()
-        # Actor
-        self.actor = nn.Sequential(
-            nn.Linear(state_dim, hidden), nn.Tanh(),
-            nn.Linear(hidden, hidden), nn.Tanh(),
-            nn.Linear(hidden, action_dim)
-        )
-        # Critic
-        self.critic = nn.Sequential(
-            nn.Linear(state_dim, hidden), nn.Tanh(),
-            nn.Linear(hidden, hidden), nn.Tanh(),
-            nn.Linear(hidden, 1)
-        )
-        # log_std 可学习
-        self.log_std = nn.Parameter(torch.zeros(action_dim))
-
-    def forward(self, x):
-        mu = self.actor(x)
-        std = torch.exp(self.log_std)
-        dist = Normal(mu, std)
-        value = self.critic(x)
-        return dist, value
-
-# PPO 训练循环
-def ppo_train():
-    env = gym.make("Pendulum-v1")
-    state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.shape[0]
-
-    model = PPOActorCritic(state_dim, action_dim)
-    optimizer = optim.Adam(model.parameters(), lr=3e-4)
-
-    gamma = 0.99
-    clip_eps = 0.2
-    K_epochs = 4
-    eps_per_update = 20
-    max_t = 200
-
-    for update in range(200):
-        states_buf, actions_buf, rewards_buf, logprobs_buf = [], [], [], []
-        values_buf, dones_buf = [], []
-
-        for _ in range(eps_per_update):
-            state, _ = env.reset()
-            for t in range(max_t):
-                with torch.no_grad():
-                    dist, value = model(torch.tensor(state, dtype=torch.float32))
-                    action = dist.sample()
-                    logprob = dist.log_prob(action).sum()
-
-                next_state, reward, done, _, _ = env.step(action.numpy())
-
-                states_buf.append(state)
-                actions_buf.append(action.numpy())
-                rewards_buf.append(reward)
-                logprobs_buf.append(logprob.item())
-                values_buf.append(value.item())
-                dones_buf.append(done)
-
-                state = next_state
-                if done:
-                    break
-
-        # GAE 计算
-        returns = []
-        advantages = []
-        gae = 0
-        next_value = 0
-        for t in reversed(range(len(rewards_buf))):
-            if dones_buf[t]:
-                gae = 0
-                next_value = 0
-            delta = rewards_buf[t] + gamma * next_value - values_buf[t]
-            gae = delta + gamma * 0.95 * gae
-            advantages.insert(0, gae)
-            returns.insert(0, gae + values_buf[t])
-            next_value = values_buf[t]
-
-        # PPO 更新
-        states = torch.tensor(np.array(states_buf), dtype=torch.float32)
-        actions = torch.tensor(np.array(actions_buf), dtype=torch.float32)
-        old_logprobs = torch.tensor(logprobs_buf, dtype=torch.float32)
-        returns = torch.tensor(returns, dtype=torch.float32)
-        advantages = torch.tensor(advantages, dtype=torch.float32)
-        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
-
-        for _ in range(K_epochs):
-            dist, values = model(states)
-            logprobs = dist.log_prob(actions).sum(-1)
-            entropy = dist.entropy().sum(-1).mean()
-
-            ratio = torch.exp(logprobs - old_logprobs)
-            surr1 = ratio * advantages
-            surr2 = torch.clamp(ratio, 1 - clip_eps, 1 + clip_eps) * advantages
-            policy_loss = -torch.min(surr1, surr2).mean()
-            value_loss = ((returns - values.squeeze()) ** 2).mean()
-
-            loss = policy_loss + 0.5 * value_loss - 0.01 * entropy
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-ppo_train()
+# 只留最容易写错的两段：GAE 与 clip 目标
+gae, next_v = 0, 0
+for t in reversed(range(len(rewards))):
+    if dones[t]: gae, next_v = 0, 0
+    delta = rewards[t] + GAMMA * next_v - values[t]
+    gae = delta + GAMMA * LAMBDA * gae            # LAMBDA 是平滑因子
+    advantages.insert(0, gae); next_v = values[t]
+adv = (adv - adv.mean()) / (adv.std() + 1e-8)     # 优势归一化，不要删
+ratio = torch.exp(new_logp - old_logp)
+loss = -torch.min(ratio * adv, torch.clamp(ratio, 0.8, 1.2) * adv).mean()
 ```
+
+**怎么用**：`GAMMA` / `LAMBDA` / clip 区间（0.8–1.2 对应 ε=0.2）三格照抄；**优势归一化那一行不要删**，删了会表现为训练后期突然发散，而且换种子后时有时无，最难定位。K epochs 设 3–10【经验：随 batch 大小与任务方差变】——调大它是在拿 on-policy 的假设换样本效率，取舍见 [§ 3.2.3](06-rl-section-3-sec3.md)。
 
 **示例 4：RLHF / DPO 微调 LLM**
 
 ```python
-# DPO 训练（更简单、更稳定）
 from trl import DPOTrainer, DPOConfig
-from transformers import AutoModelForCausalLM, AutoTokenizer
-
-model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-7B-Instruct")
-ref_model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-7B-Instruct")  # 参考模型
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-7B-Instruct")
-
-# 偏好数据：prompt, chosen (好回答), rejected (差回答)
-train_dataset = [
-    {
-        "prompt": "解释什么是 RAG",
-        "chosen": "RAG 是检索增强生成...",
-        "rejected": "RAG 就是搜索。"
-    },
-    # ...
-]
-
-config = DPOConfig(
-    beta=0.1,
-    learning_rate=1e-5,
-    per_device_train_batch_size=2,
-    gradient_accumulation_steps=8,
-    num_train_epochs=1,
-    fp16=True,
-)
-
-trainer = DPOTrainer(
-    model=model,
-    ref_model=ref_model,
-    args=config,
-    train_dataset=train_dataset,
-    tokenizer=tokenizer,
-)
+model = AutoModelForCausalLM.from_pretrained(SFT_CKPT)
+ref   = AutoModelForCausalLM.from_pretrained(REF_CKPT)   # 写死路径，不要用"最新"
+config = DPOConfig(beta=0.1, learning_rate=1e-5,
+                   gradient_accumulation_steps=8, num_train_epochs=1)
+trainer = DPOTrainer(model=model, ref_model=ref, args=config,
+                     train_dataset=pref_ds)   # 偏好数据：prompt / chosen / rejected
 trainer.train()
 ```
+
+**怎么用**：`REF_CKPT` 必须是一个**写死的、不会再被训练的**路径——这是全段最要紧的一格，机制与症状见 4.2。「偏好对齐链路」；`beta` 与学习率照抄区间后按你的偏好数据量调整。字段与参数名随该库版本变动，接到自有训练栈之前以当前官方文档为准。
 
 **示例 5：GRPO（DeepSeek-R1 风格）**
 
 ```python
-# GRPO 简化实现（去掉 Critic）
-import torch
-import torch.nn.functional as F
-
-def grpo_loss(policy_model, ref_model, prompts, responses, rewards, group_size=4):
-    """
-    GRPO: Group Relative Policy Optimization
-    - 用组内相对优势替代 Critic
-    - 同一 prompt 生成 group_size 个回答
-    - 用组内奖励的归一化值作为优势
-    """
-    # 1. 计算组内相对优势
-    rewards_group = rewards.view(-1, group_size)
-    advantages = (rewards_group - rewards_group.mean(dim=1, keepdim=True)) / (
-        rewards_group.std(dim=1, keepdim=True) + 1e-8
-    )
-    advantages = advantages.view(-1)
-
-    # 2. 计算新策略 log prob
-    new_logprobs = compute_logprobs(policy_model, prompts, responses)
-
-    # 3. 计算参考策略 log prob
-    with torch.no_grad():
-        ref_logprobs = compute_logprobs(ref_model, prompts, responses)
-
-    # 4. PPO-style ratio
-    ratio = torch.exp(new_logprobs - ref_logprobs)
-
-    # 5. PPO clipped objective
-    surr1 = ratio * advantages
-    surr2 = torch.clamp(ratio, 1 - 0.2, 1 + 0.2) * advantages
-    policy_loss = -torch.min(surr1, surr2).mean()
-
-    # 6. KL 散度惩罚（可选）
-    kl = (ref_logprobs - new_logprobs).mean()
-    total_loss = policy_loss + 0.04 * kl
-
-    return total_loss
+def grpo_loss(new_logp, ref_logp, rewards, group_size=4, clip=0.2, kl_coef=0.04):
+    r = rewards.view(-1, group_size)
+    adv = ((r - r.mean(1, keepdim=True)) / (r.std(1, keepdim=True) + 1e-8)).view(-1)
+    ratio = torch.exp(new_logp - ref_logp)
+    policy_loss = -torch.min(ratio * adv,
+                             torch.clamp(ratio, 1 - clip, 1 + clip) * adv).mean()
+    kl = (ref_logp - new_logp).mean()      # KL 必须留：它是"别跑太远"的唯一约束
+    return policy_loss + kl_coef * kl
 ```
+
+**怎么用**：`group_size` 要能和你的采样吞吐匹配——组内比较要求同一 prompt 采多个回答，采样开销直接乘上这个数【经验：随推理吞吐与显存余量变，常见取 4–16】。`ref_logp` 必须来自冻结的 reference，与示例 4 是同一条要求；`kl_coef` 调小看起来能让奖励涨得更快，代价是策略更快离开有数据支撑的区域。
 
 **示例 6：Agent RL（Tool Use）**
 
 ```python
-# Agent RL 框架（简化）
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
-
 class ToolUseAgent:
-    """训练 Agent 通过 RL 学习 Tool 调用"""
-    def __init__(self, llm, tools):
-        self.llm = llm
-        self.tools = tools  # {"search": search_fn, "code": code_fn, ...}
-
-    def step(self, prompt, max_steps=10):
-        """执行一个 episode"""
-        history = prompt
-        total_reward = 0
-
-        for step in range(max_steps):
-            # LLM 决定动作（Tool 调用或回答）
-            response = self.llm.generate(history)
-            tool_name, tool_args = parse_tool_call(response)
-
-            if tool_name is None:
-                # 最终回答
-                final_answer = response
-                break
-
-            # 执行 Tool
-            if tool_name in self.tools:
-                tool_result = self.tools[tool_name](**tool_args)
-                history += f"\nTool: {tool_name}\nResult: {tool_result}"
-
-        # 计算奖励（基于最终答案 + 中间步骤）
-        reward = self.compute_reward(final_answer, gold_answer, history)
-        return history, reward
-
-    def compute_reward(self, final, gold, history):
-        """奖励函数：答案正确性 + Tool 使用效率"""
-        answer_reward = 1.0 if final == gold else 0.0
-        # 步骤惩罚（鼓励简短路径）
-        step_penalty = -0.01 * history.count("Tool:")
-        return answer_reward + step_penalty
-
-# 用 PPO 训练 Agent
-def train_agent_rl(agent, episodes=1000):
-    optimizer = torch.optim.Adam(agent.llm.parameters(), lr=1e-5)
-
-    for episode in range(episodes):
-        prompt, gold_answer = sample_task()
-        history, reward = agent.step(prompt)
-        # PPO 更新（基于 trajectory 的策略梯度）
-        # ... （详见 PPO 实现）
+    def __init__(self, llm, tools):        # tools: {"search": fn, "code": fn, ...}
+        self.llm, self.tools = llm, tools
+    def step(self, prompt, max_steps=10):  # 一条 episode = 一串 (obs, action, tool_result)
+        history, tool_calls = prompt, 0
+        for _ in range(max_steps):
+            name, args = parse_tool_call(self.llm.generate(history))
+            if name is None: break                     # 模型给出最终答案
+            assert name in self.tools, f"未注册工具：{name}"   # 沙盒边界
+            history += f"\nTool: {name}\nResult: {self.tools[name](**args)}"
+            tool_calls += 1
+        reward = 1.0 if rule_verifier(history, gold) else 0.0  # 终局奖励交给验证器
+        return history, reward - 0.01 * tool_calls    # 步骤惩罚：鼓励短路径
 ```
 
----
+**怎么用**：`max_steps` 与步骤惩罚系数照抄后按你的工具成本调。真正必须改的是 `self.tools`——**生产里它必须指向沙盒，不能指向真实系统**；这一格写错，训练会直接污染线上，而且先发现的是值班告警，不是训练日志。终局奖励那一行不要用手写启发式替换 `rule_verifier`：验证器可以被审计，启发式不能。
+
+### 4.6 自检清单
+
+以下 12 条都只在**系统已经跑起来之后**才有答案。设计期的检查（奖励是否与业务量对应、模式选得对不对、日志该埋什么）不在这里重复，见 [§ 3.7](06-rl-section-3-sec3.md)。
+
+- [ ] 抽 3 条线上决策【经验：随决策量变，量小则全查】，决策日志里能否查到它们的 `propensity` 与 `behavior_policy_version`？查不到，就先别开离线训练的工单——补埋点拖一天，能用于训练的窗口就短一天。
+- [ ] 抽同 3 条决策，用在线特征管道与训练特征管道各算一遍输入，差异是否在容差内？训练/服务特征不一致是上线后指标下跌最常见的原因。
+- [ ] 训练侧的数据版本号，最近一次变更距今多久？长期没变而训练仍在跑，说明奖励或标注链路已经断供但没人发现。
+- [ ] 拿到 3 个随机种子【经验：随方差与决策后果变，后果越重越多】的评估曲线，看分位数是否重叠？只有一条曲线时，评审会上没人敢签"继续放量"。
+- [ ] 从任意一次 checkpoint 恢复，能否复现同一评估值？不能复现，说明评估口径里混进了未记录的随机性。
+- [ ] 影子模式的输出与线上实际回报的偏差，最近一个窗口是否落在容差内？超差还继续放量，就是把双轨当成了验收。
+- [ ] 回滚脚本最近一次被真实执行是什么时候？只在文档里演练过，就不算有回滚能力。
+- [ ] 决策日志里 `policy_version` 最近一次变更距今多久？长期不变而对外仍称"线上在跑 RL"，实际已经是批量或静态策略。
+- [ ] 奖励函数的改动是否走了与模型参数相同的变更流程（评审 + 留痕）？只改代码里的权重常量而不留痕，会让"哪一版奖励产生了这条曲线"变成不可回答。
+- [ ] 探索流量是否被单独计量并计入成本？它不该隐身在总流量里，否则探索预算永远没人对它负责。
+- [ ] 若做 Agent RL：随机抽一条训练期的工具调用日志，看它落到沙盒还是真实系统？
+- [ ] 若做 LLM RL：reference 模型的版本在训练全程是否固定？中途被更新过，KL 与偏好胜率会漂而不报错。
+
+### 4.7 小结
+
+> 本节小结：这条链路里**唯一决定成败的环节是"在第一次训练之前，把决策日志和影子通道建好"**——`propensity`、行为策略版本、可选动作集合这三样东西，只能在决策发生的那一刻被记录。它比算法选型、比算力预算都更值得提前投入，因为算法选错了可以换、算力不够可以加，而日志缺了字段是不可逆的：所有依赖它的离线评估、上线判断和回滚依据会同时失效，且失效时不会有任何报错。第二值得投入的是影子模式——它把最贵的那次失败搬到没有后果的地方。
+>
+> 配合 [§ 2 核心原理](06-rl.md)、[§ 3 设计模式与范式](06-rl-section-3-sec3.md) 与 [§ 6 落地实践](06-rl-section-6-sec6.md) 阅读。

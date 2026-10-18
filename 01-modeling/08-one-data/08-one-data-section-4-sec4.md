@@ -1,510 +1,360 @@
-> 本文件是 **08-one-data.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](08-one-data.md)。
+> 本文件是 **08-one-data.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](08-one-data-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](08-one-data.md)。
 
 ## 4. 工程实现
 
+OneData 的落地与"上一个数据平台"不是同一件事：平台有交付日期，OneData 没有；平台装完就能演示，OneData 装完的第一个可见结果往往是"某个部门原来在用的那张表不许再用了"。因此本节不按模块组织，而按**顺序、判据、产物**组织——每一步都要能回答：这一步结束时手上多了什么可以被别人检查的东西；省掉它会让后面哪一步返工。本节覆盖两类读者：0 → 1 的读者按 4.1 的 Step 1–3 建立最小可运行集，存量迁移只看 4.4；存量改造的读者**先读 4.4**，再回来按 Step 4–8 加装。两条路径 Step 编号相同，差别在判据的从严程度：存量侧每一步都要额外满足"不影响当前排期"。
+
 ### 4.1 落地步骤
 
-```
-步骤 1：组织与制度准备
-  ├─ 成立数据中台 / 数据治理委员会
-  ├─ 任命数据 Owner（指标 Owner / 表 Owner / 主数据 Owner）
-  └─ 发布 OneData 规范（命名 / 分层 / 指标 / 主数据）
+八个步骤的顺序不是工序顺序，而是**依赖顺序**：每一步的产出物是下一步判据的输入。Step 1 定下的 Owner 名单是 Step 3 评审会的到会人，Step 3 产出的分层与命名规则是 Step 4/5 挂载标识与指标的物理落点。
 
-步骤 2：工具选型与平台搭建
-  ├─ 数据建模工具（ERWin / PowerDesigner / 阿里 DATABUILD）
-  ├─ 指标平台（阿里指标平台 / 字节 Bytemetric / 火山引擎 DataFinder）
-  ├─ 主数据平台（自研 / 阿里 ID-Mapping / 神策 ID-Mapping）
-  ├─ 数据服务网关（自研 / Apache APISIX / 阿里 DataWorks 服务化）
-  └─ 血缘与治理（Apache Atlas / 阿里 DataWorks 血缘 / DataHub）
+**Step 1：组织与制度准备（2–4 周【经验：随 BU 数量与决策链长度变，跨 3 个以上 BU 通常翻倍】）**
 
-步骤 3：OneModel 落地
-  ├─ 数据域划分（交易 / 营销 / 物流 / 财务）
-  ├─ 业务过程识别（每个域 5–10 个核心过程）
-  ├─ 数据分层规范（ODS/DWD/DWS/ADS/DIM）
-  ├─ 命名规范实施（表名 / 字段名 / 指标名）
-  └─ 模型评审机制（每个新表都要评审）
+- 成立数据中台 / 数据治理委员会，并明确它**有裁决权**，不是协调会。
+- 任命三类 Owner：指标 Owner / 表 Owner / 主数据 Owner，全部**具体到人**，不写团队名。
+- 发布 OneData 规范第一版，只覆盖命名、分层、指标、主数据四条，范围先限定 1 个数据域。
+- **产物**：一份 Owner 花名册（人名 + 负责的资产范围 + 交接人）+ 一页规范。
+- **判据**：随手挑 3 张在用的核心表，问"改这张表的结构要找谁签字、改它的口径要找谁签字"；花名册上要能点出两个名字，且去问这两个人本人，他们都知道自己被授予了这个签字权（不要问花名册的维护者）。
+- **为什么必须这一步、为什么在最前面**：Step 3 的模型评审与 Step 5 的口径归并，本质都是对"两个部门的做法不一样"做裁决。没有预先授权的裁决者，评审会退化成"谁在会议室里资历高听谁的"，归并会卡在"两个部门都不认对方的数"；这两件事一旦卡住，后面所有步骤的产出物都失去合法性，且无法靠加工具解决。
 
-步骤 4：OneID 落地
-  ├─ 跨域 ID 盘点（有哪些 ID？来源？覆盖率？）
-  ├─ 强匹配实施（手机号 / 邮箱 / 身份证）
-  ├─ 弱匹配实施（设备 ID + 行为序列）
-  ├─ ID-Mapping 算法上线（图推理 / embedding）
-  ├─ OneID 服务化（提供 API："给我一个手机号，返回完整 OneID")
-  └─ 持续治理（实体对齐、版本管理）
+**Step 2：工具选型与平台搭建（4–8 周【经验：走商用套件快、走开源自建慢，随需自研的模块数变】）**
 
-步骤 5：指标体系落地
-  ├─ 原子指标盘点（业务方访谈 + 报表反推）
-  ├─ 派生指标梳理（原子 + 时间 + 修饰）
-  ├─ 指标定义中心建立（每个指标都有定义、口径、Owner）
-  ├─ 指标计算上线（基于 DWS / ADS 自动计算）
-  ├─ 指标服务化（提供 API / 报表）
-  └─ 指标血缘追踪（上游字段 / 下游应用）
+- 数据建模工具：ERWin / PowerDesigner / 阿里 DATABUILD，或直接以 SQL + Git 管理 DDL。
+- 指标平台：阿里指标平台 / 字节 Bytemetric / 火山引擎 DataFinder，或 Apache Doris + 自研 / Cube.js。
+- 主数据平台：自研 / 阿里 ID-Mapping / 神策 ID-Mapping。
+- 数据服务网关：自研 / Apache APISIX / 阿里 DataWorks 服务化。
+- 血缘与治理：Apache Atlas / 阿里 DataWorks 血缘 / DataHub。
+- **产物**：一份"工具 → 规范条款"对照表，逐行写明每个工具负责执行规范的哪一条、由谁运维。
+- **判据**：把规范里最严的一条（例如"不符合命名的表禁止发布"）拿去工具里跑一次**故意违规**的建表，确认它真的被拒绝，而不是只弹一个提示。
+- **为什么必须在这一位置**：工具必须晚于规范。先选工具再写规范，规范会被工具的能力边界反向塑形——买的工具不支持字段级血缘，规范里的字段级要求会在三到六个月内自动消失【经验：随工具是否留出扩展点、以及这条要求有没有挂进门禁变——两样都没有时消失得最快】，而没有任何人会宣布这个决定。
 
-步骤 6：OneService 落地
-  ├─ 数据服务网关（API 网关 + 鉴权 + 限流）
-  ├─ 服务分层（Query API / Push API / Realtime API）
-  ├─ 服务编排（复杂查询编排 + 缓存策略）
-  ├─ 服务监控（QPS / 延迟 / 错误率 / 业务指标）
-  └─ 服务治理（版本 / 灰度 / 熔断）
+**Step 3：OneModel 落地（6–12 周【经验：随数据域数与源系统数变】）**
 
-步骤 7：AI 增强（OneData 4.0）
-  ├─ 指标向量化（指标 embedding 用于语义检索）
-  ├─ 主数据知识图谱化（OneID 升级为 KG）
-  ├─ 服务 RAG 化（API 自动生成文档 + LLM 可调用）
-  └─ AI 资产管理（指标 / 主数据 / 服务 / 模型四件套）
+- 数据域划分（交易 / 营销 / 物流 / 财务），域之间通过 OneID 打通。
+- 业务过程识别：每个域先列 5–10 个核心过程【经验：随业务复杂度变；超过 15 个通常说明域划得太粗，该拆域而不是继续列过程】。
+- 数据分层规范落地（ODS / DWD / DWS / ADS / DIM），把"禁止逆向引用"写成可校验的规则。
+- 命名规范实施（表名 / 字段名 / 指标名），规则要能被工具解析。
+- 模型评审机制：每个新表都要评审，评审入口与 Step 2 的校验器是同一个。
+- **产物**：数据域—业务过程清单 + 分层与命名的可解析规则 + 最近一次评审记录。
+- **判据**：把规范交给一个没参与制定它的开发，让他为 3 个新需求各起一个表名，3 个都能通过自动校验，且不需要回头问制定者"我这个算不算合规"。
+- **为什么必须这一步**：OneModel 是 OneID 与指标体系的**物理落点**——标识要挂在明细事实表上（主体的载体），指标要落在 DWS / ADS 上，两件事都要求分层与粒度先被定死。跳过它直接建指标平台，指标会各自贴源系统，之后再统一，代价是把所有指标实现重写一遍。
 
-步骤 8：持续治理与迭代
-  ├─ 数据质量监控（完整性 / 准确性 / 时效性）
-  ├─ 指标口径审计（每月抽检 10% 指标）
-  ├─ 主数据质量（实体对齐率 / 覆盖率）
-  ├─ 服务稳定性（SLA 99.9%+）
-  └─ AI 资产化指标（特征使用率 / 模型复用率）
-```
+**Step 4：OneID 落地（8–16 周【经验：随源系统数与标识种类数变】）**
+
+- 跨域 ID 盘点：有哪些 ID、来自哪个系统、覆盖率多少、谁在写。
+- 强匹配实施（手机号 / 邮箱 / 身份证），先跑确定性合并，把问题规模缩小。
+- 弱匹配实施（设备 ID + 行为序列），只在跨连通分量处提议合并，每条提议留置信度。
+- ID-Mapping 算法上线（图推理 / embedding），阈值必须用标注样本校准。
+- OneID 服务化：提供 API，"给我一个手机号，返回完整 OneID"。
+- 持续治理：实体对齐、版本管理、合并与回滚的影响面评估。
+- **产物**：一张映射表（每条记录带匹配层级、置信度、依据、生效期）+ 一个可回滚的合并流程。
+- **判据**：抽 3 组已合并记录人工核对依据是否成立，再抽 3 个别名（明显同一人 / 同一商品但未被合并）看漏合并；两次抽样结果都要能写进同一张工单。
+- **为什么必须在这一位置**：Step 5 的去重类指标（UV、复购、留存）分母来自 OneID。先建指标后建 OneID，所有去重指标都要在 OneID 上线后重算并重发；反序则一次算对。
+
+**Step 5：指标体系落地（6–12 周【经验：随原子指标数变，口径归并往往比平台建设更久】）**
+
+- 原子指标盘点：业务方访谈 + 报表反推，两条路都要走（只访谈会漏掉已在跑但没人提的口径）。
+- 派生指标梳理：原子指标 + 时间周期 + 修饰词 + 业务限定。
+- 指标定义中心建立：每个指标都有定义、口径、版本与 Owner。
+- 指标计算上线：基于 DWS / ADS 计算，**不许绕过公共层**。
+- 指标服务化：提供 API / 报表，消费方拿指标不拿物理表。
+- 指标血缘追踪：上游字段、下游应用双向可查。
+- **产物**：可版本化的指标定义记录 + 一条从字段到指标到应用的可遍历血缘。
+- **判据**：随机抽 5 个指标，用定义重算当天值并与线上报表比对；差异必须能逐条解释，**不允许出现"解释不了但量级差不多"的条目**。
+- **为什么必须这一步、为什么不能与 Step 6 换序**：指标服务对外承诺口径，OneService 对外承诺接口与 SLA。口径没定就跑服务化，接口会把每个团队自己的口径固化成契约，之后改口径要背着全部消费方改（§3.2.4 的代价），成本随消费方数量增长。
+
+**Step 6：OneService 落地（6–10 周【经验：随接口数与兼容期长度变】）**
+
+- 数据服务网关：API 网关 + 鉴权 + 限流，三者配在网关而不是各消费方。
+- 服务分层：Query API / Push API / Realtime API，三类对上游的依赖形态不同。
+- 服务编排：复杂查询编排 + 缓存策略（TTL 与失效条件必须显式约定）。
+- 服务监控：QPS / 延迟 / 错误率 / 业务指标，四项都要有面板。
+- 服务治理：版本 / 灰度 / 熔断，下线旧版本走废弃流程并约定兼容期。
+- **产物**：一份服务注册表，每行含契约、SLA、鉴权、Owner，且 `source_asset` 指向资产（指标名 / DWS 表）而不是物理表名。
+- **判据**：问"上游把这张表重命名，有多少消费方要改代码"，答案必须能在半小时内从注册表里列出来。列不出来，说明这是代理不是服务。
+- **为什么必须这一步**：它是前面五步的唯一出口。没有出口，前五步的成果只能靠"自觉查规范"传达到消费侧，而消费侧是最没有动力守规范的一环。
+
+**Step 7：AI 增强（OneData 4.0）（持续，无固定工期【经验：随机器可读元数据的完备度变，元数据不齐时先补元数据】）**
+
+- 指标向量化：指标 embedding 用于语义检索（"我要算复购率"能命中正确的指标与上游）。
+- 主数据知识图谱化：OneID 升级为图，边带来源与生效期。
+- 服务 RAG 化：API 自动生成文档 + 让 LLM 可调用。
+- AI 资产管理：指标 / 主数据 / 服务 / 模型四件套统一登记。
+- **产物**：一份"生成物 → 权威元数据"对照表，逐条写明每个生成物的校验来源。
+- **判据**：任取一条模型生成的业务含义，追到它对应的权威元数据行；追不到就说明它只是草稿，必须挡在人审之外。
+- **为什么必须排在 Step 5/6 之后**：这四项能力的输入都是已存在的机器可读权威（命名语法、指标定义表、血缘图）。权威没建起来时上 LLM，产出的是看起来合理、无法判对错的描述；这类生成物一旦进资产库，会被检索与 Agent 直接消费，错误无法被定位到条（§3.2.6 的失效点）。
+
+**Step 8：持续治理与迭代（长期）**
+
+- 数据质量监控：完整性 / 准确性 / 时效性，异常沿血缘定位到 Owner。
+- 指标口径审计：每月抽检 10% 指标【经验：比例随指标总数与上次抽检命中率变，命中率高的季度应上调】。
+- 主数据质量：实体对齐率 / 覆盖率，两项分开看（对齐率不掉而覆盖率不涨，说明新源没接入）。
+- 服务稳定性：SLA 先按 99.9% 量级设定【经验：随业务时段与降级方案变，对外承诺前必须先做一次容量演练】。
+- AI 资产化指标：特征使用率 / 模型复用率。
+- **产物**：一份月度治理报告，每项指标带环比与归因到具体资产。
+- **判据**：报告里每条异常都能追到一个具体的人并被关闭；连续两个月出现"同一资产同一问题"即视为这条治理链路失效。
+- **为什么必须这一步**：前面七步只保证"建的时候是对的"。没有第 8 步，规范会随人员流动被逐条绕过，且没有任何机制会报告这件事。
+
+八步里**最常被跳过的是 Step 1 的"Owner 具体到人"**——花名册上写团队名同样能交差，当场不会有人反对。它出问题的时点可以预测：第一次两个部门对同一指标有争议时（通常落在 Step 5 之后一到两个月【经验：随组织决策链长度变，跨事业部时更晚，也可能到季度预算复盘才暴露】）。症状不是争吵，而是会议散了没有结论——每方都说"回去再核一下数据"，因为没有人被授权宣布哪个口径为准。此时再补任命已经晚了：争议已变成部门立场，找一个空降裁决者要付出的组织成本，远高于一开始就把两个名字写进花名册。
 
 ### 4.2 关键技术点
 
-**关键技术点 ① 数据分层的单向流动性**
+以下八条覆盖本主题的全部关键技术点，格式统一为「做法 → 机制 → 失效条件」。机制一栏写的都是**实施期才存在的东西**（值班、审批流、账单、SLO、演练结果），与 §3.2 里各模式的"为什么有效"不重复。
 
-- ODS → DWD → DWS → ADS，单向流动
-- 上层可引用下层，下层严禁引用上层
-- 工具：Apache Atlas 血缘强制校验
+**技术点 ① 数据分层的单向流动性**
 
-**关键技术点 ② 命名规范的可执行化**
+- **做法**：ODS → DWD → DWS → ADS 单向流动；上层可引用下层，下层严禁引用上层；用血缘工具（Apache Atlas 一类）在 CI 里做跨层引用校验。
+- **机制**：因为分层方向由 CI 里的跨层引用校验执行、而不是靠评审会记着，越层引用会在合并请求上被直接驳回、并生成一条落在**当周建模值班人**头上的待办——“这张表该放哪一层”的裁决成本从一次会议降成一次提交；又因为层是单向的，一次上游修正只落在“只向下依赖”的子图里，回刷由值班人按受影响分区数排期，而不是让全网等着。代价是每个需求都必须先回答“我该落在哪一层”，不能再就近塞进最方便的表。
+- **失效条件**：当出现便利性倒挂（临时看板直查 ODS、DWD 反向 JOIN DWS）时，**值班表上会出现同一张 ODS 表在凌晨被多个非 ODS 作业并发读取**；症状是 ODS 集群负载曲线与 DWS 调度窗口重合，且一次 DWD 回刷之后下游报表数量发生意外变化——因为有人绕过 DWS 直接读了 DWD。
+- **档位**：【经验】
 
-- 工具自动校验（如 Hive / Spark SQL parser）
-- CI / CD 集成（不符合规范的表禁止上线）
-- 例：阿里 DataWorks 的"命名规范校验器"
+**技术点 ② 命名规范的可执行化**
 
-**关键技术点 ③ 指标定义的"四要素+Owner"**
+- **做法**：把命名规则写成可解析的语法（正则或手写 parser），接进 CI/CD，不符合规范的表禁止上线；代表实现是各家治理平台内置的命名规范校验器（阿里 DataWorks 一类），是否支持按你的规则定制，以该产品官方文档当前版本为准。
+- **机制**：因为规则是机器可读的，裁决从“评审会上对人解释”变成“合并请求上工具判对错”——驳回记录留在提交里、由提交人自己改，评审会的排期与到会人不再是瓶颈，所以**规范的执行成本与表数量无关**（人工评审的带宽是线性的，先撞上的从来不是评审时间而是每周能排几场评审会）；代价是规则上线后难以放宽——放宽意味着新老两套语法并存，校验器必须同时容纳两者。
+- **失效条件**：当规则长到需要查文档才能起名时（例如表名要把层级、域、业务过程、时间粒度与自定义后缀全拼进去【经验：随团队对名字长度的容忍度变，规则越长越容易被绕】），团队很少公开反对，而是走**豁免**这条路：值周同学手上的例外白名单越拉越长，每一条都有人签过字。症状反直觉——门禁报出来的**命名合规率很好看**，但另外两个数在往坏处走：**建表工单的平均停留时长**在上升（提交人反复改名重提），**表检索的命中质量**在下降（搜一个业务过程出来多张同义表，按名字已经分不出哪张是权威）。这时的成本已经高于不合规，而它不落在任何一个你正在盯的指标上。
+- **档位**：【经验】
 
-- 原子指标、时间周期、修饰词、业务限定 + Owner
-- 指标定义文档化（Markdown / Wiki）
-- 指标计算与定义强校验（计算结果与定义不一致就告警）
+**技术点 ③ 指标定义的"四要素 + Owner"**
 
-**关键技术点 ④ OneID 的工程化实现**
+- **做法**：原子指标 + 时间周期 + 修饰词 + 业务限定 + Owner；定义文档化；指标计算结果与定义不一致时告警。
+- **机制**：因为每条派生指标必须挂在一条原子指标上，"两个团队算出两个 GMV"会落在一条**可比较的记录**上（不同的原子指标，或同一原子指标但业务限定不同）；代价是定义中心成为发布链路上的单点，任何口径变更都要走版本与评审。
+- **失效条件**：当紧急取数需求开始绕开定义中心直连 DWS 时，这条会坏成"平台里只有一个 GMV，报表里有两个"。症状是值班时有人报"这两张看板数对不上"，而查指标定义表同名指标只有一行——差异在血缘之外；沿血缘回追会发现有链路的起点是物理表而不是指标名。
+- **档位**：【经验】
 
-- 强匹配：精确字段匹配（手机号 hash、身份证 hash）
-- 弱匹配：embedding 相似度（行为序列 embedding 余弦相似度 > 0.85）
-- 图匹配：异构图链接预测（详见 06-graph-reasoning）
-- 离线 + 实时双链路：离线批量匹配（T+1），实时匹配（Kafka 流）
+**技术点 ④ OneID 的工程化实现**
 
-**关键技术点 ⑤ 指标血缘的双向追溯**
+- **做法**：强匹配（手机号哈希 / 身份证哈希精确匹配）、弱匹配（设备 ID + 行为序列 embedding 余弦相似度 ≥ 阈值）、图匹配（异构图链接预测，详见 07-graph-reasoning）；离线批量（T+1）与实时（Kafka 流）双链路。
+- **机制**：因为强匹配先跑且是确定性的，它把待合并集合切成若干连通分量，弱匹配只在**跨分量处**提议合并；所以假合并的数量与阈值挂钩，而不是与数据量挂钩；代价是每条弱匹配边都要留置信度与依据，合并变成一次可回滚、要通知下游并触发重算的变更。
+- **失效条件**：阈值是起点参数不是常数【经验：初始值可设在余弦相似度 0.85 附近，必须以标注样本校准】。当设备指纹与行为分布漂移、而阈值一年没重新校准时【经验：一年不是常数，随接入端的种类与指纹算法的更换频率变——每接入一类新端、或换一次指纹算法，都应重校一次】，它会坏成**覆盖率不变但 UV 缓慢偏离独立口径**——因为假合并增加与漏合并减少同时发生，两个方向互相抵消，总量看起来正常。它出现得最晚：通常到下一个结算周期对账时才被发现，且此时要回溯历史口径。
+- **档位**：阈值【经验】
 
-- 上游：指标 → 派生指标 → 原子指标 → 字段 → 表 → 系统
-- 下游：表 → 字段 → 原子指标 → 派生指标 → 指标 → 应用
-- 工具：Apache Atlas、DataHub、阿里 DataWorks 血缘
+**技术点 ⑤ 指标血缘的双向追溯**
 
-**关键技术点 ⑥ 数据服务的"四统一"**
+- **做法**：上游：指标 → 派生指标 → 原子指标 → 字段 → 表 → 系统；下游：表 → 字段 → 原子指标 → 派生指标 → 指标 → 应用；工具：Apache Atlas / DataHub / 阿里 DataWorks 血缘。
+- **机制**：因为血缘把"指标"与"字段"连成一条可遍历路径，改一个字段时"影响哪些指标"从一轮人工问询变成一次图查询；代价是血缘必须自动采集并定时校准，否则会静默过期。
+- **失效条件**：当血缘的最后更新时间超过一个调度周期（作业已经天天在跑、血缘还停在上个月）时，这条会坏成**给出错误的零**：改表前查影响面，结果显示 0 个下游，第二天早上三个报表同时失败。信号就在面板上——血缘新鲜度曲线一旦出现台阶，门禁就已经不可信了；它比"没有血缘"更危险，因为人会对旧血缘直接照信。
+- **档位**：【经验】
 
-- 统一接口（REST / gRPC / GraphQL）
-- 统一鉴权（OAuth 2.0 / RBAC）
-- 统一限流（Sentinel / Envoy）
-- 统一监控（Prometheus / Grafana）
+**技术点 ⑥ 数据服务的"四统一"**
 
-**关键技术点 ⑦ 实时 OneData（流批一体）**
+- **做法**：统一接口（REST / gRPC / GraphQL）、统一鉴权（OAuth 2.0 / RBAC）、统一限流（Sentinel / Envoy）、统一监控（Prometheus / Grafana）。
+- **机制**：因为契约、鉴权、限流、监控四件事都挂在网关上而不是各消费方的代码里，上游换引擎或改名时改动只发生在一处；代价是网关成为全部取数流量的单点，一次错配的限流规则会同时影响所有消费方。
+- **失效条件**：当出现"绕过网关直连数据库"的取数方式时，这条会坏在**容量估算上而不是错误率上**。症状：网关 QPS 曲线一直平稳，但数仓 OLAP 连接数在清晨突增；某次按网关指标做的容量演练，结果仍然把集群打穿。**限流保护要先验证旁路是否存在，再验证阈值是否合适**。
+- **档位**：【经验】
 
-- 离线层：Hive / Spark 批量处理
-- 实时层：Flink / Kafka Streams 实时处理
-- 统一服务：Lambda 架构 / Kappa 架构 / 湖仓一体
+**技术点 ⑦ 实时 OneData（流批一体）**
 
-**关键技术点 ⑧ OneData 与 AI 平台的双向打通**
+- **做法**：离线层（Hive / Spark 批量处理）、实时层（Flink / Kafka Streams 实时处理）、统一服务（Lambda 架构 / Kappa 架构 / 湖仓一体）。
+- **机制**：因为离线与实时是两条物理链路，同一个指标必然有两个实现，所以"实时数与离线数一致"只能由**对账**保证，不能由设计保证；代价是多一份对账作业与一套"不一致时改哪一边"的处置流程，这套流程必须写清责任人，否则对账会变成没人认领的日报。
+- **失效条件**：当对账作业连续失败、或它的告警进了无人值班的频道时，这条会坏成**两套口径各自演化**。症状是大屏实时值与前一日 T+1 报表的差异逐日扩大，而两边都有人能自证"我的逻辑没改"——此时实时链路实际上已经不在 OneData 之内了。
+- **档位**：【经验】
 
-- OneData → AI：指标 / 主数据作为 AI 特征
-- AI → OneData：模型预测回流到 OneData（在线学习）
-- 工具：阿里 PAI / 字节 BytedanceML / 美团 ML Plat
+**技术点 ⑧ OneData 与 AI 平台的双向打通**
 
-### 4.3 工具链与平台（含 2024–2025 新工具）
+- **做法**：OneData → AI：指标 / 主数据作为 AI 特征；AI → OneData：模型预测回流到 OneData（在线学习）；工具：阿里 PAI / 字节 BytedanceML / 美团 ML Plat 一类。
+- **机制**：因为指标定义与特征定义共用同一份原子指标引用，模型效果归因与业务复盘才能对齐到同一个量（否则"模型上线后 GMV 涨了"这句话没有可校验的所指）；代价是回流链路上必须有闸——把模型输出写回权威资产，等于让模型误差获得口径地位。
+- **失效条件**：当回流是自动且无采样复核时，这条会坏成**模型误差成为口径的一部分**。症状：某个预测类字段开始出现在核心指标的上游血缘里，而问"它的准确率是多少、怎么量的"没有人能回答；通常要到财务口径复盘、需要解释某个月指标异常时才被发现，此时历史数据里已混入不可区分的预测值。
+- **档位**：【经验】
 
-**数据建模与治理平台**：
+### 4.3 工具链与平台
 
-| 平台 | 厂商 | 特点 | 适用 |
+选型不能只看"谁功能多"，要看你的约束落在哪一栏。下表每一行给的是判据：先定位约束，再在候选里挑；候选列保留了各类别下读者实际会用的产品名。
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
 | --- | --- | --- | --- |
-| DataWorks | 阿里 | OneData 全套工具链 + 商业版 | 阿里生态企业 |
-| DataLeap | 字节 | 数据治理 + 数据开发 + 血缘 | 字节生态企业 |
-| 火山引擎 DataFinder | 字节 | 指标平台 + 治理 | 火山引擎客户 |
-| 神策数据中台 | 神策 | 用户行为分析 + OneID | 用户运营场景 |
-| Apache Atlas | Apache | 元数据 + 血缘（开源） | 自建中台 |
-| DataHub | LinkedIn | 元数据平台（开源） | 自建中台 |
-| Amundsen | Lyft | 数据发现（开源） | 自建中台 |
-| Unity Catalog | Databricks | 湖仓治理 | Databricks 生态 |
+| 一体化治理平台 | 阿里 DataWorks、字节 DataLeap、火山引擎 DataFinder、神策数据中台 | 组织已在该云 / 该生态内，且愿意接受"平台定的规范就是我们的规范" | 自建要自己定义并维护元数据模型、血缘解析、权限模型三套东西 |
+| 元数据与血缘 | Apache Atlas、DataHub（LinkedIn 开源）、Amundsen（Lyft 开源）、阿里 DataWorks 血缘 | 要把血缘开放给目录 / 质量 / 权限 / CI 多系统共用，且愿意自己接采集器 → 开源件；已选一体化平台 → 用它内置的血缘 | 用封闭平台时血缘只在该平台内可见，CI 门禁拿不到它，其他系统各自解析一遍 SQL |
+| 湖仓治理 | Unity Catalog（Databricks） | 数据已在湖仓上，权限与血缘希望统一在存储层做 | 在湖仓之上另建一层治理，权限会出现两个真相源 |
+| 建模工具 | ERWin、PowerDesigner、阿里 DATABUILD | 有大量需跨人评审的实体关系，团队规模大到口头约定失效 | 以 DDL + Git 管理可省工具费，但要自己搭评审流程，模型图与实现容易分叉 |
+| 指标平台 | 阿里指标平台、字节 Bytemetric、神策指标平台、Apache Doris + 自研、Cube.js、Lightdash、Metabase | 判据是“是否存在同一指标被 3 个以上团队计算且争议未决【经验：3 只是起点，随组织内指标总数与是否已有裁决机制变；争议有没有进过正式裁决场合，比团队数更能说明问题】”；有争议 → 必须要定义中心，无争议 → 开源 BI 够用 | 只上 BI 不上定义中心，会把口径混乱搬进同一个系统并赋予它权威外观 |
+| 主数据 / ID-Mapping | 自研、阿里 ID-Mapping、神策 ID-Mapping 5.0、Informatica MDM、IBM InfoSphere MDM | 标识种类少且规则确定 → 自研；需要跨端行为匹配与标注校准 → 商业化 ID-Mapping；受监管、要求可审计 → 企业级 MDM；想拿开源件做二次开发 → 这一栏没有可推荐的通用开源 MDM：早期资料常举的 openMDM 归属 Eclipse 基金会而非 Apache，且定位是**测量数据管理**而不是客户 / 商品主数据，请按其官方仓库核定定位后再决定要不要评估 | 自研弱匹配而无回滚机制时，假合并不可逆；用重 MDM 做轻打通则周期长，业务方会绕开 |
+| 数据服务网关 | Apache APISIX、Kong、Envoy + 自研、阿里 DataWorks 服务化、阿里云 Data API | 已有服务网格 → Envoy 一侧；要快速上线且团队没有网关经验 → APISIX / Kong；已在云生态内 → 云厂商托管 | 让每个消费方各自直连数据库，限流与鉴权散在 N 处，无法统一演练容量 |
+| OneData 4.0 / AI 增强工具 | 阿里 DataWorks Copilot、字节 DataLeap AI、Databricks Unity Catalog + AI、Snowflake Cortex、火山引擎 DataFinder AI、神策 AI Agent | 判据是"生成物有没有可对照的权威元数据"；命名语法 / 指标定义 / 血缘三者机器可读，才谈得上用模型辅助 | 权威未建就上模型，产出的是无法判对错的业务含义，进资产库后无法定位错误条目 |
+| 质量与调度 | 各家平台内置质量模块、自研调度 + 对账作业 | 判据是"异常能不能沿血缘定位到具体 Owner"；不能定位就只是告警器，不是治理 | 告警只报到群里、无人认领，告警量上涨而处理量不涨 |
 
-**指标平台**：
+这张表里**最容易误选的是"一体化治理平台"这一行**：它演示效果最好、验收标准最清楚（能搜到表、能画出血缘图），于是常被当成 OneData 的全部。后果不是失败，而是**停在一个看起来已经完成的状态**——平台上线、报表可查、血缘图能画，但分层纪律没定、Owner 是团队名、指标定义只有一行而没有版本；此后组织会认为"OneData 已经做过了"，再提分层与口径归并，得到的回答是"我们不是已经上过系统了吗"。判据很简单：**这个平台里，违反命名规范的建表能不能被拒绝**。不能拒绝，说明买到的是展示工具。表内各产品的具体能力、版本与是否 GA，请以各家官方文档当前版本为准；按"产品全名 + 你要的那项能力的输入与输出"两条一起核对，能对上才算这条归属成立。
 
-| 平台 | 厂商 | 特点 |
+### 4.4 存量迁移
+
+存量改造与从零搭建只差一条：**你不能要求所有人停下来等新标准**。所以动作顺序与 4.1 相反——4.1 先立标准再落物理，存量侧要先做附加在现有资产上、随时可撤的动作。
+
+**① 先做立刻见效且可回退的事**
+
+给现有资产补三样**附加元数据**（不动数据本身）：Owner 人名、分层与数据域标签、是否含个人信息的标记。三样都可回退——回退就是删掉一列属性，不影响任何作业。见效时点是第一次有人问"这个数找谁"，而能在花名册上被点到名。判据：随机抽 10 张表，看其中多少张能在一次查询里同时返回人名、层级与标签【经验：覆盖率爬升速度随表数量与是否有离职人员表变，没有离职表时会卡在最后一段长尾】。
+
+**② 历史资产分类处理（三类，判据必须可自动计算）**
+
+| 类别 | 判定标准（必须能由系统算出来） | 处理方式 |
 | --- | --- | --- |
-| 阿里指标平台 | 阿里 | DataWorks 内置 |
-| Bytemetric | 字节 | 字节内部 + 火山引擎 |
-| 神策指标平台 | 神策 | 用户行为指标 |
-| Apache Doris + 自研 | 自建 | 开源方案 |
-| Cube.js | Cube | 开源指标平台 |
-| Lightdash | Lightdash | 开源 BI + 指标 |
-| Metabase | Metabase | 开源 BI |
+| 核心资产 | 下游数量超过阈值，或出现在对外报表 / 结算链路里 | **全部返工**：对齐分层与命名，补 Owner、SLA、密级 |
+| 活跃长尾 | 有近期的写入或访问，但下游少、不在对外链路 | **只改被改动的部分**：谁动谁整改，改到哪一部分就合规到哪一部分 |
+| 僵尸资产 | 连续多个周期无访问、无写入 | **打标挂账**：标记废弃、冻结写入、约定下线日期，不返工 |
 
-**主数据平台**：
+"下游数量超过阈值"里的阈值不写死【经验：先按下游数排序取前若干分之一作为第一批，跑一轮后再按实际投入产出调整】。关键在于**判定必须由系统算**：一旦靠人投票决定哪张表是核心，分类会退化成部门博弈，而僵尸资产永远不会被任何人认领。
 
-| 平台 | 厂商 | 特点 |
-| --- | --- | --- |
-| 阿里 ID-Mapping | 阿里 | 电商级用户打通 |
-| 神策 ID-Mapping 5.0 | 神策 | 用户行为 + 跨端 |
-| Informatica MDM | Informatica | 企业级 MDM |
-| IBM InfoSphere MDM | IBM | 传统企业 |
-| Apache OpenMDM | Apache | 开源尝试（生态不成熟） |
+**③ 双轨怎么维持、维持多久**
 
-**数据服务网关**：
+新旧两套资产并存，用视图或服务层做统一出口：消费方继续按旧名字访问，出口把请求路由到新资产。双轨期必须同时维护三样东西——旧轨的写入仍在跑（不让旧轨数据腐烂，否则对账无法进行）、路由映射表、旧轨的下线倒计时看板。双轨期通常以季度为单位【经验：随旧轨下游中自动化任务的比例变，自动化任务越多，双轨期越长】。这里有一条反直觉的规律：**旧轨的"访问量"要到很晚才下降，因为自动化任务不会自己停止——它们会一直跑，直到有人主动去改**。所以衡量能否退出的指标不能是访问量，必须是**人工访问占比**。
 
-| 网关 | 特点 |
-| --- | --- |
-| Apache APISIX | 高性能 API 网关 |
-| Kong | 成熟 API 网关 |
-| Envoy + 自研 | 服务网格方案 |
-| 阿里 DataWorks 服务化 | 阿里云原生 |
-| 阿里云 Data API | 托管服务 |
+**④ 什么信号说明可以退出双轨**
 
-**OneData 4.0 / AI 增强工具（2024–2025）**：
+三个信号要同时成立：旧轨在过去一个完整周期内**人工**访问为 0；剩余访问全部来自已登记在案、有明确下线排期的作业；以及**做过一次关停演练**。演练这一步不能省：把旧轨关掉一次（低峰期、可恢复），看有多少东西失败。自然消亡与主动关停的差别在于——自然消亡时你会以为自己在等，实际是在等一个永远不会到来的信号。
 
-| 工具 | 特点 |
-| --- | --- |
-| 阿里 DataWorks Copilot | LLM 辅助建模 / SQL 生成 |
-| 字节 DataLeap AI | AI 辅助血缘 / 指标文档 |
-| Databricks Unity Catalog + AI | 湖仓 + AI 治理 |
-| Snowflake Cortex | 云数仓 + AI |
-| 火山引擎 DataFinder AI | 智能指标 + RAG |
-| 神策 AI Agent | OneID + AI |
+### 4.5 模板 / 示例
 
-### 4.4 代码 / 示例
-
-**示例 1：OneData 命名规范示例（Hive SQL）**
+**模板 1：命名规范与分层 DDL（Hive SQL）**
 
 ```sql
--- 表名规范：
--- <层级>_<数据域>_<业务过程>_<自定义>.<fact/dim/agg>
--- 层级：ods / dwd / dws / ads / dim
-
--- ODS 层（贴源层）
-CREATE TABLE ods_trade_order_raw (
-    order_id STRING COMMENT '订单ID',
-    user_id STRING COMMENT '用户ID',
-    merchant_id STRING COMMENT '商家ID',
-    order_amount DECIMAL(18, 2) COMMENT '订单金额',
-    order_status STRING COMMENT '订单状态',
-    created_at TIMESTAMP COMMENT '创建时间',
-    updated_at TIMESTAMP COMMENT '更新时间'
+-- 表名：<层级>_<数据域>_<业务过程>_<自定义>.fact/dim/agg；层级：ods/dwd/dws/ads/dim
+CREATE TABLE ods_trade_order_raw (        -- ODS：贴源，几乎不加清洗
+  order_id STRING, user_id STRING COMMENT '源系统值，非 OneID'
 ) COMMENT '订单原始表（ODS）';
-
--- DWD 层（明细事实层）
-CREATE TABLE dwd_trade_order_paid (
-    order_id STRING COMMENT '订单ID',
-    user_id STRING COMMENT '用户ID',
-    merchant_id STRING COMMENT '商家ID',
-    paid_amount DECIMAL(18, 2) COMMENT '支付金额',
-    paid_at TIMESTAMP COMMENT '支付时间',
-    dt STRING COMMENT '分区日期'
-) PARTITIONED BY (dt STRING)
-COMMENT '订单支付明细（DWD）';
-
--- DWS 层（汇总层）
-CREATE TABLE dws_trade_user_pay_1d (
-    user_id STRING COMMENT '用户ID',
-    pay_amount_1d DECIMAL(18, 2) COMMENT '近1天支付金额',
-    pay_cnt_1d BIGINT COMMENT '近1天支付笔数',
-    dt STRING COMMENT '分区日期'
-) PARTITIONED BY (dt STRING)
-COMMENT '用户日支付汇总（DWS）';
-
--- ADS 层（应用层）
-CREATE TABLE ads_trade_gmv_7d (
-    category_id STRING COMMENT '类目ID',
-    gmv_7d DECIMAL(18, 2) COMMENT '近7天GMV',
-    dt STRING COMMENT '分区日期'
-) PARTITIONED BY (dt STRING)
-COMMENT '类目GMV应用表（ADS）';
+CREATE TABLE dwd_trade_order_paid (       -- DWD：一行一次支付（业务过程粒度）
+  order_id STRING, merchant_id STRING,
+  buyer_id STRING COMMENT '买家标识 → 指向 OneID，不是源系统 UID',
+  paid_amount DECIMAL(18,2) COMMENT '支付金额'
+) PARTITIONED BY (ds STRING) COMMENT '订单支付明细（DWD）';
+CREATE TABLE dws_trade_user_pay_1d (      -- DWS：按主题轻度汇总
+  buyer_id STRING, pay_amount_1d DECIMAL(18,2) COMMENT '近1天支付金额（派生指标）'
+) PARTITIONED BY (ds STRING) COMMENT '用户日支付汇总（DWS）';
+CREATE TABLE ads_trade_category_gmv_7d (  -- ADS：面向应用，只引用 DWD/DWS
+  category_id STRING, gmv_7d DECIMAL(18,2) COMMENT '近7天GMV'
+) PARTITIONED BY (ds STRING) COMMENT '类目GMV应用表（ADS）';
 ```
 
-**示例 2：指标定义四要素（YAML 配置）**
+**怎么用**：照改的是四件事——层级前缀、数据域、业务过程、分区字段名（本模板统一用 `ds`）。不要照抄表名里的 `trade` / `order`，它们属于示例域。DWD 的 `buyer_id` 注释要换成你自己的主体标识说明，且实现前先确认 Step 4 的 OneID 是否可用，否则这张表会成为 OneID 上线后必须回刷的表之一。
+
+**模板 2：指标定义四要素（YAML）**
 
 ```yaml
-# metrics_definitions/gmv.yaml
-- metric_name: trade_gmv_7d
-  metric_type: derived  # 派生指标
-  description: 近7天成交总额（不含退款）
-  
-  # 1. 原子指标
-  atomic_measure: trade_paid_amount
-  atomic_source: dwd_trade_order_paid.paid_amount
-  
-  # 2. 时间周期
-  time_window: 7d
-  time_field: paid_at
-  
-  # 3. 业务修饰
-  modifiers:
-    - order_type: normal  # 仅统计正常订单
-    - exclude_refund: true  # 排除已退款
-  
-  # 4. 业务限定
-  filters:
-    - order_status IN ('paid', 'completed')
-  
-  # 5. Owner
-  owner: data_team_trade
-  reviewer: business_team_trade
-  
-  # 6. 服务化
-  service_endpoint: /api/v1/metrics/trade_gmv_7d
-  service_method: GET
-  cache_ttl: 300  # 5 分钟缓存
+metric_name: trade_gmv_7d
+metric_type: derived               # 原子 / 派生 / 复合
+description: 近7天成交总额（不含退款）
+atomic_measure: trade_paid_amount  # 派生指标必须指向原子指标，不允许悬空
+atomic_source: dwd_trade_order_paid.paid_amount
+time_window: 7d
+time_field: paid_at
+modifiers: [{channel: all}]        # 业务修饰
+filters: [order_status IN ('paid','completed')]   # 业务限定
+owner: data_team_trade             # 具体到人，不是团队名
+reviewer: business_team_trade      # 业务复核人：不占 4.1 的三类 Owner，口径 / 业务限定变更时签字
+version: v3                        # 由定义中心生成，不手写
+service_endpoint: /api/v1/metrics/trade_gmv_7d
+cache_ttl: 300
 ```
 
-**示例 3：OneID 跨域打通（Python 示例）**
+**怎么用**：必填的是 `atomic_measure` / `time_window` / `filters` / `owner` / `version` 五格；`owner` 要换成个人账号，示例里写团队名只为显示字段位置。`reviewer` 是第六格、是给业务侧留的口子：它不是 4.1 Step 1 那三类 Owner 中的一员，而是口径或业务限定被改动时被拉进来签字确认的业务对口人，同样写人名——省掉它，一次口径变更就只剩技术侧一个人在签字。不要照抄 `version: v3`——版本号与生效时间应由定义中心自动生成，手写会出现两条口径自称同版本。`cache_ttl` 是起点值【经验：300 秒量级适用于 T+1 指标，实时指标必须按 SLA 重定】。
+
+**模板 3：OneID 跨域打通（Python 骨架）**
 
 ```python
-from typing import List, Dict, Optional
 from dataclasses import dataclass
 import hashlib
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
+from typing import Optional
 
 @dataclass(frozen=True)
 class UserIdentifier:
-    """用户标识"""
-    source: str       # 来源系统：app / web / offline / crm
-    id_type: str      # id 类型：phone / email / device_id / wechat_unionid
-    id_value: str     # id 明文或哈希值
-    confidence: float = 1.0  # 匹配置信度
+    source: str          # app / web / offline / crm
+    id_type: str         # phone / email / device_id / unionid / idcard
+    id_value_hash: str   # 加盐哈希后存储，不留明文
+    confidence: float = 1.0
 
 class OneIDService:
-    """OneID 主数据服务"""
-    
-    def __init__(self):
-        self.user_index: Dict[str, List[UserIdentifier]] = {}
-        # 行为 embedding 库（实际生产用 Faiss / Milvus）
-        self.behavior_embeddings = {}
-    
-    def add_identifier(self, one_id: str, identifier: UserIdentifier):
-        """添加一个标识到 OneID"""
-        if one_id not in self.user_index:
-            self.user_index[one_id] = []
-        self.user_index[one_id].append(identifier)
-    
+    """C1 先跑（确定性，切出连通分量）；C2/C3 只在跨分量处提议合并。"""
+    repo = None     # one_id ↔ identifier + match_layer + confidence + evidence
+
     def match_by_strong_key(self, id_type: str, id_value: str) -> Optional[str]:
-        """强匹配：手机号 / 邮箱 / 身份证"""
-        hashed = hashlib.sha256(id_value.encode()).hexdigest()
-        for one_id, ids in self.user_index.items():
-            for ident in ids:
-                if ident.id_type == id_type and ident.id_value == hashed:
-                    return one_id
-        return None
-    
-    def match_by_behavior(self, user_embedding: np.ndarray, threshold: float = 0.85) -> Optional[str]:
-        """弱匹配：行为序列 embedding"""
-        for one_id, embedding in self.behavior_embeddings.items():
-            sim = cosine_similarity(
-                user_embedding.reshape(1, -1),
-                embedding.reshape(1, -1)
-            )[0][0]
-            if sim >= threshold:
-                return one_id
-        return None
-    
-    def get_one_id(self, identifier: UserIdentifier) -> str:
-        """根据任意 identifier 获取 OneID"""
-        # 1. 强匹配优先
-        one_id = self.match_by_strong_key(identifier.id_type, identifier.id_value)
-        if one_id:
-            return one_id
-        
-        # 2. 弱匹配兜底（生产中走图推理 / embedding 检索）
-        # 这里省略具体实现
-        raise ValueError("无法打通 OneID")
+        h = hashlib.sha256(id_value.encode()).hexdigest()
+        return self.repo.find_by_identifier(id_type, h)      # 命中即并查集合并
+
+    def propose_weak_merge(self, a: str, b: str, sim: float, evidence: str):
+        if sim >= THRESHOLD:                                 # 阈值需标注样本校准
+            self.repo.queue_proposal(a, b, sim, evidence)    # 只产出提案，不直接合并
 ```
 
-**示例 4：OneService 数据服务网关（FastAPI）**
+**怎么用**：骨架里没有实现的三件事才是主要工作量——并查集的合并与拆分、阈值的标注校准、合并后的下游重算通知；示例代码只标出了它们的接口位置。行为 embedding 的向量索引是第四件：生产上用 Faiss / Milvus 一类的向量库承载（本模板不展开），选型看向量规模与是否需要按元数据过滤。`confidence` 与 `evidence` 两列不要省：少了它们，假合并之后无法定位是哪一步合错的。
+
+**模板 4：OneService 数据服务网关（FastAPI 要点）**
 
 ```python
-from fastapi import FastAPI, Depends, HTTPException, Header
-from pydantic import BaseModel
-from typing import Optional
-import redis
-
-app = FastAPI(title="OneData Service Gateway")
-
-# Redis 缓存
-cache = redis.Redis(host='localhost', port=6379, decode_responses=True)
-
-# 指标服务示例
-class MetricQuery(BaseModel):
-    metric_name: str
-    time_window: str = "1d"
-    filters: dict = {}
-    dimensions: list[str] = []
-
 @app.get("/api/v1/metrics/{metric_name}")
-async def get_metric(
-    metric_name: str,
-    time_window: str = "1d",
-    authorization: str = Header(...),
-):
-    """OneService 标准接口：查询指标"""
-    # 1. 鉴权
-    user = verify_token(authorization)
+async def get_metric(metric_name: str, time_window: str = "1d", authorization: str = Header(...)):
+    user = verify_token(authorization)                      # 统一鉴权
     if not has_permission(user, metric_name):
-        raise HTTPException(status_code=403, detail="无权限")
-    
-    # 2. 限流（每用户每分钟 100 次）
-    rate_key = f"rate:{user.id}:{metric_name}"
-    if cache.incr(rate_key) > 100:
-        raise HTTPException(status_code=429, detail="限流")
+        raise HTTPException(403, "无权限")                   # 数据范围
+    rate_key = f"rate:{user.id}:{metric_name}"              # 统一限流
+    if cache.incr(rate_key) > RATE_LIMIT:
+        raise HTTPException(429, "限流")
     cache.expire(rate_key, 60)
-    
-    # 3. 缓存查询
-    cache_key = f"metric:{metric_name}:{time_window}:{user.id}"
-    cached = cache.get(cache_key)
-    if cached:
-        return {"data": cached, "from_cache": True}
-    
-    # 4. 实际查询（通过指标平台 / DWS 表）
-    result = query_metric_from_dws(metric_name, time_window, user)
-    
-    # 5. 缓存
-    cache.setex(cache_key, 300, str(result))  # 5 分钟 TTL
-    
-    return {"data": result, "from_cache": False}
+    result = query_metric_from_dws(metric_name, time_window, user)   # 走资产，不走物理表名
+    return {"data": result, "definition_version": definition_version_of(metric_name)}
 
-# OneID 服务示例
 @app.get("/api/v1/oneid/{id_type}/{id_value}")
-async def get_one_id(
-    id_type: str,
-    id_value: str,
-    authorization: str = Header(...),
-):
-    """OneService 标准接口：OneID 打通"""
-    user = verify_token(authorization)
-    one_id = one_id_service.get_one_id_by_id(id_type, id_value)
-    if not one_id:
-        raise HTTPException(status_code=404, detail="未找到 OneID")
+async def get_one_id(id_type: str, id_value: str, authorization: str = Header(...)):
+    verify_token(authorization)
+    one_id = one_id_service.resolve(id_type, id_value)
+    if not one_id:                                          # 未命中返回 404，不返回空串
+        raise HTTPException(404, "未找到 OneID")
     return {"one_id": one_id}
 ```
 
-**示例 5：OneData 4.0 — LLM 辅助命名规范校验**
+**怎么用**：必须保留的是"鉴权 → 限流 → 查资产"这个顺序，以及响应里带 `definition_version`——没有版本号，消费方无法判断拿到的数用的是哪一版口径。`RATE_LIMIT` 与缓存 TTL 都是可调参数【经验：限流阈值按峰值 QPS 与 OLAP 集群承载能力定，先做一次容量演练再设值】；`query_metric_from_dws` 要接指标服务而不是拼 SQL，否则那张表改名时这里就是断点。
 
-```python
-from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
+**模板 5：LLM 辅助命名规范校验（Prompt）**
 
-llm = ChatOpenAI(model="gpt-4o", temperature=0)
-
-NAMING_CHECK_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """你是数据建模专家，负责校验 Hive 表名是否符合 OneData 命名规范。
-
-规范：
-- 表名格式：<层级>_<数据域>_<业务过程>_<自定义>.<fact/dim/agg>
-- 层级：ods / dwd / dws / ads / dim
-- 数据域：snake_case
-- 业务过程：snake_case
-- 自定义：可选，snake_case
-- 后缀：fact / dim / agg
-
-请分析给定的表名，指出：
-1. 是否符合规范
-2. 不符合哪条规则
-3. 建议的标准表名
-"""),
-    ("user", "待校验表名：{table_name}\n字段列表：{columns}")
-])
-
-def check_table_naming(table_name: str, columns: list) -> str:
-    """LLM 辅助命名规范校验"""
-    chain = NAMING_CHECK_PROMPT | llm
-    result = chain.invoke({"table_name": table_name, "columns": columns})
-    return result.content
-
-# 示例
-print(check_table_naming(
-    table_name="user_order",
-    columns=["order_id", "user_id", "amount", "created_at"]
-))
-# 输出：
-# 不符合规范：
-# 1. 缺少层级前缀（应为 ods/dwd/dws/ads）
-# 2. 缺少数据域
-# 3. 缺少事实/维度后缀（.fact / .dim / .agg）
-# 建议命名：dwd_trade_order_paid.fact
+```text
+你是数据建模评审助手。校验表名是否满足下面的机器可读规范，并给出违规项。
+规范：<层级>_<数据域>_<业务过程>_<自定义>.fact/dim/agg；层级：ods/dwd/dws/ads/dim；
+      数据域与业务过程为 snake_case；后缀为 fact/dim/agg。
+输出三行：1) 是否符合（是/否）；2) 不符合哪一条规则（逐条列出，不许只说"不规范"）；3) 建议的标准表名。
+输入：表名 {table_name}；字段列表 {columns}。
 ```
 
-**示例 6：指标血缘追踪（基于 Apache Atlas 简化版）**
+**怎么用**：这个 Prompt 只在"规范已机器可读"的前提下有效——规范写成散文时，模型只能给出感觉，给不出可判定的违规项。它的输出必须进人审流程：当作**评审意见**而不是**裁决**，且不允许它直接改名或建表。
+
+**模板 6：指标血缘追踪（Python 骨架）**
 
 ```python
-from dataclasses import dataclass, field
-from typing import List, Dict
+from typing import Dict, List
 
-@dataclass
-class MetricLineage:
-    """指标血缘"""
-    metric_name: str
-    upstream: List[str] = field(default_factory=list)
-    downstream: List[str] = field(default_factory=list)
+Graph = Dict[str, Dict]   # node -> {"upstream": [...], "downstream": [...], "updated_at": ts}
 
-class LineageTracker:
-    """简化版血缘追踪"""
-    
-    def __init__(self):
-        self.graph: Dict[str, MetricLineage] = {}
-    
-    def add_relation(self, upstream: str, downstream: str):
-        """添加上下游关系"""
-        if downstream not in self.graph:
-            self.graph[downstream] = MetricLineage(metric_name=downstream)
-        if upstream not in self.graph:
-            self.graph[upstream] = MetricLineage(metric_name=upstream)
-        self.graph[downstream].upstream.append(upstream)
-        self.graph[upstream].downstream.append(downstream)
-    
-    def trace_upstream(self, metric_name: str) -> List[str]:
-        """向上追溯：找原子指标 / 字段"""
-        visited = set()
-        result = []
-        
-        def dfs(name):
-            if name in visited:
-                return
-            visited.add(name)
-            for up in self.graph.get(name, MetricLineage(name)).upstream:
-                result.append(up)
-                dfs(up)
-        
-        dfs(metric_name)
-        return result
-    
-    def trace_downstream(self, metric_name: str) -> List[str]:
-        """向下追溯：找使用方"""
-        visited = set()
-        result = []
-        
-        def dfs(name):
-            if name in visited:
-                return
-            visited.add(name)
-            for down in self.graph.get(name, MetricLineage(name)).downstream:
-                result.append(down)
-                dfs(down)
-        
-        dfs(metric_name)
-        return result
+def add_relation(g: Graph, up: str, down: str, ts: str) -> None:
+    for n in (up, down):
+        g.setdefault(n, {"upstream": [], "downstream": [], "updated_at": ts})["updated_at"] = ts
+    g[down]["upstream"].append(up); g[up]["downstream"].append(down)
 
-# 使用示例
-tracker = LineageTracker()
-
-# 建立血缘关系
-tracker.add_relation("dwd_trade_order_paid.paid_amount", "trade_paid_amount")
-tracker.add_relation("trade_paid_amount", "trade_gmv_7d")
-tracker.add_relation("trade_gmv_7d", "bi_dashboard_gmv")
-
-# 追溯
-print("GMV_7D 上游：", tracker.trace_upstream("trade_gmv_7d"))
-# ['trade_paid_amount', 'dwd_trade_order_paid.paid_amount']
-
-print("GMV_7D 下游：", tracker.trace_downstream("trade_gmv_7d"))
-# ['bi_dashboard_gmv']
+def impact_of(g: Graph, name: str, seen=None) -> List[str]:
+    """下游影响面（改前必答）：递归 + 去重。"""
+    seen, out = (set() if seen is None else seen), []
+    for d in g.get(name, {"downstream": []})["downstream"]:
+        if d not in seen:
+            seen.add(d); out.append(d); out += impact_of(g, d, seen)
+    return out
 ```
 
----
+**怎么用**：`updated_at` 是最容易被删掉的一格，也是唯一能让门禁判断"这份血缘还能不能信"的字段——没有它，影响面查询会静默返回空集。真实环境中这份图不要自己维护，应接指标定义表与字段级血缘采集；示例只用来核对查询语义（递归、去重、方向）。
+
+### 4.6 自检清单
+
+以下每一条都必须**动了系统才有答案**；坐下想一想就能答的（粒度对不对、模式选得对不对、规范写得全不全）属于 [§ 3](08-one-data-section-3-sec3.md) 的自检范围。
+
+- [ ] 抽 3 张最近上线的 DWD 表，把血缘工具里的下游清单与该作业在调度系统里的实际依赖清单对一遍，两者是否一致？不一致的那几条就是不可见依赖。
+- [ ] 在 CI 里提交一次故意违反分层方向的引用（例如 DWD 引用 ADS），确认它被**拒绝**，而不是只弹警告。
+- [ ] 从指标定义表随机抽 5 个指标，用定义重算当天值并与线上报表比对；差异是否每一条都能解释？
+- [ ] 把网关限流临时放宽到极限，压一次峰值查询，观察 OLAP 集群 P99 与错误率，记录拐点（容量演练）。
+- [ ] 抽 3 组已合并的 OneID 人工核对依据是否成立，再抽 3 个别名看漏合并；两组结果是否都有工单承接？
+- [ ] 执行一次最近批量合并的回滚，验证下游指标是否按预期重算——不只看回滚脚本存不存在。
+- [ ] 停掉一条血缘链路上任一上游作业，观察下游是否在 SLA 窗口内产生**有人认领**的告警，而不是静默产出空表。
+- [ ] 双轨期统计旧轨上一周的访问来源，算出其中人工访问占比；占比不降就说明退出条件未到。
+- [ ] 随机挑一名新入职的数据开发，让他在不提问的情况下完成一次建表与上线，记录他在哪一步停下求助。
+- [ ] 取一次真实的源字段变更，记录从变更发生到下游全部修复的时长、回刷的分区数与当时占用的计算窗口。
+- [ ] 抽 5 个核心资产查血缘新鲜度：其血缘的最后更新时间是否都在一个调度周期以内？
+- [ ] 抽样核对 Owner 花名册与人事系统，找出已离职但仍在花名册上担任 Owner 的条目。
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一决定成败的环节是 **Step 1 把 Owner 落实到具体的人并授予裁决权**。它的产出物最不起眼（一份名单），却决定了后面每一步的判据能否被兑现——分层评审、口径归并、OneID 合并回滚、服务下线，最终都要由某个具体的人签字。其余环节（工具、平台、算法）都可以被采购或补齐，只有授权不能事后追加：一份没有裁决人的规范，会在第一次跨部门口径冲突时失去效力，而那次冲突通常发生在你还没来得及展示收益之前。
+>
+> 配合 [§ 2 核心原理](08-one-data.md)、[§ 3 设计模式与范式](08-one-data-section-3-sec3.md) 与 [§ 6 落地实践](08-one-data-section-6-sec6.md) 阅读。

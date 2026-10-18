@@ -396,7 +396,7 @@ Anchor Modeling 的**5 大核心组件**：
 ---
 
 > **本节小结**：
-> - 4 个真实案例（Anchor Modeling / 字节 / 阿里 / 美团）印证：**Anchor Modeling 不是「**传统 DW**」，是「**6NF + 时序 + Anchor + Tie + Knot + 语义层**」**6 件套**。
+> - 4 个真实案例（Anchor Modeling / 字节 / 阿里 / 美团）印证：**Anchor Modeling 不是「传统 DW」，是「6NF + 时序 + Anchor + Tie + Knot + 语义层」6 件套**。
 > - 关键时间线：Anchor Modeling 12+ 年 / 字节 5+ 年 / 阿里 4+ 年 / 美团 3+ 年 —— **Anchor Modeling 是 3+ 年长期工程**。
 > - 选型第一原则：「**Anchor + 1 个 Attribute**」（**最简单**）——**10+ Anchor** → 「**Knot 共享 + 视图层**」（**必须**）→ 「**Tie 时序 + 语义层集成**」（**生产**）→ 「**6NF 物化 + 实时 Anchor**」（**AI 时代**）。
 > - 99% 的失败来自「**传统 DW 不够 + 时序数据 + 语义层缺失**」——必须有 **Anchor Modeling + Knot 治理 + 视图层**。

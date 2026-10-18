@@ -10,8 +10,8 @@
 | --- | --- |
 | Team Topologies 4 种团队类型？ | §1.1、§2.1 |
 | Stream-Aligned Team 怎么设计？ | §3.1、§4.1 |
-| Platform Team 怎么搭建？ | §3.1、§4.2 |
-| Conway's Law 反演怎么用？ | §1.1、§4.4 |
+| Platform Team 怎么搭建？ | §3.1、§4.1、§4.2 |
+| Conway's Law 反演怎么用？ | §1.1、§4.5 |
 | Cognitive Load 怎么管理？ | §2.1、§6.1 |
 | AI 时代的团队拓扑怎么演进？ | §5.1、§5.3 |
 

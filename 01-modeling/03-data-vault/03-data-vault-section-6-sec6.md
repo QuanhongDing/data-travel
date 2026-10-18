@@ -411,7 +411,7 @@ Data Vault 2.0 的**5 大核心组件**：
 ---
 
 > **本节小结**：
-> - 4 个真实案例（Data Vault 2.0 / 字节 / 阿里 / 美团）印证：**Data Vault 不是「**传统 DW**」，是「**Hub + Link + Satellite + Effectivity + Hash Key + OneData 语义层**」**6 件套**。
+> - 4 个真实案例（Data Vault 2.0 / 字节 / 阿里 / 美团）印证：**Data Vault 不是「传统 DW」，是「Hub + Link + Satellite + Effectivity + Hash Key + OneData 语义层」6 件套**。
 > - 关键时间线：Data Vault 2.0 11+ 年 / 字节 5+ 年 / 阿里 8+ 年 / 美团 4+ 年 —— **Data Vault 是 4+ 年长期工程**，不是三个月项目。
 > - 选型第一原则：「**Data Vault 2.0 单源试点**」（**最简单**）——**10+ 表** → 「**Hash Key + OneData 语义层**」（**必须**）→ 「**Effectivity Satellites + 代码生成**」（**生产**）→ 「**5 套→1 套 + 实时 DV**」（**AI 时代**）。
 > - 99% 的失败来自「**传统 DW 不灵活 + 5 套数仓 + DV 敏捷弱**」——必须有 **Data Vault 2.0 + OneData 集成 + 敏捷开发**。

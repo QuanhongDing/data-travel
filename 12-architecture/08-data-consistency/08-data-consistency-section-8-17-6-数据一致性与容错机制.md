@@ -565,7 +565,7 @@ CDC 在 Lakehouse 中的**关键作用**：
 **它们的关系**：
 - **Barrier 对齐** → 触发 **Checkpoint** → **2PC Sink** 在 Checkpoint 完成后 commit。
 
-第二层：Barrier 对齐的精确含义。**
+第二层：Barrier 对齐的精确含义。
 
 Barrier 是 Flink 在数据流里插入的特殊事件（不携带业务数据），作用相当于"分布式快照的同步点"：
 1. **JobManager 周期性地向所有 Source 注入 Barrier**。

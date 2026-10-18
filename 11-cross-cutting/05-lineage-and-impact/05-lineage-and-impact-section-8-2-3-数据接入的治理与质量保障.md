@@ -128,7 +128,7 @@ Databricks 的 **Unity Catalog** 把这一闭环做到了产品级，Collibra �
 - **FATAL 告警**直接推送电话 / 短信，OnCall 必须 5 分钟内 ack；同时触发消费链路自动熔断（下游消费暂停）。
 - **ERROR 告警**推 IM 群、配套 Runbook 与一键跳转血缘图（血缘点击直达异常表上游）。
 - **WARNING 告警**推日报 / 看板，长期偏高升级为 ERROR。
-- **告警疲劳治理**：必须维护「**alert dedup」+ **alert correlation（关联分析）**——同一个根因触发的多条规则不应各自 alert，而是聚合为一条「**根因 + 影响面**」告警。这一思想在 Uber 的领域驱动告警、Netflix 的 ATLAS 监控、以及阿里集团的 AIOps 平台都有落地。
+- **告警疲劳治理：必须维护「alert dedup」+ alert correlation（关联分析）——同一个根因触发的多条规则不应各自 alert，而是聚合为一条「根因 + 影响面**」告警。这一思想在 Uber 的领域驱动告警、Netflix 的 ATLAS 监控、以及阿里集团的 AIOps 平台都有落地。
 
 **3. 常见陷阱**
 
