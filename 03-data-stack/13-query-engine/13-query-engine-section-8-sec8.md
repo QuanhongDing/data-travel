@@ -4,7 +4,7 @@
 
 > 本节整合自题库《大数据平台架构师》（创脉思 cms365.cn，版本 2025-11-25）的真实面试题，题号沿用原题库编号（PDF §X.Y 第 K 题），便于读者回溯原题与答案详解。
 >
-> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Meta / Netflix / Uber / LinkedIn / 字节 / 阿里 / 美团 / 京东 / 招行 / 米哈游 等），便于读者进一步溯源。
+> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Meta / Netflix / Uber / LinkedIn / 字节 / 阿里 / 美团 / 京东 / 招行 / 米哈游等），便于读者进一步溯源。
 
 ### 8.1 全景视图
 
@@ -52,7 +52,7 @@
                        [外部存储 + Metastore]
 ```
 
-- **Coordinator**：通常 1 + N（HA）部署。负责接收 SQL、词法/语法解析（ANTLR）、生成逻辑计划、运行 Cost-Based Optimizer（基于 Calcite 改造）、拆 Stage、按 Worker 调度 Task、聚合结果返回。**Coordinator 不存储任何数据页**，内存压力主要是**查询规划与统计信息**，不会随数据量爆炸。
+- **Coordinator**：通常 1 + N（HA）部署。负责接收 SQL、词法/语法解析（ANTLR）、生成逻辑计划、运行 Cost-Based Optimizer（自研；Trino 的前端与优化器属「自研前端 + 自研优化器」这条路线，是否采用通用 SQL 框架按源码依赖自查，见 [§7.2](13-query-engine-section-7-sec7.md)）、拆 Stage、按 Worker 调度 Task、聚合结果返回。**Coordinator 不存储任何数据页**，内存压力主要是**查询规划与统计信息**，不会随数据量爆炸。
 - **Worker**：无状态，**只执行 Coordinator 分发过来的 Stage**。每个 Worker 上跑若干 Task，每个 Task 里跑若干 Driver（pipeline 执行单元），Driver 用 Page（列存块）作为基本数据单位。Worker 通过 Exchange Operator 与其他 Worker 交换数据（Hash / Gather / Merge），全部走内存 + spill 到本地磁盘。
 - **Discovery Service**（早期架构遗留）：Worker 启动时向 Discovery 注册自己的地址，Coordinator 通过它发现 Worker。Trino 新版本已弱化此组件。
 

@@ -4,7 +4,7 @@
 
 > 本节围绕本章节自身主题「RAG 架构（Retrieval-Augmented Generation Architecture）」自编 7 道面试题，覆盖 RAG 端到端链路上最容易被面试官追问的工程决策点：范式选型、Chunking、Embedding、混合检索、Reranker、Agentic / GraphRAG、评估与监控。
 >
-> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Meta / Microsoft / OpenAI / Anthropic / Databricks / Snowflake / Uber / Netflix / 阿里 / 字节 等），便于读者进一步溯源。
+> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Meta / Microsoft / OpenAI / Anthropic / Databricks / Snowflake / Uber / Netflix / 阿里 / 字节等），便于读者进一步溯源。
 
 ### 8.1 全景视图
 
@@ -58,11 +58,11 @@
 
 **第二层：四种范式的递进关系。**
 
-- **Naive RAG（2022-2023 上半年）**：Question → Embedding → 向量召回 Top-K → Prompt → LLM。代表是早期 LangChain 的 `RetrievalQA`。**优点**：10 行代码即可跑通，PoC 友好。**缺点**：召回率低（向量召回 + 没有任何改写 / 精排，Recall@10 经验上通常 50%-70%；该区间为工程经验估计，本书无法给出可溯源的统一数字，此处按【经验】档处理）、上下文噪声大（Top-K 里有大量弱相关 chunk 污染 prompt）、无溯源（prompt 里没有强制引用标注）。**适用场景**：PoC / Demo / 文档量 < 1 万 / 容忍三成上下的答非所问。
+- **Naive RAG**：Question → Embedding → 向量召回 Top-K → Prompt → LLM。代表是早期 LangChain 的 `RetrievalQA`。**优点**：10 行代码即可跑通，PoC 友好。**缺点**：召回率低（向量召回 + 没有任何改写 / 精排，Recall@10 经验上通常 50%-70%；该区间为工程经验估计，本书无法给出可溯源的统一数字，此处按【经验】档处理）、上下文噪声大（Top-K 里有大量弱相关 chunk 污染 prompt）、无溯源（prompt 里没有强制引用标注）。**适用场景**：PoC / Demo / 文档量 < 1 万 / 容忍三成上下的答非所问。
 
-- **Advanced RAG（2023 下半年至 2024）**：在 Naive 之上加入 Pre-Retrieval 优化（Query Rewrite / HyDE / Step-Back）和 Post-Retrieval 优化（Rerank / Contextual Compression / Lost-in-the-Middle 缓解）。**核心收益**：召回率有可观提升（经验上从六成量级提升到八成量级；该区间为工程经验估计，本书无法给出可溯源统计，此处按【经验】档处理）。**缺点**：链路复杂度显著增加——Query Rewrite 多一次 LLM 调用、Reranker 多一次 Cross-Encoder、整体延迟从 1 秒量级拉到 3-5 秒（延迟数值随链路长度与硬件而异，本书无法给出可溯源的统一数字，此处按【经验】档处理）。**适用场景**：生产级 RAG、企业知识问答。**工业实践**：OpenAI Assistants API 的 File Search（2024）、阿里云百炼 RAG、字节火山方舟 RAG 都走 Advanced 路线。
+- **Advanced RAG**：在 Naive 之上加入 Pre-Retrieval 优化（Query Rewrite / HyDE / Step-Back）和 Post-Retrieval 优化（Rerank / Contextual Compression / Lost-in-the-Middle 缓解）。**核心收益**：召回率有可观提升（经验上从六成量级提升到八成量级；该区间为工程经验估计，本书无法给出可溯源统计，此处按【经验】档处理）。**缺点**：链路复杂度显著增加——Query Rewrite 多一次 LLM 调用、Reranker 多一次 Cross-Encoder、整体延迟从 1 秒量级拉到 3-5 秒（延迟数值随链路长度与硬件而异，本书无法给出可溯源的统一数字，此处按【经验】档处理）。**适用场景**：生产级 RAG、企业知识问答。**工业实践**：OpenAI Assistants API 的 File Search（2024）、阿里云百炼 RAG、字节火山方舟 RAG 都走 Advanced 路线。
 
-- **Modular RAG（GAIR Lab 2024）**：把流水线拆成可插拔模块（Indexing / Retrieval / Reranking / Generation / Evaluation / Feedback），每模块独立优化。代表论文是 Gao 等人 2024 年发表的《Modular RAG: Transforming RAG Systems into LEGO-like Reconfigurable Frameworks》。**优点**：可演进、可观测、可 A/B 测试单一模块。**缺点**：架构复杂、需要平台投入。**适用场景**：企业级 RAG 平台、多业务线共享底座。
+- **Modular RAG（GAIR Lab 2024）**：把流水线拆成可插拔模块，每模块独立优化。代表论文是 Gao 等人 2024 年发表的《Modular RAG: Transforming RAG Systems into LEGO-like Reconfigurable Frameworks》。**优点**：可演进、可观测、可 A/B 测试单一模块。**缺点**：架构复杂、需要平台投入。**适用场景**：企业级 RAG 平台、多业务线共享底座。
 
 - **Agentic RAG（2024 末-2025）**：由 LLM 智能体自主决定「查什么 / 何时查 / 怎么组合」，可能调用多种工具（RAG / SQL / Web Search / Function Call）。代表实现是 LangGraph、AutoGen、CrewAI 上的 Agentic RAG 工作流。**优点**：能处理多跳推理、跨系统查询、复杂业务问题；可以「检索 → 判断 → 再检索」。**缺点**：单次 query 可能触发多次 LLM 调用（经验上 5-10 次，随任务复杂度而异，此处按【经验】档处理），成本陡增；可观测性差（Agent 的决策路径难以复现）；错误会沿决策链传播。**适用场景**：复杂业务问答、研究助手、企业 Copilot。**工业落地**：Anthropic Claude + Tool Use、阿里通义晓蜜 Agent、字节扣子（Coze）都内置 Agentic RAG。
 

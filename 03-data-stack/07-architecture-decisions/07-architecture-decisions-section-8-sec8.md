@@ -4,7 +4,7 @@
 
 > 本节整合自题库《大数据平台架构师》（创脉思 cms365.cn，版本 2025-11-25）的真实面试题，题号沿用原题库编号（PDF §X.Y 第 K 题），便于读者回溯原题。
 >
-> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Netflix / Uber / Meta / LinkedIn / Confluent / 阿里 / 字节 / 招行 等），便于读者按机构与主题自行检索核验；其中以「具体企业名 + 具体数字」形式给出、本节未附文档名与链接的条目，均属【经验】档表述，引用时请自行查证。
+> **每题按五段式作答**：考察点 → 参考答案框架 → 常见陷阱 → 追问预测 → 参考资料。参考答案优先引用**头部互联网企业的公开架构实践**（Netflix / Uber / Meta / LinkedIn / Confluent / 阿里 / 字节 / 招行等），便于读者按机构与主题自行检索核验；其中以「具体企业名 + 具体数字」形式给出、本节未附文档名与链接的条目，均属【经验】档表述，引用时请自行查证。
 
 ### 8.1 全景视图
 
@@ -12,7 +12,7 @@
 
 | 原 PDF §N.M | 主题 | 题号范围 | 收录题数 | 主/辅 |
 | --- | --- | --- | :---: | :---: |
-| §10.1 | 数仓 / 数据湖 / 湖仓 选型 | 10.1.1 | 1 | 主 |
+| §10.1 | 数仓 / 数据湖 / 湖仓选型 | 10.1.1 | 1 | 主 |
 | §10.2 | Lambda / Kappa / 流批一体 | 10.2.1 | 1 | 主 |
 | §11.1 | 表格式选型（Iceberg/Hudi/Delta/Paimon） | 11.1.1 | 1 | 主 |
 | §11.2 | OLAP 引擎选型 | 11.2.1 | 1 | 主 |
@@ -22,15 +22,15 @@
 
 | 题号 | 难度 | 主题 |
 | --- | :---: | --- |
-| §10.1.1 | ★★★★☆ | 数仓 / 数据湖 / 湖仓 三大范式选型 |
-| §10.2.1 | ★★★★★ | Lambda / Kappa / 流批一体 演进与权衡 |
+| §10.1.1 | ★★★★☆ | 数仓 / 数据湖 / 湖仓三大范式选型 |
+| §10.2.1 | ★★★★★ | Lambda / Kappa / 流批一体演进与权衡 |
 | §11.1.1 | ★★★★☆ | Iceberg / Hudi / Delta / Paimon 表格式选型 |
 | §11.2.1 | ★★★★☆ | OLAP 引擎选型（Doris/StarRocks/ClickHouse/Snowflake/BigQuery） |
 | §11.3.1 | ★★★☆☆ | Spark / Flink / Trino 计算引擎分工 |
 | §12.4.1 | ★★★☆☆ | Airflow / DolphinScheduler / Azkaban 调度选型 |
 | §13.5.1 | ★★★★☆ | ADR 在 AI 时代的工程化落地 |
 
-### 8.2 §10.1 数仓 / 数据湖 / 湖仓 三大范式选型
+### 8.2 §10.1 数仓 / 数据湖 / 湖仓三大范式选型
 
 > 本主题考察「数据栈架构决策的入口基本功」：从数据仓库（强治理 / 高成本）、数据湖（低成本 / 弱治理）到湖仓一体（融合）的范式跃迁。架构师必须能根据「数据量、实时性、AI 友好度、团队能力」给出选型依据，并能用真实案例（Snowflake / Databricks / 阿里 / 字节 / 招行）佐证。
 
@@ -95,7 +95,7 @@
 
 - **「数据量 100TB 是否需要上 Lakehouse？」** 答：不必。100TB 量级 Hive + Spark 完全胜任；Lakehouse 真正的优势要到 PB 级、多团队协作时才显现。
 - **「Snowflake 与 Databricks 的本质区别？」** 答：Snowflake 是**云数仓产品化**（专有存储 + 计算资源池化）；Databricks 是**湖仓 + AI 平台**（开放格式 + Spark + MLflow + LLM）。前者 BI 体验最佳，后者 AI 生态最佳。
-- **「湖仓时代 BI 工具怎么选？」** 答：BI 工具与湖仓解耦——Tableau / Power BI / FineBI / 网易有数 都可直连 Iceberg/Delta。**字节 DataFinder** + 内部 BI 工具直连 StarRocks 提供亚秒查询。
+- **「湖仓时代 BI 工具怎么选？」** 答：BI 工具与湖仓解耦——Tableau / Power BI / FineBI / 网易有数都可直连 Iceberg/Delta。**字节 DataFinder** + 内部 BI 工具直连 StarRocks 提供亚秒查询。
 - **「数据沼泽如何治理？」** 答：① 入湖前 **Schema 校验**（Confluent SR / Apache Gravitino）；② 入湖后 **生命周期**（Iceberg expire + remove_orphan）；③ 使用 **Lakehouse 治理平台**（Unity Catalog / Gravitino / DataHub）。
 
 **5. 参考资料**
@@ -422,7 +422,7 @@
 
 - **Apache Spark**：基于 RDD + DataFrame + DataSet 的**通用批处理引擎**，通过 Spark Structured Streaming 提供微批（micro-batch）流处理。**核心场景**：离线 ETL + 数据加工 + 机器学习（MLlib + MLflow 集成）。
 - **Apache Flink**：基于 DataStream + Table API 的**原生流处理引擎**，通过批模式（batch mode）模拟批处理。**核心场景**：实时计算（毫秒级延迟）+ Flink CDC（数据库变更捕获）+ 流批一体。
-- **Trino/Presto**：基于 ANSI SQL 的**联邦查询引擎**（原 PrestoDB 团队创建 Trino），从 Hive Metastore / RDBMS / Kafka / Iceberg / S3 直接查询。**核心场景**：Ad-hoc 查询 + 跨数据源联邦查询。
+- **Trino/Presto**：基于 ANSI SQL 的**联邦查询引擎**（Trino 由社区于 2018 年底分叉出的 PrestoSQL、2020 年更名而来），从 Hive Metastore / RDBMS / Kafka / Iceberg / S3 直接查询。**核心场景**：Ad-hoc 查询 + 跨数据源联邦查询。
 
 **第二层：四维度量化对比。**
 

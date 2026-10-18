@@ -2,7 +2,7 @@
 
 > **一句话定位**：从 Agent 行为日志中自动提取可复用的 Skill / Procedure——让 Agent 自己总结"经验"，让组织能力沉淀为 Agent 能力。
 
-> 本文是 data-travel 项目 [Ch7 · AI 资产沉淀与自进化](../../README.md) 的子章节（04-agent-skill-extraction）。覆盖 核心职责④ 中"自进化 / Skill 自动发现"核心能力。
+> 本文是 data-travel 项目 [Ch7 · AI 资产沉淀与自进化](../../README.md) 的子章节（04-agent-skill-extraction）。覆盖核心职责④ 中"自进化 / Skill 自动发现"核心能力。
 
 ---
 
@@ -59,8 +59,8 @@
 ### 1.3 演进
 
 - 传统阶段：人工编写 Skill。
-- 2024 阶段：Self-Play RL、Procedural Memory、Auto-Skill。
-- 2025 阶段：Skill Mining + Workflow Discovery。
+- 2024 阶段：Self-Play RL、Auto-Skill。
+- 2025 阶段：Procedural Memory 建模、Skill Mining + Workflow Discovery。
 - 2025+：自驱动 Skill Library（Agent 自己发现 + 验证 + 应用）。
 
 各阶段关键节点：
@@ -70,12 +70,12 @@
 | 2022 | LangChain Agents | 手工定义工具列表 |
 | 2023 | AutoGPT | 自动任务分解 |
 | 2023-11 | Voyager（Minecraft） | 自动技能库发现 |
-| 2024-01 | ReAct | 推理 + 行动 |
-| 2024-04 | Reflexion | 自我反思 + Skill 积累 |
+| 2022 | ReAct | 推理 + 行动 |
+| 2023 | Reflexion | 自我反思 + Skill 积累 |
 | 2024-06 | Auto-Skill（学界） | LLM 自动生成 Skill |
 | 2024-08 | Cursor Composer | IDE 中的 Skill 编排 |
 | 2024-10 | Devin（Cognition） | 端到端 Coding Agent |
-| 2025 | Self-Play RL | 自我博弈生成训练数据 |
+| 2024 | Self-Play RL | 自我博弈生成训练数据 |
 | 2025-06 | Procedural Memory 论文 | 程序性记忆建模 |
 
 ### 1.4 在 AI 时代数据架构中的位置
