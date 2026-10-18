@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★☆☆ |
 | 章节 | [01-modeling](../README.md) |
 | 主文件 | [10-metric-system.md](10-metric-system.md) |
 

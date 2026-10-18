@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★☆☆ |
 | 章节 | [01-modeling](../README.md) |
 | 主文件 | [02-dimensional-modeling.md](02-dimensional-modeling.md) |
 

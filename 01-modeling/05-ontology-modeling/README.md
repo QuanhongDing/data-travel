@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★☆☆ |
 | 章节 | [01-modeling](../README.md) |
 | 主文件 | [05-ontology-modeling.md](05-ontology-modeling.md) |
 

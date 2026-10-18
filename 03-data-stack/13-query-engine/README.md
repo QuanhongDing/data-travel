@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★☆☆ |
 | 章节 | [03-data-stack](../README.md) |
 | 主文件 | [13-query-engine.md](13-query-engine.md) |
 

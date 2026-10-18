@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★☆☆ |
 | 章节 | [02-data-science](../README.md) |
 | 主文件 | [04-regression.md](04-regression.md) |
 

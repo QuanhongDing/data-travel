@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★★☆ |
 | 章节 | [08-ai-governance](../README.md) |
 | 主文件 | [01-ai-data-governance.md](01-ai-data-governance.md) |
 
@@ -10,8 +10,8 @@
 
 | 小节 | 文件 |
 | --- | --- |
-| 3. 风险事件 | [01-ai-data-governance-section-3-sec3.md](01-ai-data-governance-section-3-sec3.md) |
-| 4. 待整改项 | [01-ai-data-governance-section-4-sec4.md](01-ai-data-governance-section-4-sec4.md) |
+| 3. 设计模式与范式 | [01-ai-data-governance-section-3-sec3.md](01-ai-data-governance-section-3-sec3.md) |
+| 4. 工程实现 | [01-ai-data-governance-section-4-sec4.md](01-ai-data-governance-section-4-sec4.md) |
 | 5. 前沿演进 | [01-ai-data-governance-section-5-sec5.md](01-ai-data-governance-section-5-sec5.md) |
 | 6. 落地实践 | [01-ai-data-governance-section-6-sec6.md](01-ai-data-governance-section-6-sec6.md) |
 | 7. 与其他方法对比 | [01-ai-data-governance-section-7-sec7.md](01-ai-data-governance-section-7-sec7.md) |

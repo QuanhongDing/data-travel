@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★★☆ |
 | 章节 | [06-multi-model](../README.md) |
 | 主文件 | [02-llm-in-sql.md](02-llm-in-sql.md) |
 

@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★☆☆ |
 | 章节 | [15-case-studies](../README.md) |
 | 主文件 | [03-byte-data-architecture.md](03-byte-data-architecture.md) |
 

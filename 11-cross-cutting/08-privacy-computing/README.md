@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★★☆ |
 | 章节 | [11-cross-cutting](../README.md) |
 | 主文件 | [08-privacy-computing.md](08-privacy-computing.md) |
 

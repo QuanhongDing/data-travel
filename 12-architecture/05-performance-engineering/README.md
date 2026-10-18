@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★★★ |
 | 章节 | [12-architecture](../README.md) |
 | 主文件 | [05-performance-engineering.md](05-performance-engineering.md) |
 

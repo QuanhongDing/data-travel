@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★★☆ |
 | 章节 | [10-industry-agent](../README.md) |
 | 主文件 | [01-multimodal-ai.md](01-multimodal-ai.md) |
 

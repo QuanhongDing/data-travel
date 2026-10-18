@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★★☆ |
 | 章节 | [09-data-intelligence-product](../README.md) |
 | 主文件 | [03-data-mesh.md](03-data-mesh.md) |
 

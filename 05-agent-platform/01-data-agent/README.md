@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★★★ |
 | 章节 | [05-agent-platform](../README.md) |
 | 主文件 | [01-data-agent.md](01-data-agent.md) |
 

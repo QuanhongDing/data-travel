@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★★☆ |
 | 章节 | [13-decision](../README.md) |
 | 主文件 | [08-decision-psychology.md](08-decision-psychology.md) |
 

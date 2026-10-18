@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★★☆ |
 | 章节 | [04-data-assetization](../README.md) |
 | 主文件 | [10-metric-platform.md](10-metric-platform.md) |
 

@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★★☆ |
 | 章节 | [07-agent-evolution](../README.md) |
 | 主文件 | [02-feedback-loop.md](02-feedback-loop.md) |
 

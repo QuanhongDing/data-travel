@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★☆☆ |
 | 章节 | [01-modeling](../README.md) |
 | 主文件 | [01-business-process-modeling.md](01-business-process-modeling.md) |
 

@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★☆☆ |
 | 章节 | [15-case-studies](../README.md) |
 | 主文件 | [07-airbnb-data-architecture.md](07-airbnb-data-architecture.md) |
 

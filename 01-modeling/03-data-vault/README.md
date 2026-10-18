@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★☆☆ |
 | 章节 | [01-modeling](../README.md) |
 | 主文件 | [03-data-vault.md](03-data-vault.md) |
 
@@ -14,6 +14,7 @@
 | 4. 工程实现 | [03-data-vault-section-4-sec4.md](03-data-vault-section-4-sec4.md) |
 | 5. 前沿演进（AI 时代） | [03-data-vault-section-5-ai.md](03-data-vault-section-5-ai.md) |
 | 6. 落地实践 | [03-data-vault-section-6-sec6.md](03-data-vault-section-6-sec6.md) |
+| 7. 与其他方法对比 | [03-data-vault-section-7-sec7.md](03-data-vault-section-7-sec7.md) |
 | 8. 面试真题集 | [03-data-vault-section-8-sec8.md](03-data-vault-section-8-sec8.md) |
 
 ## 返回
