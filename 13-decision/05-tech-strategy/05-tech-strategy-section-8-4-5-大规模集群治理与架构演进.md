@@ -2,7 +2,7 @@
 
 ### 8.2 §4.5 大规模集群治理与架构演进
 
-> 本主题考察「超大规模集群的工程治理能力」：小文件、资源调度、数据安全、Metastore、生命周期管理。面试官通常从一个具体痛点切入，逐层下钻到工程权衡、跨团队治理与全链路 ROI。本主题与 Meta《Scaling Facebook Data Warehouse to 300 PB》、阿里 MaxCompute、Uber 大数据平台等头部实践强对应。
+> 本主题考察「超大规模集群的工程治理能力」：小文件、资源调度、数据安全、Metastore、生命周期管理。面试官通常从一个具体痛点切入，逐层下钻到工程权衡、跨团队治理与全链路 ROI。本主题与 Meta《Scaling the Facebook Data Warehouse to 300 PB》、阿里 MaxCompute、Uber 大数据平台等头部实践强对应。
 
 #### §4.5.1 在超大规模集群下，小文件问题会严重拖慢 Hive/Spark SQL 的查询性能。请分析小文件问题的成因、影响，并说明至少三种治理手段及其适用场景。
 
@@ -17,13 +17,13 @@
 
 **第一层：成因分析。** 小文件来自三个源头：
 
-- **高频增量写入：每分钟/每小时的小批 ETL（Kafka → HDFS 流式入湖）** —— 典型如 Uber 在 2017 年公开的入湖链路，每条 Kafka 分区写一个文件。
+- **高频增量写入：每分钟/每小时的小批 ETL（Kafka → HDFS 流式入湖）** —— 典型如 Uber 公开分享过的入湖链路（本节无法给出该分享的文档名与年份），每条 Kafka 分区写一个文件。
 - **分区粒度过细：按 `dt` 分区 + 高并发 task**，每个 task 写一个文件 —— Meta《Scaling the Facebook Data Warehouse to 300 PB》专门指出这是最大来源。
 - **上游业务库频繁 `INSERT` 小批量**：MySQL binlog 通过 CDC 同步时，如果合并窗口短就会写小文件。
 
 **第二层：影响。** 三个层面的代价：
 
-- **元数据压力**：NameNode 内存按文件数增长（每个文件约 150-300 字节内存项），10 万文件就吃掉 3 GB Heap；Hive Metastore 也按分区/文件数做查询规划，文件数过多时 `DESCRIBE FORMATTED` 即可拖慢。
+- **元数据压力**：NameNode 内存按文件数增长（每个文件约 150-300 字节内存项），1000 万文件约吃掉 1.5-3 GB Heap、10 万文件只是几十 MB 量级（【推算】：由前述每文件 150-300 字节内存项线性外推，未计 Block 对象与 GC 开销，实际以集群 NameNode 指标为准）；Hive Metastore 也按分区/文件数做查询规划，文件数过多时 `DESCRIBE FORMATTED` 即可拖慢。
 - **读取侧**：Spark 的 FileScan 阶段需要为每个文件 open 一个 split + 建立 reader，10 万文件意味着 10 万次 RPC；MapReduce 同样。
 - **下游 compaction**：下游 ETL 读这种表，每一轮都要付出"开 10 万文件"的代价，CPU 与延迟一起升高。
 
@@ -34,7 +34,7 @@
 - **离线 compaction 作业**：每天低峰跑一次 `INSERT OVERWRITE` + `CLUSTER BY` 重建表，适合无法上湖表的老 Hive 仓库。**注意**：compaction 任务本身要按分区串行、并设置资源隔离，避免与大 ETL 抢资源。
 - **归档（Archive）冷分区**：对 90 天以上不再变更的分区合并到一个大文件，配合 `msck repair` 或 Hive ACID 事务；减少 Metastore 中"分区 × 文件"笛卡尔积。
 
-**第四层：工业实践。** Uber Engineering 在 Apache Hudi 系列博客中给出过明确经验：目标文件大小 256 MB ~ 1 GB 之间，对 90% 的查询性能最优；Meta 在 2013 年的 SIGMOD 论文里把"控制文件大小"列为集群可扩展性的前三大因素之一；阿里 MaxCompute 的小文件治理则通过内部"压缩合并服务"完成，规模化效果显著。
+**第四层：工业实践。** Uber Engineering 在 Apache Hudi 系列博客中给出过明确经验：目标文件大小 256 MB ~ 1 GB 之间综合表现最优（【经验】档：该区间随表格式、查询形状与集群规模而异，本节未附该系列博客的题名与链接）；Meta（Facebook）发表于 SIGMOD 2013 的论文《Scaling the Facebook Data Warehouse to 300 PB》把"控制文件大小"列为集群可扩展性的关键因素之一；阿里 MaxCompute 的小文件治理则通过内部"压缩合并服务"完成，规模化效果显著。
 
 **3. 常见陷阱**
 
@@ -45,9 +45,9 @@
 
 **4. 追问预测**
 
-- **「Iceberg / Hudi 的 compaction 怎么选？」** 答：Iceberg 适合读多写少（append 为主），通过 `rewrite_data_files` 异步合并；Hudi 适合 upsert 场景（CDC / 频繁更新），通过 `COW` 或 `MOR` 表类型内置 compaction。Uber 公开经验：选择 Hudi（Uber 自研的增量入湖方案）主要是为了支持 CDC + upsert。
+- **「Iceberg / Hudi 的 compaction 怎么选？」** 答：Iceberg 适合读多写少（append 为主），通过 `rewrite_data_files` 异步合并；Hudi 适合 upsert 场景（CDC / 频繁更新），通过 `COW` 或 `MOR` 表类型内置 compaction。Uber 公开经验：选择 Hudi（Uber 自研的增量入湖方案）主要是为了支持 CDC + upsert（本节无法给出该分享的文档名与年份）。
 - **「compaction 跑挂了怎么办？」** 答：湖表的 compaction 是事务性的（基于 snapshot），失败可重试；Hive 的 compaction 必须 idempotent（按分区重写）。
-- **「小文件导致 NameNode OOM 怎么办？」** 答：先扩容 NameNode Federation（Meta 2014 年改造经验），同时引入 HDFS Router-Based Federation；中期上湖表分担元数据压力。
+- **「小文件导致 NameNode OOM 怎么办？」** 答：先扩容 NameNode Federation（Meta 公开分享过的改造方向，本节无法给出该分享的文档名与年份），同时引入 HDFS Router-Based Federation；中期上湖表分担元数据压力。
 
 **5. 参考资料**
 
@@ -85,13 +85,13 @@
 
 **第二层：调度层治理。**
 
-- **队列分级与抢占**：建立 P0/P1/P2 三级队列，按业务重要性分配。P0 用 Capacity Scheduler 的 `maximum-capacity` 锁住下限；P2 用 `preemption` 让 P0 作业可以抢占。这是 Hulu、LinkedIn 等公司公开分享的标准做法。
+- **队列分级与抢占**：建立 P0/P1/P2 三级队列，按业务重要性分配。P0 用 Capacity Scheduler 的 `maximum-capacity` 锁住下限；P2 用 `preemption` 让 P0 作业可以抢占。这是 Hulu、LinkedIn 等公司公开分享的标准做法（本节无法给出该分享的文档名与年份）。
 - **动态资源**：开启 YARN 的 `node-labels` 或 K8s 的 `PriorityClass`，让大作业优先调度到独立节点池。
 - **调度策略切换**：从 FIFO 改 Fair Scheduler，按业务组隔离并发上限。
 
 **第三层：作业层治理。**
 
-- **重作业治理**：识别 Top N 资源消耗作业，做改造 —— 加盐、广播 join、参数调优；Uber 工程博客公开过 "Cost Optimization" 项目，仅靠作业治理节省 30%+ 资源。
+- **重作业治理**：识别 Top N 资源消耗作业，做改造 —— 加盐、广播 join、参数调优；Uber 工程博客公开过 "Cost Optimization" 项目，作业治理带来的资源节省很可观（【经验】档：节省比例随作业构成与治理力度而异，本节无法给出该博客的可核验文档名与统一百分比）。
 - **错峰调度**：把可延迟的大 ETL 移到凌晨；阿里 DataWorks 提供"基线 + 时段调度"工具，按 SLA 反推调度时间窗。
 - **小作业合并**：将频繁的小作业合并到一个 pipeline，靠调度模板统一管理。
 
@@ -172,14 +172,14 @@
 **第三层：授权（Authorization）。**
 
 - **粗粒度**：HDFS POSIX + YARN 队列权限。
-- **细粒度表级/列级**：Apache Ranger 是事实标准（基于 Policy 插件），支持 Hive / HDFS / HBase / Kafka 全覆盖；Sentry 在 CDH 体系下流行过，但社区已合并到 Ranger。
+- **细粒度表级/列级**：Apache Ranger 是事实标准（基于 Policy 插件），支持 Hive / HDFS / HBase / Kafka 全覆盖；Sentry 在 CDH 体系下流行过，但社区版已并入 Apache Attic 维护模式（仅修 bug），生态整体转向 Ranger。
 - **动态脱敏**：Ranger 的 Tag-Based Policy + Atlas 标签（"身份证号" / "手机号" → 自动匹配策略）实现"按数据资产打标 → 自动应用策略"。这是阿里、字节在金融场景的标准做法。
 - **行级控制**：在 Ranger 上写"只允许看本人所属分公司的数据"——基于上下文属性（用户组 / IP / 时间）。
 
 **第四层：加密（Encryption）。**
 
-- **传输加密**：TLS for Hadoop RPC（HADOOP-13578）；HiveServer2 / Impala 启用 SSL。
-- **存储加密**：HDFS Transparent Encryption（HDFS-5314）+ Hadoop KMS；Spark 的 Shuffle 文件加密（`spark.ssl.enabled`）。
+- **传输加密**：TLS for Hadoop RPC（HADOOP-13578）；HiveServer2 / Impala 启用 SSL；Spark 的 RPC / UI 走 `spark.ssl.enabled`。
+- **存储加密**：HDFS Transparent Encryption（HDFS-5314）+ Hadoop KMS；Spark 的 Shuffle 与本地磁盘数据加密（`spark.io.encryption.enabled`）。
 - **字段级加密**：对身份证、手机号、邮箱等做 AES / 国密 SM4 加密；Hive 的 `reflect` UDF 或视图层做透明加解密。
 - **密钥管理**：HashiCorp Vault / 阿里 KMS / AWS KMS；永远不要把密钥写在代码里。
 
@@ -189,7 +189,7 @@
 - **变更审计**：Atlas 追踪表结构与数据血缘（"这列来自哪个上游"），敏感字段变更触发告警。
 - **查询审计**：Presto / HiveServer2 的 query log，配合 OpenSOC / SIEM 做异常行为检测。
 
-**第六层：工业实践。** 阿里在《数据安全白皮书》中明确了"敏感数据识别 → 分类分级 → 策略下发 → 动态脱敏 → 访问审计"的标准链路；字节跳动内部"数据合规中台"基于 Ranger 扩展了字段级动态脱敏；Meta 在 Facebook Infra 公开分享里强调"安全是产品功能，不是事后补丁"。
+**第六层：工业实践。** 据阿里公开的数据安全文档，其标准链路是"敏感数据识别 → 分类分级 → 策略下发 → 动态脱敏 → 访问审计"；字节跳动内部"数据合规中台"基于 Ranger 扩展了字段级动态脱敏；Meta 在 Facebook Infra 公开分享里强调"安全是产品功能，不是事后补丁"（以上三处企业实践本节均无法给出相应文档名与年份，按【经验】档理解）。
 
 **3. 常见陷阱**
 
@@ -201,15 +201,15 @@
 
 **4. 追问预测**
 
-- **「Kerberos 在万节点规模怎么扩展？」** 答：用跨域信任（Cross-Realm Trust）+ 多个 KDC 联邦；Uber 公开过把 KDC 拆分为多个分片（多 KDC 联邦）的实践。详见 §5.6.6。
+- **「Kerberos 在万节点规模怎么扩展？」** 答：用跨域信任（Cross-Realm Trust）+ 多个 KDC 联邦；Uber 公开过把 KDC 拆分为多个分片（多 KDC 联邦）的实践（本节无法给出该分享的文档名与年份）。详见 §5.6.6。
 - **「敏感字段动态脱敏怎么做？」** 答：Ranger + Atlas + Hive View：Atlas 标"敏感"，Ranger 策略匹配，自动改写 SQL。
-- **「加密对性能影响多大？」** 答：HDFS Transparent Encryption 加密读路径约 5-15% 性能损耗；CPU bound 场景可改用 AES-NI 硬件加速。
+- **「加密对性能影响多大？」** 答：HDFS Transparent Encryption 的加密读路径有可观测的性能损耗（【经验】档：幅度随加密算法、负载类型与是否启用 AES-NI 硬件加速而异，本节无法给出可溯源的统一数字）；CPU bound 场景可改用 AES-NI 硬件加速。
 
 **5. 参考资料**
 
-- 阿里《大数据安全之揭秘》与《数据安全白皮书》——国内最系统的数据安全治理框架。
+- 据阿里公开的数据安全文档——数据安全治理框架的国内头部实践。
 - Apache Ranger 与 Apache Atlas 官方文档——策略模型与标签（Tag）传播机制。
-- Meta（Facebook）关于 Kerberos 与 Hadoop 安全改造的公开分享（EuroSys / USENIX 论文）。
+- Meta（Facebook）关于 Kerberos 与 Hadoop 安全改造的公开分享（本节无法给出该分享的文档名与年份，引用时请自行查证）。
 - 字节跳动 DataLeap 与合规中台的公开技术博客。
 - NIST SP 800-53 与 ISO 27001 关于数据安全的合规框架。
 - **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
@@ -237,25 +237,25 @@
 
 **2. 参考答案框架**
 
-**第一层：Metastore 瓶颈的本质。** Hive Metastore 是一个独立的 Thrift 服务，底层用关系型数据库（MySQL/PostgreSQL）存元数据。规模上来后三个症状：① 元数据查询慢（`DESCRIBE` / `SHOW PARTITIONS` 数十秒）；② 表级锁竞争激烈（`ALTER TABLE` 与并发查询冲突）；③ 高可用难做（主备切换有数据丢失风险）。Meta 在公开的超大规模数仓工程论文中把 HMS 列为集群可扩展性的最大单点之一。
+**第一层：Metastore 瓶颈的本质。** Hive Metastore 是一个独立的 Thrift 服务，底层用关系型数据库（MySQL/PostgreSQL）存元数据。规模上来后三个症状：① 元数据查询慢（`DESCRIBE` / `SHOW PARTITIONS` 数十秒）；② 表级锁竞争激烈（`ALTER TABLE` 与并发查询冲突）；③ 高可用难做（主备切换有数据丢失风险）。Meta 在公开的超大规模数仓工程论文中把 HMS 列为集群可扩展性的最大单点之一（本节未附该论文的题名与链接，按【经验】档理解，引用时请自行查证）。
 
 **第二层：单实例优化。**
 
 - **数据库层**：MySQL 切到 PostgreSQL（PG 的 `JSONB` + 分区表特性更适合元数据）；JDBC 连接池调大（hive.metastore.server.min/max.threads）。
-- **JVM 调优**：Metastore JVM Heap 一般需要 32 GB+，GC 用 G1/ZGC；Meta 公开经验是 32 GB × 2 实例 + 独立 SSD。
-- **缓存**：开启 `hive.metastore.aggregate.stats.cache` 与 `hive.metastore.cache`（HMS 2.4+），把热点表的统计信息 / 列信息缓存在堆内存。Uber 的公开调优数据显示这一步能把元数据查询降低 5×。
+- **JVM 调优**：Metastore JVM Heap 一般需要 32 GB+，GC 用 G1/ZGC；部署形态上常见"两个大 Heap 实例 + 元数据库独立 SSD"（【经验】档：具体配置随表/分区规模与机型而异，本节无法给出可核验的出处）。
+- **缓存**：开启 `hive.metastore.aggregate.stats.cache` 与 `hive.metastore.cache`（HMS 2.4+），把热点表的统计信息 / 列信息缓存在堆内存。Uber 在公开的调优分享中介绍过这一步对元数据查询的显著收益（【经验】档：倍数随热点分布与缓存命中率而异，本节无法给出该分享的可核验文档名与统一数字）。
 - **分区裁剪优化**：避免大表的无分区 `SELECT COUNT(*)`（直接扫描全部元数据）；改用 `WHERE partition_col > X` 触发裁剪。
 
 **第三层：高可用与水平扩展。**
 
 - **主备 HA**：HMS 3.x 支持 Active-Standby，配合 LB（HAProxy）；注意备库要消费主库的 `NOTIFICATION` 表变更。
 - **垂直拆表**：把超大的库拆到独立 Metastore 实例（`hive.metastore.uris` 支持多实例，按 db 路由）。
-- **元数据缓存层**：在 HiveServer2 / Spark 客户端加元数据缓存（`datalake.metastore.cache`），减少对 HMS 的 RPC 次数。Databricks 的公开分享里强调"客户端缓存"是减少 HMS 压力的关键。
+- **元数据缓存层**：在 HiveServer2 / Spark 客户端加元数据缓存（`datalake.metastore.cache`），减少对 HMS 的 RPC 次数。Databricks 的公开分享里强调"客户端缓存"是减少 HMS 压力的关键（本节无法给出该分享的文档名与年份）。
 
 **第四层：迁移到 Lakehouse 表格式（Iceberg / Hudi）。**
 
-- **Iceberg**：元数据从 HMS 下推到表自身的 `metadata.json` + manifest list，每次提交产生新 snapshot。HMS 只存"这是一个 Iceberg 表"的指针。Netflix 是 Iceberg 的最大生产用户之一，公开数据是 HMS 调用量降低一个数量级。
-- **Hudi**：Timeline + 文件级元数据；适合 upsert / CDC 场景。Uber Engineering 的公开数据：Hudi 把 HMS 的 `ALTER TABLE` 调用降到接近 0。
+- **Iceberg**：元数据从 HMS 下推到表自身的 `metadata.json` + manifest list，每次提交产生新 snapshot。HMS 只存"这是一个 Iceberg 表"的指针。Netflix 是 Iceberg 的最大生产用户之一，其公开分享中提到迁到 Iceberg 后 HMS 调用量显著下降（【经验】档：幅度随 Catalog 选型与客户端缓存策略而异，本节无法给出该分享的文档名与年份）。
+- **Hudi**：Timeline + 文件级元数据；适合 upsert / CDC 场景。Uber Engineering 在其公开分享中提到，Hudi 把 HMS 的 `ALTER TABLE` 调用压到极低（方向上是接近零；【经验】档：幅度随写入模式而异，本节无法给出该分享的可核验文档名与比例数字）。
 - **取舍**：① 新组件的运维复杂度（Iceberg 需要 REST Catalog 或 Hive Catalog，Hudi 需要 Timeline 服务）；② 兼容老 Hive SQL 工具链（部分 BI 工具仍走 HMS，需要 dual-write 过渡）；③ 社区生态成熟度（Hive 仍是事实标准，新格式的 bug 修复周期更长）。
 
 **第六层：决策建议。** 新建数仓直接上 Iceberg / Hudi；存量仓库做"双写过渡"，新表用 Lakehouse、老表继续 HMS，最后逐步迁移。
@@ -309,35 +309,35 @@
 - **业务指标**：每千次查询消耗（cost per 1k queries）、每 TB 存储月成本。
 - **效率指标**：资源利用率（utilization vs allocated）、排队时长、SLA 达成率。
 
-阿里 MaxCompute 公开的"算力计量"模型就是这套指标的工业实现。
+阿里 MaxCompute 公开的"算力计量"模型就是这套指标的工业实现（本节无法给出该材料的文档名与年份）。
 
 **第二层：归因（Attribution）—— 谁在花钱。** 没有归因就没有靶子。三步：
 
-- **作业级归因**：把 YARN / Spark 资源消耗按 ApplicationID 拆；Uber 的 `Cost Attribution Service` 公开过这套机制。
+- **作业级归因**：把 YARN / Spark 资源消耗按 ApplicationID 拆；Uber 的 `Cost Attribution Service` 公开过这套机制（本节无法给出该分享的文档名与年份）。
 - **业务线归因**：在调度系统（Airflow / DolphinScheduler / DataWorks）给每个作业打"业务线"标签，按业务线汇总。
 - **跨周期对比**：上周 vs 上周、上月 vs 上月、按工作日 vs 周末看波动是否与业务周期吻合。
 
 **第三层：优化（Optimization）—— 怎么省。** 按 ROI 排序：
 
-- **作业治理（最快）**：Top 10 资源消耗作业治理 —— 调参 + 改写 + 加盐；Uber 公开经验：作业治理能节省 30% 资源。
+- **作业治理（最快）**：Top 10 资源消耗作业治理 —— 调参 + 改写 + 加盐；Uber 在公开分享中给出的经验是作业治理带来的资源节省很可观（【经验】档：比例随作业构成与治理力度而异，本节无法给出该分享的可核验文档名与统一数字）。
 - **存储治理（小文件 + 冷热分层）**：参考 §4.5.1 / §4.5.2。
 - **调度治理（队列 + 错峰）**：把大作业移到低峰时段。
-- **引擎升级**：从 MapReduce 升到 Spark 通常有 3-10× 加速（同样的工作用更少资源）。
+- **引擎升级**：从 MapReduce 升到 Spark 通常有明显提速（同样的工作用更少资源；【经验】档：幅度随作业类型与数据规模而异，本节无法给出可溯源的统一数字）。
 - **存算分离**：计算节点无状态化，资源用完即释放。
 
 **第四层：激励（Incentive）—— 让团队主动省。**
 
 - **成本看板**：每团队每周看自己的成本曲线；阿里 DataWorks 有"团队成本 Dashboard"。
 - **OKR + 成本指标**：把"成本下降 X%"写进团队 OKR，与绩效挂钩。
-- **FinOps 角色**：设立 FinOps 工程师（LinkedIn / Snowflake 都有公开 JD），专门做成本优化。
+- **FinOps 角色**：设立 FinOps 工程师（LinkedIn / Snowflake 都有公开 JD，本节未附其链接），专门做成本优化。
 - **成本预警**：作业超预算自动告警；超过基线 1.5× 强制评审。
 
 **第五层：工业实践。**
 
-- **LinkedIn** 公开过完整的 FinOps 流程：指标采集（自研 Inbroker）→ 归因 → 月度 Review → 团队预算。
+- **LinkedIn** 公开过完整的 FinOps 流程：指标采集（自研 Inbroker）→ 归因 → 月度 Review → 团队预算（本节无法给出该分享的文档名与年份）。
 - **Snowflake** 是云数仓 FinOps 的标杆，把"每查询成本"作为产品特性对外暴露。
 - **阿里 MaxCompute** 的"按量计费 + 资源包" + DataWorks 的成本中心是国内最完整的工程实现。
-- **Uber** 在其 DataPlatform 团队公开分享中提到，成本治理项目 ROI 通常是 1:3 到 1:10（每投入 1 人成本节省 3-10 倍成本）。
+- **Uber** 在其 DataPlatform 团队公开分享中提到，成本治理项目的投入产出比通常为正、量级在数倍（【经验】档：倍数随集群规模与治理力度而异，本节无法给出该分享的文档名与可核验的统一数字）。
 
 **3. 常见陷阱**
 
@@ -400,8 +400,8 @@
 
 **第四层：抢占策略。**
 
-- **开启 `preemption` 但配置阈值**：避免过度抢占。LinkedIn 公开参数：`monitoring-policy = default` + `preemption-utilization-threshold = 0.8`（利用率超过 80% 才允许抢占）。
-- **优先级抢占**：用 `Priority` 字段让 P0 作业可以抢占 P2；Uber 在公开分享中提到这是稳定性关键。
+- **开启 `preemption` 但配置阈值**：避免过度抢占。典型配置：`monitoring-policy = default` + `preemption-utilization-threshold = 0.8`（利用率超过 80% 才允许抢占；【经验】档：阈值需按集群负载特征调整；本节未附该配置的官方文档出处，键名与取值也未逐项核验，请以所用 YARN 版本的官方文档为准）。
+- **优先级抢占**：用 `Priority` 字段让 P0 作业可以抢占 P2；Uber 在公开分享中提到这是稳定性关键（本节无法给出该分享的文档名与年份）。
 - **抢占配额限制**：单次抢占不要超过 N 个 container，避免雪崩（`preemption-to-balance-threshold`）。
 
 **第五层：参数调优经验。**
@@ -484,7 +484,7 @@
 - **全链路删除**：用户删号 → 通过 CDC 同步 → 数仓每个分层都做对应删除；这是 GDPR 的核心要求。
 - **链路追踪**：删完后必须能证明"已全链路删除"——这是审计的核心证据。
 
-LinkedIn 在 GDPR 落地分享中描述过他们的"全链路数据删除服务"。
+LinkedIn 在 GDPR 落地分享中描述过他们的"全链路数据删除服务"（本节无法给出该分享的文档名与年份）。
 
 **第五层：成本优化闭环。** 把上面四个层面串成循环：
 
@@ -496,9 +496,9 @@ LinkedIn 在 GDPR 落地分享中描述过他们的"全链路数据删除服务"
 
 **第六层：工业实践。**
 
-- **Netflix** 在 S3 上的分层存储是其数据湖的核心，公开数据是每月存储成本下降 30%+。
+- **Netflix** 在 S3 上的分层存储是其数据湖的核心，其公开分享中提到分层后每月存储成本显著下降（【经验】档：下降幅度随数据冷热分布与生命周期规则而异，本节无法给出可溯源的统一数字）。
 - **阿里 MaxCompute** 的热/冷/归档分层是国内最完整的工程实现。
-- **Meta** 在 GDPR 落地分享中明确把"全链路数据删除"列为数仓核心能力。
+- **Meta** 在 GDPR 落地分享中明确把"全链路数据删除"列为数仓核心能力（本节无法给出该分享的文档名与年份）。
 - **AWS S3 Storage Classes + Intelligent-Tiering** 是云上数仓分层的工业标杆。
 
 **3. 常见陷阱**
@@ -518,7 +518,7 @@ LinkedIn 在 GDPR 落地分享中描述过他们的"全链路数据删除服务"
 - 阿里 MaxCompute 公开技术材料——《大数据之路》关于热冷分层的章节。
 - Netflix Technology Blog 关于 S3 数据湖分层存储的系列公开文章。
 - AWS S3 Storage Classes 与 Intelligent-Tiering 官方文档。
-- LinkedIn / Meta 关于 GDPR 落地与全链路删除的公开分享（EuroSys / USENIX）。
+- LinkedIn / Meta 关于 GDPR 落地与全链路删除的公开分享（本节无法给出该分享的文档名与年份，引用时请自行查证）。
 - NIST SP 800-88 关于数据安全擦除的标准。
 - **中信证券** —— 中信证券的指标管理实践——业务口径先于物理实现、Owner 制度落到人，对应「指标即资产」的工程范式。
 - **京东数科** —— 京东数科的金融特征平台——支撑消费分期、信用支付等场景，特征口径与模型版本强一致。

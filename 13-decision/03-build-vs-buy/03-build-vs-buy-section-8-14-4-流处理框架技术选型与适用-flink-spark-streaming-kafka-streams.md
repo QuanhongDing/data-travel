@@ -33,7 +33,7 @@
 
 **第三层：典型场景。** ① **Flink**——实时风控、实时推荐、实时数仓（流式 ETL）、需要事件时间 / 乱序 / 复杂 CEP（复杂事件处理）。② **Spark Structured Streaming**——准实时 ETL、与批处理共代码的流批一体、湖表写入（Delta / Iceberg）。③ **Kafka Streams**——轻量微服务、Kafka 数据清洗 / 转换、无需独立集群的场景。
 
-**第四层：选型建议。** ① **要求毫秒级 + 复杂状态**——Flink。② **要求与离线共用代码 + 湖仓**——Spark Structured Streaming。③ **简单 Kafka 流处理 / 微服务内嵌**——Kafka Streams。④ **国内实时数仓主流**——Flink（阿里 / 字节 / 美团均大规模用 Flink）。
+**第四层：选型建议。** ① **要求毫秒级 + 复杂状态**——Flink。② **要求与离线共用代码 + 湖仓**——Spark Structured Streaming。③ **简单 Kafka 流处理 / 微服务内嵌**——Kafka Streams。④ **国内实时数仓主流**——Flink（阿里 / 字节 / 美团等团队在实时数仓中采用 Flink；本节未附可核验的出处，此处按【经验】档处理）。
 
 **3. 常见陷阱**
 
@@ -48,7 +48,7 @@
 - **「Spark Structured Streaming 能做毫秒级吗？」** 答：Continuous Processing 模式可到毫秒级，但特性支持有限（不支持聚合、join 受限）；主流还是微批秒级。
 - **「Kafka Streams 的状态存哪？」** 答：默认存 local RocksDB（per task）+ changelog topic（备份）；task 迁移时从 changelog 恢复。
 - **「Flink 与 Spark 能共存吗？」** 答：能——Flink 做实时链路，Spark 做批与回刷，二者共享湖表与口径。
-- **「为什么国内实时数仓偏好 Flink？」** 答：Flink 的原生流 + 状态管理 + 事件时间更契合"实时数仓"需求；阿里 Blink 的贡献也推动了国内生态。
+- **「为什么国内实时数仓偏好 Flink？」** 答：Flink 的原生流 + 状态管理 + 事件时间更契合"实时数仓"需求；阿里 Blink 项目对 Flink 社区的贡献是国内生态快速成熟的因素之一（方向性判断，本节未附可核验出处）。
 
 **5. 参考资料**
 
@@ -68,7 +68,7 @@
 - **中国移动** —— 中国移动的实时话单 Flink 引擎——PB 级话单走 Flink 流 + Spark 小时级对账。
 - **中国联通** —— 中国联通网络运维数据平台——告警、性能、配置的统一存储与 AI 故障预测。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：上列条目分两类。第一类是官方文档类（Apache Flink / Spark / Kafka 官方文档与设计文档，Apache Iceberg / Hudi 的 connector 文档），可按名称检索到对应材料，本书未附精确链接。第二类只给「团队 / 公司 + 主题或实践描述」（含「大规模」「PB 级」等规模说法，以及形如「**某公司** —— 某公司的某实践」的条目），未给文档名与年份，**本书无法给出其可核验出处**，一律按【经验】档理解，请勿当作可引用的事实来源。
 
 ---
 
@@ -76,7 +76,7 @@
 
 **1. 考察点**
 
-- 是否理解 Flink 的 **State Backend（RocksDB / Heap）+ Checkpoint + Savepoint** 与 Spark 的 **State Store（MemoryStateStore / HDFSStateStore）+ 微批幂等** 的机制差异。
+- 是否理解 Flink 的 **State Backend（RocksDB / Heap）+ Checkpoint + Savepoint** 与 Spark 的 **State Store（HDFSBackedStateStoreProvider / RocksDBStateStoreProvider）+ 微批幂等** 的机制差异。
 - 能否讲清"以状态管理和容错换取的代价"——资源常驻、运维复杂。
 - 加分项：能给出具体的状态规模数字与失败恢复时间（RTO）对比。
 
@@ -91,12 +91,12 @@
 - **Savepoint**——手动触发的、可迁移的状态快照，支持作业"停机升级后从 savepoint 恢复"，是运维利器。
 
 **② Spark Structured Streaming**：
-- **状态抽象**——仅 `mapGroupsWithKey` / `flatMapGroupsWithState` 的有限状态 + 内置算子状态（如 `dropDuplicates` 的水位线状态）。
-- **State Store**——`HDFSBackedStateStoreProvider`（默认，存 HDFS）与 `RocksDBStateStoreProvider`（实验性）。状态有大小限制（默认 watermark 之外的状态会被清理）。
+- **状态抽象**——仅 `mapGroupsWithState` / `flatMapGroupsWithState` 的有限状态 + 内置算子状态（如 `dropDuplicates` 的水位线状态）。
+- **State Store**——可插拔的 provider：`HDFSBackedStateStoreProvider`（存 HDFS，Spark 3.5 及以前为默认）与 `RocksDBStateStoreProvider`（本地 KV，早期版本文档标注为实验性）；默认值随 Spark 版本演进，请以所用版本的官方文档为准。状态有大小限制（默认 watermark 之外的状态会被清理）。
 - **微批 checkpoint**——每个 micro-batch 完成后写 offset + 状态到 checkpoint location；恢复时从 checkpoint 重放。
 - **无 savepoint**——Spark 没有 Flink 那样的 savepoint 机制，状态迁移能力弱。
 
-**第二层：容错机制差异。** ① **Flink**——基于 **Chandy-Lamport 分布式快照**：TaskManager 定期插入 barrier，算子对齐（Exactly-Once）或不对齐（Unaligned Checkpoint，降低反压下的延迟）；端到端 exactly-once 通过两阶段提交 sink 实现。② **Spark**——基于 **micro-batch 幂等重放**：每个 batch 有唯一 id，失败重跑该 batch；sink 需幂等（或用事务 sink 如 Delta / Iceberg 的原子提交）。**本质差异**：Flink 是"流式快照"，Spark 是"批级重放"。
+**第二层：容错机制差异。** ① **Flink**——基于 **Chandy-Lamport 分布式快照**：JobManager 定期向 Source 注入 barrier，算子按 barrier 对齐后触发快照（反压严重时可用 Unaligned Checkpoint 免去对齐等待，两种模式都保持 exactly-once）；端到端 exactly-once 通过两阶段提交 sink 实现。② **Spark**——基于 **micro-batch 幂等重放**：每个 batch 有唯一 id，失败重跑该 batch；sink 需幂等（或用事务 sink 如 Delta / Iceberg 的原子提交）。**本质差异**：Flink 是"流式快照"，Spark 是"批级重放"。
 
 **第三层：代价对比。**
 
@@ -145,7 +145,7 @@
 - **中国移动** —— 中国移动的实时话单 Flink 引擎——PB 级话单走 Flink 流 + Spark 小时级对账。
 - **中国联通** —— 中国联通网络运维数据平台——告警、性能、配置的统一存储与 AI 故障预测。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：上列条目分两类。第一类是官方文档类（Apache Flink / Spark / Kafka 官方文档与设计文档，Apache Iceberg / Hudi 的 connector 文档），可按名称检索到对应材料，本书未附精确链接。第二类只给「团队 / 公司 + 主题或实践描述」（含「大规模」「PB 级」等规模说法，以及形如「**某公司** —— 某公司的某实践」的条目），未给文档名与年份，**本书无法给出其可核验出处**，一律按【经验】档理解，请勿当作可引用的事实来源。
 
 ---
 
@@ -211,7 +211,7 @@
 - **中国移动** —— 中国移动的实时话单 Flink 引擎——PB 级话单走 Flink 流 + Spark 小时级对账。
 - **中国联通** —— 中国联通网络运维数据平台——告警、性能、配置的统一存储与 AI 故障预测。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：上列条目分两类。第一类是官方文档类（Apache Flink / Spark / Kafka 官方文档与设计文档，Apache Iceberg / Hudi 的 connector 文档），可按名称检索到对应材料，本书未附精确链接。第二类只给「团队 / 公司 + 主题或实践描述」（含「大规模」「PB 级」等规模说法，以及形如「**某公司** —— 某公司的某实践」的条目），未给文档名与年份，**本书无法给出其可核验出处**，一律按【经验】档理解，请勿当作可引用的事实来源。
 
 ---
 
@@ -286,6 +286,6 @@
 - **中国移动** —— 中国移动的实时话单 Flink 引擎——PB 级话单走 Flink 流 + Spark 小时级对账。
 - **中国联通** —— 中国联通网络运维数据平台——告警、性能、配置的统一存储与 AI 故障预测。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：上列条目分两类。第一类是官方文档类（Apache Flink / Spark / Kafka 官方文档与设计文档，Apache Iceberg / Hudi 的 connector 文档），可按名称检索到对应材料，本书未附精确链接。第二类只给「团队 / 公司 + 主题或实践描述」（含「大规模」「PB 级」等规模说法，以及形如「**某公司** —— 某公司的某实践」的条目），未给文档名与年份，**本书无法给出其可核验出处**，一律按【经验】档理解，请勿当作可引用的事实来源。
 
 ---

@@ -18,7 +18,7 @@
 **第一层：先定义问题边界。** NameNode 内存增长 ≠ 内存泄漏。增长曲线分三类：① 线性但增速 < 数据量增速——**正常**（Namespace 随文件数自然增长）；② 线性且增速远超数据量增速——**疑似泄漏**；③ 阶跃式跳变——**通常是某次批量创建/删除**。所以第一步永远是「确认是泄漏」，而不是直接抓 dump。
 
 **第二层：定位阶段。**
-- **采样分析**：开启 `NameNode` 的 `jmx`（默认端口 9010 / 50070），采集 `HeapMemoryUsage` / `NumFilesUnderConstruction` / `BlocksTotal` / `PendingDeletionBlocks` 等指标；阿里 MaxCompute 体系下也使用自研 RPC 染色 + 慢调用分析。
+- **采样分析**：开启 `NameNode` 的 `jmx`（默认端口 9010 / 50070），采集 `HeapMemoryUsage` / `NumFilesUnderConstruction` / `BlocksTotal` / `PendingDeletionBlocks` 等指标；阿里 MaxCompute 体系下也使用自研 RPC 染色 + 慢调用分析（本节未附其文档名与链接，按【经验】档处理）。
 - **Heap Dump 取证**：`jmap -dump:live,format=b,file=nn.hprof <pid>`（离线抓）；线上环境优先用 `jcmd <pid> GC.heap_dump`，**会触发 Full GC**，必须在低峰期做，dump 后立刻拷贝走（占用 2× 堆大小）。
 - **工具分析**：Eclipse MAT 分析 `Leak Suspects` / `Dominator Tree`；关注 `org.apache.hadoop.hdfs.server.namenode.FSNamesystem`、`BlockManager` 的 `excessReplicateMap` / `pendingReplication` 等容器。
 - **版本漏洞**：HDFS 历史上出过多次内存缺陷（HDFS-14872 / HDFS-16547 / BlockReceiver 的 race condition），需要核对当前 Hadoop 版本对应的 Jira 与补丁。
@@ -27,15 +27,15 @@
 - **重启 NameNode**：Standby 切换（ZKFC 自动 failover），HA 集群下可执行；非 HA 下要预约窗口。
 - **强制触发 block 汇报回收**：`hdfs dfsadmin -refreshNodes` 配合 DeadNode 处理；触发 `PendingDeletionBlocks` 的清理。
 - **关闭可能加剧泄漏的特性**：临时关闭 `dfs.namenode.enable.retry.cache`、调整 `dfs.namenode.retrycache.expirytime`；限制 `dfs.namenode.handler.count` 减少并发 RPC 压力。
-- **扩容**：NameNode HA 难以热扩容堆（`-Xmx` 修改需重启），可临时调整为更大的 `-Xmn` 比例或启用 G1GC 改善停顿。LinkedIn 在 HDFS HA 集群中曾用 **Standby NameNode 内存大于 Active** 的非对称配置来扛住故障期。
+- **扩容**：NameNode HA 难以热扩容堆（`-Xmx` 修改需重启），可临时调整为更大的 `-Xmn` 比例或启用 G1GC 改善停顿。LinkedIn 在 HDFS HA 集群中曾用 **Standby NameNode 内存大于 Active** 的非对称配置来扛住故障期（本节未附其文档名与链接，按【经验】档处理）。
 
 **第四层：根治阶段。** 止血后的"二阶动作"：
 - **升级修复版本**：若已识别为已知 Bug，升级到带 fix 的版本。
-- **调整块拓扑**：单个文件/目录超过 1 亿文件时考虑使用 HDFS Federation（多 Namespace），LinkedIn 在 2018 年就因为 NameNode 单点扩展性问题迁移到 Federation + Router-Based Federation。
+- **调整块拓扑**：单个文件/目录超过 1 亿文件时考虑使用 HDFS Federation（多 Namespace），LinkedIn 在 2018 年就因为 NameNode 单点扩展性问题迁移到 Federation + Router-Based Federation（本节未附其文档名与链接，按【经验】档处理）。
 - **优化客户端行为**：上游业务大批量小文件写入是 NameNode 内存增长的最常见诱因，需要引导到 HBase / Ozone / Iceberg 这类"聚合写"的下游。
 - **JVM 调优**：启用 G1GC + `-XX:MaxGCPauseMillis=200` + `-XX:+UseStringDeduplication`；监控 `jvm.JvmMetrics.GcTimeMillis` 与 `GcCount`，比例超过 5% 视为异常。
 
-**第五层：防复发。** 加监控 `HeapMemoryUsage / -Xmx` 占比，阈值 75% 预警、85% 告警；每周做内存趋势复盘；引入 `oomWatch` 类守护脚本（阿里内部使用）做提前捕获。
+**第五层：防复发。** 加监控 `HeapMemoryUsage / -Xmx` 占比，阈值 75% 预警、85% 告警；每周做内存趋势复盘；引入 `oomWatch` 类守护脚本（阿里内部使用）做提前捕获（本节未附其文档名与链接，按【经验】档处理）。
 
 **3. 常见陷阱**
 
@@ -68,7 +68,7 @@
 - **中国移动** —— 中国移动的实时话单 Flink 引擎——PB 级话单走 Flink 流 + Spark 小时级对账。
 - **中国联通** —— 中国联通网络运维数据平台——告警、性能、配置的统一存储与 AI 故障预测。
 
-> 注：以上参考资料均指向公开出版物或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料分两类，本节均未附链接。（1）带具体书名 / 论文名 / 官方文档章节名 / JIRA 号的条目，请按条目名称自行检索核验；（2）仅以企业名义陈述、未附文档名与链接的条目——含「公司名 —— 平台简介」式的行业场景索引，以及以「某公司工程博客 / 公开分享 / 公开文章」泛称而未给篇名的一类，连带其中出现的规模量级、周期与数量——本节无法给出可核验的出处，一律按【经验】档表述，不应被当作可引证来源。正文中凡以「某公司曾…… / 某公司内部使用……」句式出现、同样未附文档名与链接的实践描述，也按【经验】档处理。
 
 ---
 
@@ -97,7 +97,7 @@
 - **139（SIGSEGV）**：JVM native crash，通常是 JNI / native 库缺陷（如 RocksDB、Hadoop native、Snappy 压缩库）；查 `hs_err_pid*.log`。
 
 **第三层：根因定位的优先级。**
-1. **共性时间窗事件优先**：检查是否有版本滚动、镜像升级、YARN / K8s 配置推送、安全补丁。LinkedIn 在 2020 年公开过因 JVM 升级导致大量 Executor 段错误的复盘。
+1. **共性时间窗事件优先**：检查是否有版本滚动、镜像升级、YARN / K8s 配置推送、安全补丁。LinkedIn 在 2020 年出现过因 JVM 升级导致的大量 Executor 段错误（本节未附其复盘文档名与链接，按【经验】档处理）。
 2. **资源维度**：检查 `NodeManager` 的 `AvailablePhysicalMemory` / `AvailableVirtualMemory`；是否有 swap 压力（swap 触发 OOM 会误杀）。
 3. **磁盘维度**：`du -sh /data/*` 看是否被打满；HDFS 的 `dfs.datanode.data.dir` 多目录配置是否均衡；本地磁盘满会触发 Container 清理。
 4. **网络维度**：检查 `net.core.somaxconn`、`tcp retransmit` 占比，连接耗尽也会触发进程退出。
@@ -111,7 +111,7 @@
 - **忽视 swap 与 overcommit。** `vm.overcommit_memory=1` 加上 swap 触发会大量误杀。
 - **不检查镜像版本一致性。** 万节点下经常有部分节点镜像滞后，错误分布不均。
 - **把 NM 重启当万能解法。** 容器化时代 NM 重启只是时间问题，根因不解决会重复发生。
-- **忽视心跳超时**。Flink/Spark 默认心跳 10s，但 GC pause 50s 时会假死——Uber 在 2019 年公开过将心跳调到 50s 同时启用 Fenced heartbeat 的方案。
+- **忽视心跳超时**。Flink/Spark 默认心跳 10s，但 GC pause 50s 时会假死——Uber 在 2019 年采用过将心跳调到 50s 同时启用 Fenced heartbeat 的方案（本节未附其文档名与链接，按【经验】档处理）。
 
 **4. 追问预测**
 
@@ -135,7 +135,7 @@
 - **中国移动** —— 中国移动的实时话单 Flink 引擎——PB 级话单走 Flink 流 + Spark 小时级对账。
 - **中国联通** —— 中国联通网络运维数据平台——告警、性能、配置的统一存储与 AI 故障预测。
 
-> 注：以上参考资料均指向公开出版物或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料分两类，本节均未附链接。（1）带具体书名 / 论文名 / 官方文档章节名 / JIRA 号的条目，请按条目名称自行检索核验；（2）仅以企业名义陈述、未附文档名与链接的条目——含「公司名 —— 平台简介」式的行业场景索引，以及以「某公司工程博客 / 公开分享 / 公开文章」泛称而未给篇名的一类，连带其中出现的规模量级、周期与数量——本节无法给出可核验的出处，一律按【经验】档表述，不应被当作可引证来源。正文中凡以「某公司曾…… / 某公司内部使用……」句式出现、同样未附文档名与链接的实践描述，也按【经验】档处理。
 
 ---
 
@@ -152,11 +152,11 @@
 
 **第一层：背压（Backpressure）的诊断。**
 
-- **核心机制**：Spark Streaming（微批）当下游处理速度跟不上 Kafka 消费速度时，调度延迟（Scheduling Delay）累积。Structured Streaming 通过 `spark.streaming.kafka.maxRatePerPartition` 与反压机制实现自适应。
+- **核心机制**：Spark Streaming（微批）当下游处理速度跟不上 Kafka 消费速度时，调度延迟（Scheduling Delay）累积；DStream API 靠 `spark.streaming.backpressure.enabled` + `spark.streaming.kafka.maxRatePerPartition` 做限速。Structured Streaming 走的是另一套机制——用 `maxOffsetsPerTrigger` / `maxBytesPerTrigger` 控制每个触发批次读入的 offset 量。
 - **特征指标**：`spark.streaming.scheduling.delay`（默认每个 batch 间隔）持续 > `batchInterval`，或 `processingTime >> batchInterval`。Kafka 侧的指标是 `records-lag-max`。
 - **日志特征**：`Batch processing time X seconds exceeds batch interval Y seconds` 反复出现。
 - **根本原因**：① 处理逻辑本身慢（join/aggregation/shuffle 大）；② Kafka 每批输入量突增；③ Executor GC 频繁导致处理卡顿；④ 资源不足（`spark.streaming.concurrentJobs` 受限）。
-- **解法**：① 提高并行度（增加 `numPartitions` 或 `executor` 数）；② 限速 + 反压（Kafka 0.10+ 的 `maxRatePerPartition`）；③ 优化处理逻辑（避免 shuffle、缓存复用）；④ 升级到 Structured Streaming + 自适应批大小（`spark.sql.adaptive.enabled=true`）。
+- **解法**：① 提高并行度（增加 `numPartitions` 或 `executor` 数）；② 限速 + 反压（Kafka 0.10+ 的 `maxRatePerPartition`）；③ 优化处理逻辑（避免 shuffle、缓存复用）；④ 升级到 Structured Streaming（用 `maxOffsetsPerTrigger` 控制每批读入量）并开启自适应查询执行（`spark.sql.adaptive.enabled=true`）。
 
 **第二层：数据倾斜的诊断。**
 
@@ -164,7 +164,7 @@
 - **特征指标**：Spark UI 中某个 stage 的 task 分布——绝大多数 task 几秒完成，少数 task 几十分钟；Executor GC 时间分布不均。Flink 中表现为 subtask 间 `recordsProcessed` 差异巨大。
 - **日志特征**：`FetchFailedException`、`OutOfMemoryError: Java heap space` 集中在某个 task。
 - **根本原因**：① Kafka 分区键本身不均衡（如按 user_id partition 但大 V 集中）；② SQL join 时 driver 表某 key 集中；③ 数据源特性（点击流长尾）。
-- **解法**：① 加盐打散（对热点 key 加随机前缀，二阶段聚合）；② 分桶 + 自定义 partitioner；③ 拆分热点 key 走独立链路；④ 在 Kafka 端调整 partition 策略（在源头解决）。阿里在双 11 场景大量使用「热点 key 实时检测 + 动态打散」方案。
+- **解法**：① 加盐打散（对热点 key 加随机前缀，二阶段聚合）；② 分桶 + 自定义 partitioner；③ 拆分热点 key 走独立链路；④ 在 Kafka 端调整 partition 策略（在源头解决）。阿里在双 11 场景大量使用「热点 key 实时检测 + 动态打散」方案（本节未附其文档名与链接，按【经验】档处理）。
 
 **第三层：Checkpoint 失败的诊断。**
 
@@ -207,7 +207,7 @@
 - **中国石油** —— 中国石油勘探数据湖——地震、测井、钻井多源异构数据入湖 + AI 油气识别。
 - **南方电网** —— 南方电网营销数据中台——客户、电价、计费、服务的统一数据底座。
 
-> 注：以上参考资料均指向公开出版物或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料分两类，本节均未附链接。（1）带具体书名 / 论文名 / 官方文档章节名 / JIRA 号的条目，请按条目名称自行检索核验；（2）仅以企业名义陈述、未附文档名与链接的条目——含「公司名 —— 平台简介」式的行业场景索引，以及以「某公司工程博客 / 公开分享 / 公开文章」泛称而未给篇名的一类，连带其中出现的规模量级、周期与数量——本节无法给出可核验的出处，一律按【经验】档表述，不应被当作可引证来源。正文中凡以「某公司曾…… / 某公司内部使用……」句式出现、同样未附文档名与链接的实践描述，也按【经验】档处理。
 
 ---
 
@@ -226,7 +226,7 @@
 
 **第二层：GC 调优。**
 
-- **选 GC 算法**：堆 > 32 GB 优先 **G1GC**（JDK 11+），目标是 `-XX:MaxGCPauseMillis=200`；堆 > 64 GB 且对延迟极敏感可试 **ZGC**（JDK 11 早期访问，JDK 15+ GA），但需要充足 native memory。LinkedIn 在 2021 年公开过 RM 迁移到 ZGC 的实践。
+- **选 GC 算法**：堆 > 32 GB 优先 **G1GC**（JDK 11+），目标是 `-XX:MaxGCPauseMillis=200`；堆 > 64 GB 且对延迟极敏感可试 **ZGC**（JDK 11 早期访问，JDK 15+ GA），但需要充足 native memory。LinkedIn 在 2021 年做过 RM 迁移到 ZGC 的实践（本节未附其文档名与链接，按【经验】档处理）。
 - **分区策略**：G1GC 下通过 `-XX:G1NewSizePercent` / `-XX:G1MaxNewSizePercent` 调整新生代比例；Heap 大时给新生代 30%-40%。
 - **大对象处理**：RM 的 `RMContainerImpl` / `FiCaSchedulerApp` 可能在 shuffle 服务期间产生大对象，调整 `-XX:G1HeapRegionSize`（16 MB / 32 MB）。
 - **监控**：开启 `-Xlog:gc*,gc+heap=info,gc+age=trace:file=gc.log`（JDK 9+），用 GCViewer 或 GCEasy 分析。
@@ -247,7 +247,7 @@
 
 **第五层：长期治理。** 从架构层降级 RM 单点压力：
 
-- **联邦化（Federation）**：把 10K 节点按业务拆成多套 RM 子集群——阿里、字节均在早期就走这条路。YARN Federation 在 Hadoop 3.x 已相对成熟。
+- **联邦化（Federation）**：把 10K 节点按业务拆成多套 RM 子集群——阿里、字节均在早期就走这条路（本节未附其文档名与链接，按【经验】档处理）。YARN Federation 在 Hadoop 3.x 已相对成熟。
 - **调度器拆分**：用 `yarn.scheduler.fair.assignmultiple=true` 与队列拆分减少单个 RM 调度量。
 - **NodeManager 心跳合并**：`yarn.nodemanager.resource-monitor.interval-ms` 调大，减少 RM 处理心跳的频率。
 
@@ -262,7 +262,7 @@
 **4. 追问预测**
 
 - **「Full GC 频率多少算异常？」** 答：每分钟超过 2 次，或平均停顿 > 1s，比例（GCTime/UPTime）> 5%。Hadoop 自带的 `HadoopRpcMetrics` 与 `JvmMetrics` 都可观测。
-- **「AM 注册慢怎么感知？」** 答：YARN 的 `RpcMetrics.RpcProcessingTimeAvgTime` + `GetNewApplication` / `SubmitApplication` 的 P99；阿里内部使用 RPC 染色做慢调用归因。
+- **「AM 注册慢怎么感知？」** 答：YARN 的 `RpcMetrics.RpcProcessingTimeAvgTime` + `GetNewApplication` / `SubmitApplication` 的 P99；阿里内部使用 RPC 染色做慢调用归因（本节未附其文档名与链接，按【经验】档处理）。
 - **「RM HA 切换期间作业会丢吗？」** 答：已提交的 Application 会随 Active 状态迁移到 Standby；但正在请求 Container 的会被丢弃，需要客户端重试。
 - **「ZGC 在 64GB+ 堆上稳定吗？」** 答：JDK 15+ 已生产可用；JDK 11/13 早期版本有 numactl 相关 bug。Hadoop 3.3+ 才完全支持 ZGC。
 
@@ -283,7 +283,7 @@
 - **中国石油** —— 中国石油勘探数据湖——地震、测井、钻井多源异构数据入湖 + AI 油气识别。
 - **南方电网** —— 南方电网营销数据中台——客户、电价、计费、服务的统一数据底座。
 
-> 注：以上参考资料均指向公开出版物或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料分两类，本节均未附链接。（1）带具体书名 / 论文名 / 官方文档章节名 / JIRA 号的条目，请按条目名称自行检索核验；（2）仅以企业名义陈述、未附文档名与链接的条目——含「公司名 —— 平台简介」式的行业场景索引，以及以「某公司工程博客 / 公开分享 / 公开文章」泛称而未给篇名的一类，连带其中出现的规模量级、周期与数量——本节无法给出可核验的出处，一律按【经验】档表述，不应被当作可引证来源。正文中凡以「某公司曾…… / 某公司内部使用……」句式出现、同样未附文档名与链接的实践描述，也按【经验】档处理。
 
 ---
 
@@ -300,7 +300,7 @@
 
 **第一层：诊断阶段。**
 
-- **指标采集**：通过 Cloudera Manager / Ambari / 自研监控抓取每台 DN 的 `dfs.datanode.StorageTypeRemaining`、`DfsUsed` 与 `Capacity`。LinkedIn 公开过用 `burrow` + Kafka 把 DN 磁盘指标上报到统一时序库。
+- **指标采集**：通过 Cloudera Manager / Ambari / 自研监控抓取每台 DN 的 `dfs.datanode.StorageTypeRemaining`、`DfsUsed` 与 `Capacity`。LinkedIn 用 `burrow` + Kafka 把 DN 磁盘指标上报到统一时序库（本节未附其文档名与链接，按【经验】档处理）。
 - **分层归因**：磁盘满的原因分四类——
   1. **真实数据增长**：HDFS 总容量增长跟不上数据写入；
   2. **临时文件积压**：MapReduce / Spark 的 `ContainerLocal` 文件（如 shuffle spill、scratch dir）；
@@ -356,7 +356,7 @@
 - **中国移动** —— 中国移动的实时话单 Flink 引擎——PB 级话单走 Flink 流 + Spark 小时级对账。
 - **中国联通** —— 中国联通网络运维数据平台——告警、性能、配置的统一存储与 AI 故障预测。
 
-> 注：以上参考资料均指向公开出版物或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料分两类，本节均未附链接。（1）带具体书名 / 论文名 / 官方文档章节名 / JIRA 号的条目，请按条目名称自行检索核验；（2）仅以企业名义陈述、未附文档名与链接的条目——含「公司名 —— 平台简介」式的行业场景索引，以及以「某公司工程博客 / 公开分享 / 公开文章」泛称而未给篇名的一类，连带其中出现的规模量级、周期与数量——本节无法给出可核验的出处，一律按【经验】档表述，不应被当作可引证来源。正文中凡以「某公司曾…… / 某公司内部使用……」句式出现、同样未附文档名与链接的实践描述，也按【经验】档处理。
 
 ---
 
@@ -402,9 +402,9 @@
 **第五层：防复发（架构级）。**
 
 - **机架感知**：HDFS / YARN / Kafka 都启用 `topology.script.file.name`（或 `net.topology.script.file.name`）；副本跨 rack 分布，避免单 rack 故障毁掉 3 副本。
-- **多机房**：同城双机房（Stretch Cluster，共享 ZK）、异地多活（Active-Active with eventual consistency）。Netflix 在 AWS 多区域部署上大量使用 active-active，跨区域走 CRDT / 异步复制。
+- **多机房**：同城双机房（Stretch Cluster，共享 ZK）、异地多活（Active-Active with eventual consistency）。Netflix 在 AWS 多区域部署上大量使用 active-active，跨区域走 CRDT / 异步复制（本节未附其文档名与链接，按【经验】档处理）。
 - **ECMP / 多路径**：交换机 ECMP + LACP 链路聚合，单链路故障不影响通信。
-- **混沌工程**：Netflix Chaos Monkey、阿里 flows.chaos 注入故障演练；Netflix 公开的 Chaos Engineering 论文是标准出处。
+- **混沌工程**：Netflix Chaos Monkey、阿里 flows.chaos 注入故障演练；混沌工程（Chaos Engineering）有公开的方法论文述，Netflix 是这一方法的提出方之一——该论文是这条实践的标准出处（本节未附其篇名与链接，可按「Netflix chaos engineering」自行检索核验）。
 
 **3. 常见陷阱**
 
@@ -438,6 +438,6 @@
 - **中国移动** —— 中国移动的实时话单 Flink 引擎——PB 级话单走 Flink 流 + Spark 小时级对账。
 - **中国联通** —— 中国联通网络运维数据平台——告警、性能、配置的统一存储与 AI 故障预测。
 
-> 注：以上参考资料均指向公开出版物或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料分两类，本节均未附链接。（1）带具体书名 / 论文名 / 官方文档章节名 / JIRA 号的条目，请按条目名称自行检索核验；（2）仅以企业名义陈述、未附文档名与链接的条目——含「公司名 —— 平台简介」式的行业场景索引，以及以「某公司工程博客 / 公开分享 / 公开文章」泛称而未给篇名的一类，连带其中出现的规模量级、周期与数量——本节无法给出可核验的出处，一律按【经验】档表述，不应被当作可引证来源。正文中凡以「某公司曾…… / 某公司内部使用……」句式出现、同样未附文档名与链接的实践描述，也按【经验】档处理。
 
 ---

@@ -50,7 +50,7 @@
 
 **4. 追问预测**
 
-- **「Kafka 的 Exactly-Once 是怎么实现的？」** 答：三层组合——① Producer 端用 `(producerId, sequenceNumber)` 做幂等，broker 端按 PID 去重；② Transactional Producer 把"发送消息 + 业务结果"做成一个原子事务，写入 `__transaction_state` Topic；③ Consumer 读 `read_committed` 隔离级别，只消费已提交事务内的消息。代价是吞吐量降低约 20–30%。
+- **「Kafka 的 Exactly-Once 是怎么实现的？」** 答：三层组合——① Producer 端用 `(producerId, sequenceNumber)` 做幂等，broker 端按 PID 去重；② Transactional Producer 把"发送消息 + 业务结果"做成一个原子事务，写入 `__transaction_state` Topic；③ Consumer 读 `read_committed` 隔离级别，只消费已提交事务内的消息。代价是吞吐量下降——幅度随事务批量、分区数与负载特征而异，本书无法给出可溯源的统一数字，此处按【经验】档处理。
 - **「Flink 怎么实现端到端 EOS？」** 答：Flink 用 Chandy-Lamport 分布式快照协议做 Checkpoint，Source 算子把 Kafka offset 写入 Checkpoint 状态，Sink 算子用 TwoPhaseCommitSinkFunction 把写入操作绑定到 Checkpoint，重启时回放未完成的 transaction。**前置条件**：Source 和 Sink 都必须支持与 Checkpoint 协同（Kafka 0.11+、MySQL binlog、Iceberg/Hudi 都支持）。
 - **「如果业务不能幂等（比如发送短信），怎么避免重复？」** 答：把"可幂等的部分"（业务状态变更）放在事务里，把"不可幂等的部分"（短信发送）放在事务后，并接受"理论上重复一条短信"的代价——或者用 Outbox 模式 + 第三方通道的去重键。
 - **「三种语义在 Pulsar / RocketMQ 上有差异吗？」** 答：Pulsar 的事务消息能力与 Kafka 类似；RocketMQ 的事务消息用"半消息 + 回查"机制，原理不同但最终语义等价。选型时**重点看生态和运维成本**，不要把"是否支持 EOS"当成唯一指标。
@@ -71,7 +71,7 @@
 - **中国移动** —— 中国移动的实时话单 Flink 引擎——PB 级话单走 Flink 流 + Spark 小时级对账。
 - **中国联通** —— 中国联通网络运维数据平台——告警、性能、配置的统一存储与 AI 故障预测。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料按可核验程度分三类——① 规范 / 官方文档 / 论文 / 图书类条目（含文档站点名、章节名、论文题名与会议年份），可按条目名称自行检索核验，本节未附精确链接；② 标注企业 / 人名 / 平台并提到公开博客 / 公开演讲 / 公开分享 / 公开材料但未给篇名的条目，属方向性参考，本节未附链接，引用前请自行查证；③ 仅标注企业名的实践类条目（含各条目中的规模描述，如「PB 级」「万级 Flink 作业」，以及「标杆」「最完整」「最权威」等评价性表述），为方向性行业案例，本节未附可核验的文档名与年份。
 
 ---
 
@@ -91,7 +91,7 @@
 - 没有"原子提交"，一个 INSERT 失败会留下半完成的文件目录。
 - 没有"快照隔离"，读取过程中如果有写入，Hive 可能读到一半旧文件一半新文件。
 - Schema 演进靠 `ALTER TABLE` 改元数据，没有版本回滚。
-- ACID 是 Hive 3.x 才引入的（`transactional=true` 表），但代价是必须用 ORC + 走专用的 `Compactor`，性能与 Hive 传统用法不可同日而语。
+- ACID 表是 Hive 0.13 / 0.14 才引入、且需专门开启的能力（`transactional=true`；该版本号请以 Apache Hive 官方文档为准），代价是必须用 ORC + 走专用的 `Compactor`，性能与 Hive 传统用法不可同日而语。
 
 所以传统 Hive 表的"事务"承诺很弱，只到"分区级别可重写"的粒度。
 
@@ -109,7 +109,7 @@ Snapshot (n)  ──→ Manifest List (avro) ──→ Manifest File ──→ D
 - Snapshot 通过 manifest list 引用它覆盖的 manifest 文件。
 - Manifest 文件引用具体的数据文件。
 - "当前可见数据"由 `metadata.json` 里的 `current-snapshot` 指针指向。
-- **提交是原子的**：写完新数据文件 → 写新 manifest → 写新 metadata.json → 通过对象存储的**条件写**（OSS / S3 的 `if-none-match` 或 rename 原子性）原子切换指针。
+- **提交是原子的**：写完新数据文件 → 写新 manifest → 写新 metadata.json → 通过对象存储的**条件写**（OSS / S3 的 `if-none-match`）与**单对象 PUT 的原子性**原子切换指针（对象存储没有原子 rename，靠"重命名目录"提交在 S3 / OSS 上不成立）。
 - 读取走旧 Snapshot，**MVCC 隔离**：读到的是某一时刻的一致性视图，不被并发写干扰。
 - **Time Travel**：任意老 Snapshot 都能查询到，对应"可重放"的工程能力。
 
@@ -136,7 +136,7 @@ Snapshot (n)  ──→ Manifest List (avro) ──→ Manifest File ──→ D
 - **COW (Copy-on-Write)**：每次写入都重写受影响的文件。读端最简单（只读最新文件），写延迟高（重写文件贵）。Iceberg 默认 COW。
 - **MOR (Merge-on-Read)**：写入追加新文件（insert + delete file），读端合并 base + delta。写延迟低，compaction 调度更复杂。Hudi 默认 MOR。
 - Delta Lake 介于两者之间，按需选择 `dataChange=true/false`。
-- **一致性影响**：COW 下读永远读到 commit 后的完整状态；MOR 下若 compaction 没跑完，可能读到不一致的合并结果（base file + 部分 delta）。
+- **一致性影响**：COW 下读直接取 commit 后的完整文件；MOR 下读需要把 base 文件与 delete 文件在读取时合并——合并结果仍是 commit 后的快照（一致性由快照隔离保证，不取决于 compaction 跑到哪一步），代价是读取路径更复杂、未合并的 delta 越多读越慢。
 
 **第五层：在 AI / 大数据栈中的位置。** Iceberg / Delta Lake 在 AI 链路里是**"特征一致性的载体"**：
 - 训练数据用 Iceberg 管理，靠 Snapshot 隔离避免读到训练中的脏数据。
@@ -153,9 +153,9 @@ Snapshot (n)  ──→ Manifest List (avro) ──→ Manifest File ──→ D
 
 **4. 追问预测**
 
-- **「Iceberg 的乐观并发控制是怎么实现的？」** 答：写者写完数据文件后，提交时用条件写（`if-match`）写 metadata.json；如果期间别人提交了，条件写失败，写者重试（重新读最新 Snapshot、合并、重写）。代价是写冲突时延上升，但避免了脏写。
+- **「Iceberg 的乐观并发控制是怎么实现的？」** 答：写者写完数据文件后，提交时对 `metadata.json` 做**条件写**。条件写落在两层，不要混为一谈：**Catalog 指针层**（Nessie / REST Catalog 等）比的是"当前指针仍是我读到的那个版本才替换"；**对象存储层**（OSS / S3）没有原子的"比对并替换"，靠的是"只有这个新版本号尚未存在才写入"的 `if-none-match`（即本题第二层给出的条件写）。如果期间别人提交了，条件写失败，写者重试（重新读最新 Snapshot、合并、重写）。代价是写冲突时延上升，但避免了脏写。
 - **「Delta Lake 与 Iceberg 在 Flink 上的支持差异？」** 答：Flink 1.13+ 对 Iceberg 的支持更成熟（Source / Sink 都有流批 API），Delta Lake 的 Flink 支持由 Flink 官方与 Delta 社区合作推进，覆盖度稍弱。生产中选 Iceberg 的居多。
-- **「Iceberg v2 / v3 在一致性上有什么增强？」** 答：v2 引入了 row-level DELETE（删除向量 `delete_file`）和 Merge-on-Read 支持；v3 引入了 Deletion Vectors、Row Lineage、Encryption 等。重点：v2+ 才支持行级 DELETE，之前的版本只能 partition 级删除。
+- **「Iceberg v2 / v3 在一致性上有什么增强？」** 答：v2 引入了 row-level DELETE（position / equality delete 文件）和 Merge-on-Read 支持；v3 在行级删除之上引入了删除向量（deletion vectors）、Row Lineage、Encryption 等。重点：v2+ 才支持行级 DELETE，之前的版本只能 partition 级删除。
 - **「AWS S3 的强一致性切换（2020 年后）对 Iceberg 的 commit 协议有什么影响？」** 答：S3 在 2020 年底支持了强一致性读写（`GET` / `LIST`），Iceberg 可以不再依赖 `DynamoDB` 做并发协调，commit 协议简化、运维成本下降。这是云厂商底层能力反哺开源生态的典型例子。
 
 **5. 参考资料**
@@ -163,7 +163,7 @@ Snapshot (n)  ──→ Manifest List (avro) ──→ Manifest File ──→ D
 - Apache Iceberg 官方文档「Spec」与「Tables」章节——三层元数据结构的原始定义。
 - Delta Lake 官方文档「Transaction Log」与「Concurrency Control」章节——`_delta_log` 的设计哲学。
 - Ryan Blue & Daniel Weeks 等人在 VLDB 2020 发表的论文《Iceberg: An Open Table Format for Giant Datasets》——Iceberg 表格式的学术化原始描述。
-- 《Lakehouse: The New Data Warehouse Paradigm》（Armbrust et al., 2021）——湖仓一体架构与 Delta Lake 的设计动机。
+- 《Lakehouse: A New Generation of Open Platforms that Unify Data Warehousing and Advanced Analytics》（Armbrust et al., CIDR 2021）——湖仓一体架构与 Delta Lake 的设计动机。
 - Netflix Tech Blog 关于 Iceberg 在 PB 级数据湖上的实践——Netflix 是 Iceberg 的核心贡献者，公开材料覆盖了真实生产中的 commit 协议与并发冲突处理。
 - Apache Spark 官方文档关于 Structured Streaming 与 Iceberg / Delta 的 Source / Sink 章节——流批一体的写一致性边界。
 - **Netflix 在 S3 上 PB 级 Iceberg 表的并发治理** —— Netflix 把数据湖全部迁到 Iceberg 表格式，靠 Snapshot 隔离支撑多团队并发写入同一张表，是头部流媒体公司对 Lakehouse 一致性的工程验证。
@@ -175,7 +175,7 @@ Snapshot (n)  ──→ Manifest List (avro) ──→ Manifest File ──→ D
 - **京东数科** —— 京东数科的金融特征平台——支撑消费分期、信用支付等场景，特征口径与模型版本强一致。
 - **平安银行** —— 平安银行的数据分级与脱敏实践——把客户、账户、交易按敏感度分级，配合 ABAC 权限与脱敏网关，是国内金融业最完整的案例。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料按可核验程度分三类——① 规范 / 官方文档 / 论文 / 图书类条目（含文档站点名、章节名、论文题名与会议年份），可按条目名称自行检索核验，本节未附精确链接；② 标注企业 / 人名 / 平台并提到公开博客 / 公开演讲 / 公开分享 / 公开材料但未给篇名的条目，属方向性参考，本节未附链接，引用前请自行查证；③ 仅标注企业名的实践类条目（含各条目中的规模描述，如「PB 级」「万级 Flink 作业」，以及「标杆」「最完整」「最权威」等评价性表述），为方向性行业案例，本节未附可核验的文档名与年份。
 
 ---
 
@@ -251,7 +251,7 @@ Flink 的 Chandy-Lamport 分布式快照协议是这一切的核心：
 - **「如果 Sink 是 Elasticsearch（不支持 2PC），怎么办？」** 答：两种方法——① 用业务主键做幂等写入（Elasticsearch 的 `_id` 强制唯一，重复写入等价于覆盖），Flink 重启等于"重新覆盖"；② 用 WAL：Flink 先把数据写到 Kafka，再用独立的 Worker 进程从 Kafka 消费后写入 ES，ES 端的重复由 Worker 端的去重键兜底。
 - **「Flink Checkpoint 和 Savepoint 是什么关系？」** 答：Checkpoint 是 Flink 内部周期触发的容错机制，**会自动失效**（默认保留 1 个 completed）；Savepoint 是**手动触发的、可移植的**快照，用于版本升级、并行度调整、状态迁移。两者格式兼容，但生命周期不同。
 - **「为什么 Kafka 的 transactional.id 必须稳定？」** 答：因为 broker 端用 `__transaction_state` Topic 按 transactional.id 维护事务状态；如果 ID 变了，broker 会启动新事务，原事务的 commit/abort 信号无法送达。
-- **「端到端 EOS 的延迟代价多大？」** 答：Checkpoint 间隔 × 2——因为 Sink 的 commit 必须等 checkpoint 完成才发生。Checkpoint 设 1 分钟，端到端延迟最小是 1 分钟；想做到秒级延迟，必须把 Checkpoint 间隔缩到秒级，但代价是状态后端压力上升。
+- **「端到端 EOS 的延迟代价多大？」** 答：量级上就是一个 Checkpoint 间隔——因为 Sink 的 commit 必须等 checkpoint 完成才发生，一个间隔内写入的数据最晚要等到下一次 checkpoint 完成才对下游可见。Checkpoint 设 1 分钟，端到端提交延迟就落在分钟级；想做到秒级延迟，必须把 Checkpoint 间隔缩到秒级，但代价是状态后端压力上升。该延迟与间隔之间的具体倍数还取决于 checkpoint 自身的完成耗时（对齐、状态快照、通知延迟）与负载特征，不存在可引用的统一数字，此处按【经验】档处理。
 
 **5. 参考资料**
 
@@ -268,7 +268,7 @@ Flink 的 Chandy-Lamport 分布式快照协议是这一切的核心：
 - **京东数科** —— 京东数科的金融特征平台——支撑消费分期、信用支付等场景，特征口径与模型版本强一致。
 - **京东物流** —— 京东物流仓储数据中台——AGV、库存、订单的多源整合与实时监控。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料按可核验程度分三类——① 规范 / 官方文档 / 论文 / 图书类条目（含文档站点名、章节名、论文题名与会议年份），可按条目名称自行检索核验，本节未附精确链接；② 标注企业 / 人名 / 平台并提到公开博客 / 公开演讲 / 公开分享 / 公开材料但未给篇名的条目，属方向性参考，本节未附链接，引用前请自行查证；③ 仅标注企业名的实践类条目（含各条目中的规模描述，如「PB 级」「万级 Flink 作业」，以及「标杆」「最完整」「最权威」等评价性表述），为方向性行业案例，本节未附可核验的文档名与年份。
 
 ---
 
@@ -333,7 +333,7 @@ Spark Structured Streaming 的 Checkpoint 写在可靠的分布式存储（HDFS 
 **4. 追问预测**
 
 - **「Spark Structured Streaming 和 Flink 在 API 哲学上有什么根本差异？」** 答：Spark 把流看作"无界 DataFrame"，强调 SQL 表达力与批流统一 API；Flink 把流看作"真实的流"，强调事件时间、状态、watermark 的低延迟处理。两者最终都能做 EOS，但路径不同——Spark 走微批 + 幂等，Flink 走真正的流 + 2PC。
-- **「Continuous Trigger 为什么不被推荐？」** 答：实验性特性，承诺低延迟（~1ms）但牺牲了容错语义；社区实际应用少，维护弱，新项目应避免使用。
+- **「Continuous Trigger 为什么不被推荐？」** 答：实验性特性，官方给出的卖点是端到端延迟低至毫秒级（Spark 官方文档举的是 ~1ms 这个量级；实测随算子、分区与集群而异，此处按【经验】档理解），代价是牺牲了容错语义；社区实际应用少，维护弱，新项目应避免使用。
 - **「如果业务要秒级延迟 + EOS，选 Spark 还是 Flink？」** 答：Flink。Spark 的微批延迟下限在百毫秒到秒级，要再低得用 Continuous Trigger 但放弃部分容错；Fink 原生流 + 2PC 在毫秒级延迟下仍能保 EOS。
 - **「Spark Streaming 的状态后端有什么优化空间？」** 答：把 RocksDB 作为外部状态后端（Spark 3.2+ 通过 `stateStore.providerClass` 支持），把大状态从 Checkpoint 存储下沉到本地 KV；代价是部署复杂度上升。
 
@@ -352,7 +352,7 @@ Spark Structured Streaming 的 Checkpoint 写在可靠的分布式存储（HDFS 
 - **滴滴** —— 滴滴实时订单与司机画像——万级 Flink 作业 + Iceberg 增量读下的冲突与 compaction 治理。
 - **货拉拉** —— 货拉拉城配实时调度——Flink 实时订单分发 + Spark 离线对账 + 路径优化。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料按可核验程度分三类——① 规范 / 官方文档 / 论文 / 图书类条目（含文档站点名、章节名、论文题名与会议年份），可按条目名称自行检索核验，本节未附精确链接；② 标注企业 / 人名 / 平台并提到公开博客 / 公开演讲 / 公开分享 / 公开材料但未给篇名的条目，属方向性参考，本节未附链接，引用前请自行查证；③ 仅标注企业名的实践类条目（含各条目中的规模描述，如「PB 级」「万级 Flink 作业」，以及「标杆」「最完整」「最权威」等评价性表述），为方向性行业案例，本节未附可核验的文档名与年份。
 
 ---
 
@@ -391,7 +391,7 @@ Spark Structured Streaming 的 Checkpoint 写在可靠的分布式存储（HDFS 
 **第四层：计算层——EOS 与状态对齐。**
 - **统一 EOS**：所有流计算作业必须配 EOS（Kafka transactional + Flink 2PC Sink / Spark foreachBatch + 幂等 Sink）。
 - **状态后端选型**：大状态作业（GB+ 状态）用 RockDB State Backend；小状态走 memory state backend。
-- **Checkpoint 间隔**：按 SLA 反推——分钟级延迟设 30 秒，秒级延迟设 1–5 秒，毫秒级设亚秒（但代价巨大）。
+- **Checkpoint 间隔**：按 SLA 反推——分钟级延迟设 30 秒，秒级延迟设 1–5 秒，毫秒级设亚秒（但代价巨大）。这组取值是工程经验值，随状态规模、状态后端与集群负载而异，本书无法给出可溯源的统一数字，此处按【经验】档处理。
 - **批流口径对齐**：把"指标口径"作为一等公民管理——OneData 体系的"指标口径先于物理实现"在这里同样适用；任何批流逻辑分歧都必须在 CI / CD 阶段被发现。
 - **血缘追踪**：所有作业必须有全链路血缘（输入表 / 中间表 / 输出表），无血缘的作业不允许上线。
 
@@ -428,7 +428,7 @@ Spark Structured Streaming 的 Checkpoint 写在可靠的分布式存储（HDFS 
 - 《Big Data: Principles and Best Practices of Scalable Realtime Data Systems》（Nathan Marz）——批流一体架构的原始论述。
 - Apache Iceberg / Delta Lake / Apache Hudi 官方文档的 Catalog 与并发控制章节。
 - Apache Flink Forward 历年关于"流批一体"主题的演讲合集。
-- **Meta 数据仓库的 300 PB 级一致性实践** —— Meta 在 SIGMOD 2013 公开的《Scaling the Facebook Data Warehouse to 300 PB》详细论述了 PB 级一致性、SLA、隔离策略，是万节点数据平台一致性的最权威工业案例。
+- **Meta 数据仓库的 300 PB 级一致性实践** —— Meta 在 SIGMOD 2013 公开的《Scaling the Facebook Data Warehouse to 300 PB》详细论述了 PB 级一致性、SLA、隔离策略，是万节点数据平台一致性的最权威工业案例（该论文的完整著录信息与会议归属请以数据库会议官方论文库为准；本书他处另将一批「Meta 300 PB」表述记为 SIGMOD 2022，两处是否指同一篇请一并核对）。
 - **Netflix 的 PB 级 Iceberg 数据湖一致性** —— Netflix 在多个 Region 用 Iceberg + REST Catalog 支撑 PB 级用户行为表的一致性，是头部流媒体公司的 Lakehouse 落地。
 - **Uber 的跨 Region 数据湖一致性** —— Uber 用 Iceberg + Hudi 在跨 Region 间实现湖表一致性，是出行行业跨 Region 一致性的代表。
 - **字节跳动万级 Spark / Flink 集群的一致性治理** —— 字节内部数据平台在万级节点上统一 Kafka EOS + Iceberg commit + Catalog HA，是国内大厂万节点一致性的工程范本。
@@ -439,7 +439,7 @@ Spark Structured Streaming 的 Checkpoint 写在可靠的分布式存储（HDFS 
 - **京东数科** —— 京东数科的金融特征平台——支撑消费分期、信用支付等场景，特征口径与模型版本强一致。
 - **平安银行** —— 平安银行的数据分级与脱敏实践——把客户、账户、交易按敏感度分级，配合 ABAC 权限与脱敏网关，是国内金融业最完整的案例。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料按可核验程度分三类——① 规范 / 官方文档 / 论文 / 图书类条目（含文档站点名、章节名、论文题名与会议年份），可按条目名称自行检索核验，本节未附精确链接；② 标注企业 / 人名 / 平台并提到公开博客 / 公开演讲 / 公开分享 / 公开材料但未给篇名的条目，属方向性参考，本节未附链接，引用前请自行查证；③ 仅标注企业名的实践类条目（含各条目中的规模描述，如「PB 级」「万级 Flink 作业」，以及「标杆」「最完整」「最权威」等评价性表述），为方向性行业案例，本节未附可核验的文档名与年份。
 
 ---
 
@@ -458,7 +458,7 @@ Spark Structured Streaming 的 Checkpoint 写在可靠的分布式存储（HDFS 
 
 CDC 在一致性中的角色是**"事务边界复制"**——它把 OLTP 数据库的"事务提交"语义，忠实地反映到下游系统（数据湖、数据仓库、缓存、搜索索引）。**没有 CDC**，下游只能靠定时轮询，看到的是"某一时刻的快照"，无法保证"看到的是 commit 后的状态"。
 
-**第二层：CDC 的三种实现路径。**
+**第二层：CDC 的五种实现路径。**
 
 | 路径 | 原理 | 工具 | 一致性 |
 | --- | --- | --- | --- |
@@ -526,8 +526,8 @@ CDC 在 Lakehouse 中的**关键作用**：
 
 - Debezium 官方文档——binlog 解析、事务边界、Initial Snapshot、Schema 演进的完整说明。
 - Apache Kafka Connect 官方文档关于 `exactly-once` sink 的章节（KIP-447）——Sink 端 EOS 的实现原理。
-- Gunnar Morling 等人的 Debezium 公开演讲——CDC 与事务一致性的工程实践。
-- 《Change Data Capture: The Magic Wand for Data Integration》——CDC 在数据集成中的角色综述。
+- Gunnar Morling 等人的 Debezium 公开演讲——CDC 与事务一致性的工程实践（本节未附该演讲的题名与年份，按【经验】档理解）。
+- 《Change Data Capture: The Magic Wand for Data Integration》——CDC 在数据集成中的角色综述（本节未能核实该篇的作者、年份与出版方，题名可供自行检索）。
 - **Debezium 在 Uber 的 PB 级订单 CDC 落地** —— Uber 用 Debezium 捕获订单库的 binlog，下游走 Flink / Spark Streaming 同步到 Iceberg，是出行行业 CDC 落地的标杆。
 - **Netflix 的 CDC + Iceberg 增量同步** —— Netflix 用 Debezium 同步用户行为数据库到 Iceberg 湖表，是头部流媒体公司 CDC 落地的代表。
 - **阿里精卫（基于 trigger + CDC）的高可用数据同步** —— 阿里精卫是 trigger 路径的代表性工具，用于支持没有 binlog 的数据库（如 PolarDB 早期版本），是国内 CDC 工具的代表。
@@ -539,7 +539,7 @@ CDC 在 Lakehouse 中的**关键作用**：
 - **京东零售** —— 京东零售双 11 实时特征极限压力——KV 热点、Flink 反压、Schema 演进的工程化解法。
 - **唯品会** —— 唯品会特卖场景的数据平台——日清模式 + 离线数仓 + 实时推荐三层结构。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料按可核验程度分三类——① 规范 / 官方文档 / 论文 / 图书类条目（含文档站点名、章节名、论文题名与会议年份），可按条目名称自行检索核验，本节未附精确链接；② 标注企业 / 人名 / 平台并提到公开博客 / 公开演讲 / 公开分享 / 公开材料但未给篇名的条目，属方向性参考，本节未附链接，引用前请自行查证；③ 仅标注企业名的实践类条目（含各条目中的规模描述，如「PB 级」「万级 Flink 作业」，以及「标杆」「最完整」「最权威」等评价性表述），为方向性行业案例，本节未附可核验的文档名与年份。
 
 ---
 
@@ -621,7 +621,7 @@ Flink 用 **Chandy-Lamport 分布式快照协议**实现全局一致快照：
 - **以为配 Checkpoint 就拿到 EOS。** 必须有 TwoPhaseCommitSink，否则只是"内部精确一次"，外部写仍可能重复。
 - **把 Barrier 对齐看作性能瓶颈就关掉。** 关掉对齐 = 退化为 At-Least-Once，必须有业务幂等兜底。
 - **用不支持 2PC 的 Sink（HTTP 服务、Elasticsearch）。** Flink 在这种 Sink 上拿不到 EOS，必须用业务幂等兜底。
-- **Checkpoint 间隔设得过小。** Checkpoint 间隔 = 端到端最小延迟。设 100ms 会让状态后端压力雪崩，建议 30 秒起步。
+- **Checkpoint 间隔设得过小。** Sink 的 commit 要等 Checkpoint 完成，端到端提交延迟的量级就由 Checkpoint 间隔决定（见本题追问预测）。设 100ms 会让状态后端压力雪崩，建议 30 秒起步——该起步值属工程经验，随状态规模、状态后端与 SLA 而异，本书无法给出可溯源的统一数字，此处按【经验】档处理。
 - **Checkpoint 存储不可靠。** Checkpoint 必须写可靠存储（HDFS / S3 / OSS），不能写本地磁盘。
 
 **4. 追问预测**
@@ -634,7 +634,7 @@ Flink 用 **Chandy-Lamport 分布式快照协议**实现全局一致快照：
 **5. 参考资料**
 
 - Apache Flink 官方文档「Fault Tolerance」与「Two-Phase Commit Sink」章节。
-- Paris Carbone 等人的论文《Lightweight Asynchronous Snapshots for Distributed Data Flows》——Chandy-Lamport 在 Flink 中的工程实现。
+- Paris Carbone 等人的论文《Lightweight Asynchronous Snapshots for Distributed Dataflows》——Chandy-Lamport 在 Flink 中的工程实现。
 - Stephan Ewen 在 Flink Forward 2016 的演讲《Fault Tolerance in Apache Flink》——EOS 的设计思想。
 - KIP-447（Kafka Connect Exactly-Once Sink）——Sink 端 EOS 的协议层实现。
 - **Flink 在 Uber 的实时支付链路** —— Uber 用 Flink EOS 支撑支付链路，订单、支付、风控事件精确一次处理，是出行行业 EOS 的代表。
@@ -647,6 +647,6 @@ Flink 用 **Chandy-Lamport 分布式快照协议**实现全局一致快照：
 - **中国电信** —— 中国电信的 BSS 数据湖——计费、营账、客户数据统一入湖 + 实时营销推荐。
 - **中国移动** —— 中国移动的实时话单 Flink 引擎——PB 级话单走 Flink 流 + Spark 小时级对账。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料按可核验程度分三类——① 规范 / 官方文档 / 论文 / 图书类条目（含文档站点名、章节名、论文题名与会议年份），可按条目名称自行检索核验，本节未附精确链接；② 标注企业 / 人名 / 平台并提到公开博客 / 公开演讲 / 公开分享 / 公开材料但未给篇名的条目，属方向性参考，本节未附链接，引用前请自行查证；③ 仅标注企业名的实践类条目（含各条目中的规模描述，如「PB 级」「万级 Flink 作业」，以及「标杆」「最完整」「最权威」等评价性表述），为方向性行业案例，本节未附可核验的文档名与年份。
 
 ---
