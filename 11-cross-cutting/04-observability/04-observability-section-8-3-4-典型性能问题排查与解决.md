@@ -18,10 +18,10 @@
 **第一层：先定位是真瓶颈还是表象。** RM "看起来慢" 可能是：① 真慢（GC 频繁、心跳堆积）；② StateStore 写 HDFS 慢；③ AM 注册风暴（业务方批量提交）。必须先看 RM 的 `JvmMetrics` + `RpcMetrics` + `AsyncDispatcher` queue size，再决定是调参还是改架构。
 
 **第二层：架构级优化（治本）。**
-- **YARN Federation**：把单 RM 拆成多套子集群，按业务域路由；LinkedIn 在 2017 年公开过把单 RM 拆为多 Router-Base Federation 的实践。Hadoop 3.x 的 Router-Based Federation 成熟可用。
+- **YARN Federation**：把单 RM 拆成多套子集群，按业务域路由；LinkedIn 曾公开介绍过把单 RM 拆为多 Router 的 Federation 实践（未附该文章的标题与链接，引用时请自行查证）。Hadoop 3.x 的 YARN Federation 成熟可用（HDFS 侧另有 Router-Based Federation，用于多 Namespace 统一挂载）。
 - **拆分队列到独立 RM**：把高优业务（实时计算 / 风控）放到独立 RM 集群，与离线 ETL 隔离，避免互相挤占。
-- **提升到独立资源协调层**：把 RM 上层的资源配额逻辑移到自研的 `Capacity Manager`，RM 只负责底层资源调度——Uber / LinkedIn 都公开过类似的分层架构。
-- **Apollo / Kyuubi 等独立调度器**：直接绕开 YARN RM，使用自研调度器（LinkedIn 早期走这条路）。
+- **提升到独立资源协调层**：把 RM 上层的资源配额逻辑移到自研的 `Capacity Manager`，RM 只负责底层资源调度——Uber / LinkedIn 都公开过类似的分层架构（未附该文章的标题与链接，引用时请自行查证）。
+- **Apollo / Kyuubi 等独立调度器**：直接绕开 YARN RM，使用自研调度器（LinkedIn 早期走这条路；未附该文章的标题与链接，引用时请自行查证）。
 
 **第三层：参数级优化（治标）。**
 - **NM 心跳合并**：`yarn.nodemanager.resource-monitor.interval-ms` 调大（默认 1s 可调到 3-5s）；`yarn.resourcemanager.nodemanagers.heartbeat-interval-ms`（RM 端）同步调整。
@@ -41,12 +41,12 @@
 - **直接调 -Xmx。** 调大堆只能延缓，不能根治——堆越大 GC 越难调。
 - **忽视 Federation 迁移成本。** Federation 是架构级重构，需要重新规划队列与命名空间，迁移期业务有感知。
 - **所有 YARN 都适合 Federation。** 实时计算与离线 ETL 混合场景下，Federation 的路由策略会让实时任务延迟。
-- **参数越多越好。** 参数调优是边际递减，超过 20 个核心参数后收益消失，复杂度爆炸。
+- **参数越多越好。** 参数调优是边际递减，核心参数调到一定数量后收益消失，复杂度爆炸（该转折点随集群规模与负载而异，本书不给出具体数量）。
 
 **4. 追问预测**
 
 - **「单 RM 能撑多少节点？」** 答：行业经验——Hadoop 2.x ~3K 节点，Hadoop 3.x + G1GC ~5-8K 节点，超过必须 Federation。
-- **「ZGC 在 RM 上稳定吗？」** 答：JDK 15+ 较稳定，但需要充足 native memory；Hadoop 3.3+ 才完全支持；LinkedIn 在 2021 年公开过 RM ZGC 实践。
+- **「ZGC 在 RM 上稳定吗？」** 答：JDK 15+ 较稳定，但需要充足 native memory；Hadoop 3.3+ 才完全支持；LinkedIn 曾公开介绍过在 RM 上使用 ZGC 的实践（未附该文章的标题与链接，引用时请自行查证）。
 - **「Capacity Manager 与原生 Scheduler 的区别？」** 答：原生 Capacity Scheduler 把容量配额计算与分配耦合；自定义 CM 把配额计算外置，可以支持更复杂的业务策略（成本归因、配额共享）。
 
 **5. 参考资料**
@@ -88,13 +88,13 @@
 
 **第二层：硬件层排查。**
 - **SMART 信息**：用 `smartctl -a /dev/sdX` 看 `Reallocated_Sector_Ct`、`Current_Pending_Sector`，> 0 就有坏道。
-- **RAID 卡状态**：`megacli` / `storcli` 检查 BBU（电池备份单元）状态；BBU 故障会让写 IO 退化 10x。
+- **RAID 卡状态**：`megacli` / `storcli` 检查 BBU（电池备份单元）状态；BBU 故障会让写回缓存失效、写路径退化为直写（write-through），写 IO 明显变差——退化幅度取决于 RAID 卡策略，本书不给出统一倍数。
 - **磁盘 IO 延迟**：`iostat -x 1` 看 `await`、`svctm`、`%util`——`%util` > 80% 表示饱和，`await > 50ms` 异常。
 
 **第三层：配置层优化。**
 - **多目录策略**：`dfs.datanode.data.dir` 配多个独立磁盘目录，DN 自动 RoundRobin 写入；开启 `dfs.datanode.fsdataset.parallel.volume.balancing.enabled`（HDFS 3.x）做并行均衡。
 - **块大小**：默认 128MB，对大文件友好；对小文件多（< 1MB）的场景，调小到 32MB 反而不划算——会增加元数据。
-- **副本策略**：冷数据用 HDFS Erasure Coding（EC）替代 3 副本，IO 减少 50%+；热数据保留 3 副本。
+- **副本策略**：冷数据用 HDFS Erasure Coding（EC）替代 3 副本，存储开销与单位数据的落盘量显著下降（如 RS-6-3 的 1.5× 对 3 副本的 3×，具体收益随 EC 策略而异），代价是编码 CPU 与降级读放大；热数据保留 3 副本。
 - **Disk Balancer**：HDFS 3.x 内置 `hdfs diskbalancer`，节点内多目录 IO 均衡；配合 `hdfs balancer` 做集群级均衡。
 
 **第四层：应用层优化。**
@@ -116,9 +116,9 @@
 
 **4. 追问预测**
 
-- **「EC 与 3 副本的 IO 对比？」** 答：3 副本读 IO 是 3×EC（3 副本 vs 1.5 EC 条带），但写 IO EC 是 3 副本的 1/2。冷读温写。
+- **「EC 与 3 副本的 IO 对比？」** 答：先分清口径——按**存储开销**算，3 副本是 3×、RS-6-3 的 EC 是 1.5×，EC 省一半空间；按**写入落盘量**算，EC 也只有 3 副本的一半左右；EC 的额外代价在编码 CPU 与**降级读**（丢块时需读 k 个块重建）。所以 EC 适合冷数据，不适合对延迟敏感的热写路径。
 - **「DN 磁盘满和 IO 高的关系？」** 答：磁盘满会引发副本搬迁 + BlockManager 反复重试，间接放大 IO。
-- **「NVMe SSD 比 SATA SSD 快多少？」** 答：NVMe 顺序读 3-5 GB/s vs SATA 0.5 GB/s，随机 IOPS 70 万 vs 10 万；HDFS 大文件场景 NVMe 收益 > 5x。
+- **「NVMe SSD 比 SATA SSD 快多少？」** 答：设备级规格量级——NVMe 顺序读 3-5 GB/s vs SATA 0.5 GB/s，随机 IOPS 70 万 vs 10 万；但 HDFS 大文件场景的端到端收益受网络与 DN 处理能力约束，通常拿不到设备级倍数，本书不给出统一数字。
 
 **5. 参考资料**
 
@@ -182,7 +182,7 @@
 | **Shuffle 失败** | `FetchFailedException`；`Shuffle Read Size` 异常；`Reduce slow start` | 增加 retry、调 `spark.shuffle.file.buffer` |
 | **IO 瓶颈** | 单 disk IOPS > 80% capacity；`await` > 50ms | 换 SSD、合并 IO、shuffle 文件合并 |
 
-**第六层：自动化诊断工具。** Uber 的 Spark 元分析工具 `sparklens`、Databricks 的 `Sparklens` 是工业实践；阿里内部有自研的 Spark Profiler（基于 AST 分析）自动检测倾斜与慢节点。
+**第六层：自动化诊断工具。** 开源与工业界已有基于 Spark Listener 的作业级分析器（如 `sparklens` 这类模拟不同资源规模下作业表现的工具）用于自动检测倾斜与慢节点；阿里内部也有自研的 Spark Profiler（基于 AST 分析）。
 
 **3. 常见陷阱**
 
@@ -201,7 +201,7 @@
 **5. 参考资料**
 
 - Apache Spark 官方文档中 `Spark UI Guide` 与 `Monitoring and Instrumentation` 章节——UI 与 Event Log 的标准用法。
-- Uber Engineering 关于 Spark 监控工具（`sparklens`、`spark-profile`）的公开文章——自动化诊断工具的工业实践。
+- 开源项目 `sparklens`（基于 Spark Listener 的作业级分析工具）与 Uber Engineering、Databricks 等团队关于 Spark 作业监控与自动诊断的公开文章——自动化诊断工具的工业实践。
 - Databricks 关于 Adaptive Query Execution 的公开技术博客——AQE 倾斜检测与自动合并的实现。
 - 阿里 / 字节关于 Spark 作业诊断的公开分享——国内头部企业的慢任务排查经验。
 - **丁香园** —— 丁香园的医学知识图谱——药品、疾病、症状、指南的多跳查询与推理。
@@ -241,7 +241,7 @@
 - **NN FSImage / EditLog**：`FSImage` 加载慢会让 NN 启动慢，但运行期延迟主要是 RPC 与 Block 管理。
 - **NN heap**：GC 频繁会让 RPC 排队，看 `JvmMetrics`。
 - **NN 写 EditLog 阻塞**：EditLog 写 HDFS 或 JournalNode 慢会让所有写阻塞；`dfs.namenode.edits.dir` 应指向独立 Namenode 或 JournalNode。
-- **NN 文件数**：单 NN 管超过 1 亿文件（File + Block）时性能下降；Federation 是标准解法。
+- **NN 文件数**：单 NN 管理到上亿文件（File + Block）量级时性能会明显下降（经验量级，随 NN 硬件与元数据分布而异）；Federation 是标准解法。
 
 **第四层：DataNode 层面排查。**
 - **DN 磁盘 IO**：见 §3.4.2，写入是顺序写但副本 3 + 校验等会放大。
@@ -254,18 +254,18 @@
 - **交换机拥塞**：`drop` / `overrun` 计数；`netstat -s | grep retrans` 看重传率。
 - **DNS / RPC 解析**：NN 与 DN 的 hostname 解析耗时不可忽视；用 IP 直连可绕过 DNS 慢。
 
-**第六层：综合判断顺序。** 写入速度下降的根因概率排序：
-1. NN / DN GC 频繁（40%）；
-2. DN 磁盘 IO 满（25%）；
-3. 网络抖动 / 副本搬迁（20%）；
-4. 小文件大量（10%）；
-5. 配置参数不当（5%）。
+**第六层：综合判断顺序。** 写入速度下降的根因排查优先级（经验排序，不是实测概率分布）：
+1. NN / DN GC 频繁（最常见）；
+2. DN 磁盘 IO 满（常见）；
+3. 网络抖动 / 副本搬迁（次常见）；
+4. 小文件大量（偶发）；
+5. 配置参数不当（少见）。
 
 **3. 常见陷阱**
 
 - **不区分 read 与 write。** 读慢与写慢根因不同；读慢通常 DN 缓存命中低，写慢通常是 Pipeline 长。
 - **只调 DN 不查 NN。** NN 慢也会让写"看起来"慢，因为 NN 是控制平面。
-- **忽略副本策略对写的影响。** 副本数从 3 改 2 直接快 50%，但牺牲可靠性。
+- **忽略副本策略对写的影响。** 副本数从 3 改 2，写吞吐会明显提升（幅度取决于 Pipeline 与网络瓶颈，本书不给出统一数字），但牺牲可靠性。
 - **EC 写入比 3 副本慢的误区。** EC 写入更快（更少副本），但读 + 修复慢。
 - **不查机房 / 网络。** 跨机房写入（如 HDFS 跨 rack）会引入 10ms+ 延迟。
 
@@ -273,7 +273,7 @@
 
 - **「写入 P99 突增怎么定位？」** 答：先看 NN 的 RPC P99，再看 DN 的 IO P99；用 `dstat` + `iostat` 对比时间窗。
 - **「EC 写比 3 副本快吗？」** 答：写快（少副本），读 + 修复慢；适合冷数据；不适合延迟敏感业务。
-- **「HDFS 写吞吐天花板？」** 答：单 DN ~150 MB/s 顺序写（HDD），集群总写入 = 单 DN × DN 数 × 副本数倒数；万节点集群吞吐 ~100+ GB/s。
+- **「HDFS 写吞吐天花板？」** 答：单 DN ~150 MB/s 顺序写（HDD，量级估计），集群总写入可按「单 DN × DN 数 × 副本数倒数」粗略估算；万节点集群吞吐量级在 ~100+ GB/s。该估算忽略网络与 Pipeline 往返开销，实际值随硬件与负载差异很大。
 
 **5. 参考资料**
 
