@@ -316,7 +316,7 @@ Anchor Modeling 的**5 大核心组件**：
 
 **具体数字（How much）**
 
-- 团队规模：美团数据团队（跨章口径不一：本仓 [美团案例 § 1.3](../../15-case-studies/04-meituan-feature-store/04-meituan-feature-store.md) 记巅峰期约 2000+ 人、其中数据平台部约 300+ 人；本节不锁定单一数值）
+- 团队规模：美团数据团队（此处为**数据平台部**口径，约 300+ 人；集团数据团队巅峰期约 2000+ 人 —— 两个数字的主语不同，见 [美团案例 § 1.3](../../15-case-studies/04-meituan-feature-store/04-meituan-feature-store.md)【经验】）
 - 关键数字：**5+ 业务时序分析**；**Anchor Modeling 统一**；**存储 -60%**
 - 业务影响：覆盖**美团 5+ 业务线**
 

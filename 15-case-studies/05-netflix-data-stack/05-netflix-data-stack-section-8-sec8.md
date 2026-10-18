@@ -69,7 +69,7 @@
 - **「Iceberg 的 commit 协议具体怎么工作？两个并发写怎么冲突？」** 答：每次 commit 生成一个新的 manifest list 文件（旧文件路径原子重命名或新建 pointer）。两个 writer 拿到同一个 parent snapshot，各自生成新 snapshot；commit 时通过「compare-and-swap」检查 parent 是否变化，若变化则整个 commit 重试。这是 optimistic concurrency，不阻塞读。
 - **「Delta Lake 的 UniForm 出现后，Iceberg 还有优势吗？」** 答：UniForm 是「把 Delta 的 log 转写为 Iceberg / Hudi 协议」，本质是单点适配层，治理仍在 Databricks。Iceberg 的优势是**原生跨引擎 + Apache 治理 + REST Catalog 标准化**（Iceberg 1.3 起的标准），协议层不依赖单一厂商。
 - **「国内大厂为什么选 Iceberg 而不是 Delta？」** 答：① 多引擎需求（同时跑 Spark + Flink + Trino），② 不想被 Databricks 控制，③ 拥抱 Apache 社区标准。蚂蚁、字节、腾讯、京东都已给出公开分享。
-- **「Iceberg 1.5 / 2.0 的关键升级是什么？」** 答：1.5 引入 Row Delta（行级 update/delete API）；2.0 引入向量化读取、物化视图（Materialized View）、Variant 类型（半结构化数据原生支持）。
+- **「Iceberg 近年的关键升级是什么？」** 答：行级 update/delete API（Row Delta）先落地；其后规范层面引入**删除向量、增量读取与 Variant 类型**（半结构化数据原生支持）。**版本号以官方表规范页当前内容为准**——本书其它章节按 **V3 规范**记录，此处不另立一个版本号。
 
 **5. 参考资料**
 
@@ -436,11 +436,11 @@ Netflix 实际用法：核心交易表走 COW（数据量稳定、按天刷新�
 - **Airflow**：Airbnb 开源，Lyft / Stripe / Twitter / 京东 / 美团 / 字节 等大量公司采用。优势是生态丰富、Operator 多；劣势是触发语义弱、UI 偏弱。
 - **DolphinScheduler**：国产开源调度系统，海尔 / 唯品会 / 字节 / 美团 等国内厂商广泛采用，强项是「**可视化 + 多触发 + 任务类型丰富**」，与 Maestro 设计哲学类似。
 - **Apache Airflow + 自研触发层**：部分公司（LinkedIn / Uber）选择在 Airflow 上自研事件触发层（如 Kafka trigger）。这是「**生态优先 + 增量定制**」的折中方案。
-- **Netflix Maestro**：自研的统一 DAG 调度（已开源，开源仓库地址本书未给出；公开材料的年份口径不一——2022 年之说见 Netflix 工程博客，2021 年开源之说本书未核到出处），社区影响力目前小于 Airflow / DolphinScheduler，但设计哲学值得参考。
+- **Netflix Maestro**：自研的统一 DAG 调度（已开源，开源仓库地址本书未给出；设计与实践见 Netflix 工程博客，2022），社区影响力目前小于 Airflow / DolphinScheduler，但设计哲学值得参考。
 
 **第六层：行业落地佐证。**
 
-- **Netflix**：Maestro 服务内部 1000+ 数据工程师，日调度任务量在数万级到百万级之间（规模口径不一：本仓 [调度章节 § 6.3](../../03-data-stack/12-scheduler/12-scheduler-section-6-sec6.md) 记其任务规模为「数千级 → 数万级」，本节记的是日调度次数，两者量纲不同且均无单一可核验出处，引用时请自行查证。已开源之说本书未给出仓库地址——2022 年之说见 Netflix 工程博客，2021 年开源之说本书未核到出处）。
+- **Netflix**：Maestro 服务内部 1000+ 数据工程师，日调度任务量在数万级到百万级之间（此处为**日调度次数**口径；[调度章节 § 6.3](../../03-data-stack/12-scheduler/12-scheduler-section-6-sec6.md) 记的「数千级 → 数万级」是**任务数**，两者量纲不同【经验】。已开源之说本书未给出仓库地址；设计与实践见 Netflix 工程博客，2022）。
 - **海尔 / 美的**：制造业巨头，调度系统多采用 DolphinScheduler，强调「**可视化 + 任务类型丰富 + 多触发**」——Maestro / DolphinScheduler 这类强可视化系统在制造业落地普遍。
 - **永辉 / 屈臣氏**：零售行业实时调度需求高，事件触发 + 时间触发混合，调度系统普遍做了二次开发。
 - **中信证券 / 招商银行**：金融行业，调度 SLA 要求严格（每个报表必须在开市前出数），调度系统的 SLA 管理与告警是核心。

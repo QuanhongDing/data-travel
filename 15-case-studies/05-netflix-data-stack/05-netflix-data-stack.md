@@ -9,14 +9,14 @@
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
 | Netflix 数据栈的整体形态 | §3.1、§3.2、§3.3、§3.4 |
-| Iceberg 表格式选型原因 | §4.1 |
-| Keystone 实时管道 | §4.2 |
-| Maestro 调度系统 | §4.3 |
-| Spark/Flink 集成与 Netflix 优化 | §4.4 |
-| Metaflow ML 框架 | §4.5 |
-| Netflix Data Mesh 实践 | §4.6 |
-| 实时数仓与 Iceberg | §4.7 |
-| ML Platform 演化 | §4.8 |
+| Iceberg 表格式选型原因 | §4.2、§4.3 |
+| Keystone 实时管道 | §4.1、§4.2 |
+| Maestro 调度系统 | §4.2、§4.3 |
+| Spark/Flink 集成与 Netflix 优化 | §4.2 |
+| Metaflow ML 框架 | §4.1、§4.3 |
+| Netflix Data Mesh 实践 | §4.1、§4.2 |
+| 实时数仓与 Iceberg | §4.2 |
+| ML Platform 演化 | §4.1 |
 | 踩过哪些坑 | §5.1、§5.2、§5.3 |
 | 哪些经验值得学 | §6.1、§6.3 |
 
@@ -29,16 +29,16 @@
 Netflix 成立于 1997 年（从 DVD 租赁起步），2007 年推出流媒体服务，至今 28 年。数据栈演进的关键时间节点：
 
 - **2007–2012：流媒体起步**。从 Oracle + Hadoop 起步，S3 + EMR + Hive 为主。
-- **2013：Netflix OSS 开源**。开始对外开源工具（Spinnaker、Chaos Monkey 等；各组件年份不一——本仓 [§ 7.1](05-netflix-data-stack-section-7-sec7.md) 把 Chaos Monkey / Simian Army 记为 2011–2012 年，[12-architecture/06-chaos-engineering](../../12-architecture/06-chaos-engineering/06-chaos-engineering.md) § 1.4 把 Chaos Monkey 记为 2011 年推出，而 [双 11 稳定性案例 § 8](../../15-case-studies/02-double-11-stability/02-double-11-stability-section-8-sec8.md) 与 [风险治理案例 § 8](../../13-decision/04-risk-assessment/04-risk-assessment-section-8-sec8.md) 记为 2010 年；两说并存，本书不锁定单一值）。
-- **2015：Apache Kafka 大规模使用**。日处理消息量在万亿级（PB 级；量级口径不一——本仓 [§ 7.4](05-netflix-data-stack-section-7-sec7.md) 记的 2018 年口径是「数千亿条/日」，两处均属量级表述，本节不锁定单一数值）。
+- **2013：Netflix OSS 开源**。开始对外开源工具（Spinnaker、Chaos Monkey 等；Chaos Monkey / Simian Army 一类组件自 2011 年起陆续对外开源，见本仓 [§ 7.1](05-netflix-data-stack-section-7-sec7.md) 与 [12-architecture/06-chaos-engineering](../../12-architecture/06-chaos-engineering/06-chaos-engineering.md) § 1.4）。
+- **2015：Apache Kafka 大规模使用**。日处理消息量在万亿级（PB 级；此处为**日均事件量**口径，[§ 7.4](05-netflix-data-stack-section-7-sec7.md) 记的 2018 年值是「数千亿条/日」，两者均为量级表述【经验】）。
 - **2017：Iceberg 立项**。Ryan Blue 在 Netflix 内部开始研发 Iceberg 表格式。
 - **2018：Apache Iceberg 开源**。Netflix 把 Iceberg 捐赠给 Apache 基金会。
 - **2019：Metaflow 升级**。Netflix 开源 Metaflow（ML 框架），大幅升级 ML 工程化能力。
 - **2020：Iceberg 全面铺开**。Netflix 内部 100% 数据栈基于 Iceberg。
-- **2022 年前后：Maestro 调度公开**。Netflix 自研并开源 Maestro（工作流调度系统；开源仓库地址本书未给出）；其公开材料的年份口径不一——2022 年之说见 Netflix 工程博客，2021 年开源之说本书未核到出处，本书不锁定单一值。
+- **2022：Maestro 调度公开**。Netflix 自研并开源 Maestro（工作流调度系统；开源仓库地址本书未给出），设计与实践见 Netflix 工程博客（[Netflix Technology Blog, 2022]）。
 - **2022：Data Mesh 实践**。Netflix 内部推进 Data Mesh，数据所有权分散到业务团队。
 - **2023：GenAI 应用**。Netflix 内部广泛使用 LLM 做内容理解 / 推荐 / 营销。
-- **2024：Iceberg 1.5 / 2.0 发布**。Iceberg 成为事实标准。
+- **2024：Iceberg 在规范层面引入删除向量、增量读取与 Variant 类型**。Iceberg 成为事实标准。（规范版本号本章不锁定，以 Apache Iceberg 官方表规范页当前内容为准；本书其它章节按 **V3 规范**记录。）
 - **2025：实时数仓 + AI Native**。
 
 ### 1.2 行业与监管
@@ -83,7 +83,7 @@ Netflix 首页推荐（Top 10、推荐位、相似推荐）的准确度直接决
 #### 2.2.1 海量数据
 
 - 日均 PB 级数据写入。
-- 日均万亿级事件流（量级口径不一：本仓 [§ 7.4](05-netflix-data-stack-section-7-sec7.md) 记的 2018 年口径是「数千亿条/日」，与本节「万亿级」相差一个量级，两处均属量级表述，本节不锁定单一数值）。
+- 日均万亿级事件流（此处为**日均事件量**口径的 2015 年估计；[§ 7.4](05-netflix-data-stack-section-7-sec7.md) 记的 2018 年值是「数千亿条/日」，两者相差约一个量级，均为量级表述【经验】）。
 - 单表 PB 级容量。
 
 #### 2.2.2 表格式痛点

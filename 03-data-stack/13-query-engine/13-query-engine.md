@@ -99,7 +99,7 @@
 
 - 2020：Trino + Iceberg 深度集成。
 - 2021：Trino 400+、Iceberg V2 支持。
-- 2023：Trino 420+、Iceberg V3 支持（V3 规范本身的年份本仓各章口径不一，多数侧记 2024 年，见 [03-lakehouse](../03-lakehouse/03-lakehouse.md) 的时间线）。
+- 2023：Trino 420+、Iceberg V3 支持（V3 规范本身的年份以 Apache Iceberg 官方表规范页当前内容为准；本书按 2024 年侧记，见 [03-lakehouse](../03-lakehouse/03-lakehouse.md) 的时间线）。
 - 2024：DataFusion 30+、Arrow 集成。
 
 **第五阶段：AI 原生（2024-至今）**
