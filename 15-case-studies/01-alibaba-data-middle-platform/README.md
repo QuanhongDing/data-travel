@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 难度 | 未标注 |
+| 难度 | ★★★☆☆ |
 | 章节 | [15-case-studies](../README.md) |
 | 主文件 | [01-alibaba-data-middle-platform.md](01-alibaba-data-middle-platform.md) |
 
@@ -10,7 +10,7 @@
 
 | 小节 | 文件 |
 | --- | --- |
-| 10. 参考资料 | [01-alibaba-data-middle-platform-section-10-sec10.md](01-alibaba-data-middle-platform-section-10-sec10.md) |
+| 9. 参考资料 | [01-alibaba-data-middle-platform-section-9-sec9.md](01-alibaba-data-middle-platform-section-9-sec9.md) |
 | 3. 挑战 | [01-alibaba-data-middle-platform-section-3-sec3.md](01-alibaba-data-middle-platform-section-3-sec3.md) |
 | 4. 架构演进 | [01-alibaba-data-middle-platform-section-4-sec4.md](01-alibaba-data-middle-platform-section-4-sec4.md) |
 | 5. 关键决策 | [01-alibaba-data-middle-platform-section-5-sec5.md](01-alibaba-data-middle-platform-section-5-sec5.md) |

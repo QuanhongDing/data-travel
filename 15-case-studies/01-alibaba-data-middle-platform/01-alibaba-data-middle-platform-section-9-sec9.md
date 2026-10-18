@@ -1,6 +1,6 @@
-> 本文件是 **01-alibaba-data-middle-platform.md** 的子文件（§10. 参考资料）。完整章节请回到 [index](01-alibaba-data-middle-platform.md)。
+> 本文件是 **01-alibaba-data-middle-platform.md** 的子文件（§9. 参考资料）。完整章节请回到 [index](01-alibaba-data-middle-platform.md)。
 
-## 10. 参考资料
+## 9. 参考资料
 
 > 本节不只是书单，而是**本章【公开】档主张的出处索引**：[§3](01-alibaba-data-middle-platform-section-3-sec3.md) 起各节凡是标了【公开】的方法论、引擎与产品，都应能在下面找到可自行检索的对应源；找不到对应源的，统一收在 §10.6，并按【经验】档处理。
 >
@@ -23,9 +23,9 @@
 
 - **MaxCompute**（原 ODPS）官方文档——存储计算分离、Quota 资源组与调度、SQL 引擎、安全与权限模型。对应 §4 架构演进与 §8 引擎选型（MaxCompute vs Hive vs Spark）。
 - **Hologres** 官方文档——HSAP（Hybrid Serving / Analytical Processing）混合负载定位、MaxCompute 外表直读、点查与 OLAP 一体的能力边界。对应 §4、§5 的实时 OLAP 选型。
-- **实时计算 Flink 版**（原 Blink）官方文档——双 11 实时链路、状态与 Checkpoint、流批一体的工程实现。对应 §4.4.1 / §4.4.2 与 §5.4 的实时计算与流批一体决策。
+- **实时计算 Flink 版**（原 Blink）官方文档——双 11 实时链路、状态与 Checkpoint、流批一体的工程实现。对应 §4.1 / §4.2 与 §5.4 的实时计算与流批一体决策。
 - **DataWorks** 官方文档——数据集成、智能数据建模、调度、数据质量与数据治理中心。对应 §4 的「开发治理一体化」与 §6 的组织/治理踩坑。
-- **PAI 与百炼（Model Studio）**官方文档——模型训练平台与大模型应用编排平台。对应 §4.6「AI 中台与 AI Native 演进」一节的产品侧依据。
+- **PAI 与百炼（Model Studio）**官方文档——模型训练平台与大模型应用编排平台。对应 §4.1 Step 7「AI 中台化」一节的产品侧依据。
 - **阿里云开发者社区**（含原云栖社区，developer.aliyun.com）——上述产品的工程实践文章与会议资料入口。它本身是聚合入口而非一手出处，**引用时必须回溯到原文**。
 
 ### 10.3 学术论文（引擎侧最硬的一手材料）
@@ -33,7 +33,7 @@
 - **SIGMOD 2019《MaxCompute: A Cloud-Native Data Warehouse Service》**（阿里 MaxCompute 团队）——对外公开的架构总结，含存储计算分离、调度与安全设计。这是本章「MaxCompute 架构」「自研引擎取舍」类主张的首选出处，[§8](01-alibaba-data-middle-platform-section-8-sec8.md) 的引擎对比亦引它。**本书未能核到该论文的 DOI 与页码**，引用前请在 ACM Digital Library 按标题检索确认。
 - **VLDB 2020 阿里 Hologres 引擎论文**——HSAP 架构设计，是「实时 OLAP 服务大促大屏」这类主张的依据。**该论文的确切标题与作者，本书未能核到**（书内曾以《Hologres：Alibaba's Cloud-Native OLAP Engine》一名引用，该名称疑似转述），引用前请以 VLDB 官方论文目录检索「Hologres」确认。
 - **Apache Flink 1.9（2019）发布说明与 Flink 官方博客**——阿里 Blink 分支回馈社区并合入 Flink 的公开记录，是「阿里流计算自研 → 反哺开源」这条脉络的一手材料。
-- **通义 / Qwen 系列模型技术报告**（2023 年起，arXiv 可按标题检索）——对应 §4.6「AI 中台与 AI Native 演进」中模型侧的时间线。**具体版本号与发布时间以 arXiv 页面为准**，本书不引用未核到的版本细节。
+- **通义 / Qwen 系列模型技术报告**（2023 年起，arXiv 可按标题检索）——对应 §4.1 Step 7「AI 中台化」中模型侧的时间线。**具体版本号与发布时间以 arXiv 页面为准**，本书不引用未核到的版本细节。
 
 ### 10.4 公开演讲与会议材料
 
