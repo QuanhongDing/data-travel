@@ -57,7 +57,7 @@
 
 **出处**
 
-【公开：《MaxCompute: A Cloud-Native Data Warehouse Service》（SIGMOD 2019）、Apache Flink 1.9（2019）发布说明、MaxCompute 与 Hologres 官方文档，索引见 [§9.2–10.3](01-alibaba-data-middle-platform-section-9-sec9.md)；《大数据之路：阿里巴巴大数据实践》（2017）记述了 OneData 体系】。规模与比例类取值【经验：本书从"集中化 + 多租户 + 公有云"这组约束反推，量级沿用本章 §4.3 与 §7.2.4】。
+【公开：《MaxCompute: A Cloud-Native Data Warehouse Service》（SIGMOD 2019）、Apache Flink 1.9（2019）发布说明、MaxCompute 与 Hologres 官方文档，索引见 [§9.2–9.3](01-alibaba-data-middle-platform-section-9-sec9.md)；《大数据之路：阿里巴巴大数据实践》（2017）记述了 OneData 体系】。规模与比例类取值【经验：本书从"集中化 + 多租户 + 公有云"这组约束反推，量级沿用本章 §4.3 与 §7.2.4】。
 
 #### 5.2.2 OneID 的实体识别怎么做
 
@@ -197,7 +197,7 @@
 
 **出处**
 
-【公开：PAI / 百炼（Model Studio）官方文档、通义 / Qwen 技术报告，索引见 [§9.2–10.3](01-alibaba-data-middle-platform-section-9-sec9.md)】。应用场景与落地形态【经验：沿用本章 §4.1 Step 7 的量级描述】。资产交付三栏与可调用比例【推算：由 §4.5 模板 4 推出】。
+【公开：PAI / 百炼（Model Studio）官方文档、通义 / Qwen 技术报告，索引见 [§9.2–9.3](01-alibaba-data-middle-platform-section-9-sec9.md)】。应用场景与落地形态【经验：沿用本章 §4.1 Step 7 的量级描述】。资产交付三栏与可调用比例【推算：由 §4.5 模板 4 推出】。
 
 ### 5.3 这些决策的共同判据
 
