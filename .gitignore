@@ -61,5 +61,8 @@ replay_pid*
 # 工作日志
 .backlog.md
 
+# 实施计划（写给执行 agent 的任务清单，读者零价值；specs 保留——正文引用了它们）
+docs/superpowers/plans/
+
 # 临时派工目录（原有规则只忽略了其中 3 个文件，这里整体忽略）
 .tmp-dispatch/

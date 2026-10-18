@@ -172,7 +172,6 @@ flowchart TB
 - [docs/superpowers/specs/](docs/superpowers/specs/) — 项目设计文档
   - [2026-10-08-data-architect-restructure.md](docs/superpowers/specs/2026-10-08-data-architect-restructure.md) — 本次目录重组的现行规格（CURRENT）
   - [2026-09-30-data-services-book-design.md](docs/superpowers/specs/2026-09-30-data-services-book-design.md) — 上一版本「6 章技术演进时间线」（SUPERSEDED）
-- [docs/superpowers/plans/](docs/superpowers/plans/) — 历史与当前的实施计划
 
 ## 术语表
 
