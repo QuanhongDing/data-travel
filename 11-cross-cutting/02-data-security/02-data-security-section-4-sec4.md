@@ -1,88 +1,184 @@
-> 本文件是 **02-data-security.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](02-data-security.md)。
+> 本文件是 **02-data-security.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](02-data-security-section-3-sec3.md) 里那六个模式装进一个已经在跑的系统：顺序、产物、判据与存量迁移。完整章节请回到 [index](02-data-security.md)。
 
 ## 4. 工程实现
 
+[§ 3](02-data-security-section-3-sec3.md) 已经解决了「检查点放在哪一层」，本节不再复述模式本身，只回答三个工程问题：**按什么顺序装、每一步手上该多出什么可被检查的东西、已经存在的明文与权限怎么办。**
+
+本节主要写给**存量改造**的读者——企业里绝大多数数据安全建设都不是新建一套平台，而是在跑着的数仓、湖、对象存储与直连客户端之间加检查点。从零搭建的系统按 §4.1 的顺序做即可，只是可以把 Step 1 与 Step 2 并行起来，因为新建系统里没有「历史权限」要收。五步的顺序不可颠倒，理由在每一步的「为什么必须这一步」里逐条给出，主干是：**分级是所有检查点的输入，身份是撤销权限的前提，脱敏与加密把密级变成数据形态，审计证明前三步真的发生过，AI 加固不新增防线、只把出口从「对象」改成「动作」**。
+
 ### 4.1 落地步骤
 
-**Step 1：盘点与分类分级（4-8 周）**
+**Step 1：盘点与分类分级（4–8 周【经验】，随数据源数量与是否已有元数据目录变）**
 
-1. 数据资产盘点：列出所有数据源、表、字段。
-2. 分类：按 4 大类（公开 / 内部 / 一般 / 重要）+ 个人信息子类。
-3. 分级：L1（公开）、L2（内部）、L3（一般）、L4（重要）、L5（敏感）。
-4. 标签：给每个字段打标签（写入元数据）。
-5. Owner：每张表 / 每个字段指定 Owner。
+1. 数据资产盘点：列出数据源、表、字段三级清单；先接自动采集，**不要一开始就要求人工填全**（要求填全的结果通常是没人开始）。
+2. 分类：按 4 大类（公开 / 内部 / 一般 / 重要）+ 个人信息子类，与主文件 §2.1 的六类一一对应（个人一般信息、个人敏感信息单列）。
+3. 分级：L1 公开 / L2 内部 / L3 一般 / L4 重要 / L5 敏感——分级与分类是两张表，落地时常常被合成一列，合成后策略就没法按「密级」和「个人信息」两个维度分别判断。
+4. 标签：字段级标签写进元数据（模板见 §4.5 模板 1），并**当场规定「无标签字段」在下游策略里的默认行为**（按最高级处理还是拒绝），把它写成文字。
+5. Owner：每张表、每个字段指定 Owner；字段级 Owner 可继承表级，但继承链要显式登记，否则离职后无人接手。
 
-**Step 2：访问控制（4-8 周）**
+- **产物**：字段级标签表 + 密级字典（分类与分级两张）+ Owner 清单 + 「无标签字段默认行为」的签署记录。
+- **判据**：抽 50 个字段，量两个数——有标签的比例、以及被抽中字段的密级与业务 / 法务判定的一致率。业务方只看不改；两个数任一个明显偏离，说明分级还没有成为策略的输入。
+- **为什么必须这一步 / 为什么在这个位置**：策略、脱敏、审计三者都读同一份标签（[§3.4](02-data-security-section-3-sec3.md) 组合 A 的两句话：有分级无执行点 = 打了标签没人用，有执行点无分级 = 策略靠人工维护一张表）。它是唯一一个**先于其他所有步骤、且被其他所有步骤读取**的产物；先做任何一步再回头补分级，都要在分级第一次变动时返工。
 
-1. 角色梳理：按业务角色定义（数据分析师、研发、业务 BP、合规审计）。
-2. 权限矩阵：角色 × 资源 → 权限（读 / 写 / 删 / 管理）。
-3. IAM 接入：SSO + MFA + JIT。
-4. 数据库权限收敛：删除野生账号，强制走 Ranger / IAM。
+**Step 2：访问控制（4–8 周【经验】，随引擎数量与历史账号数量变）**
 
-**Step 3：脱敏与加密（4-8 周）**
+1. 角色梳理：按业务角色定义（数据分析师、研发、业务 BP、合规审计）；人用角色，服务与 Agent 用**机器身份**单列，两者不要混在一张表里。
+2. 权限矩阵：角色 × 资源 → 读 / 写 / 删 / 管理。矩阵要能被查询回答「现在谁有权读这张表」，而不是只出现在评审 PPT 里。
+3. IAM 接入：SSO + MFA + JIT（按需授权、到期自动回收）；把入转调离做成权限变更的**自动触发源**，而不是定期复核运动。
+4. 数据库权限收敛：删除野生账号与共用账号，强制取数走 Ranger / IAM 或统一网关。**这一步阻力最大、收益最高**。
 
-1. 静态脱敏：测试环境、备份、BI 看板全量脱敏。
-2. 动态脱敏：查询时按角色实时脱敏。
-3. KMS 落地：统一密钥管理 + BYOK 支持。
-4. 传输加密：所有内部通信 TLS 1.3 / mTLS。
+- **产物**：权限矩阵 + 角色清单 + 机器身份清单 + **直连凭据台账**（要能报出「还有几个账号能绕过检查点读到原值」）。
+- **判据**：抽 3 张高敏表，让审计同事只用权限系统回答「现在有多少账号能读它、其中多少个对应的项目已下线或人已离职」——答不出就是矩阵还没落地；再抽一个上月离职账号，看它的权限现在还在不在。
+- **为什么必须这一步 / 为什么在这个位置**：它是脱敏与网关的前提。只有当取数路径唯一时，脱敏规则与策略才有确定的覆盖面（[§3.2.3](02-data-security-section-3-sec3.md) 的失效点说的就是这件事）；顺序反了，会得到一套只覆盖合规那条路的检查点。
 
-**Step 4：审计与监控（持续）**
+**Step 3：脱敏与加密（4–8 周【经验】，随数据源数量与是否已有 KMS 变）**
 
-1. 全链路审计：登录、查询、修改、导出、删除。
-2. 异常检测：UEBA 模型识别异常访问。
-3. 合规报告：GDPR / 个保法 / 等保自动报告。
+1. 静态脱敏：测试环境、备份、BI 看板全量脱敏，方法从「密级 × 用途 → 方法」的规则表推导（规则表形态见 [§3.2.4](02-data-security-section-3-sec3.md)）。
+2. 动态脱敏：查询时按角色实时脱敏（列掩码 + 行过滤），**与静态脱敏、API 脱敏（返回值侧，面向前端与第三方调用）共用同一份规则表**——三者唯一的区别是改写发生在什么时候（三种投递形态的机制见 [§3.2.4](02-data-security-section-3-sec3.md)）。
+3. KMS 落地：统一密钥管理 + BYOK 支持，密钥分层、轮转、操作审计、异地加密备份（设计要点见 §4.2 第 4 条）。
+4. 传输加密：内部通信 TLS 1.3 与 mTLS；服务间身份用可验证的工作负载身份，不用网段。
+5. 可用性验证：用脱敏后的数据跑一遍**真实的**分析作业与模型训练，比对结论；不可比说明保真度选错了，不是作业写错了。
+
+- **产物**：脱敏规则表（密级 × 用途 → 方法）+ 令牌库（若使用可逆方法）+ KMS 与轮转记录 + 全链路加密清单。
+- **判据**：抽 3 个含敏感字段的数据集，看脱敏方法是规则表推导出来的还是各环境各写一套；再对其中一个做一次连接 / 聚合测试，确认脱敏后的结论与脱敏前一致。
+- **为什么必须这一步 / 为什么在这个位置**：它把「密级」这个结论变成数据的实际形态。放在访问控制之后，是因为规则表以密级为键、以**用途**为第二维，而用途的边界由角色定义——没有角色，规则表只能按密级一刀切，一刀切在业务侧的结果通常是绕过。
+
+**Step 4：审计与监控（持续【经验：以季度为复核周期】）**
+
+1. 全链路审计：登录、查询、修改、导出、删除都要记，粒度到「谁 / 何时 / 读了哪些字段 / 返回多少行」；存储只可追加，不可由生产凭据改写。
+2. 异常检测：UEBA 一类行为基线识别异常访问；**高敏字段单独设阈值**，不要与普通查询共用一套（共用时要么全量报警、要么全部沉默）。
+3. 合规报告：把 GDPR / 个保法 / 等保 2.0 的义务逐条映射到已有留痕（等保 2.0 对应 GB/T 22239—2019《信息安全技术 网络安全等级保护基本要求》【公开】；行业称法中的「等保 3.0」其编号与实施以官方发布为准，映射时按「现行发布的等级保护国家标准」表述）；**映射不上的义务要单独列出来**，不能靠报告模板掩盖。
+
+- **产物**：审计留痕（只可追加）+ 义务到留痕的映射表 + 异常告警规则 + 审计保留期的依据（保留期要长于「最慢一类泄露被发现的延迟」）。
+- **判据**：从留痕里回答一次「上周谁导出了含个人信息的表」；再抽一条合规义务，看它能不能指回一条具体记录。两问答不出，说明留痕字段没定全，而不是审计系统不行。
+- **为什么必须这一步 / 为什么在这个位置**：审计是唯一能事后还原的证据，也是前三步「真的发生过」的证明。它的颗粒度由前三步决定——没有字段级标签，审计只能记到表；没有机器身份，日志里只有 `app_rw` 一个主体。因此它必须排在分级与身份之后。
 
 **Step 5：AI 时代加固（持续）**
 
-1. AI 工具白名单：批准可用 AI 工具（私有 LLM、合规 SaaS）。
-2. AI 输入 DLP：拦截敏感数据喂给外部 LLM。
-3. AI 输出审计：LLM 输出水印 + 敏感词检测。
-4. RAG 数据隔离：不同部门 RAG 库物理隔离。
+1. AI 工具白名单：批准可用的 AI 工具（私有 LLM、合规 SaaS），并**给出内部替代品**——没有替代品的拦截只会把行为推向更隐蔽的通道。
+2. AI 输入 DLP：拦截敏感数据喂给外部 LLM（模板见 §4.5 模板 4）；**默认行为写死并由安全侧签署**（不可判定即拒绝，还是放行）。
+3. AI 输出审计：LLM 输出水印 + 敏感词检测，并把 prompt、工具调用、检索结果、用途声明一并留痕——**留痕字段先定，再谈自动化**（字段定义见 [§ 5](02-data-security-section-5-ai.md) §5.3）。
+4. RAG 数据隔离：不同部门的 RAG 库逻辑隔离（必要时物理隔离）；**密级过滤放在召回之前**，策略与源系统同源；语料脱敏放在**入库那一刻**。
+
+- **产物**：AI 工具与数据出口清单 + 输入 DLP 规则与默认行为的签署记录 + LLM 交互留痕字段定义 + 检索侧密级过滤 + 语料入库脱敏的授权记录。
+- **判据**：让一个**非平台团队**的人列出他能想到的全部取数路径（BI 直连、离线同步、导出脚本、运维跳板机、第三方接口、AI 取数接口、员工自接的外部模型），逐条标注经过哪个检查点——**标不出来的那一条就是当前的真实出口**。
+- **为什么必须这一步 / 为什么在这个位置**：它必须最后。前四步的前提是「访问是一个可被授权的对象」，而 AI 把出口变成了按次发生的动作（[§ 5](02-data-security-section-5-ai.md) 把这条机制写成「敏感物的单位从数据集变成一次对话 / 一次调用 / 一次检索返回」）。在一套还列不出全部出口的系统上追加按次判定，只会得到一层覆盖不到实际路径的检测。
+
+**五步里最常被跳过的是 Step 2 的第 4 条：收掉直连凭据、强制走统一出口。** 它被跳过的原因不在技术，而在它要动别人的权限——每收一个账号都会有人来申请例外。它跳过后第一个出问题的时点不是事故，而是**第一次做脱敏演练或第一次被追问「现在谁有权读这张表」**：你会发现脱敏规则、行过滤与审计只覆盖了走平台的路径，DBeaver 直连、导出脚本、运维跳板机上的明文照旧。第二个时点更贵：审计既然回答不了「谁有权读」，也就回答不了「谁可能把它拿走」——而这两个问题用的是同一份台账。
 
 ### 4.2 关键技术点
 
-**1. 数据分类分级落地**：
+**1. 数据分类分级落地（字段级标签）**
 
-```yaml
-# 字段级标签示例（DataHub YAML）
-dataset: prod.orders
-fields:
-  - name: order_id
-    classification: INTERNAL  # 内部
-    pii: false
-  - name: user_id
-    classification: CONFIDENTIAL  # 机密
-    pii: true
-  - name: user_phone
-    classification: HIGHLY_CONFIDENTIAL  # 高度机密
-    pii: true
-    pattern: "^1[3-9]\\d{9}$"
-    owner: privacy-team@example.com
-  - name: user_id_card
-    classification: TOP_SECRET  # 绝密
-    pii: true
-    encryption_required: true
-    access_audit: true
+- **做法**：密级以字典形式固定（分类与分级两张表，个人信息单列子类），每个字段在元数据里带标签、Owner 与识别规则（正则 / 模型）；无标签字段的默认行为写进策略。
+- **机制**：因为策略、脱敏、审计读的是同一份标签，标签一旦落进元数据，密级就从「一次评审结论」变成「可执行的输入」；也正因为三处都依赖它，**标签的覆盖率比标签的准确性更早成为瓶颈**。
+- **失效条件**：**当标签靠人工维护、而字段持续新增时**，覆盖率随时间下降【经验：人工维护的密级台账通常在季度量级失效】；症状是抽查时新字段没有标签，而下游按「无标签 = 最高级」把新字段一刀切封住，业务方转而申请放宽——放宽申请一多，策略就会被改松。
+- **档位**：【经验】。
+
+**2. 动态脱敏（基于 Ranger 的行过滤与列掩码）**
+
+- **做法**：策略按「库 / 表 / 列 + 角色」下发列掩码与行过滤（Ranger 提供 row filter 与 data masking 这类策略类型），脱敏规则表统一维护并与静态脱敏共用。
+- **机制**：因为改写发生在 SQL 执行前的策略层，使用方拿到的仍然「是一张表」、只是内容被裁剪过——安全策略上线因此不必等业务改代码，绕开了「安全需求排不进业务需求池」这个组织瓶颈。
+- **失效条件**：**当脱敏字段被用作连接键或聚合维度时**，掩码破坏了取值分布与唯一性，结论会错（对掩码后的手机号做用户去重会把大量用户合并）；第二个失效面是**存在绕过策略层的直连路径**时，策略只覆盖了一部分路径却给出「已统一管控」的错觉。症状是同一个看板在平台上与直连查出的数不一样。
+- **档位**：Ranger 的策略类型与行为以官方文档当前版本为准【公开，判定入口见 [§3.2.3](02-data-security-section-3-sec3.md)】。
+
+**3. 加密架构（静态 / 传输 / 使用中）**
+
+```text
+应用层   → TLS 1.3 + mTLS     防链路被截
+数据层   → TDE（透明数据加密） 防拿到介质
+备份层   → AES-256 + 密钥轮转  备份与生产库同权是常见漏洞
+密钥层   → KMS + HSM（BYOK）
+使用层   → TEE（代价见 §3.2.5）；同态加密是概念性备选，见主文件 §2.3
 ```
 
-**2. 动态脱敏（基于 Ranger）**：
+- **做法**：按数据所处状态分层配齐，并**在每一层写清它防的是谁**；备份加密与日志脱敏与数据层同批做，不要留成「以后再说」。
+- **机制**：因为每一类加密只能覆盖数据的一种状态，覆盖面的完整性来自三种状态都配齐，而不是某一层更强；代价是每一层都带来新的密钥与运维面。
+- **失效条件**：**当明文进入某个进程之后**，TDE 与 TLS 都不再约束「有权访问的人拿它做什么」；症状是泄露发生在一次用合法凭据完成的正常导出里，而四层加密全部在位。
+- **档位**：【经验】。
+
+**4. KMS 关键设计（密钥分层与轮转）**
+
+- **做法**：主密钥（KEK）+ 数据密钥（DEK）分层；DEK 的轮转周期落在「天–月」量级、KEK 落在「年」量级；所有密钥操作记审计；密钥加密后异地备份。具体周期以你所适用的标准与密钥管理系统文档为准。
+- **机制**：因为数据用 DEK 加密、DEK 再由 KEK 加密，轮转的成本只与密钥数量相关、与数据量无关——这是轮转能长期坚持下来的原因；代价是**密钥权限必须与数据权限分离**，否则分层不产生任何保护。
+- **失效条件**：**当密钥管理员与数据管理员是同一批人、或同一个服务账号时**，分层形同虚设；症状是审计日志里「申请解密」与「取数」来自同一个主体。第二个失效面是只轮转密钥、不重加密历史数据——那样轮转只是形式，旧数据的保护强度停留在签发日。
+- **档位**：【经验】，区间随合规义务与密钥暴露面变。
+
+**5. 数据安全网关与 DLP（出口）**
+
+- **做法**：网关部署在数据源之前，做行过滤 / 列掩码 / 限流 / 审计留痕（结构见 [§3.2.3](02-data-security-section-3-sec3.md)）；出口侧 DLP 对内容做扫描与拦截；**默认行为写死**（不可解析即拒绝，不可判定即拒绝还是放行）。
+- **机制**：因为网关看到的是 SQL 文本与结果集，它能对使用方透明地完成那四件事；而 DLP 的判定输入是**内容**，所以它能覆盖没有 SQL 的那些出口（输入框、外部 API、检索返回、工具调用）。
+- **失效条件**：**当存在绕过网关的直连路径时**（备份工具、报表引擎、运维跳板机、数据同步链路、BI 本地抽取），统一入口的覆盖面退化为「产品能力」而不是「事实」——修法不是给网关加功能，而是把直连凭据收掉、把网络可达性掐断（这就是 Step 2 第 4 条的位置之所以关键的原因）。DLP 一侧的失效条件是内容判定天生带漏检与误报：误拦会催生绕过，漏检是静默的。
+- **档位**：【经验】。
+
+**6. 零信任与工作负载身份**
+
+- **做法**：控制平面（策略引擎 + 策略管理器）与数据平面（网关 / 代理 / SDK）分离；服务与 Agent 使用可验证的工作负载身份（SPIFFE ID 一类）而不是网段；撤销权限的生效时延按「单次请求验证间隔」计，而不是按会话存活期。
+- **机制**：因为每次访问都经过策略决策点，权限的生效与失效都是「下一次请求」级别的；代价是身份与策略系统进入每次请求的关键路径，可用性上界变成各串联组件之积【推算，推导链：两个各自 99.9% 的串联组件给出 0.999 × 0.999 = 0.998001，即 99.8%，沿用 [§3.1](02-data-security-section-3-sec3.md) 的算法】。
+- **失效条件**：**当策略系统不可用时选择放行**，零信任就只在它不出问题的时候存在；症状是第一次策略服务抖动后，「降级放行」开关再也没被关掉。可自行核验的判据：在预发环境让决策服务超时，看业务请求是被拒还是被放行。
+- **档位**：NIST SP 800-207（2020）给出 PE / PA / PEP 的参考架构【公开，判定入口见 [§3.2.2](02-data-security-section-3-sec3.md)】。
+
+### 4.3 工具链与平台
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 元数据目录与分类分级 | DataHub / OpenMetadata / Collibra / Microsoft Purview（数据目录）/ 阿里云 DataWorks 数据地图 | 判据是「标签能不能被策略引擎在运行时读到」与「新增字段能否自动进入待定级队列」——只做检索与展示、运行时不读它的目录，分级就停在文档里 | 标签落在一个策略读不到的地方，策略与脱敏各自维护一份字段清单，改一处漏 N 处 |
+| 权限管理 | Apache Ranger（以 Hadoop 生态组件为主）/ Apache Sentry（CDH 专属，社区活跃度已下降）/ Open Policy Agent（OPA，通用引擎、执行点需自行接入，Rego 有学习曲线）/ Cerbos（核心开源，商业功能需付费）/ AWS Lake Formation（限 AWS）/ Databricks Unity Catalog（原生绑定 Databricks） | 判据是「执行点有没有强制能力」与「策略能否被单测」：多引擎异构选能跨引擎复用的策略引擎；单一云单一引擎可先用该云原生的权限模型 | 同一件事在 N 个引擎各写一遍，改一处漏 N 处，出现策略漂移 |
+| 脱敏与加密 | Immuta / Collibra Data Privacy / Privacera / AWS KMS / HashiCorp Vault / Azure Confidential Computing / 阿里云数据安全中心 | 判据是「密级 × 用途 → 方法」的规则表能不能落在一处；使用可逆方法时必须配一个独立隔离、全量审计的令牌库 | 各环境各写一套脱敏脚本，口径漂移且漏点持续产生 |
+| DLP / 数据安全网关 | Netskope / Microsoft Purview DLP / Symantec DLP / 阿里云数据安全网关 / 字节跳动 DataGPT 安全网关（自研示例） | 判据是「能否列出不经过它的取数路径」——列不出来说明覆盖面不取决于产品，而取决于凭据与网络 | 只覆盖了合规的那条路，数据从没有门的路走 |
+| AI 时代新工具 | Microsoft Purview + AI Hub（AI 数据治理）/ Nightfall AI（LLM 输出端 DLP）/ Harmonic Security（AI 工具数据泄露检测）/ Skyflow（AI 数据隐私保护）/ Privately.ai（差分隐私 SaaS）/ Confident Security（机密 LLM 推理） | 判据是「判定输入是内容还是对象」与「不可判定时默认拒绝还是放行」——两条都能说清才纳入试点 | 检测装了一堆，绕过路径一条没少 |
+
+这张表里最容易被误选的是 **DLP 与网关这一类**：误以为「买一个出口产品回来，出口就收口了」。误选的后果不是没拦住，而是**组织以为拦住了**——出问题时才发现检查点只覆盖了一部分路径（[§3.2.3](02-data-security-section-3-sec3.md) 的失效点）。第二处常见误选是把云厂商的数据安全中心当成策略执行点：它通常做发现与告警，能否阻断取决于你有没有把它接进请求路径；核验方法只有一句——**能不能指着一条真实被拒的请求，而不是一条告警**。上表各产品的当前能力、版本与发布状态以各家官方文档当前版本为准；「AI 时代新工具」那一栏列的是产品与公司名，其中「机密 LLM 推理」在本书别处按能力名处理（产品名与能力名的区分方法见 [§ 5](02-data-security-section-5-ai.md) §5.1）。
+
+### 4.4 存量迁移
+
+**① 先做哪一件：立刻见效、可回退。**
+
+在现有元数据目录上把 **密级**与 **Owner** 变成两个必填项，并规定登记是发布的前置条件，但**只对新增的表与字段生效**。不改数据流、不动权限、不需要停机；回退方式是关掉门禁，已经打上的标签仍然留在元数据里。见效的标志是两三个月后新字段的标签覆盖率达到高位【经验：随门禁的强制程度与新系统的建表频率变，门禁只做提醒而不阻断时会明显更慢】，而存量一枚未动。
+
+**② 历史资产怎么分类处理（三级，不要一刀切返工）。**
+
+- **逐字段返工**：只对「高敏 + 高频消费 + 已被跨域依赖」的那一小批做逐字段复核。成本随字段数线性增长【推算，推导链：复核工作量 ≈ 字段数 × 每字段复核时长；每字段以分钟量级计，一条千字段链路的复核即以人日计，因此只能对少数资产做，其余必须靠机制收敛】。
+- **只改动的部分**：存量资产在被改动的那一刻起必须补齐标签——把 DDL 变更与脱敏任务纳入同一个发布流程，让「改动」成为补账的触发源，而不是等一次全量运动。
+- **打标挂账**：其余资产打「未定级」标签，挂到表 Owner 名下，并在检索与消费入口把标签显示出来。**挂账必须带到期日**：没有到期日的挂账等于永久豁免。同时要提前说清这里的代价——未定级字段在下游按最高级处理（fail-closed）会让业务暂时用不了，于是会有人来申请开通；所以**必须同时开一条「申请定级」的正规通道**，把「开通」的诉求引到「定级」上。这三条要一起上；只上 fail-closed 而不给通道，你会在几个季度内收获一批永久最高级的字段和一批绕过【经验：随 fail-closed 的强制程度与业务申请通道的通畅度变，通道不畅、申请定级要排队时更快】。
+
+**③ 双轨怎么维持、维持多久。**
+
+存量走老链路（直连、老脱敏脚本、老报表），新增一律走网关 / 策略引擎 / 统一脱敏服务。三条要点：**第一，脱敏的账要单独出**——给老链路产出的每一份含明文的产物（测试库、备份、导出文件、BI 抽取）登记一个到期日，列进「未收口产物清单」，否则双轨期间「两份数据都叫同一个名字」会一直存在。**第二，权限回收必须自动**——入转调离事件驱动，而不是定期运动（[§3.5](02-data-security-section-3-sec3.md) 把「过度授权」与「权限永不回收」写成同一个病：授权集合单调递增）。**第三，双轨要有期限**，以季度计量【经验：授权集合只增不减，双轨通常在一年内被固化，因为两侧的使用习惯都已形成】。
+
+**④ 什么信号说明可以退出双轨。**
+
+三个可量的信号，指向同一件事——绕过检查点的路径在自然消失，而不是被强制关停：**直连凭据台账归零**（能用一个数回答「还有几个账号能绕过策略层读到原值」）；**「未定级」字段占比在降、且新增字段的定级时延在缩短**（说明补账靠机制而不是靠运动）；**审计里出现的每一次取数都能追到一条策略决策记录**（而不是只有留痕、没有决策）。三个里若只有第三个成立，说明你在靠强制收口而不是靠供给替代。
+
+### 4.5 模板 / 示例
+
+**模板 1：字段级分类分级标签**
+
+```yaml
+# 字段级标签：DataHub 一类元数据目录里的字段级属性，写入后供策略 / 脱敏 / 审计三处读取
+# 密级取 §4.1 Step 1 第 3 条的字典（L1 公开 / L2 内部 / L3 一般 / L4 重要 / L5 敏感）
+dataset: prod.orders
+fields:
+  - {name: order_id,     classification: L2, pii: false}
+  - {name: user_id,      classification: L3, pii: true}
+  - {name: user_phone,   classification: L4, pii: true,
+     pattern: "^1[3-9]\\d{9}$", owner: privacy-team@example.com}
+  - {name: user_id_card, classification: L5, pii: true,
+     encryption_required: true, access_audit: true}
+```
+
+**怎么用**：`classification` 与 `pii` 每行必填；`owner` 只在**不能继承表级 Owner** 的字段上单列（示例里只有 `user_phone` 单列，其余三行继承 `prod.orders` 的表级 Owner，继承链要在元数据里显式登记）；`pattern` 只在能写出可判定规则时填（写不出就空着，别用「看起来像」）；`encryption_required` 与 `access_audit` 是给下游策略读的开关，不是注释。密级取值要与 §4.1 Step 1 第 3 条的密级字典一致（本节全篇只用 L1–L5 这一套字符），不要在这一处另发明一套写法。
+
+**模板 2：动态脱敏（Ranger 策略结构 + REST 创建）**
 
 ```xml
-<!-- Ranger Policy: 按角色动态脱敏 -->
 <policy>
   <name>orders_dynamic_mask</name>
-  <resource>
-    <database>prod</database>
-    <table>orders</table>
-    <column>user_phone</column>
-  </resource>
+  <resource><database>prod</database><table>orders</table><column>user_phone</column></resource>
   <policyItems>
     <item>
-      <accesses>
-        <access type="select"/>
-      </accesses>
+      <accesses><access type="select"/></accesses>
       <users>[data-analyst-group]</users>
-      <rowFilterPolicies></rowFilterPolicies>
       <dataMaskPolicies>
         <dataMaskPolicy>
           <dataMaskType>CUSTOM</dataMaskType>
@@ -94,250 +190,140 @@ fields:
 </policy>
 ```
 
-**3. 加密架构**：
-
+```bash
+curl -X POST http://ranger:6080/service/public/v2/api/policy \
+  -H "Content-Type: application/json" -u admin:${RANGER_ADMIN_PASSWORD} \
+  -d '{"policyName":"orders_pii_access","serviceName":"hive_prod",
+       "resources":{"database":{"values":["prod"]},"table":{"values":["orders","users"]},
+                    "column":{"values":["user_phone","user_id_card"]}},
+       "policyItems":[{"accesses":[{"type":"select"}],"users":["data-analytics-group"],
+                       "dataMaskPolicyItems":[{"dataMaskType":"MASK_SHOW_LAST_4",
+                                               "accesses":[{"type":"select"}]}]}],
+       "auditPolicy":true}'
 ```
-应用层      → TLS 1.3 + mTLS
-数据层      → TDE（透明数据加密）
-备份层      → AES-256 + 密钥轮转
-密钥层      → KMS + HSM（BYOK）
-使用层      → TEE（同态加密可选）
-```
 
-**4. KMS 关键设计**：
+**怎么用**：XML 看策略结构（谁、对哪些列、以什么方式脱敏），REST 用来把它放进部署流水线。`dataMaskQuery` 自定义表达式与 `MASK_SHOW_LAST_4` 内置类型二者选一；**不要照抄这里的组名与库表名**。上线前必须做一次连接 / 聚合测试，确认脱敏后的结论仍然正确。策略类型的可用性与语法以 Ranger 官方文档当前版本为准。
 
-- **密钥分层**：主密钥（KEK）+ 数据密钥（DEK）。
-- **密钥轮转**：DEK 每 90 天轮转，KEK 每年轮转。
-- **审计**：所有密钥操作记录日志。
-- **备份**：密钥加密备份到异地。
-
-### 4.3 工具链与平台（含 2024-2025 新工具）
-
-**权限管理工具**：
-
-| 工具 | 定位 | 优势 | 劣势 |
-| --- | --- | --- | --- |
-| **Apache Ranger** | 大数据权限管理 | 生态丰富、与 Hive/Spark 集成 | 仅支持大数据场景 |
-| **Apache Sentry** | 大数据权限（CDH） | 简单直接 | CDH 专属，社区萎缩 |
-| **Open Policy Agent (OPA)** | 通用策略引擎 | 与 K8s/Istio 集成 | 学习曲线 |
-| **Cerbos** | 授权服务 | 易集成、支持 ABAC | 商业功能需付费 |
-| **AWS Lake Formation** | AWS 数据湖权限 | 与 AWS 深度集成 | 仅限 AWS |
-| **Databricks Unity Catalog** | Lakehouse 治理 | 与 DLT 集成 | 仅限 Databricks |
-
-**脱敏与加密工具**：
-
-| 工具 | 定位 |
-| --- | --- |
-| **Immuta** | 数据脱敏 + ABAC + 审计一体化 |
-| **Collibra Data Privacy** | 元数据 + 隐私管理 |
-| **Privacera** | 开源版 Ranger 商业增强 |
-| **AWS KMS / HSM** | 云 KMS |
-| **HashiCorp Vault** | 开源密钥管理 |
-| **Azure Confidential Computing** | TEE 云服务 |
-| **阿里云数据安全中心** | 中国本土合规优先 |
-
-**DLP / 数据安全网关**：
-
-| 工具 | 定位 |
-| --- | --- |
-| **Netskope** | 云 DLP |
-| **Microsoft Purview DLP** | 微软系 DLP |
-| **Symantec DLP** | 传统 DLP 龙头 |
-| **阿里云数据安全网关** | 中国本土 |
-| **字节跳动 DataGPT 安全网关** | 自研网关 |
-
-**AI 时代新工具（2024-2025）**：
-
-- **Microsoft Purview + AI Hub**：AI 数据治理。
-- **Nightfall AI**：LLM 输出端 DLP。
-- **Harmonic Security**：AI 工具数据泄露检测。
-- **Skyflow**：AI 数据隐私保护。
-- **Privately.ai**：差分隐私 SaaS。
-- **Confident Security**（2024 成立）：机密 LLM 推理。
-
-### 4.4 代码 / 示例
-
-**示例 1：基于 Open Policy Agent 的 ABAC**
+**模板 3：ABAC 策略与决策调用（OPA）**
 
 ```rego
-# policy/authz.rego
 package data.authz
-
 default allow = false
 
-# 用户属性
-user_attributes = {
-    "department": input.user.department,
-    "role": input.user.role,
-    "clearance": input.user.clearance,
-}
+user_attributes     = {"department": input.user.department, "role": input.user.role, "clearance": input.user.clearance}
+resource_attributes = {"classification": input.resource.classification, "owner": input.resource.owner}
 
-# 资源属性
-resource_attributes = {
-    "classification": input.resource.classification,
-    "owner": input.resource.owner,
-    "department": input.resource.department,
+allow {                                        # 同部门 + 分析师角色
+  user_attributes.department == input.resource.department
+  user_attributes.role == "data_analyst"
+  input.action == "read"
 }
-
-# 允许规则
-allow {
-    # 同部门且具备最低权限
-    user_attributes.department == resource_attributes.department
-    user_attributes.role == "data_analyst"
-    input.action == "read"
+allow {                                        # 高密级授权可跨部门，最高级除外
+  user_attributes.clearance == "L4"
+  resource_attributes.classification != "L5"
+  input.action == "read"
 }
-
-allow {
-    # 高权限用户可跨部门访问机密数据
-    user_attributes.clearance == "L4"
-    resource_attributes.classification != "TOP_SECRET"
-    input.action == "read"
-}
-
-# 数据脱敏决策
-mask_field[field] {
-    field := input.resource.fields[_]
-    field.pii == true
-    user_attributes.role != "data_scientist"
+mask_field[field] {                            # 决策的输出不只有 allow / deny，还有动作
+  field := input.resource.fields[_]
+  field.pii == true
+  user_attributes.role != "data_scientist"
 }
 ```
 
 ```python
-# Python 调用
 import requests
 
 def check_access(user_id, resource_id, action):
-    response = requests.post(
-        "http://opa:8181/v1/data/data/authz/allow",
-        json={
-            "input": {
-                "user": get_user_attributes(user_id),
-                "resource": get_resource_attributes(resource_id),
-                "action": action,
-            }
-        }
-    )
-    return response.json().get("result", False)
+    r = requests.post("http://opa:8181/v1/data/data/authz/allow", json={"input": {
+        "user": get_user_attributes(user_id),
+        "resource": get_resource_attributes(resource_id),
+        "action": action}})
+    return r.json().get("result", False)
 ```
 
-**示例 2：Apache Ranger 策略 REST API**
+**怎么用**：三点不能改——`default allow = false`、决策输出里带 `mask_field` 这类**动作**、每条规则都能写成一条测试用例（「风险部的分析师读个人敏感信息字段应被脱敏」）。`L4` / `L5` 取 §4.1 Step 1 第 3 条的密级字典，换成你家实际的字符，别照抄。OPA 与 Rego 的当前语法以官方文档为准。
 
-```bash
-# 创建 Ranger Policy
-curl -X POST http://ranger:6080/service/public/v2/api/policy \
-  -H "Content-Type: application/json" \
-  -u admin:${RANGER_ADMIN_PASSWORD} \
-  -d '{
-    "policyName": "orders_pii_access",
-    "serviceName": "hive_prod",
-    "resources": {
-      "database": {"values": ["prod"]},
-      "table": {"values": ["orders", "users"]},
-      "column": {"values": ["user_phone", "user_id_card"]}
-    },
-    "policyItems": [
-      {
-        "accesses": [{"type": "select"}],
-        "users": ["data-analytics-group"],
-        "dataMaskPolicyItems": [{
-          "dataMaskType": "MASK_SHOW_LAST_4",
-          "accesses": [{"type": "select"}]
-        }]
-      }
-    ],
-    "auditPolicy": true
-  }'
-```
-
-**示例 3：基于 SPIFFE/SPIRE 的零信任身份**
-
-```yaml
-# spire-agent.conf
-agent {
-  data_dir = "/var/lib/spire"
-  server_address = "spire-server.example.com"
-  trust_domain = "example.com"
-  insecure_bootstrap = true
-}
-
-plugins {
-  NodeAttestor "join_token" {
-    plugin_data {}
-  }
-}
-```
+**模板 4：AI 输入侧 DLP（拦截敏感数据喂给外部模型）**
 
 ```python
-# Python 应用获取身份证书
-from pyspiffe.workloadapi import X509Source
-
-# 从 SPIRE Workload API 获取 SVID
-x509_source = X509Source()
-svid = x509_source.fetch_x509_svid()
-
-# 调用下游服务时携带 SVID
-response = requests.get(
-    "http://internal-api/orders",
-    headers={"Authorization": f"Bearer {svid.token()}"}
-)
-```
-
-**示例 4：AI 数据安全网关（输入端）**
-
-```python
-# ai_dlp.py
-from typing import Optional
 import re
 
 class AIDataLossPrevention:
-    """拦截敏感数据喂给外部 LLM"""
-    
+    """拦截敏感数据喂给外部 LLM。默认行为由安全侧签署，不由本类决定。"""
     SENSITIVE_PATTERNS = {
-        "ID_CARD": r"\d{17}[\dXx]",
-        "PHONE": r"1[3-9]\d{9}",
-        "EMAIL": r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
+        "ID_CARD":   r"\d{17}[\dXx]",
+        "PHONE":     r"1[3-9]\d{9}",
+        "EMAIL":     r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
         "BANK_CARD": r"\d{16,19}",
-        "API_KEY": r"(sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36,})",
+        "API_KEY":   r"(sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36,})",
     }
-    
+
     def scan(self, text: str) -> dict:
         findings = []
         for pii_type, pattern in self.SENSITIVE_PATTERNS.items():
-            matches = re.findall(pattern, text)
-            if matches:
-                findings.append({
-                    "type": pii_type,
-                    "count": len(matches),
-                    "sample": matches[0][:3] + "***"  # 脱敏展示
-                })
-        
-        return {
-            "has_sensitive": len(findings) > 0,
-            "findings": findings,
-            "recommendation": "BLOCK" if findings else "ALLOW"
-        }
-    
+            hits = re.findall(pattern, text)
+            if hits:
+                findings.append({"type": pii_type, "count": len(hits)})
+        return {"has_sensitive": bool(findings), "findings": findings,
+                "recommendation": "BLOCK" if findings else "ALLOW"}
+
     def sanitize(self, text: str) -> str:
-        """脱敏处理"""
         for pii_type, pattern in self.SENSITIVE_PATTERNS.items():
             text = re.sub(pattern, f"[{pii_type}_REDACTED]", text)
         return text
 
-
-# Agent 调用前拦截
-dlp = AIDataLossPrevention()
-user_input = "我的身份证是 110101199001011234，手机是 13800001234"
-
-scan_result = dlp.scan(user_input)
-if scan_result["has_sensitive"]:
-    user_input = dlp.sanitize(user_input)
-    # 或者直接 BLOCK，提示用户手动脱敏
-    
-# 调用 LLM
-response = openai_client.chat.completions.create(
-    model="gpt-4o",
-    messages=[{"role": "user", "content": user_input}],
-)
+# 调用外部模型前：BLOCK 或 sanitize 后再发；出口还要留痕
+# （谁 / 何时 / 哪个模型 / 带了哪些数据 / 用途是什么）
 ```
 
----
+**怎么用**：`SENSITIVE_PATTERNS` 换成你家的识别规则——正则只适合有固定格式的字段，姓名、地址一类要靠模型或字典；`recommendation` 的两条分支必须与「不可判定时默认拒绝还是放行」这条**已签署**的约定一致。正则检测天生有漏检与误报，把这两个数当验收指标，并且**不要用它替代出口路径收口**。
+
+**模板 5：零信任工作负载身份（SPIRE）**
+
+```hcl
+# spire-agent.conf
+agent {
+  data_dir           = "/var/lib/spire"
+  server_address     = "spire-server.example.com"
+  trust_domain       = "example.com"
+  insecure_bootstrap = true
+}
+plugins {
+  NodeAttestor "join_token" { plugin_data {} }
+}
+```
+
+```python
+from pyspiffe.workloadapi import X509Source
+
+x509_source = X509Source()
+svid = x509_source.fetch_x509_svid()   # 短生命周期的可验证工作负载身份
+
+response = requests.get("http://internal-api/orders",
+                        headers={"Authorization": f"Bearer {svid.token()}"})
+```
+
+**怎么用**：`insecure_bootstrap = true` 只能用于首次引导，生产要走正式的节点认证方式；`svid` 是短生命周期凭据，**撤销的生效时延等于它的有效期**——这正是零信任「撤销按单次请求计」的落地方式。`trust_domain` 换成你家的域，SPIFFE / SPIRE 的配置项以官方文档当前版本为准。
+
+### 4.6 自检清单
+
+- [ ] 抽 50 个字段，有密级标签的比例是多少？「无标签」在下游策略里的默认行为，写下来并由谁签署了吗？
+- [ ] 密级字典（分类表 + 分级表 + 个人信息子类）有没有业务与法务签署的版本？最近一次修订是什么时候？
+- [ ] 能不能只用一个系统回答「现在有多少账号能读这张高敏表、其中多少个已离职或项目已下线」？
+- [ ] 入转调离是否自动触发权限回收？抽一个上月离职账号，看它的权限现在还在不在。
+- [ ] 备份、日志、测试库里扫过一遍原值吗？还是只是假设没有？
+- [ ] 脱敏规则是「密级 × 用途 → 方法」的一张表，还是每个环境一套脚本？抽 3 个数据集核对。
+- [ ] 抽一个脱敏字段，问它有没有被用作连接键或聚合维度；用过的话，脱敏后的结论验证过吗？
+- [ ] 令牌库（若存在）的读取权限与生产查询权限是否分离，访问是否全量审计？
+- [ ] 主密钥与数据密钥分别由谁掌管？最近一次轮转的记录调得出来吗？历史数据重加密了吗？
+- [ ] 「还有几个账号能绕过策略层直接读到原值」——这个数给得出来吗？给出的是几个？
+- [ ] 从审计留痕里回答一次「上周谁导出了含个人信息的表」，花了多久答出来？
+- [ ] 全部取数路径（含 AI 取数接口与员工自接的外部模型）列全了吗？逐条标注经过哪个检查点后，标不出来的有几条？
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一那个决定成败的环节，是 **Step 2 的最后一条——把直连凭据收掉，让所有取数路径都必须穿过同一个检查点**。前四步的产物（标签、策略、脱敏规则、审计留痕）都只在「路径唯一」时才构成管控；路径不唯一时，它们提供的是一份合规错觉。它比其余环节更值得投入，因为它是唯一一件**没有产品能替你做完、且做完之后其余各步的收益立刻成立**的事：收了凭据，网关、策略引擎与脱敏服务的覆盖面才从「产品能力」变成「事实」。
+>
+> 存量改造者加读一条：§4.4 里「未定级按最高级处理 + 挂账带到期日 + 定级正规通道」三件事要一起上，缺一条就会得到一批永久最高级的字段和一批绕过。
+>
+> 配合 [§ 2 核心原理](02-data-security.md)、[§ 3 设计模式与范式](02-data-security-section-3-sec3.md) 与 [§ 6 落地实践](02-data-security-section-6-sec6.md) 阅读。

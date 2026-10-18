@@ -1,120 +1,206 @@
-> 本文件是 **01-data-quality.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](01-data-quality.md)。
+> 本文件是 **01-data-quality.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](01-data-quality-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](01-data-quality.md)。
 
 ## 4. 工程实现
 
+§3 回答的是「断言放在哪一侧、由谁来写、什么时候会失效」；本节回答的是**按什么顺序把它建起来、每一步做完手上多出什么、怎么在做的过程中就知道自己偏了**。两件事的失败代价不对称：模式选错通常还能改（改的是规则与位置），顺序错了会产生大量返工，而返工的对象恰恰是模式本身——先选引擎再定断言、先买平台再找规则，都属于这一类。
+
+本节面向的读者以**存量改造**为主：多数组织不是从零开始，而是已经有跑了几年的数仓、几百条上线后没人复核的规则、几条从不清理的告警通道，以及一批无主的历史表。4.1 的六步对两类读者都成立（从零搭建者按序执行即可）；4.4 只对存量改造者有意义，从零搭建的读者只需读它的前两段，那里讲的是「哪一部分不要一开始就做」。
+
 ### 4.1 落地步骤
 
-**Step 1：盘点与分级（2-4 周）**
+**Step 1：盘点与分级（2–4 周【经验】，随表数量与跨团队协调成本变化）**
 
-1. 列出所有关键表（按业务重要性 × 数据量 × 下游依赖排序）。
-2. 对每张表分配 Owner（业务方 + 数据团队）。
-3. 用 4 级分级：
-   - **P0 核心**：交易、账户、风控（任何异常直接影响业务）。
-   - **P1 重要**：用户画像、订单、营销。
-   - **P2 一般**：日志、监控、临时表。
-   - **P3 备份 / 测试**。
+1. 列出候选表，按「业务重要性 × 数据量 × 下游依赖数」排序；下游依赖数从调度系统直接取，不靠人回忆。
+2. 分四档：**P0 核心**（交易、账户、风控——任何异常直接影响业务）、**P1 重要**（用户画像、订单、营销）、**P2 一般**（日志、监控、临时表）、**P3 备份 / 测试**。
+3. 每张 P0 / P1 表指定 Owner，**具体到人**，不写团队名；一个人可以带多张表，一张表不留两个名义负责人。
 
-**Step 2：维度与指标（2-4 周）**
+- **产物**：一张资产分级清单（表 → 档位 → Owner → 下游依赖数 → 是否已有规则），以及 P0 / P1 的 Owner 名单。
+- **判据**：抽 3 张 P0 表，分别问值班人「这张表挂了先找谁」——答不出具体人名即未落地；再看 P0 表数占全部表的比例，若超过两成（【经验】，随业务形态变化），说明分级没起到区分作用，等于没有分级。
+- **为什么必须这一步**：后续每一步的资源都按档位分配——规则密度、告警通道、检查频率、迁移优先级。跳过它直接写规则，规则会平铺在所有表上，P0 与 P2 共用一套阈值，这正是 §3.5「用同一套规则套所有数据」的成因。另一个理由：它是唯一不依赖任何平台的步骤，只要调度元数据和一张共享表格就能做完。
 
-对每个 P0 / P1 表：
-- 6 维度 × 每字段：明确每个字段该跑什么规则。
-- 输出《数据质量规则清单》YAML 文件。
-- 与业务方对齐（数据契约）。
+**Step 2：维度与指标（2–4 周【经验】，随纳入的表数与字段数、以及业务方对齐要走几轮变化）**
 
-**Step 3：规则引擎落地（4-8 周）**
+1. 对每张 P0 / P1 表，按六维度（准确性 / 完整性 / 一致性 / 时效性 / 唯一性 / 有效性，主文件 §1.1）逐字段确定要跑什么规则。
+2. 输出《数据质量规则清单》YAML（模板见 4.5 模板一），字段包含表、字段、维度、断言、阈值、阈值依据、严重级别与 Owner。
+3. 与业务方逐条对齐——这一步的产物是数据契约的前身（§3.2.4），只是此时还是单方写的。
 
-- 选型：开源（Deequ / Great Expectations / Soda）/ 自研 / 商业。
-- 集成：调度系统（DAG 节点 / Airflow / DolphinScheduler）。
-- 告警：钉钉 / 飞书 / Slack / 企业微信 / PagerDuty。
+- **产物**：进代码库的规则清单（不是 Excel），以及一份「哪些字段本次不写规则」的显式记录。
+- **判据**：抽 3 条 P0 规则问「这个阈值从哪来」——答不出「业务约束 / 契约 / 历史分布」三者之一的，就是硬编码阈值（§3.5）。再抽 3 个 P0 字段，逐个看六维度里哪几维有断言、哪几维是空的；空的那几维必须写明是「本次不做」还是「漏了」，不允许「没想过」。
+- **为什么必须在这一步**：断言必须在选引擎之前定完，因为引擎选型要服从断言的形态（能不能表达跨表对账、能不能写窗口条件、能不能在作业内中断）。反过来先选引擎，会有一批断言表达不出来，于是被改写成引擎能表达的样子——那是被工具裁剪过的质量标准，而且没人会记得裁剪发生过。
 
-**Step 4：可观测性升级（4-8 周）**
+**Step 3：规则引擎落地（4–8 周【经验】，随选型（开源 / 自研 / 商业）与既有调度要改造的量变化）**
 
-- 接入 OpenLineage / DataHub。
-- 接入 Monte Carlo / Bigeye（可选，预算允许时）。
-- 配置告警分级（P0 → 短信；P1 → 钉钉；P2 → 邮件）。
+1. 选型（判据见 4.3）：开源（Deequ / Great Expectations / Soda）/ 自研 / 商业平台。
+2. 集成调度：把规则挂成 DAG 节点，或用 Airflow / DolphinScheduler 独立调度。
+3. 接通告警通道：钉钉 / 飞书 / Slack / 企业微信 / PagerDuty，按档位分配。
+4. 建检查结果表：每次检查写一行（规则、时间、通过与否、观测值）；它是后续所有趋势与阈值调整的唯一数据源。
+
+- **产物**：在调度上稳定运行的规则集合 + 可查的检查结果时序表 + 已连通的告警通道。
+- **判据**：取最近 7 天的检查结果，看每条规则是否每天都有记录，有缺口说明调度没接稳；再手动造一条必失败的规则，从执行到值班人收到通知实测一次端到端时长——这个数就是告警响应时长的下界。
+- **为什么必须在这一步**：它把规则从文档变成每天在跑的对象；没有这一步，Step 2 的清单三个月后必然过期——规则是活的，上游改一次字段就会有一批静默失效，而静默失效只有在规则每天被执行时才会暴露（§3.1 表第五行「规则定一次管很久」讲的就是这件事）。位置必须在 Step 2 之后（断言形态决定选型），也必须在 Step 4 之前（可观测性与基线都需要稳定的指标时序作输入）。
+
+**Step 4：可观测性升级（4–8 周【经验】，随要接血缘的表数量、要分级的告警通道数变化）**
+
+1. 接血缘与元数据：OpenLineage / DataHub，让一条失败的检查结果能指回上游哪次写入、下游哪些表受影响。
+2. 配告警分级与响应 SLA：P0 → 短信 + 电话；P1 → 钉钉群 + oncall；P2 → 邮件 / 群消息；P3 → 周报 / 看板（完整分级见 4.2 第 3 条）。
+3. 预算允许时接基线式平台：Monte Carlo / Bigeye，用于覆盖写不出规则的长尾表。
+
+- **产物**：质量事件的血缘视图；告警分级配置与每档响应 SLA；长尾表的基线覆盖（若上了平台）。
+- **判据**：挑一次真实故障，在不问人的前提下沿血缘说出「哪个上游的哪次写入导致的」；再把最近一个月 P0 告警的中位响应时长拉出来与配置的 SLA 对照——对不上说明分级只是配置，不是流程。
+- **为什么必须在 Step 3 之后**：血缘的作用是「把已经存在的告警变准」，没有告警时接血缘只会得到一张没人看的图；基线式平台同理，它的输入是稳定的指标时序。
 
 **Step 5：契约与流程（持续）**
 
-- 上游接入必须签 Data Contract。
-- 关键表每次 Schema 变更必须走变更评审。
-- 故障后写 Postmortem，更新规则库。
+1. 上游接入必须签数据契约（写法与判定方法见 §3.2.4）：schema、SLA、语义与 owner 写在同一份可版本化的文件里。
+2. 关键表的 Schema 变更走变更评审——这是 §3.5「忽视 Schema 漂移」唯一可靠的对策。
+3. 故障后写 Postmortem，并把结论回写成规则或契约条款。
+
+- **产物**：版本化的契约文件；变更评审记录；由 Postmortem 产生的新增 / 修改规则。
+- **判据**：随机抽三份契约，问「上一次因为契约被拒的发布是哪一次」；再看最近三次 Postmortem，有多少条结论真的落回了规则库或契约。
+- **为什么排在 Step 4 之后**：契约的可执行性依赖自动校验能力——阈值要被下游独立验算，就得有 Step 3 的引擎与 Step 4 的时序；契约先于引擎签，得到的是一份没人执行的文件（§3.2.4 的「契约僵尸」）。这一步也是唯一能把质量责任从平台团队移交到生产方的步骤。
 
 **Step 6：度量与闭环（持续）**
 
-- 度量指标：DQC 覆盖率、规则执行成功率、告警响应时长、MTTR。
-- 月度评审：业务方 + 数据团队共同 review。
+1. 度量四个过程指标：DQC 覆盖率、规则执行成功率、告警响应时长、MTTR（定义见 4.2 第 4 条）。
+2. 月度评审：业务方 + 数据团队逐条决定规则的增删与阈值调整。
+3. 补一个结果指标：**被拦在发布之前的比例**——过程指标好看而事故不减少，问题通常在这里。
+
+- **产物**：四个过程指标的趋势图 + 月度评审记录 + 每次评审产生的规则变更。
+- **判据**：这四个数能否直接从系统里取（取不到，说明缺的不是指标而是埋点）；再把每条 P0 规则最近三个月的触发次数与修复次数列成对照表，重复触发又没有修复记录的那几条，就是「只监控不修复」的样本。
+- **为什么必须最后**：它是唯一的反馈入口；没有它，前面五步的产物会随业务变化整体失效而无人察觉。
+
+**最常被跳过的是 Step 1**：它不产出可展示的系统、没有技术含量，还要推动业务方给每张表认人，因此最容易被「先上工具、分级以后再补」推迟。推迟的症状不会立刻出现，第一个可观测时点是 Step 3 上线后的第一个月：告警量随纳入的表数一起增长，P0 与 P2 共用一条通道，值班人开始批量屏蔽（§3.5「规则过多导致告警风暴」）。此时再补分级，要同时清理已积压的告警和已养成的屏蔽习惯，成本远高于一开始花两周做清单。
 
 ### 4.2 关键技术点
 
-**1. 规则执行方式**：
+**1. 规则执行方式（四类）**
 
-| 方式 | 描述 | 适用场景 |
-| --- | --- | --- |
-| **批处理** | Spark / SQL 定期执行 | T+1 表、离线表 |
-| **流式** | Flink SQL / Kafka Streams 实时规则 | 实时表、流处理 |
-| **嵌入式** | 业务代码内联 | 强一致场景 |
-| **按需** | Ad-hoc 触发 | 数据修复、回刷验证 |
+- **做法**：按断言的落点选执行方式。
 
-**2. 阈值设定方法**：
+| 方式 | 怎么跑 | 适用 | 语义边界 |
+| --- | --- | --- | --- |
+| 批处理 | Spark / SQL 定期扫描已落地的分区 | T+1 表、离线表 | 只能判定，判定的是已经写出的数据 |
+| 流式 | Flink SQL / Kafka Streams 在滚动窗口上求值 | 实时表、流处理 | 只有窗口边界，没有「这一批结束了」这个时刻 |
+| 嵌入式 | 作为作业里的一个算子，失败即中断或改道隔离区 | 强一致场景（坏数据不得进入下游） | 能拦截，但检查耗时进关键路径 |
+| 按需 | Ad-hoc 触发 | 数据修复、回刷验证、迁移期比对 | 不是常规防线，是验证手段 |
 
-- **静态阈值**：经验值（如"非空率 ≥ 99%"）。
-- **3-sigma**：基于历史窗口自动计算。
-- **机器学习**：孤立森林、LSTM-AE、Prophet 残差。
-- **业务约束**：业务方明确要求（如"金额必须 ≥ 0"）。
+- **机制**：四类的差别不是性能差别，而是「断言在什么时刻看到了哪一部分数据」。批处理看到的是一个确定的批次边界，流式只看到窗口边界，嵌入式看到的是本批且拦得住。因为执行位置决定断言能做什么（§3.1），所以选执行方式等价于先回答「这一侧要能判定还是要能拦截」。
+- **失效条件**：技术侧的临界点（检查耗时在端到端时延预算里的占比越过约定上限）与拆分动作见 §3.2.3；本节补的是它坏掉时**谁先发现**——下游消费方按约定的消费时刻投诉产出晚点，值班人被迫把产出时刻逐月往后挪一步。危险之处在于这一步通常由生产方单方面「顺手」批准，直到某天下游把它写进了自己的调度依赖，它才作为一次生产事故被翻出来；那时要拆的已经是所有在跑的作业，而不是改一个配置。
+- **档位**：【经验】（比例上限随链路形态变化）。
 
-**3. 告警分级**：
+**2. 阈值设定方法（四类）**
+
+- **做法**：静态阈值（经验值，如「非空率 ≥ 99%」）；业务约束（业务方给的硬边界，如「金额必须 ≥ 0」，不随分布变）；3-sigma（历史窗口上 μ ± 3σ）；机器学习（孤立森林、LSTM-AE、Prophet 残差等，从历史学基线，主文件 §2.3）。
+- **机制**：阈值是把一个分布压缩成一条判定边界的动作，四类的差别全在隐含假设上——静态阈值假定分布稳定，业务约束假定边界来自外部规则而不来自数据，统计类阈值假定异常在历史里稀有且可分辨。因为假设不同，它们在同一张表上并不互斥：业务约束永远是第一层（它不会因为业务增长而失效），统计类阈值是第二层（负责发现没人预先想到的偏离）。
+- **失效条件**：阈值失灵的技术条件（业务在窗口内发生量级变化，静态与 3-sigma 同时失准）与修法见 §3.5「硬编码阈值」；本节补的是**它在组织里怎么败露**：大促或新渠道接入之后，值班人开始成批收到阈值告警、逐条人工判断「这条是正常的」，一个人一天能判多少条，决定了这套规则还能撑多久；一旦业务方学会用「大促期间先别管」解释全部告警，阈值就从防线退化成噪声源。
+- **档位**：【经验】（99% 一类数字是示例而非结论，阈值必须按业务域分别定档）。
+
+**3. 告警分级与响应 SLA**
+
+- **做法**：按下表分配通道与时限。
 
 | 级别 | 触发条件 | 通知渠道 | 响应 SLA |
 | --- | --- | --- | --- |
-| **P0** | 核心表核心字段异常 / SLA 违约 | 短信 + 电话 | 15 min |
-| **P1** | 重要表异常 / 重要规则失败 | 钉钉群 + oncall | 1 hour |
-| **P2** | 一般表 / 一般规则 | 邮件 / 群消息 | 8 hour |
-| **P3** | 提示性 / 趋势性 | 周报 / 看板 | N/A |
+| P0 | 核心表核心字段异常 / SLA 违约 | 短信 + 电话 | 15 min |
+| P1 | 重要表异常 / 重要规则失败 | 钉钉群 + oncall | 1 hour |
+| P2 | 一般表 / 一般规则 | 邮件 / 群消息 | 8 hour |
+| P3 | 提示性 / 趋势性 | 周报 / 看板 | 不设 |
 
-**4. MTTR 度量**：
+- **机制**：分级的实质是把「通知渠道的打扰成本」与「响应时限」绑定——电话会打断一个人，所以只有极少数事件配得上它。这会强制团队在配置时回答「这条规则值多少代价」，而这个问题的答案，恰恰是规则优先级唯一诚实的定义。
+- **失效条件**：当 P0 规则数量增长到值班人无法逐条处理时，分级反转为「都是 P0」，也就是没有分级——症状是 P0 通道被设为免打扰，或值班人开始按规则名而不是按级别决定要不要看。此时的动作是把 P0 收敛到少数几条真业务约束，其余降级到 P1（§3.5）。
+- **档位**：【经验】（上表数值是常见起点，应按业务损失速度调整）。
 
-$$
-\text{MTTR} = \frac{\sum(\text{故障发现时间} - \text{故障恢复时间})}{\text{故障次数}}
-$$
+**4. MTTR / MTTD 度量**
 
-$$
-\text{MTTD} = \frac{\sum(\text{故障发生时间} - \text{故障发现时间})}{\text{故障次数}}
-$$
+- **做法**：$\text{MTTR} = \frac{\sum(\text{故障恢复时间} - \text{故障发现时间})}{\text{故障次数}}$；$\text{MTTD} = \frac{\sum(\text{故障发现时间} - \text{故障发生时间})}{\text{故障次数}}$。
+- **机制**：它把「发现」与「修复」拆成两个可分别优化的量——发现能力由覆盖广度与阈值质量决定，修复能力由处置流程与 owner 明确度决定。因为这两条线由不同的人负责，所以它们会独立演化：只监控不修复的组织，MTTD 持续下降而 MTTR 原地不动（§3.5 的判定方法就是这张对照表）。
+- **失效条件**：当统计口径只收系统自动发现的事件、把用户报障与业务方反馈排除在分母之外时，MTTD 被系统性低估——症状是 MTTR 在下降而事故总量与投诉不降。正确做法是把人工发现的事件一并计入，并单独标出「由谁发现」。
+- **档位**：【经验】。
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+**5. 规则库的版本与复核**
 
-**开源工具**：
+- **做法**：规则清单进代码库、随变更走评审、每条规则带最后复核时间；对「三个月未触发且无人复核」的规则单列待清理清单，处置为删除、降级或补上触发条件。
+- **机制**：规则是活的——上游改一次字段、业务变一次口径，一批规则会静默失效而不报错（§3.1 表第五行）。因为失效是静默的，所以唯一的发现方式是留下「复核」这个动作的痕迹：一条规则的阈值是谁在什么时候依据什么改的。
+- **失效条件**：当规则数增长到几千条、每条都进人工评审时，评审必然退化为点确认——症状是规则数翻倍而评审时长不变。此时应按档位分组：P0 逐条审、P2 批量审、P3 只做存在性检查。
+- **档位**：【经验】。
 
-| 工具 | 定位 | 优势 | 劣势 |
+**6. 质量结论的机器可读化（供 Agent 取数）**
+
+- **做法**：每条 P0 资产在元数据上挂机器可读的质量结论——最近一次检查时间、最近一次是否通过、能否被消费、以及结论对应的数据范围（哪个分区 / 哪个时间窗）。检索与取数链路在选表时读这个字段。
+- **机制**：人消费数据时会自带上下文（「这张表上周出过问题」），Agent 没有这个上下文，它只能读元数据（§3.6 的跃迁行讲的是同一件事）。因为 Agent 的判定依据只有元数据，所以质量结论不写进元数据就等于对 Agent 不存在——它会照常选表、照常生成 SQL。
+- **失效条件**：当质量结论的更新频率低于元数据的读取频率时，Agent 会拿过期结论做决定——症状是「Agent 引用了一张已经停更三天的表，而元数据上写着『上次通过』」，因为那次通过的是更早的分区。修法是让结论带上数据范围，而不只是时间戳。
+- **档位**：【经验】。
+
+### 4.3 工具链与平台
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
 | --- | --- | --- | --- |
-| **Great Expectations** | Python 声明式 DQ | 生态丰富、社区大 | 配置复杂 |
-| **Apache Griffin** | 大数据场景 DQ（Spark-based） | 支持批流一体 | 社区相对小 |
-| **Deequ** | AWS 开源，Spark 自动约束发现 | 自动发现约束 | 仅支持 Spark |
-| **Soda Core** | 配置化 YAML DSL | 易上手 | 大数据场景有限 |
-| **dbt tests** | dbt 内置测试 | 与 dbt 集成紧 | 仅支持 dbt 模型 |
-| **Apache Hivemall** | 数据质量 + ML | 支持 ML 检测 | 工程化弱 |
+| 断言引擎（开源工具） | Great Expectations（Python 声明式 DQ）/ Soda Core（配置化 YAML DSL）/ Deequ（Spark 自动约束发现，仅支持 Spark）/ Apache Griffin（Spark-based，批流一体 + 独立服务）/ dbt tests（仅支持 dbt 模型） | 计算引擎是 Spark 且要作业内中断 → Deequ；模型集中定义且已走代码评审 → dbt tests；跨引擎、Python 生态 → Great Expectations 或 Soda Core；要独立于作业的批流一体校验服务 → Griffin | 引擎与断言形态错配时，一批断言表达不出来，只能改写或放弃 |
+| 基线式可观测（商业 / SaaS，以及更早的 ML 检测形态） | Monte Carlo Data（自动字段级血缘 + ML 异常检测）/ Bigeye（深度集成 Snowflake / Databricks）/ Mona（AI-first，自动异常归因）/ Anomalo（无需配置规则，纯 ML 检测）/ Apache Hivemall（ML 检测，工程化程度更低） | 长尾表多、写不出规则、且有人能长期调误报 → 这一类；Hivemall 适合已有 Hive 生态且只做探索性检测的场景；关键业务约束仍须由断言引擎覆盖；各产品的具体能力以官方文档当前版本为准 | 只买这一类会得到「分布偏离」事件，而关键业务约束无人管（§7.7） |
+| 差异回归 | Datafold（数据版本对比、回归测试） | 迁移与重构期要判定「两版数据是否等价」，求值单位是一次新旧比对 | 迁移期缺少等价性证据，只能靠抽样人工核对 |
+| SaaS 化的断言引擎 | Soda Cloud（与 Soda Core 协同）/ Univocity（商业 DQ 平台，本土化、合规优先） | 不愿自运维引擎、且需要本土合规能力 → 这一类；许可与数据出境是首要判据 | 自建引擎的运维面（调度、存储、告警、权限、升级）被长期低估 |
+| 血缘与元数据（定位用） | OpenLineage / DataHub | 需要「这条失败往上追到哪次写入」→ 必须接；只做展示不进门禁则收益有限 | 告警只能告诉你坏了，说不出是谁改坏的 |
+| 调度 | Airflow / DolphinScheduler | 已有调度 → 挂 DAG 节点；没有 → 先建最小调度，不要让质量检查自成一套 | 质量检查独立调度，会与生产作业的产出时刻错开 |
+| 告警通道 | 钉钉 / 飞书 / Slack / 企业微信 / PagerDuty | 按 4.2 第 3 条的分级分配；只有 P0 值得用「能打断人」的通道 | 全量走同一条通道，等于把信噪比交给规则数量决定 |
+| AI 辅助能力（非独立品类） | Mona AI Quality Copilot / Anomalo Autonomous / Monte Carlo + LLM / Datafold + dbt 集成 / Great Expectations + AI Assistant | 用于生成规则草稿与异常归因；生成的规则必须经复核才能进 P0 | 未复核的自动生成规则进 P0，会一次性消耗掉告警通道的可信度 |
 
-**商业 / SaaS（2024-2025）**：
+**这一类里最容易被误选的是「基线式可观测平台」**：它演示起来最漂亮（接一张表，第二天就出异常），也最容易立项，于是常被当成「把质量这件事外包出去」的方案。但它的判定依据是资产自身的历史分布，结构上不知道「什么是正确」（§3.2.5）——金额单位从元改成角、状态枚举换了一套，这两种错误在分布上都可能毫无异常。误选的实际后果是：平台持续产出偏离事件，而「金额必须 ≥ 0」「手机号必须匹配格式」这类关键业务约束始终没人管；等到某次事故被追责时才发现，被监控的和被承诺的不是同一批东西（§7.7 的「先买平台、后补断言」）。正确顺序是先按 4.1 的 Step 1–5 把关键链路的断言与 SLA 立起来，再用平台补长尾。
 
-| 工具 | 定位 | 关键能力 |
-| --- | --- | --- |
-| **Monte Carlo Data** | Data Observability 龙头 | 自动字段级血缘 + ML 异常检测 + RAG 集成 |
-| **Bigeye** | Data Observability | 深度集成 Snowflake / Databricks |
-| **Mona** | AI-first DQ | 自动异常归因、AI Quality Copilot |
-| **Anomalo** | 自动异常检测 | 无需配置规则，纯 ML 检测 |
-| **Datafold** | Diff + Quality | 数据版本对比、回归测试 |
-| **Soda Cloud** | SaaS DQ | 与 Soda Core 协同 |
-| **Univocity** | 商业 DQ 平台 | 中国本土化、合规优先 |
+### 4.4 存量迁移
 
-**AI 时代新工具（2024-2025）**：
+存量改造与从零搭建的差别不在工具，在**第一批动作选什么**。从零搭建可以按 4.1 的六步顺序走；存量改造必须先把手上的东西分成「能立刻见效」「值得返工」「只配打标」三类，否则预算会在历史资产上耗尽，而各级 P0 表反而没人管。
 
-- **Mona AI Quality Copilot**：自然语言定义规则、自动归因异常。
-- **Anomalo Autonomous**：完全无配置，自动基线学习。
-- **Monte Carlo + LLM**：用 LLM 解释异常、推荐修复方案。
-- **Datafold + dbt 集成**：自动化回归测试。
-- **Great Expectations + AI Assistant（2024 GA）**：AI 辅助生成规则。
+**① 先做什么：只用现有能力、可随时回退**
 
-### 4.4 代码 / 示例
+给已有的 P0 表挂两个不依赖业务语义的指标——**新鲜度**（最近一次数据更新距今多久）与**行数**（相对近 7 日均值的比值）。这两项可以直接从表自身算出：不需要业务方参与、不改任何作业、落点是 Step 3 的同一张结果表，删掉只是删掉一个 DAG 节点。观察期两到四周【经验：随数据产出频率与业务周期长度变化，天级表取下限、周级表取上限】，看两个信号：哪些表长期不更新（无主或已废弃），哪些表行数出现量级跳变（上游或口径已经变了）。这两个信号会直接改写 Step 1 的分级清单——先做这段时间，往往能省掉一次全员盘点。
+
+**② 历史资产分三类处理**
+
+- **全部返工（重算历史）**：只对 P0 且断言可从数据自身推导的部分（非空、唯一、枚举、格式）做。它们可以一次扫描全量历史，把「从哪一天开始坏的」一次算清；这类断言的重算不需要业务语义，因此也不需要跨团队协调。
+- **只改动的部分（增量接管）**：P1 / P2 的默认做法——不做历史回补，规则在下次变更时随变更一起加，约定是「改到哪补到哪」。代价是覆盖率提升速度等于这些表的变更频率，因此覆盖率在迁移期不能用来考核。
+- **打标挂账（不处理但可检索）**：长尾表与僵尸表登记所在路径、最后访问时间、有无 Owner 三个字段，并在检索结果里显式标出「无质量结论」。**判据**：这张表在下一次被访问时被认领，或连续一段时间无访问后进入清理名单；两种结局都比「没人知道它是什么」好。
+- 另单列一类：**不可回补的链路**（原始数据已丢弃、外部源不可重放）。对这类资产的正确动作不是补规则，而是降低承诺——不写 SLA，只写「可消费 / 不可消费」，并把这个结论标进元数据，否则下游会按有 SLA 的表来用它。
+
+**③ 迁移期的双轨怎么维持**
+
+- **读双轨、写单路径**：同一个问题用新旧两套读法各算一遍并比对；写入只走一条路径。这是工程上唯一安全的形式——双写一旦不一致，既无法判断哪一份是对的，也无法回退。
+- **旧阈值与新阈值只告警不阻断**：新规则先跑影子模式（只记录、不拦截），直到它稳定捕捉到与旧机制相同的问题，再决定哪一侧升级为门禁。切换执行位置是一次独立决策，不要与阈值调整同时做（§3.2.3 的拦截能力来自位置，不来自规则写得更好）。
+- **旧的人工对账不停**：存量改造里最容易被忽略的一条。人工对账成本高，但它是迁移期唯一能给出「绝对正确」参照的机制；在新规则连续若干个周期捕捉到同一批问题之前不要撤。
+- **维持多久**【经验】：覆盖一个完整业务周期（含月末 / 季末结算）再加一次量级波动（大促 / 节假日）——阈值类与基线类规则都只有在波动里才暴露问题。
+
+**④ 什么信号说明可以退出双轨**
+
+三条同时成立才退出：**a)** 连续多个周期双读结果一致，且不一致的差异都能被解释（不是「没查出来」）；**b)** 最近几次质量问题由新规则先发现、旧机制后确认——顺序反转即说明新机制已接管；**c)** 双轨造成的重复告警占比降到可忽略。第三条要特别看：如果双轨只带来翻倍噪声而没有新增发现能力，那就不是「还不能退」，而是这套规则本身没起作用，应当回到 4.2 第 1、2 条检查执行方式与阈值假设。
+
+**⑤ 一条硬约束**：迁移期不要同时改业务口径。把「规则上线」与「口径变更」放进同一次发布，会让任何一次数据异常都无法归因——分不清是新规则误报还是口径真的变了。代价是迁移被拉长，但这是让迁移过程可解释的唯一做法。
+
+### 4.5 模板 / 示例
+
+**模板一：规则清单（Step 2 的产物）**
+
+```yaml
+# rules/dwd_trade_order.yml —— 规则清单进代码库，随模型变更一起评审
+dataset: dwd_trade_order
+owner: <具体到人>            # 写团队名即视为无人负责
+schedule: "30 7 * * *"       # 必须早于下游消费时刻，否则检查结果永远迟到
+dimensions:
+  completeness:
+    - column: order_id
+      assertion: not_null
+      threshold_basis: business     # 业务约束 / 契约 / 历史分布
+      value: 0
+  validity:
+    - column: order_status
+      assertion: in_set
+      values: [CREATED, PAID, SHIPPED, CLOSED]
+  freshness:
+    - assertion: max_event_time_within
+      value: 1d
+severity: P0                 # 决定走哪条告警通道（4.2 第 3 条）
+not_covered: [accuracy, uniqueness]   # 本次不做的维度必须显式写下来
+```
+
+**怎么用**：填 `dataset` / `owner` / `threshold_basis` / `value` 四格；`not_covered` 是这张模板的重点，它把「没想过」与「想过但不做」区分开。`schedule` 与 `value` 不要照抄示例值——前者必须早于该表下游的消费时刻（§3.2.1 失效点），后者必须能回答「依据是什么」。
 
 **示例 1：Great Expectations 配置**
 
@@ -122,49 +208,29 @@ $$
 import great_expectations as gx
 
 context = gx.get_context()
+asset = context.data_sources.add_pandas(name="orders").add_dataframe_asset(name="orders_df")
 
-# 1. 定义数据源
-datasource = context.data_sources.add_pandas(name="orders")
-asset = datasource.add_dataframe_asset(name="orders_df")
-
-# 2. 定义期望（Expectation Suite）
 suite = context.suites.add(gx.ExpectationSuite(name="orders_suite"))
 suite.add_expectation(gx.expectations.ExpectColumnValuesToNotBeNull(column="order_id"))
 suite.add_expectation(gx.expectations.ExpectColumnValuesToBeUnique(column="order_id"))
 suite.add_expectation(gx.expectations.ExpectColumnValuesToMatchRegex(
-    column="user_phone",
-    regex=r"^1[3-9]\d{9}$"
-))
+    column="user_phone", regex=r"^1[3-9]\d{9}$"))
 suite.add_expectation(gx.expectations.ExpectColumnValueLengthsToBeBetween(
-    column="user_name",
-    min_value=1,
-    max_value=64
+    column="user_name", min_value=1, max_value=64))
+
+checkpoint = context.checkpoints.add(gx.Checkpoint(
+    name="orders_checkpoint",
+    validation_definitions=[gx.ValidationDefinition(
+        data=asset.batch_definitions.add(name="orders_batch"), suite=suite)],
+    actions=[gx.checkpoint.UpdateDataDocsAction(name="update_docs"),
+             gx.checkpoint.EmailAction(name="send_email",
+                                       receiver_emails=["data-quality@example.com"])],
 ))
-
-# 3. 定义检查点（Checkpoint）
-checkpoint = context.checkpoints.add(
-    gx.Checkpoint(
-        name="orders_checkpoint",
-        validation_definitions=[
-            gx.ValidationDefinition(
-                data=asset.batch_definitions.add(name="orders_batch"),
-                suite=suite,
-            )
-        ],
-        actions=[
-            gx.checkpoint.UpdateDataDocsAction(name="update_docs"),
-            gx.checkpoint.EmailAction(
-                name="send_email",
-                receiver_emails=["data-quality@example.com"],
-            ),
-        ],
-    )
-)
-
-# 4. 执行
 result = checkpoint.run(batch_parameters={"dataframe": orders_df})
 assert result["success"], "Data quality check failed!"
 ```
+
+**怎么用**：最后一行决定这件事是「记一条失败」还是「让作业失败」——放进 CI 或作业内即门禁，只写进 Data Docs 即报表（§3.2.3 的差别只在 CheckLevel 一类开关上）。类名与方法名以 Great Expectations 官方文档当前版本为准。
 
 **示例 2：Soda Checks YAML**
 
@@ -174,106 +240,103 @@ data_source: warehouse
 dataset: orders
 checks:
   - row_count:
-      name: "Orders row count anomaly"
-      samples_limit: 50
-      fail: when > 10 or < 1
+      name: "行数异常"
+      samples_limit: 50               # 失败样本回取条数，用于定位是哪几行
+      fail: when > 10 or < 1          # 阈值相对近 7 日均值，不写绝对值
   - missing_count(order_id):
-      name: "order_id should never be null"
-      fail: when > 0
+      name: "order_id 不允许为空"
+      fail: when > 0                  # 业务约束：主键不允许为空
   - duplicate_count(order_id):
-      name: "order_id should be unique"
+      name: "order_id 必须唯一"
       fail: when > 0
   - invalid_count(user_phone):
-      name: "user_phone should match CN mobile pattern"
+      name: "user_phone 必须匹配手机号格式"
       valid_format: "^1[3-9]\\d{9}$"
       fail: when > 10
   - freshness(order_time):
-      name: "Order data should be fresh within 1 hour"
+      name: "order_time 新鲜度"
       expression: "MAX(order_time) > NOW() - INTERVAL '1 hour'"
       fail: when < 0
   - anomaly_detection(amount):
-      name: "Order amount anomaly"
+      name: "金额分布偏离基线"
       sensitivity: 3
 ```
 
-**示例 3：Flink 实时质量监控**
+**怎么用**：`fail: when` 的阈值改成你自己算过的数，不要照抄；`anomaly_detection` 一类需要历史基线，新表冷启动期没有基线，先关掉这一条（冷启动期基线为什么结构上无法工作，见 §7.3.3 的对照表与其后的推论）。
+
+**示例 3：Flink 实时质量监控（流式规则）**
 
 ```java
-// Flink SQL: 实时规则
 DataStream<Order> orders = ...;
 
-orders
-    .keyBy(Order::getUserId)
-    .window(TumblingEventTimeWindows.of(Time.minutes(5)))
-    .aggregate(new OrderAggregator())
-    .process(new QualityCheckFunction())
-    .addSink(new AlertSink());
+orders.keyBy(Order::getUserId)
+      .window(TumblingEventTimeWindows.of(Time.minutes(5)))
+      // 增量聚合与窗口结果加工写在同一次 aggregate 调用里：
+      // 前一个是 AggregateFunction（增量算，状态小），后一个是 ProcessWindowFunction（拿到窗口元信息）
+      .aggregate(new OrderAggregator(), new QualityCheckFunction())
+      .addSink(new AlertSink());
 
-// 规则配置
-public class QualityCheckFunction 
+public class QualityCheckFunction
     extends ProcessWindowFunction<AggregatedOrder, Alert, String, TimeWindow> {
-    
-    @Override
-    public void process(String userId, Context ctx, 
-                        Iterable<AggregatedOrder> elements, 
-                        Collector<Alert> out) {
-        AggregatedOrder agg = elements.iterator().next();
-        
-        // 规则 1：5 分钟内订单数超过 100 触发风控告警
-        if (agg.getOrderCount() > 100) {
-            out.collect(Alert.builder()
-                .level("P1")
-                .type("ORDER_FREQ_ANOMALY")
-                .userId(userId)
-                .message("5 分钟内订单数异常：" + agg.getOrderCount())
-                .build());
-        }
-        
-        // 规则 2：金额方差超过阈值
-        if (agg.getAmountStdDev() > 10000) {
-            out.collect(Alert.builder()
-                .level("P2")
-                .type("AMOUNT_ANOMALY")
-                .userId(userId)
-                .build());
-        }
+  @Override
+  public void process(String userId, Context ctx,
+                      Iterable<AggregatedOrder> elements, Collector<Alert> out) {
+    AggregatedOrder agg = elements.iterator().next();
+    // 规则 1：窗口内订单数越界
+    if (agg.getOrderCount() > 100) {          // 阈值按业务域定档，勿照抄
+      out.collect(Alert.builder().level("P1").type("ORDER_FREQ_ANOMALY")
+                  .userId(userId)
+                  .message("5 分钟内订单数异常：" + agg.getOrderCount()).build());
     }
+    // 规则 2：金额方差超过阈值（同一窗口内可挂多条规则，各自定级）
+    if (agg.getAmountStdDev() > 10000) {      // 阈值同样按业务域定档
+      out.collect(Alert.builder().level("P2").type("AMOUNT_ANOMALY")
+                  .userId(userId).build());
+    }
+  }
 }
 ```
 
-**示例 4：Monte Carlo + DataHub 集成（AI 时代）**
+**怎么用**：`Time.minutes(5)` 是窗口大小，它直接决定漏检概率与延迟——窗口越小越接近拦截，漏检越多（§3.1 第三行约束）。窗口内的规则看不到跨窗口趋势，这类校验要放回批处理或旁路。
+
+**示例 4：Monte Carlo + DataHub 集成（基线式补长尾）**
 
 ```python
-# monte_carlo_integration.py
 from monte_carlo import MonteCarlo
 from datahub.emitter.mce_builder import make_dataset_urn
 
 mc = MonteCarlo(api_token=os.environ["MC_API_TOKEN"])
-
-# 1. 自动化字段级血缘 + 异常检测
 asset = mc.assets.add(
-    name="orders",
-    source_type="snowflake",
-    database="prod",
-    schema="public",
+    name="orders", source_type="snowflake", database="prod", schema="public",
     table="orders",
-    # 自动开启：freshness, volume, quality, schema, lineage
-    monitors=[
-        "freshness_monitor",
-        "volume_monitor", 
-        "quality_monitor",
-        "schema_monitor",
-        "lineage_monitor",
-    ],
+    monitors=["freshness_monitor", "volume_monitor", "quality_monitor",
+              "schema_monitor", "lineage_monitor"],   # 自动开启五类监控
 )
 
-# 2. AI 异常归因（2024 新功能）
 alert = mc.alerts.get(alert_id="alert-123")
-root_cause = mc.ai.diagnose(alert)  
-# 输出："amount 字段非空率从 99.5% 降到 92%，最可能原因是上游 order-service v3.2.1 部署引入 bug"
-
-# 3. 与 RAG 集成：让 LLM 解释异常
+root_cause = mc.ai.diagnose(alert)     # 归因输出必须人工复核后再动作
 explanation = mc.ai.explain(alert, model="claude-3-5-sonnet")
 ```
 
----
+**怎么用**：这一段解决的是 4.3 里「长尾表写不出规则」的问题，不要用它替代 P0 的显式断言。`monitors` 列表按数据源能力取（以 Monte Carlo 官方文档当前版本为准）；归因结果是线索不是结论，**没有复核就据此改上游，会把误报变成一次真实故障**。
+
+### 4.6 自检清单
+
+- [ ] 抽 3 张 P0 表，问值班人「这张表挂了先找谁」——回答里有没有具体人名？出现团队名即视为无主。
+- [ ] 把「数据可被消费的时刻」与「该表最近一次检查完成的时刻」并排列出最近 30 天，两者之差是否持续为正？
+- [ ] 检查结果表里，每条规则最近 7 天是否每天都有记录？有缺口说明调度没接稳。
+- [ ] 手动造一条必失败的规则，从执行到值班人收到通知，实测时长是多少？
+- [ ] 手动让一条嵌入式断言失败，坏数据真的被隔离或链路真的中断了吗？还是只记了一条失败、数据照常写出？
+- [ ] P0 通道最近一个月有没有被设为免打扰，或出现「这条每天都报，别管」这类记录？
+- [ ] MTTR 与 MTTD 是否分开统计？分母里有没有包含用户报障这类人工发现的事件？
+- [ ] 每条 P0 规则最近三个月的触发次数与修复次数，能否列成一张对照表？重复触发且无修复记录的有几条？
+- [ ] 规则库里有几条规则超过三个月未触发且无人复核？它们是被删了、降级了，还是没人管？
+- [ ] 随机抽三份数据契约，能否说出「上一次因为契约被拒的发布是哪一次」？
+- [ ] 元数据上有没有机器可读的质量结论（含结论对应的数据范围）？Agent 取数时读的是它，还是靠猜表名？
+- [ ] 设计期自检（阈值依据、断言执行位置、CI 拦截、两处阈值一致性、Schema 兼容性判定、长尾覆盖、NLP 生成规则复核）见 §3.7。
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一决定成败的环节是 **Step 1 的盘点与分级**——它决定后面每一步的资源按什么分配，而质量治理的资源永远是稀缺的。跳过它，得到的一定是「规则铺在所有表上、P0 与 P2 共用一条告警通道」的形态；而一旦值班人形成屏蔽习惯，后面再补多少规则都换不回告警通道的可信度。其余环节（引擎、阈值、平台、契约）都能在分级确定之后按判据推出来，只有分级这一步无法由任何工具代劳——它要的是每张表有一个具体的人。
+>
+> 配合 [§ 2 核心原理](01-data-quality.md)、[§ 3 设计模式与范式](01-data-quality-section-3-sec3.md) 与 [§ 6 落地实践](01-data-quality-section-6-sec6.md) 阅读。
