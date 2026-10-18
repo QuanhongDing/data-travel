@@ -130,7 +130,7 @@
 | 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
 | --- | --- | --- | --- |
 | 决策矩阵 / 加权打分载体 | Excel / Google Sheets（数据表功能可在会上现算翻转点）；Markdown 表格；MindTools Decision Matrix 模板；Pugh Matrix 模板；Decisions.com 一类决策辅助平台 | 判据是「结论要不要被复算与留痕」：要进版本库、要能被 diff 的选 Markdown；要在会上现算翻转点的用表格工具；只有需要把多场决策连成图谱时才上平台 | 用文档截图留档，翻转点算不出来，下一次评审无法复用上次的矩阵 |
-| 权重工具 | 在线 AHP 计算器（原清单列为 ahp.online，可按「AHP 在线计算器」自行检索核验当前可用的服务）；Expert Choice；自建（特征向量 + CR 检验） | 判据是「准则数是否在 4–7 个之间」：超出这个范围，比较次数按平方增长，换任何工具都救不回来 | 手算时容易只求权重、跳过一致性检验，自相矛盾的判断因此通过了 |
+| 权重工具 | 在线 AHP 计算器（ahp.online，可按「AHP 在线计算器」自行检索核验当前可用的服务）；Expert Choice；自建（特征向量 + CR 检验） | 判据是「准则数是否在 4–7 个之间」：超出这个范围，比较次数按平方增长，换任何工具都救不回来 | 手算时容易只求权重、跳过一致性检验，自相矛盾的判断因此通过了 |
 | 多准则决策库（代码） | Python `pyDecision`；Python `scikit-criteria`；R `MCDA`；Julia `JuMCDA.jl` | 判据是「有没有可比实测数据」：有基准测试矩阵或多家报价时用它们（TOPSIS / ELECTRE），能省掉「把 ms 翻译成 1–5 分」这一环 | 已经有实测数据还改用主观打分，等于放弃已付出的测量成本 |
 | Tech Radar / 参考架构 | ThoughtWorks Tech Radar（开源）；Zalando Tech Radar；自建技术雷达；AWS Well-Architected Tool；Google Cloud Architecture Framework | 判据是「这次要解决的是『选哪个』还是『按什么评』」：组织级横向可比用雷达与参考架构，单次选型不用它们 | 用参考架构给单次选型逐条打分，会得到「各项支柱都不低」的形式结论，而它不含团队匹配度与时间预算 |
 | TCO / 财务分析 | Excel TCO 模板（自建）；云成本工具（CloudZero / Vantage 一类）；FinOps 平台（CloudHealth / Apptio 一类） | 判据是「成本主要在谁手里」：自建机房为主时用自建模板，云上为主时用云成本工具——后者能直接取账单，少一层假设 | 用采购价或初始建设费比价，运营与维护成本在两三年后反超，总成本判断整体反转 |

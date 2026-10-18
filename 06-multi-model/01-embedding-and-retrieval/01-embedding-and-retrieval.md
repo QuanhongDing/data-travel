@@ -18,7 +18,7 @@
 | 怎么落地一套企业级 Embedding + 检索系统？ | §4.1、§4.2 |
 | 工具链：Milvus / Qdrant / pgvector / Pinecone 怎么选？ | §4.3 |
 | 代码示例（OpenAI / BGE-M3 / Cohere / ColBERT / Cohere Rerank） | §4.5 |
-| 长文本 / 多语言 / Late Interaction 前沿演进 | §5.x |
+| 长文本 / 多语言 / Late Interaction 前沿演进 | §5 |
 | 2024-2025 学术工业进展（Snowflake Arctic / Nomic Embed / ColBERT v2 / Cohere Rerank 3） | §5.4 |
 | 真实案例与踩坑经验 | §6 落地实践 §1.1–§1.4、§1.6 |
 | 0→1 / 1→10 / 10→100 落地路径 | §6 落地实践 §1.5 |

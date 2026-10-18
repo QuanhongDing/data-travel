@@ -57,7 +57,7 @@
 | 第三族（编码器） | 模态、编码器与任务的匹配度、能否接受重算 | 向量空间的定义，以及由此决定的全部簇结构 |
 | 树结构一支（层次聚类 / BIRCH） | 数据量能否装下距离矩阵（决定用层次聚类还是 BIRCH）、要几档粒度 | 切割高度与簇数的对应关系，以及摘要的重建周期 |
 
-本章保留原 § 7 出现过的全部具名候选：K-Means、DBSCAN、HDBSCAN、谱聚类、GMM、深度聚类、Embedding 聚类（原表的七列），以及决策树与组合里出现的 K-Medoids、层次聚类、Mini-Batch K-Means、Faiss、Spark（MLlib）、PCA、UMAP、BERTopic 与 c-TF-IDF、Canopy、Isolation Forest、双塔与半监督（聚类 + 分类），都能在本章找到落点——算法本体在 7.2 的表里，实现层面的补充在 7.5 的决策树（如 PCA / UMAP 这类降维环节），组合形态在 7.6。
+本章保留全部具名候选：K-Means、DBSCAN、HDBSCAN、谱聚类、GMM、深度聚类、Embedding 聚类，以及决策树与组合里出现的 K-Medoids、层次聚类、Mini-Batch K-Means、Faiss、Spark（MLlib）、PCA、UMAP、BERTopic 与 c-TF-IDF、Canopy、Isolation Forest、双塔与半监督（聚类 + 分类），都能在本章找到落点——算法本体在 7.2 的表里，实现层面的补充在 7.5 的决策树（如 PCA / UMAP 这类降维环节），组合形态在 7.6。
 
 ### 7.3 机制差异：为什么它们表现不同
 

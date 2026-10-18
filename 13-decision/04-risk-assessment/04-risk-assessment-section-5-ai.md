@@ -234,7 +234,7 @@
 
 ### 5.6 未来 3–5 年：可证伪的预测
 
-原 § 5 的 8 条趋势（Risk as Code / AI-native Risk Assessment / Continuous Risk Monitoring / Risk Graph / Resilience Engineering 主流化 / AI Governance 标准化 / 量子风险评估 / 可持续性风险）全部保留，按「信号是否相同」合并为 4 条。
+8 条趋势（Risk as Code / AI-native Risk Assessment / Continuous Risk Monitoring / Risk Graph / Resilience Engineering 主流化 / AI Governance 标准化 / 量子风险评估 / 可持续性风险）全部保留，按「信号是否相同」合并为 4 条。
 
 合并的判据是：同一条趋势的两半若会同时成真、也会同时被证伪，它们就是同一个预测——否则拆开。
 

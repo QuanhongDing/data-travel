@@ -124,7 +124,7 @@
 **第三层：磁盘 IO 类指标。**
 
 | 指标 | 来源 | 含义 | 异常根因 |
-| --- | --- | --- |
+| --- | --- | --- | --- |
 | `node_disk_io_now` | node-exporter | 当前在途 IO 请求数（绝对计数，无分母） | 持续高位说明队列积压；饱和判定用 io_time 利用率，不能对它取百分比 |
 | `node_disk_read_bytes_total` | node-exporter | 累计读字节 | 监控趋势 |
 | `node_disk_written_bytes_total` | node-exporter | 累计写字节 | 监控趋势 |

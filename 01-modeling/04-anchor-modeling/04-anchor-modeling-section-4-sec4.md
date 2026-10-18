@@ -290,7 +290,7 @@ ON CONFLICT (customer_id, order_id, valid_from, loaded_at) DO NOTHING;
 
 **怎么用**：②③ 与 ④ 的成对动作各放进一个事务。`:batch_time` 必须由调度传入，**不要用 `now()`** —— 这是重跑幂等与闭段正确性的共同前提。③ 与 ④ 的 `loaded_at < :batch_time` 条件都不能省，它就是 4.2「Bitemporal CDC」那条失效条件的修法：同一个业务键在批次里出现两行时，靠它才不会把刚插入的那一行也一起关掉。
 
-**模板 3：反规范化视图（原 §4.2.6，当前全貌 + 时态切片）**
+**模板 3：反规范化视图（当前全貌 + 时态切片）**
 
 ```sql
 -- 当前客户全貌（含 Knot 引用的属性）
@@ -316,7 +316,7 @@ WHERE  cn.valid_from <= :business_date
 
 **怎么用**：填 `:business_date` 与 `:loaded_at` 这两个参数，其余不要改。`customer_phone` / `knot_phone_type` / `customer_vip_level` 按模板 1 的同构形态建表（模板 1 只展开了客户与订单这两侧的几张表），保留它们是为了演示 `knot_phone_type` 那一行的形态：**Knot 引用的属性也要进视图，且取的是 Knot 的 `code` 而不是字符串值** —— 字典改名时视图一行都不用动。删掉 `loaded_at <= :loaded_at` 这一段，查询就退化成「按业务时态看当前版本」，也就答不了「系统在那天知道的是什么」—— 这正是 bitemporal 与普通拉链表的差别所在。
 
-**模板 4：Bitemporal 查询（原示例 2，带上具体时点的一次真实回放）**
+**模板 4：Bitemporal 查询（带上具体时点的一次真实回放）**
 
 ```sql
 -- 业务时点 2020-01-01 + 加载时点 2020-01-15 下，客户「张三」的姓名

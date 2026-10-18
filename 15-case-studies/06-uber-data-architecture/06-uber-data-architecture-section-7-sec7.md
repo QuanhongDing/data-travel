@@ -21,7 +21,7 @@
 
 **规模量级的档位口径**：上表与 7.4 的「年业务量」行**同属【公开】档**——数字取各公司年报 / IR 页面披露的业务量（Uber 的行程数 / Trips、Netflix 的付费会员数、Airbnb 的间夜数、美团的订单数），只读到量级、不写精确值，具体数字以各家最新一期年报原文为准（可自行核验）。它既不是无来源的经验估计，也不是本章自行推算出来的数。之所以只到量级，是因为这几家的业务口径彼此不可换算，精确值只会制造一份看似可比、实则不可用的表。
 
-> 关于「主导思想」的写法：原文件用「Marketplace + 实时」「数据自由 + 自治」这类标签描述各家的取向。这些标签本身没错，但它们描述的是**结果**，不是**原因**。本章把每个标签还原成「哪条约束逼出了这个取向」，这样标签才具备可迁移性。
+> 关于「主导思想」的写法：「Marketplace + 实时」「数据自由 + 自治」这类标签描述各家的取向。这些标签本身没错，但它们描述的是**结果**，不是**原因**。本章把每个标签还原成「哪条约束逼出了这个取向」，这样标签才具备可迁移性。
 
 **本章采用的 4 条可比性判据**（不是「谁更强」的判据）：
 
@@ -49,19 +49,19 @@
 
 ### 7.2 各案例的结构性差异（核心节）
 
-先把工具层说清：**原 § 7 表列出的候选（实时链路、存储、表格式、调度、ML 平台五项）在本章全部保留**，一处不删——它们是读者已建立的参照系。下表逐格给出组件名与档位，核不到公开来源的格子显式标出：
+先把工具层说清：下表逐格给出组件名与档位，核不到公开来源的格子显式标出：
 
 | 工具层 | Uber | Netflix | Airbnb | 美团 | 档位与核验来源 |
 | --- | --- | --- | --- | --- | --- |
 | 实时链路 | Kafka + Flink | Kafka + Flink（Keystone 管道） | Kafka + Flink / Spark Streaming | Kafka + Flink | 【公开】（本仓库四份案例文件的链路图可逐条核验，见表下注） |
-| 存储层 | Cassandra / Schemaless | S3 | S3 | HDFS + OSS（原 § 7 表口径） | 【公开】（Schemaless 见 Uber 工程博客 2016；S3 / Cassandra 为公开材料中的具名组件。美团一栏未核到公开来源） |
+| 存储层 | Cassandra / Schemaless | S3 | S3 | HDFS + OSS | 【公开】（Schemaless 见 Uber 工程博客 2016；S3 / Cassandra 为公开材料中的具名组件。美团一栏未核到公开来源） |
 | 表格式 | Hudi（2016 立项 / 2017 开源） | Iceberg（2018 开源） | Iceberg 类（2022 后，以官方材料为准） | 湖上表格式（以官方材料为准） | 【公开】（Hudi / Iceberg 见 Apache 项目页；Airbnb 与美团两列为案例口径，无公开版本号） |
-| 调度 | Airflow 系 + 自研编排 | Maestro（2022 公开） | Airflow（自研起源，2014 起） | 自研（原 § 7 表记为 Dolphin，名称以官方材料核验） | 【公开】（Airflow 见 Apache Airflow 项目页 2014–2015；Maestro 见 Netflix 技术博客 2022；美团一栏未核到公开来源） |
-| ML 平台 | Michelangelo（2017 公开） | Metaflow（2019 开源） | Bighead（[Airbnb 案例 § 4.5](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md)）；原 § 7 表此处记为 MLflow | PAI（原 § 7 表口径，名称以官方材料核验） | 【公开】（Michelangelo 见 Uber 工程博客 2017；Metaflow 见 Netflix 技术博客 2019；Bighead 见本仓库 Airbnb 案例 § 4.5。MLflow 见下注） |
+| 调度 | Airflow 系 + 自研编排 | Maestro（2022 公开） | Airflow（自研起源，2014 起） | 自研（Dolphin，名称以官方材料核验） | 【公开】（Airflow 见 Apache Airflow 项目页 2014–2015；Maestro 见 Netflix 技术博客 2022；美团一栏未核到公开来源） |
+| ML 平台 | Michelangelo（2017 公开） | Metaflow（2019 开源） | Bighead（[Airbnb 案例 § 4.5](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md)） | PAI（名称以官方材料核验） | 【公开】（Michelangelo 见 Uber 工程博客 2017；Metaflow 见 Netflix 技术博客 2019；Bighead 见本仓库 Airbnb 案例 § 4.5。MLflow 见下注） |
 
 > 逐条核验路径：[Uber 案例](06-uber-data-architecture-section-3-sec3.md) § 3.4 的链路是 `Kafka → Flink → Hudi`；[Netflix 案例](../05-netflix-data-stack/05-netflix-data-stack-section-3-sec3.md) § 3.3 是 `Kafka → Flink → Iceberg`；[Airbnb 案例](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md) § 4.4.2 是 `Kafka → Flink / Spark Streaming`；[美团案例](../04-meituan-feature-store/04-meituan-feature-store-section-4-sec4.md) § 4.2 是 `Kafka → Flink → Redis / 自研 KV`。**工具名相同不代表架构相同**——同一批组件装出四种不同的平台，原因在下面四个维度里。
 >
-> ML 平台一行有一处**更正**需要说明：原 § 7 表把 Airbnb 一栏记为 **MLflow**，而本仓库 [Airbnb 案例 § 4.5](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md) 把 Airbnb 自研的 ML 平台记为 **Bighead**（其演进时间线记作 2022 年的 ML Platform V3）。MLflow 是 Databricks 发起的开源项目，在本仓库 [Uber 案例 § 5](06-uber-data-architecture-section-5-sec5.md)、[§ 8](06-uber-data-architecture-section-8-sec8.md) 中被记为 Michelangelo 引入的组件——两者不是同一个平台，因此本章按 Bighead 记，MLflow 作为独立候选保留在 7.4 的 ML 平台一行。
+> ML 平台一行有一处**口径**需要说明：本仓库 [Airbnb 案例 § 4.5](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md) 把 Airbnb 自研的 ML 平台记为 **Bighead**（其演进时间线记作 2022 年的 ML Platform V3）。MLflow 是 Databricks 发起的开源项目，在本仓库 [Uber 案例 § 5](06-uber-data-architecture-section-5-sec5.md)、[§ 8](06-uber-data-architecture-section-8-sec8.md) 中被记为 Michelangelo 引入的组件——两者不是同一个平台，因此本章按 Bighead 记，MLflow 作为独立候选保留在 7.4 的 ML 平台一行。
 
 四家的差异可以归到 4 个机制维度上。**同维度内是「约束不同导致选择不同」，跨维度才是真正的路线分歧**——把维度分清楚，一半的比较工作就可以省掉。
 
@@ -194,8 +194,8 @@
 | 年业务量 | 行程量百亿次/年量级 | 订阅用户数亿量级 | 间夜量数亿/年量级 | 订单量百亿级/年量级（约合亿级/日） | 【公开】（各公司年报 / IR 页面披露的业务量，读作量级；与 7.1 表同档位，具体数字以各家最新一期年报原文为准） |
 | 数据团队规模 | 数据平台 300+ 人量级、数据组织峰值千级 | 数据平台 + 数据科学数百人量级 | 数据相关团队数百人量级 | 未公开 | 【经验】（[Uber 案例主文件](06-uber-data-architecture.md) § 1.3 口径 + 行业普遍量级） |
 | 表格式起点 | 2016 内部立项 / 2017 开源 | 2018 开源并捐入 Apache | 2022 后引入 Iceberg 类格式 | 以官方材料为准 | 【公开】（Hudi / Iceberg 项目页） |
-| 调度系统 | Airflow 系 + 自研编排 | 自研 Maestro（2022 公开） | 自研 Airflow（2014 起） | 自研调度（原文件记为 Dolphin，具体名称请以官方材料核验） | 【公开】（Airflow 见 Apache Airflow 项目页 2014–2015；Maestro 见 Netflix 技术博客 2022；美团一栏未核到公开来源） |
-| ML 平台 | Michelangelo（2017 公开） | Metaflow（2019 开源） | Bighead（[Airbnb 案例 § 4.5](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md)）；原 § 7 表此处记作 MLflow | PAI（原 § 7 表口径，产品名以官方材料核验） | 【公开】（Michelangelo 见 Uber 工程博客 2017；Metaflow 见 Netflix 技术博客 2019；MLflow 为 Databricks 发起的开源项目，在本仓库 [Uber 案例 § 5](06-uber-data-architecture-section-5-sec5.md)、[§ 8](06-uber-data-architecture-section-8-sec8.md) 中记为 Michelangelo 的组件） |
+| 调度系统 | Airflow 系 + 自研编排 | 自研 Maestro（2022 公开） | 自研 Airflow（2014 起） | 自研调度（Dolphin，具体名称请以官方材料核验） | 【公开】（Airflow 见 Apache Airflow 项目页 2014–2015；Maestro 见 Netflix 技术博客 2022；美团一栏未核到公开来源） |
+| ML 平台 | Michelangelo（2017 公开） | Metaflow（2019 开源） | Bighead（[Airbnb 案例 § 4.5](../07-airbnb-data-architecture/07-airbnb-data-architecture-section-4-sec4.md)） | PAI（产品名以官方材料核验） | 【公开】（Michelangelo 见 Uber 工程博客 2017；Metaflow 见 Netflix 技术博客 2019；MLflow 为 Databricks 发起的开源项目，在本仓库 [Uber 案例 § 5](06-uber-data-architecture-section-5-sec5.md)、[§ 8](06-uber-data-architecture-section-8-sec8.md) 中记为 Michelangelo 的组件） |
 | 实时链路约束 | 匹配必须在单次请求内完成 | 个性化可容忍秒级延迟 | 搜索为交互式 | 履约时效为核心 KPI | 【经验】（由业务形态推出，非公开数字） |
 | 治理形态 | 数据域所有权 + 联邦 | 中心平台 + 团队自治 | 中心语义层 + 元数据平台 | 业务驱动 | 【经验】 |
 
