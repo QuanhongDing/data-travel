@@ -10,13 +10,13 @@
 
 | 小节 | 文件 |
 | --- | --- |
-| 3. 团队与组织（5 分钟） | [08-upward-management-section-3-sec3.md](08-upward-management-section-3-sec3.md) |
-| 4. 预期 ROI | [08-upward-management-section-4-roi.md](08-upward-management-section-4-roi.md) |
+| 3. 设计模式与范式 | [08-upward-management-section-3-sec3.md](08-upward-management-section-3-sec3.md) |
 | 4. 工程实现 | [08-upward-management-section-4-sec4.md](08-upward-management-section-4-sec4.md) |
-| 5. 前沿演进（AI 时代） | [08-upward-management-section-5-ai.md](08-upward-management-section-5-ai.md) |
+| 4. 预期 ROI | [08-upward-management-section-4-roi.md](08-upward-management-section-4-roi.md) |
 | 5. Q4 计划 | [08-upward-management-section-5-q4.md](08-upward-management-section-5-q4.md) |
+| 5. 前沿演进（AI 时代） | [08-upward-management-section-5-ai.md](08-upward-management-section-5-ai.md) |
 | 5. 双向输入（2 分钟） | [08-upward-management-section-5-sec5.md](08-upward-management-section-5-sec5.md) |
-| 6. 讨论（3 分钟） | [08-upward-management-section-6-sec6.md](08-upward-management-section-6-sec6.md) |
+| 6. 落地实践 | [08-upward-management-section-6-sec6.md](08-upward-management-section-6-sec6.md) |
 | 7. 与其他方法对比 | [08-upward-management-section-7-sec7.md](08-upward-management-section-7-sec7.md) |
 | 8. 面试真题集 | [08-upward-management-section-8-sec8.md](08-upward-management-section-8-sec8.md) |
 

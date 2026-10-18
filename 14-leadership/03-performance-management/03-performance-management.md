@@ -295,31 +295,17 @@ KR4：Q4 用户满意度 ≥ 4.5/5，月活 ≥ 10 万
 
 ---
 
-- [§3. 设计模式与范式](03-performance-management-section-3-sec3.md)
-- [§4. 工程实现](03-performance-management-section-4-sec4.md)
-## 1. 绩效数据（基于 OKR）
-- OKR 综合完成度：0.7
-- 关键成果：
-  - 主导 RAG 项目上线，准确率 85%
-  - 团队 100% 完成 LLM 培训
-
-## 2. 优势（具体 + 行为）
-1. 技术深度：在 RAG 系统设计上有清晰的 trade-off
-2. 协作：跨团队满意度 4.7/5
-3. 学习：每周分享 1 次新技术
-
-- [§9. 改进计划（IDP）](03-performance-management-section-9-sec9.md)
-- [§10. 激励兑现](03-performance-management-section-10-sec10.md)
-- [§5. 前沿演进（AI 时代）](03-performance-management-section-5-ai.md)
-- [§6. 落地实践](03-performance-management-section-6-sec6.md)
-- [§7. 与其他方法对比](03-performance-management-section-7-sec7.md)
-- [§8. 面试真题集](03-performance-management-section-8-sec8.md)
-
----
-
 ## 章节内容导航
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
+- [§3. 设计模式与范式](03-performance-management-section-3-sec3.md)
+- [§4. 工程实现](03-performance-management-section-4-sec4.md)
+- [§5. 前沿演进（AI 时代）](03-performance-management-section-5-ai.md)
+- [§6. 落地实践](03-performance-management-section-6-sec6.md)
+- [§7. 与其他方法对比](03-performance-management-section-7-sec7.md)
+- [§8. 面试真题集](03-performance-management-section-8-sec8.md)
+- [§9. 改进计划（IDP）](03-performance-management-section-9-sec9.md)
+- [§10. 激励兑现](03-performance-management-section-10-sec10.md)
 
 ---

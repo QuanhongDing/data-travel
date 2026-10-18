@@ -245,54 +245,16 @@ RecruitingROI = (Influencer_Hire × Years) / Investment
 
 ---
 
-- [§3. 设计模式与范式](05-tech-evangelism-section-3-sec3.md)
-- [§4. 工程实现](05-tech-evangelism-section-4-sec4.md)
-## 1. 业务背景
-- 业务痛点：客服效率低、需要 7×24h 智能问答
-- 目标：准确率 ≥ 85%、P95 < 500ms
-
-## 2. 关键实践
-### 实践 1：Embedding Model 选型
-- 候选：OpenAI text-embedding-3、BGE-M3、Qwen-Embedding
-- 评估：业务数据集 1000+ 问题
-- 结论：BGE-M3（开源、可私有化、中文友好）
-
-### 实践 2：Chunk 策略
-- 固定长度 vs 语义切分
-- 切分粒度：256 vs 512 vs 1024 tokens
-- 结论：语义切分 + 512 tokens（中文场景）
-
-### 实践 3：ReRanker
-- 必要性评估：Top-K 召回 50 → ReRanker Top-5
-- 收益：准确率 +8%
-
-### 实践 4：Query 改写
-- 多轮对话上下文合并
-- 用户问题扩展（同义词、相关概念）
-
-### 实践 5：评估体系
-- 人工评估 1000+ 问题
-- 自动评估：BLEU、ROUGE、LLM Judge
-
-## 1. 开场故事（3 分钟）
-- 1 个真实案例 / 故事
-- 吸引听众
-
-## 2. 问题陈述（5 分钟）
-- 业务痛点 / 技术挑战
-- 为什么重要
-
-- [§9. 总结 + 升华（2 分钟）](05-tech-evangelism-section-9-sec9.md)
-- [§5. 前沿演进（AI 时代）](05-tech-evangelism-section-5-ai.md)
-- [§6. 落地实践](05-tech-evangelism-section-6-sec6.md)
-- [§7. 与其他方法对比](05-tech-evangelism-section-7-sec7.md)
-- [§8. 面试真题集](05-tech-evangelism-section-8-sec8.md)
-
----
-
 ## 章节内容导航
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
+- [§3. 设计模式与范式](05-tech-evangelism-section-3-sec3.md)
+- [§4. 工程实现](05-tech-evangelism-section-4-sec4.md)
+- [§5. 前沿演进（AI 时代）](05-tech-evangelism-section-5-ai.md)
+- [§6. 落地实践](05-tech-evangelism-section-6-sec6.md)
+- [§7. 与其他方法对比](05-tech-evangelism-section-7-sec7.md)
+- [§8. 面试真题集](05-tech-evangelism-section-8-sec8.md)
+- [§9. 总结 + 升华（2 分钟）](05-tech-evangelism-section-9-sec9.md)
 
 ---

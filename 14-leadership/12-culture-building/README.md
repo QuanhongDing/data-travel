@@ -10,13 +10,13 @@
 
 | 小节 | 文件 |
 | --- | --- |
-| 3. 行为 3：客户反馈闭环 | [12-culture-building-section-3-sec3.md](12-culture-building-section-3-sec3.md) |
+| 3. 设计模式与范式 | [12-culture-building-section-3-sec3.md](12-culture-building-section-3-sec3.md) |
 | 4. 工程实现 | [12-culture-building-section-4-sec4.md](12-culture-building-section-4-sec4.md) |
-| 5. 前沿演进（AI 时代） | [12-culture-building-section-5-ai.md | [12-culture-building-section-5-ai.md](12-culture-building-section-5-ai.md)
-| 9. 改进措施 | [12-culture-building-section-9-sec9.md](12-culture-building-section-9-sec9.md) |
+| 5. 前沿演进（AI 时代） | [12-culture-building-section-5-ai.md](12-culture-building-section-5-ai.md) |
 | 6. 落地实践 | [12-culture-building-section-6-sec6.md](12-culture-building-section-6-sec6.md) |
 | 7. 与其他方法对比 | [12-culture-building-section-7-sec7.md](12-culture-building-section-7-sec7.md) |
 | 8. 面试真题集 | [12-culture-building-section-8-sec8.md](12-culture-building-section-8-sec8.md) |
+| 9. 改进措施 | [12-culture-building-section-9-sec9.md](12-culture-building-section-9-sec9.md) |
 
 ## 返回
 

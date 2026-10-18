@@ -12,7 +12,7 @@
 | OJT（On Job Training）怎么设计？ | §2.3、§6 案例 7.4 |
 | GROW Model 怎么用？ | §2.3、§4.2 |
 | IDP 怎么写？ | §2.1、§4.3 |
-| Sponsor vs Mentor 的区别？ | §1.1、§2.4 |
+| Sponsor vs Mentor 的区别？ | §2.1、§2.3 |
 | AI 时代怎么用 AI 辅助辅导？ | §5.1、§5.3 |
 
 ---

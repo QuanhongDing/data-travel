@@ -10,7 +10,7 @@
 
 | 小节 | 文件 |
 | --- | --- |
-| 3. 关键问题 | [10-team-rhythm-section-3-sec3.md](10-team-rhythm-section-3-sec3.md) |
+| 3. 设计模式与范式 | [10-team-rhythm-section-3-sec3.md](10-team-rhythm-section-3-sec3.md) |
 | 4. 工程实现 | [10-team-rhythm-section-4-sec4.md](10-team-rhythm-section-4-sec4.md) |
 | 5. 前沿演进（AI 时代） | [10-team-rhythm-section-5-ai.md](10-team-rhythm-section-5-ai.md) |
 | 6. 落地实践 | [10-team-rhythm-section-6-sec6.md](10-team-rhythm-section-6-sec6.md) |
