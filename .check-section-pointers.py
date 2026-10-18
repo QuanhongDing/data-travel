@@ -51,17 +51,29 @@ def headings_of(path):
     return hs
 
 def sibling_section_files(path, sec):
+    """§N.M 的候选目标。
+
+    注意：`§N.M` 里的 N **不一定是节号**。本书并存三套编号：
+      ① 节号（`-section-N-*.md` 的 `### N.M`）—— 规范骨架用这套；
+      ② **案例号按章号编**（第 10 章 `-section-6-sec6.md` 里是 `### 10.1`）；
+      ③ §8 子主题文件里沿用**原始 PDF 题号**（`### 4.7`）。
+    所以候选要放宽到本章**所有** md 文件里去找 `### N.M`，
+    否则 ②③ 两类会被整类误报（实测过：§6 引用修好后 `§10.1` 仍被报为未解析）。
+    """
     d = os.path.dirname(path)
     try:
         names = os.listdir(d)
     except OSError:
         return []
-    out = []
-    main = os.path.join(d, os.path.basename(d) + '.md')   # 章主文件，形如 03-data-vault.md
-    if os.path.exists(main):
-        out.append(main)
+    main = os.path.join(d, os.path.basename(d) + '.md')
+    out = [main] if os.path.exists(main) else []
     pat = re.compile(r'-section-' + re.escape(sec) + r'(-|\.md$)')
-    out += [os.path.join(d, n) for n in names if n.endswith('.md') and pat.search(n)]
+    hit = [n for n in names if n.endswith('.md') and pat.search(n)]
+    if hit:
+        out += [os.path.join(d, n) for n in hit]
+    else:
+        # 没有 -section-<sec>- 文件时，把本章全部 md 纳入候选（覆盖案例号 / PDF 号）
+        out += [os.path.join(d, n) for n in names if n.endswith('.md')]
     return out
 
 def main(targets):
