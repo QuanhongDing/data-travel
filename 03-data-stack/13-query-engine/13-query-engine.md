@@ -259,10 +259,15 @@ SELECT * FROM iceberg.orders WHERE user_id = 12345 AND order_time > '2025-01-15'
 
 **6. AQE（Adaptive Query Execution）**
 
+AQE 是「把一部分计划决策推到执行期、用实测基数替换估算值」的机制；它不由某一条会话设置开启。联邦引擎上要逐项确认的是三件事——统计信息可用、动态过滤（Runtime Filter）生效、Join 分发方式能在运行时改（口径与 [§3.5](13-query-engine-section-3-sec3.md) 的反模式表、[§4.5 模板 4](13-query-engine-section-4-sec4.md) 一致）：
+
 ```sql
--- Trino AQE 自动运行时优化
+-- 让引擎按统计信息自行决定 Join 分发方式（不固定为广播或分区）
+SET SESSION join_distribution_type = 'AUTOMATIC';
+-- 核对运行时改写是否真的发生：比较编译期计划与最终计划
+EXPLAIN (FORMAT JSON) SELECT * FROM iceberg.orders WHERE user_id = 12345;
+-- 兜底而不是开关：单条查询的时长上限
 SET SESSION query_max_run_time = '10m';
--- → Trino 根据运行时统计信息自动调整 Stage 数、并行度
 ```
 
 ### 2.4 与相邻概念的关系
@@ -276,7 +281,7 @@ SET SESSION query_max_run_time = '10m';
 
 **Trino vs Presto**：
 
-- Trino（社区主导）：原 PrestoDB。
+- Trino（社区主导）：原 PrestoSQL（见 [§7.2](13-query-engine-section-7-sec7.md) 的候选方案表）。
 - Presto（Meta / Ahana）：停滞。
 
 **Trino vs Spark SQL**：

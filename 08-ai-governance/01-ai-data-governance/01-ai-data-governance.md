@@ -12,12 +12,12 @@
 | --- | --- |
 | AI 数据治理与传统数据治理有何区别 | §1.1、§1.3、§1.5 |
 | 模型 / Prompt / 训练数据怎么治理 | §3.1、§4.1 |
-| 合规框架 EU AI Act / 暂行办法 / 等保 | §2.3、§5.3 |
+| 合规框架 EU AI Act / 暂行办法 / 等保 | §2.3、§5.4 |
 | AI 治理与 AI 安全的边界 | §1.2、§7 |
 | AI 资产怎么分级分类 | §1.4、§2.1 |
-| 怎么落地 AI 治理（0→1→100） | §4.1、§6.3 |
-| 治理与 RAG / 向量库的关系 | §5.2 |
-| 真实案例与踩坑 | §6.1、§6.2 |
+| 怎么落地 AI 治理（0→1→100） | §4.1、§6 落地实践 §1.5「真实落地路径」 |
+| 治理与 RAG / 向量库的关系 | §5.3 |
+| 真实案例与踩坑 | §6 落地实践 §1.1–§1.4、§1.6 |
 
 > **本章 8 节结构**：§1 概念与定位 → §2 核心原理 → §3 设计模式 → §4 工程实现 → §5 前沿演进 → §6 落地实践 → §7 与其他方法对比 → §8 面试真题集（44 题，保留原题库编号）。
 
@@ -250,40 +250,22 @@ Source → Cleaning → TrainingData → Checkpoint → Adapter → Deployment
 
 ---
 
-- [§3. 设计模式](01-ai-data-governance-section-3-sec3.md)
-- [§4. 工程实现](01-ai-data-governance-section-4-sec4.md)
-## 1. AI 资产总览
-- 总资产数：{{ assets.total }}
-- 按类型：{{ assets.by_type }}
-- 按风险等级：{{ assets.by_risk }}
-
-## 2. 合规覆盖率
-- EU AI Act：{{ compliance.eu_ai_act }}%
-- NIST AI RMF：{{ compliance.nist_rmf }}%
-- 等保：{{ compliance.deng_bao }}%
-
-- [§3. 风险事件](01-ai-data-governance-section-3-sec3.md)
-- [§4. 待整改项](01-ai-data-governance-section-4-sec4.md)
-- [§5. 审计签字](01-ai-data-governance-section-5-sec5.md)
-- [§5. 前沿演进](01-ai-data-governance-section-5-sec5.md)
-- [§6. 落地实践](01-ai-data-governance-section-6-sec6.md)
-- [§7. 与其他方法对比](01-ai-data-governance-section-7-sec7.md)
-- [§8. 面试真题集](01-ai-data-governance-section-8-sec8.md)
-
----
-
 ## 章节内容导航
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
-- [§3. 设计模式](01-ai-data-governance-section-3-sec3.md)
+- [§3. 设计模式与范式](01-ai-data-governance-section-3-sec3.md)
 - [§4. 工程实现](01-ai-data-governance-section-4-sec4.md)
-- [§3. 风险事件](01-ai-data-governance-section-3-sec3.md)
-- [§4. 待整改项](01-ai-data-governance-section-4-sec4.md)
-- [§5. 审计签字](01-ai-data-governance-section-5-sec5.md)
 - [§5. 前沿演进](01-ai-data-governance-section-5-sec5.md)
 - [§6. 落地实践](01-ai-data-governance-section-6-sec6.md)
 - [§7. 与其他方法对比](01-ai-data-governance-section-7-sec7.md)
 - [§8. 面试真题集](01-ai-data-governance-section-8-sec8.md)
+- [§8.2 §1.1 集群安全与权限管理](01-ai-data-governance-section-8-1-1-集群安全与权限管理.md)
+- [§8.3 §5.5 大规模集群安全架构设计与优化](01-ai-data-governance-section-8-5-5-大规模集群安全架构设计与优化.md)
+- [§8.4 §5.6 安全架构演进与新兴趋势](01-ai-data-governance-section-8-5-6-安全架构演进与新兴趋势.md)
+- [§8.5 §11.7 数据治理体系融合与实践](01-ai-data-governance-section-8-11-7-数据治理体系融合与实践.md)
+- [§8.6 §11.8 智能数据治理与 AI 应用](01-ai-data-governance-section-8-11-8-智能数据治理与-ai-应用.md)
+- [§8.7 §18.8 AI 治理与合规性](01-ai-data-governance-section-8-18-8-ai-治理与合规性.md)
+- [§8.8 §21.1 数据治理与智能化元数据管理](01-ai-data-governance-section-8-21-1-数据治理与智能化元数据管理.md)
 
 ---

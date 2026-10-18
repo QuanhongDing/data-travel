@@ -13,7 +13,7 @@
 | 跨团队决策为什么难？ | §1.2 |
 | RACI / DACI / RAPID 怎么用？ | §2.1 / §3 |
 | RFC / 委员会 / 共识怎么搭？ | §4 |
-| 跨团队冲突怎么解？ | §4.3 |
+| 跨团队冲突怎么解？ | §4.2 |
 | AI 时代跨团队决策有什么新趋势？ | §5 |
 
 ---
@@ -77,12 +77,12 @@
 ### 1.4 演进历程
 
 - **1950s-1960s**：组织行为学奠基（McGregor X-Y 理论）。
-- **1970s**：DACI / RAPID 决策框架提出（Bain & Company）。
+- **1970s 起**：决策角色框架陆续成型——RAPID（Bain & Company）与 DACI（由 Atlassian 推广）把「谁推进、谁批准、谁能否决」拆成可分配的角色（见 §3.2.2 / §3.2.3）。
 - **1980s-1990s**：RACI 矩阵广泛应用于项目管理（PMI）。
 - **2000s**：敏捷开发推动轻量级决策（Scrum、SAFe）。
 - **2010s**：开源治理模式（Linux Foundation、CNCF）的跨组织决策实践。
+- **2012**：Spotify 公开 Squad / Tribe / Chapter / Guild 模型（见 §3.2.11）。
 - **2016**：Google《Site Reliability Engineering》一书把「把决策推给最接近问题的人」写成成文原则（书为 2016 年出版；Google 内部的相关实践早于此，但成文与公开以该书为标志）。
-- **2018**：Spotify Squad / Tribe / Chapter / Guild 模型成熟。
 - **2020**：GitHub / GitLab 的 RFC + ADR 流程成为开源 / 互联网公司主流。
 - **2022-2024**：架构委员会（Architecture Board）+ 跨团队 RFC 平台普及。
 - **2024-2025**：AI 辅助跨团队决策（AI 协调员、AI 共识构建）。
@@ -112,7 +112,7 @@
 - **Federation（联邦化）**：多个独立组织协同决策（开源社区、数据网格）。
 - **Working Backwards（逆向工作法）**：从客户体验反推决策（Amazon）。
 - **Steering Committee（指导委员会）**：跨团队决策的治理机构。
-- **Decision Framework（决策框架）**：决策方法论（如 DACI、RAPID、CACI）。
+- **Decision Framework（决策框架）**：决策方法论（如 RACI、DACI、RAPID）。
 
 ### 2.2 数学 / 形式化基础
 

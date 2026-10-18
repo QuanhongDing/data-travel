@@ -8,12 +8,12 @@
 
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
-| 聚类的数学本质是什么？K-Means / DBSCAN / 谱聚类怎么选？ | §2.2 / §2.3 / §3.2 |
-| 类别数 K 怎么定？聚类效果怎么评？ | §2.3 / §4.1 |
+| 聚类的数学本质是什么？K-Means / DBSCAN / 谱聚类怎么选？ | §2.2 / §2.3 / §3.2 / §3.3 决策表 |
+| 类别数 K 怎么定？聚类效果怎么评？ | §2.1 / §4.1 |
 | 用户分群 / 异常检测 / 文档聚类怎么做？ | §3 模式 / §4 工程 / §6 案例 |
 | 高维 / 大数据量聚类怎么加速？ | §4.2 关键技术点 |
-| LLM Embedding 怎么改变聚类？ | §5.1 / §5.3 |
-| 与 OneID / 标签体系的关系是什么？ | §6 落地 / §7 对比 |
+| LLM Embedding 怎么改变聚类？ | §5.1 / §5.2.1 |
+| 与 OneID / 标签体系的关系是什么？ | §2.4 / §7 对比 |
 
 ---
 
@@ -55,7 +55,7 @@
 
 - **"先有数据，再有标签"是工业常态**。90% 的真实业务数据没有标签（用户评论、商品描述、新闻文本）。聚类是发掘这类数据价值的第一工具。
 - **精细化运营的起点是"分群"**。千人千面、用户画像、商品分层——所有"分层"动作的前提都是聚类。
-- **异常检测的本质是"远离簇心的点"**。聚类可以天然发现异常点（孤立森林 / DBSCAN 都基于此思想）。
+- **异常检测的本质是"远离簇心的点"**。聚类可以天然发现异常点（DBSCAN 的噪声点本身即异常；孤立森林走的是另一条路径——按"孤立度"识别离群点，见 §2.4）。
 - **大模型时代，聚类与 Embedding 深度耦合**。用 LLM Embedding 做语义聚类，已是文本归类、话题发现、新闻追踪的事实标准。
 
 **痛点**：
@@ -105,15 +105,15 @@
 - 1975：Hartigan & Wong 提出 K-Means 的高效实现。
 - 1979：Ruspini 提出 **模糊 C-Means**（Fuzzy Clustering）。
 - 1996：Ester 等提出 **DBSCAN**（Density-Based Spatial Clustering），可发现任意形状簇。
-- 1998：Guha 等提出 **BIRCH**（Balanced Iterative Reducing and Clustering Hierarchies），大数据聚类。
-- 1999：Ng / Jordan / Weiss 提出 **谱聚类**（Spectral Clustering），处理图结构数据。
+- 1996：Zhang 等提出 **BIRCH**（Balanced Iterative Reducing and Clustering using Hierarchies），大数据聚类。
+- 2001：Ng / Jordan / Weiss 提出 **谱聚类**（Spectral Clustering），处理图结构数据。
 
 **进阶聚类阶段（2000s–2015）**：
 
-- 2007：Campello 等提出 **HDBSCAN**（DBSCAN 的扩展，自适应密度）。
+- 2000：McCallum 等提出 **Canopy** 粗聚类，之后再与 K-Means 组合成二阶段聚类，缓解 K 选择问题。
 - 2010：高斯混合模型（GMM）的 EM 算法实现成熟。
+- 2013：Campello 等提出 **HDBSCAN**（DBSCAN 的扩展，自适应密度）。
 - 2014：Mean Shift 算法在图像分割领域广泛使用。
-- 2014：Chen 提出 **Canopy + K-Means** 二阶段聚类，解决 K 选择问题。
 
 **深度聚类阶段（2016–2020）**：
 
@@ -129,7 +129,7 @@
 - 2022：**大模型驱动的语义聚类**成熟，Sentence-BERT + K-Means 成为文本聚类标配。
 - 2023：**Foundation Models for Clustering**——用预训练基础模型做零样本聚类。
 - 2024：**多模态聚类**——CLIP Embedding + 聚类，实现图像 + 文本统一聚类。
-- 2025：**LLM-as-Clusterer**——用 LLM 直接做聚类（如 GPT-4 给出聚类中心），与传统聚类结合。
+- 2025：**LLM-as-Clusterer**——用 LLM 给簇命名、写描述（不参与"谁属于哪个簇"的判定），与传统聚类结合。
 
 **一句话总结**：**聚类从"距离度量"到"密度建模"到"深度学习"到"LLM 语义"四阶段演进，今天的 AI 时代是"LLM Embedding + 传统聚类 + 深度聚类"的混合架构。**
 

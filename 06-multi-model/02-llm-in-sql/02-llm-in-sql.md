@@ -14,21 +14,21 @@
 | 为什么 2024-2025 各大数据库厂商都在推 AI Functions？ | §1.2、§1.4 |
 | LLM in SQL 在 AI 时代数据架构里的位置 | §1.3 |
 | 主流 AI Functions 的能力与边界 | §2.x、§4.3 |
-| 自然语言查询（NL2SQL）在数据库内的落地 | §3.1 |
-| 决策表：什么场景用 AI Function | §3.2 |
-| 反模式与陷阱（最常踩的 8 个坑） | §3.3 |
+| 自然语言查询（NL2SQL）在数据库内的落地 | §3.2.4 |
+| 决策表：什么场景用 AI Function | §3.3 |
+| 反模式与陷阱（最常踩的 10 个坑） | §3.5 |
 | 从 0 到 1 怎么落地 LLM in SQL？ | §4.1 |
 | 关键技术点（模型路由、成本控制、向量+SQL 融合） | §4.2 |
 | 工具链与平台（Snowflake Cortex、Databricks AI Functions、阿里 PolarDB AI） | §4.3 |
-| 代码示例（Snowflake / Databricks / Postgres pgai） | §4.4 |
+| 代码示例（Snowflake / Databricks / Postgres pgai） | §4.5 |
 | AI 时代演进方向（Agent + AI Function、Self-Hosted LLM） | §5.1 |
-| 与 RAG / 向量库的融合 | §5.2 |
-| 2024-2025 学术工业进展 | §5.3 |
-| 未来 3-5 年趋势 | §5.4 |
-| 真实案例（Snowflake Cortex、Databricks Genie、阿里 PolarDB AI） | §6.1 |
-| 踩坑经验 | §6.2 |
-| 0→1 / 1→10 / 10→100 落地路径 | §6.3 |
-| ROI 评估 | §6.4 |
+| 与 RAG / 向量库的融合 | §5.3 |
+| 2024-2025 学术工业进展 | §5.4 |
+| 未来 3-5 年趋势 | §5.6 |
+| 真实案例（Snowflake Cortex、Databricks ai_query、阿里 MaxCompute PAI UDF、MotherDuck） | §6 落地实践 §2.1–§2.4 |
+| 踩坑经验 | §6 落地实践 §2.6 |
+| 0→1 / 1→10 / 10→100 落地路径 | §6 落地实践 §2.5 |
+| ROI 评估 | §6 落地实践 §2.7 |
 | LLM in SQL 与传统 ETL + LLM / 外部分析库对比 | §7.1、§7.2、§7.3 |
 
 ---

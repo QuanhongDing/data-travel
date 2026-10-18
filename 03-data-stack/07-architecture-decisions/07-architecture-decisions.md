@@ -12,7 +12,7 @@
 | --- | --- |
 | Lambda / Kappa / Lakehouse 三种架构的本质区别？ | §1.1 |
 | 为什么 Lambda 架构被批判？什么时候还该用？ | §3.3 |
-| Medallion（Bronze/Silver/Gold）怎么落地？ | §3.1 |
+| Medallion（Bronze/Silver/Gold）怎么落地？ | §3.2.5 |
 | 选型决策框架如何搭建？ | §4.1 |
 | 2024-2025 流批一体的最新趋势？ | §5 |
 

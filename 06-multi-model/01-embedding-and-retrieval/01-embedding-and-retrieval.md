@@ -17,12 +17,12 @@
 | Embedding 与检索的设计模式与决策表 | §3.x |
 | 怎么落地一套企业级 Embedding + 检索系统？ | §4.1、§4.2 |
 | 工具链：Milvus / Qdrant / pgvector / Pinecone 怎么选？ | §4.3 |
-| 代码示例（OpenAI / BGE-M3 / Cohere / ColBERT / Cohere Rerank） | §4.4 |
+| 代码示例（OpenAI / BGE-M3 / Cohere / ColBERT / Cohere Rerank） | §4.5 |
 | 长文本 / 多语言 / Late Interaction 前沿演进 | §5.x |
-| 2024-2025 学术工业进展（Snowflake Arctic / Nomic Embed / ColBERT v2 / Cohere Rerank 3） | §5.3 |
-| 真实案例与踩坑经验 | §6.1、§6.2 |
-| 0→1 / 1→10 / 10→100 落地路径 | §6.3 |
-| ROI 评估（检索准确率 vs 成本） | §6.4 |
+| 2024-2025 学术工业进展（Snowflake Arctic / Nomic Embed / ColBERT v2 / Cohere Rerank 3） | §5.4 |
+| 真实案例与踩坑经验 | §6 落地实践 §1.1–§1.4、§1.6 |
+| 0→1 / 1→10 / 10→100 落地路径 | §6 落地实践 §1.5 |
+| ROI 评估（检索准确率 vs 成本） | §6 落地实践 §1.7 |
 | 与全文检索 / 图数据库 / 传统 RAG 对比 | §7.x |
 
 ---
@@ -138,7 +138,7 @@
 
 **对比学习 + 大模型阶段（2021-2023）**：
 
-- 2021：OpenAI text-embedding-ada-002（1536 维）。
+- 2022：OpenAI text-embedding-ada-002（1536 维）。
 - 2022：Cohere Embed v2。
 - 2023：BGE（BAAI）系列——中文 SOTA。
 - 2023：OpenAI text-embedding-3-small / 3-large（3072 维）。
@@ -240,7 +240,7 @@ $$s_i = g_\theta(q, d_i)$$
 - **IVF + PQ**：适合超大规模（10 亿+ 向量），内存效率高。
 - **ScaNN**（Google）：2020 SOTA，召回率与速度平衡。
 - **DiskANN**：基于磁盘的 ANN，适合内存放不下的超大规模场景（Microsoft 2023）。
-- **Vamana**（Meta）：DiskANN 的开源版本。
+- **Vamana**（Microsoft）：DiskANN 所用的图索引算法，开源实现由 DiskANN 项目维护。
 
 **3. 训练范式**：
 

@@ -175,7 +175,7 @@
 
 ### 4.3 检索
 
-- 本书的 [docs/glossary.md](04-glossary.md) 索引文件可全文搜索。
+- 术语集中在本章正文（`00-introduction/04-glossary/04-glossary.md`），可直接全文搜索。
 - Obsidian / VSCode 等编辑器的全文搜索。
 
 ---

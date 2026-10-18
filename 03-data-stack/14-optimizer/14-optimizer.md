@@ -119,10 +119,10 @@
 - 优点：考虑数据分布。
 - 缺点：统计信息陈旧导致错误计划。
 
-**Cascades / Volcano 框架**：
+**Cascades / Volcano 框架**（两者都是**代价驱动**的搜索框架，区别在搜索与规则的通用程度）：
 
-- **Volcano**：基于规则的搜索框架。
-- **Cascades**：基于代价的搜索框架（Goetz Graefe）。
+- **Volcano**：优化器生成器（Goetz Graefe）——用变换规则扩展计划空间，按代价搜索并剪枝。
+- **Cascades**：Volcano 之后的通用框架（同一作者）——把"逻辑等价"与"物理实现"分层存入 Memo，规则集与搜索调度更通用。
 - **核心**：Memo（记忆化）+ Cost Model。
 
 **统计信息（Statistics）**：

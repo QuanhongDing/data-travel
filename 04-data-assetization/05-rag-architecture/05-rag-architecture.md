@@ -100,7 +100,7 @@
 **萌芽阶段（2020-2022）**：
 
 - **2020.05**：Lewis 等人发表 RAG 原论文，奠定架构基础。
-- **2020-2021**：REALM、RETRO、Atlas 等检索增强预训练模型出现。
+- **2020-2022**：REALM、RETRO、Atlas 等检索增强预训练模型出现。
 - **2021**：Faiss / Annoy 等向量索引成熟，RAG 工程化成为可能。
 - **2022.11**：ChatGPT 发布，RAG 工程化需求爆发。
 
@@ -112,9 +112,9 @@
 
 **Advanced / Modular RAG 阶段（2024）**：
 
-- **2024.02**：Modular RAG 论文（GAIR Lab）提出「模块化 RAG」架构。
-- **2024.04**：Self-RAG 论文发表，引入「自反思」机制。
-- **2024.04**：Corrective RAG（CRAG）论文发表。
+- **2024**：Modular RAG 预印本（GAIR Lab）提出「模块化 RAG」架构。
+- **2024**：Self-RAG 收录于 ICLR 2024（2023 年预印本），引入「自反思」机制。
+- **2024**：Corrective RAG（CRAG）预印本发表。
 - **2024.07**：Microsoft GraphRAG 开源引爆社区。
 
 **Agentic / GraphRAG 阶段（2024 末-2025）**：
@@ -123,7 +123,7 @@
 - **2025**：GraphRAG 与 Hybrid RAG 工业化，Neo4j 5 + Vector Index、Weaviate Hybrid Search 普及。
 - **2025**：RAG 评估体系成熟（RAGAS、TruLens、ARES、DeepEval）。
 
-**一句话总结**：**RAG 从「学术论文」→「LangChain 玩具」→「向量召回 + Prompt」→「模块化 RAG」→「Agentic + GraphRAG」五阶段演进，2025 年是其工业化落地的元年。**
+**一句话总结**：**RAG 的演进路径是「学术论文」→「LangChain 玩具」→「向量召回 + Prompt」→「模块化 RAG」→「Agentic + GraphRAG」，2025 年是其工业化落地的元年。**
 
 ---
 
@@ -255,7 +255,7 @@ Answer = LocalSearch(q, KG) ∨ GlobalSearch(q, Summaries)
 1. **Naive RAG**：用户问题 → Embedding → 向量召回 Top-K → 拼 Prompt → LLM 生成。
 2. **Advanced RAG**：Naive + Query Rewrite / HyDE / Reranker / Context Compression。
 3. **Modular RAG**（GAIR Lab 2024）：把 RAG 拆成「可插拔模块」（索引 / 检索 / 重排 / 生成 / 反馈）。
-4. **Self-RAG**（2024）：LLM 在生成中插入 `[Retrieve]` `[IsRel]` `[IsSup]` `[IsUse]` 反思 token。
+4. **Self-RAG**（2023 年预印本、ICLR 2024）：LLM 在生成中插入 `[Retrieve]` `[IsRel]` `[IsSup]` `[IsUse]` 反思 token。
 5. **Corrective RAG（CRAG）**（2024）：检索后做可信度评估，不行就触发 Web 搜索或重检索。
 6. **Agentic RAG**（2024-2025）：智能体决定「查什么、何时查、怎么组合」。
 7. **GraphRAG**（Microsoft 2024）：先建 KG，再基于图谱做 Local / Global Search。

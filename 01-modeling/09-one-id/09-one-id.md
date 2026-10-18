@@ -106,14 +106,14 @@ OneID 的发展大致可分为五个阶段，每个阶段对应一种技术栈�
 - ID-Mapping 任务正式被看作 **实体解析（Entity Resolution）** 问题。
 - 引入基于图嵌入（Graph Embedding）的 ID 匹配（DeepMatch、GraphER、GCN-based ER）。
 - 引入基于 Blocking + 排序学习（LTR）的端到端实体解析（DeepER、Ditto、HierMatcher）。
-- 关键论文：DeepER (VLDB 2018)、Ditto (SIGMOD 2021)、HierMatcher (NeurIPS 2021)。
+- 关键论文：DeepER (VLDB 2018)、Ditto (SIGMOD 2021；会议名在不同转述中口径不一，请按题名与作者检索原文核验)、HierMatcher (NeurIPS 2021)。
 
 **阶段 5 · 2023-2025：LLM 增强实体解析（Generative ER）**
 
 - 利用 LLM 进行实体解析推理，尤其在长文本属性（地址、姓名、公司名）匹配上超越传统模型。
 - 利用 LLM 进行 OneID 属性的自然语言解释、OneID 合并原因的可解释性输出。
 - 利用 LLM 做"自然语言级"的实体识别（"张三"和"Zhang San"、"张總"、"张 3 先生"是同一人吗？LLM 答 yes）。
-- 关键论文：GPT-4 Entity Resolution (Microsoft Research 2023)、Ditto+LLM、ZeroER (NeurIPS 2023)。
+- 关键论文：GPT-4 Entity Resolution (Microsoft Research 2023)、Ditto+LLM，以及 ZeroER 一线的零样本实体解析工作（篇名与发表会议请按题名与作者检索原文核验）。
 - 关键产品：阿里云实体解析（LLM 版）、Salesforce Data Cloud Zero-Copy ID Resolution、AWS Entity Resolution（2024 GA）、Azure AI Foundry ID Resolution、Palantir Foundry Entity Resolution。
 
 > **架构师视角**：每个阶段的跃迁都伴随"**打破 ID 孤岛**"的能力升级，从规则 → 图 → 嵌入 → 生成式 AI。2024-2025 年正处于阶段 5 的早期，LLM 辅助实体解析与传统概率图模型是 **并存而非替代**——纯 LLM 太贵，纯规则太死。
@@ -131,7 +131,7 @@ OneID 的发展大致可分为五个阶段，每个阶段对应一种技术栈�
 | **强匹配（Strong Match）** | 基于精确字段匹配的合并（手机号、身份证号、邮箱） | 阈值：1.0 |
 | **弱匹配（Weak Match）** | 基于模糊字段 / 行为 / 设备指纹的概率合并 | 阈值：0.7-0.95 |
 | **概率匹配（Probabilistic Match）** | Fellegi-Sunter 模型为基础的 ID 合并 | 接受阈值 ≥ 0.95 |
-| **实体解析（Entity Resolution, ER）** | 学术与系统领域的统称，包含 blocking、matching、clustering | 见 §2.3 |
+| **实体解析（Entity Resolution, ER）** | 学术与系统领域的统称，包含 blocking、matching、clustering | 见 §2.3（blocking 见本表「Blocking」行） |
 | **设备指纹（Device Fingerprint）** | 浏览器/设备的稳定标识（UA + 屏幕 + 字体 + 插件 + canvas 等） | 命中率 70-90% |
 | **设备 ID** | 移动端的稳定 ID（IDFA / OAID / IMEI / Android ID / MAC） | IDFA iOS14 后需授权 |
 | **手机号三要素** | 手机号 + 姓名 + 身份证号 三字段组合 | 强匹配主流 |
@@ -253,9 +253,11 @@ WHERE a.phone_hash = b.phone_hash          -- 手机号匹配
 
 ```python
 from jellyfish import jaro_winkler_similarity
-print(jaro_winkler_similarity("张三", "Zhang San"))    # 0.55
-print(jaro_winkler_similarity("张三", "张三丰"))      # 0.88
+print(jaro_winkler_similarity("张三", "Zhang San"))    # 0.0（汉字与拼音无共同字符，Jaro 为 0）
+print(jaro_winkler_similarity("张三", "张三丰"))      # ≈0.91（共享 2 字前缀，JW 对前缀加权）
 ```
+
+注意第一行：**同一个人写成不同书写体系时（「张三」与「Zhang San」），Jaro-Winkler 这类字符级相似度直接归零**——这类对齐要靠音译归一、embedding 或 LLM（见 §2.3.6）；第二行的数值随实现的前缀加权参数略有差异，请以所用库的当前版本为准。
 
 #### 2.3.3 图算法（图遍历 + 关系传递）
 
@@ -294,9 +296,9 @@ Step 4: 周期重算（每日/每小时）
 代表论文与模型：
 
 - **DeepER (VLDB 2018)**：用 RNN 编码属性序列，Attention 聚合
-- **Ditto (SIGMOD 2021)**：基于预训练 BERT 的实体解析 SOTA，可注入领域知识
+- **Ditto (SIGMOD 2021，会议名以原文为准)**：基于预训练 BERT 的实体解析 SOTA，可注入领域知识
 - **HierMatcher (NeurIPS 2021)**：层次化匹配（先 entity 级，再 value 级）
-- **ZeroER (NeurIPS 2023)**：零样本实体解析，用 LLM 替代训练数据
+- **ZeroER（零样本实体解析）**：不依赖人工标注的训练数据完成匹配；篇名与发表会议请按题名与作者检索原文核验
 
 Ditto 核心思想：
 

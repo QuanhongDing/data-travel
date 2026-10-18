@@ -17,7 +17,7 @@
 | 流量调度怎么实现？DNS / GSLB / 服务网格？ | §4.2 |
 | 全球数据库怎么选？CockroachDB / YugabyteDB / TiDB？ | §4.3 |
 | AI 时代异地多活有什么新挑战？ | §5 |
-| 真实案例：阿里 / 字节 / Google Spanner | §6.1 |
+| 真实案例：阿里 / 美团 / 字节 / Netflix | §6 |
 
 ---
 

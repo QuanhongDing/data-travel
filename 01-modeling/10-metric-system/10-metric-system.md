@@ -106,7 +106,7 @@
 **阶段 3 · 2010-2020：互联网指标平台化（OneMetric Era）**
 
 - 阿里、字节、美团等互联网公司沉淀出 **指标平台（Metric Platform）** 模式。
-- 阿里 OSCAR（O = 业务域，S = 修饰词，C = 业务过程，A = 统计周期，R = 原子指标）成为业界标杆。
+- 阿里 OSCAR（O = 业务对象，S = 修饰词，C = 业务过程，A = 统计周期，R = 原子指标）成为业界标杆。
 - 关键产品：阿里 Quick BI / DataPhin 指标中台、字节火山引擎指标平台、美团指标平台、滴滴 DiDi 数据指标中台。
 - 关键概念：原子指标、派生指标、业务修饰、时间周期。
 
@@ -177,7 +177,7 @@
 指标的数学形式化：
 
 ```
-Metric(m, D, F, G) = G(Agg(F × m(S)))
+Metric(m, D, F, G) = G(Agg(F × m))
 ```
 
 其中：
@@ -190,7 +190,8 @@ Metric(m, D, F, G) = G(Agg(F × m(S)))
 **示例**：
 
 ```yaml
-metric: gmv_7d
+metric:
+  id: gmv_7d
   measure: order.payment_amount
   filters:
     - order.status = 'paid'
@@ -218,7 +219,8 @@ metric: gmv_7d
 **示例**：
 
 ```yaml
-composite: conversion_rate_7d
+composite:
+  id: conversion_rate_7d
   definition: |
     近 7 天注册用户中完成首单的转化率
   formula: "first_purchase_users_7d / register_users_7d"
@@ -245,6 +247,7 @@ composite: conversion_rate_7d
 **输入**：业务过程 P + 度量值 V
 **输出**：原子指标定义
 
+```python
 def define_atomic_metric(process, measure, agg, filters):
     return {
         "name": f"{process}_{measure}_{agg}",
@@ -268,13 +271,14 @@ def derive_metric(atomic_metric, modifiers, period):
     derived["period"] = period
     derived["type"] = "derived"
     
-    # 自动生成命名
+    # 自动生成命名：原子指标_业务过程_时间周期_业务修饰（与 §2.1 / §2.2.1 的示例名同序）
     name_parts = [
-        period["name"],                    # "近7日"
-    ] + [m["name"] for m in modifiers]    # ["PC端", "新用户"]
-    name_parts.append(atomic_metric["name"])  # "订单金额"
+        atomic_metric["name"],                    # "订单金额"
+        atomic_metric["process"],                 # "支付"
+        period["name"],                           # "近7日"
+    ] + [m["name"] for m in modifiers]            # ["PC端", "新用户"]
     
-    derived["full_name"] = "_".join(reversed(name_parts))
+    derived["full_name"] = "_".join(name_parts)
     return derived
 ```
 

@@ -13,7 +13,7 @@
 | AI 资产到底是什么 | §1.1、§2.1 |
 | Prompt / Skill / Workflow 怎么版本化 | §4.1、§4.2 |
 | Agent Store / Marketplace 怎么设计 | §4.3 |
-| AI 资产的 ROI 怎么评估 | §6.4 |
+| AI 资产的 ROI 怎么评估 | §3.7 |
 
 ---
 

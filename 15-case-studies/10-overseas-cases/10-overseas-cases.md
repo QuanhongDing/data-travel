@@ -9,14 +9,14 @@
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
 | 海外头部公司的整体技术架构 | §3.1、§3.2、§3.3 |
-| Databricks Lakehouse 演进 | §4.1 |
-| Snowflake 数据共享 + AI | §4.2 |
-| Stripe 财务数据架构 | §4.3 |
-| LinkedIn 大数据 + AI | §4.4 |
-| Anthropic Claude Engineering | §4.5 |
-| OpenAI Engineering 演进 | §4.6 |
-| Slack / Notion 数据架构 | §4.7 |
-| AI Native 海外趋势 | §5 |
+| Databricks Lakehouse 演进 | §3.2.1 |
+| Snowflake 数据共享 + AI | §3.2.2 |
+| Stripe 财务数据架构 | §3.2.3 |
+| LinkedIn 大数据 + AI | §3.2.4 |
+| Anthropic Claude Engineering | §3.2.5 |
+| OpenAI Engineering 演进 | §3.2.6 |
+| Slack / Notion 数据架构 | §3.2.7 |
+| 前沿演进（AI 时代） | §5 |
 | 复用清单 | §6.4 |
 
 ---
@@ -91,7 +91,7 @@ AI 公司（Anthropic / OpenAI）面临"模型 + 数据 + 推理"全栈挑战。
 
 - [§3. 架构演进（分案例）](10-overseas-cases-section-3-sec3.md)
 - [§4. 关键决策](10-overseas-cases-section-4-sec4.md)
-- [§5. AI Native 趋势（2024–2025）](10-overseas-cases-section-5-ai-native---2024-2025.md)
+- [§5. 前沿演进（AI 时代）](10-overseas-cases-section-5-ai-native---2024-2025.md)
 - [§6. 复用经验](10-overseas-cases-section-6-sec6.md)
 - [§7. 与同类案例对比](10-overseas-cases-section-7-sec7.md)
 - [§8. 面试真题集](10-overseas-cases-section-8-sec8.md)
@@ -104,7 +104,7 @@ AI 公司（Anthropic / OpenAI）面临"模型 + 数据 + 推理"全栈挑战。
 
 - [§3. 架构演进（分案例）](10-overseas-cases-section-3-sec3.md)
 - [§4. 关键决策](10-overseas-cases-section-4-sec4.md)
-- [§5. AI Native 趋势（2024–2025）](10-overseas-cases-section-5-ai-native---2024-2025.md)
+- [§5. 前沿演进（AI 时代）](10-overseas-cases-section-5-ai-native---2024-2025.md)
 - [§6. 复用经验](10-overseas-cases-section-6-sec6.md)
 - [§7. 与同类案例对比](10-overseas-cases-section-7-sec7.md)
 - [§8. 面试真题集](10-overseas-cases-section-8-sec8.md)

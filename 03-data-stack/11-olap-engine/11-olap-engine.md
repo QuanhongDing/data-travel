@@ -93,7 +93,8 @@
 
 - 2010：Greenplum 开源。
 - 2012：Amazon Redshift。
-- 2014：Impala 1.0、Presto 0.1。
+- 2012：Impala（Cloudera）。
+- 2013：Presto 0.1（Facebook）。
 
 **第三阶段：列存 + 向量化（2015-2020）**
 
@@ -105,7 +106,7 @@
 **第四阶段：实时 OLAP（2020-2024）**
 
 - 2020：StarRocks 1.x、Doris 1.0。
-- 2022：StarRocks 2.x、Doris 1.2+、ClickHouse 23.x。
+- 2022：StarRocks 2.x、Doris 1.2+、ClickHouse 22.x。
 - 2023：StarRocks 3.0（存算分离）。
 - 2024：SelectDB Cloud、Apache Doris 2.1。
 

@@ -12,7 +12,7 @@
 | --- | --- |
 | Skill 提取是什么 | §1.1、§2.1 |
 | 如何从行为日志自动提取 Skill | §3.1、§4.1 |
-| Procedural Memory / Self-Play RL | §2.3、§5.3 |
+| Procedural Memory / Self-Play RL | §2.3、§5.4 |
 
 ---
 

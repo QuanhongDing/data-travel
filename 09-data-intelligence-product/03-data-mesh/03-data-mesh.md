@@ -325,7 +325,7 @@ Trino (PrestoSQL) 用**分布式查询优化器**实现联邦查询。
 
 ### 2.4 与相邻概念的关系
 
-- **Data Mesh vs 数据中台**：完全反演——数据中台是「集中化」，Data Mesh 是「联邦化」。详见 §7.4 详细对比。
+- **Data Mesh vs 数据中台**：完全反演——数据中台是「集中化」，Data Mesh 是「联邦化」。两者的机制差异见 §7.3.1（所有权归属）与 §7.3.2（治理的执行位置）。
 - **Data Mesh vs Lakehouse**：Lakehouse 是 Data Mesh 推荐的存储层（Iceberg / Hudi / Delta），Data Mesh 是「Lakehouse 之上的联邦化架构」。
 - **Data Mesh vs 数据编织（Data Fabric）**：Data Fabric 是「自动化数据集成 + AI 驱动的元数据」；Data Mesh 是「组织 + 架构变革」。两者可互补。
 - **Data Mesh vs 微服务架构（Microservices）**：Data Mesh 是「微服务架构的数据版本」——同样的「分布式 + 自服务 + 自治理」哲学，应用到数据领域。

@@ -261,7 +261,7 @@
 - **LLM-as-Decision-Reasoner**：用 LLM 解释决策（XAI）。
 - **LLM-as-Decision-Maker**：用 LLM 直接做决策（如对话式推荐、对话式营销）。
 
-**8. Agent for Decision 算法：**
+**7. Agent for Decision 算法：**
 
 - **ReAct**：Reason + Act 循环，让 LLM 推理 + 工具调用。
 - **Reflexion**：Agent 反思 + 修正。
@@ -269,7 +269,7 @@
 - **LangGraph**：基于图编排的 Agent 框架。
 - **MetaGPT**：Multi-Agent 协作框架。
 
-### 9.4 与相邻概念的关系
+### 2.4 与相邻概念的关系
 
 - **决策智能 vs 推荐系统**：推荐系统是决策智能的子集（个性化推荐是营销决策的一种）。决策智能还包括风控、运营、增长等场景。
 - **决策智能 vs BI**：BI 是「看数据做决策」，决策智能是「系统自动做决策 + 业务方决策辅助」。

@@ -13,10 +13,10 @@
 | 存储降本有哪些工程手段？冷热分层怎么做？ | §3.1、§4.1 |
 | 计算降本怎么做？小文件 / Compaction / 弹性伸缩？ | §4.1、§4.2 |
 | 查询降本怎么做？缓存 / SQL 优化 / 资源隔离？ | §4.1、§4.3 |
-| 成本怎么归因到团队 / 项目？Showback / Chargeback 怎么设计？ | §2.3、§4.4 |
-| AI 时代的 GPU 成本怎么治理？ | §5.1、§6.1 |
-| Snowflake / Databricks / 阿里云费用中心怎么用？ | §4.4、§7.1 |
-| 怎么评估降本 ROI？30-50% 降本怎么做到？ | §6.3、§6.4 |
+| 成本怎么归因到团队 / 项目？Showback / Chargeback 怎么设计？ | §2.2、§4.5 |
+| AI 时代的 GPU 成本怎么治理？ | §5.1、§3.1 |
+| Snowflake / Databricks / 阿里云费用中心怎么用？ | §4.5、§7.1 |
+| 怎么评估降本 ROI？30-50% 降本怎么做到？ | §3.5、§3.7 |
 
 ---
 
@@ -156,7 +156,7 @@
 - 2013：Snowflake 概念（计算与存储分离）。
 - 2015：AWS 推出 Reserved Instance（预留实例）。
 - 2017：AWS 推出 Spot Instance 成熟。
-- 2019：FinOps 基金会成立，发布 FinOps Framework。
+- 2019：FinOps 基金会成立（FinOps Framework 于 2020 年发布）。
 - 2020：Cloudability、CloudHealth 等 FinOps 工具爆发。
 
 **AI 与湖仓时代（2020–2025）**：

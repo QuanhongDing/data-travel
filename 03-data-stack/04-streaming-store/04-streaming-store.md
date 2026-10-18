@@ -13,8 +13,8 @@
 | 流式存储与传统消息队列的本质区别？ | §1.1 |
 | Kafka / Pulsar / RocketMQ 怎么选？ | §7.1 |
 | Tiered Storage（分层存储）原理是什么？ | §2.1 |
-| Kafka 3.7+ 的 KRaft、AutoMQ、Warpstream 有哪些新趋势？ | §5.3 |
-| 流批一体存储（Pravega / Fluss）怎么落地？ | §3.1 |
+| Kafka 3.7+ 的 KRaft、AutoMQ、Warpstream 有哪些新趋势？ | §5.1 表第 9 / 11 行、§5.4 |
+| 流批一体存储（Paimon / Fluss）怎么落地？ | §3.2.7 |
 
 ---
 
@@ -96,9 +96,9 @@
 - 2000s：RabbitMQ（AMQP）、ActiveMQ、IBM MQ。
 - 特点：队列模型、ACK 后删除、适合任务分发。
 
-**第二阶段：日志型流存储（2010-2015）**
+**第二阶段：日志型流存储（2011-2015）**
 
-- 2010：LinkedIn 开源 Kafka，引入"日志（Log）+ offset"模型。
+- 2011：LinkedIn 开源 Kafka，引入"日志（Log）+ offset"模型。
 - 2013：Kafka 0.8 加入 replication，0.10 加入 Streams API。
 - 2014：Yahoo 开源 Pulsar，引入"计算存储分离"。
 

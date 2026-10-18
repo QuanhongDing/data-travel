@@ -14,7 +14,7 @@
 | Iceberg / Hudi / Delta 的 Schema 演进策略有何不同？ | §2.1 |
 | Time Travel 的工程原理？ | §2.3 |
 | Schema Registry（Confluent / Karapace）怎么落地？ | §4.1 |
-| 2024-2025 Iceberg V3、Delta UniForm 有哪些新特性？ | §5.3 |
+| 2024-2025 Iceberg V3、Delta UniForm 有哪些新特性？ | §5.1 的落点表、§5.4 |
 
 ---
 
@@ -100,7 +100,7 @@
 
 - 2020：Delta Lake 支持 Schema Evolution + Time Travel。
 - 2021：Iceberg 1.0、Apache Hudi 0.10 都支持 Schema Evolution。
-- 2022：Iceberg V2 + Delta UniForm。
+- 2022：Iceberg V2 规范。
 - 2023：Iceberg V3 草案、Paimon 主键演进。
 
 **第四阶段：AI 原生 Schema 管理（2024-至今）**

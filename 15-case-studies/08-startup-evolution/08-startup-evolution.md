@@ -11,10 +11,10 @@
 | 早期初创公司（0 → A 轮）该怎么起步 | §3.1、§3.2 |
 | 成长期公司（B → C 轮）该怎么演进 | §3.3、§3.4 |
 | 独角兽 / 后期公司该怎么收敛 | §3.5 |
-| Postgres + dbt + Snowflake 现代栈 | §4.1 |
-| Databricks Lakehouse 路径 | §4.2 |
+| Postgres + dbt + Snowflake 现代栈 | §4.3 |
+| Databricks Lakehouse 路径 | §4.3 |
 | AI Native 数据栈怎么搭 | §4.3 |
-| Anthropic / Cursor / Cognition 数据栈 | §4.4、§4.5、§4.6 |
+| Anthropic / Cursor / Cognition 数据栈 | §4.3 |
 | 踩过哪些坑 | §5.1、§5.2、§5.3 |
 | 复用清单 | §6.4 |
 

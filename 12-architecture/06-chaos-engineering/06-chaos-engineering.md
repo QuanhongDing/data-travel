@@ -10,12 +10,12 @@
 
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
-| 老板问"系统挂了能不能快速恢复"如何回答？ | §1.2、§3.1 |
+| 老板问"系统挂了能不能快速恢复"如何回答？ | §1.2、§3.2 |
 | 混沌工程的核心思想是什么？和测试有什么区别？ | §1.1、§2.1 |
-| 故障注入有哪些类型？怎么设计？ | §2.3、§3.1 |
+| 故障注入有哪些类型？怎么设计？ | §2.3、§3.2 |
 | ChaosBlade / LitmusChaos / Gremlin 怎么选？ | §4.3 |
 | AI 时代混沌工程有什么新变化？ | §5 |
-| 真实案例：Netflix / 阿里 / 字节混沌实践 | §6.1 |
+| 真实案例：Netflix / 阿里 / 字节混沌实践 | §6.1、§6.2、§6.3 |
 
 ---
 
@@ -93,9 +93,9 @@
 
 ### 1.4 演进历程
 
-**起源（2010-2014）**：
+**起源（2011-2015）**：
 
-- 2011：Netflix 推出 **Chaos Monkey**，随机 kill 生产环境 EC2 实例（Chaos Monkey / Simian Army 的公开年份本仓口径不一——另有章节记为 2010 年，此处按 2011 年之说，不锁定单一值）。
+- 2011：Netflix 推出 **Chaos Monkey**，随机 kill 生产环境 EC2 实例。
 - 2012：Netflix **Chaos Kong** 模拟整个 AWS Region 故障。
 - 2014：Netflix 公开 **Chaos Engineering Principles**，混沌工程学科化。
 - 2015：Netflix **Chaos Automation Platform (ChAP)** 发布，自动化编排。
@@ -103,7 +103,7 @@
 **工具化（2015-2020）**：
 
 - 2016：Gremlin 商业化混沌工程平台。
-- 2018：**Litmus**、CNCF **Chaos Mesh**（原名 xline）。
+- 2018：**Litmus**、CNCF **Chaos Mesh**。
 - 2019：阿里 **ChaosBlade** 开源（基于阿里 AHAS 内部实践）。
 - 2019：CNCF **LitmusChaos** 成为 CNCF Sandbox 项目。
 

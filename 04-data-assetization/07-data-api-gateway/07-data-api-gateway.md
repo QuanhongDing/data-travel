@@ -100,7 +100,7 @@
 
 - **Kong**（2015，Mashape 开源）——基于 OpenResty，插件丰富。
 - **Tyk**（2015）——Go 语言实现。
-- **Ambassador / Envoy**（2017）——云原生 Service Mesh。
+- **Ambassador**（2017）/ **Envoy**（2016，Lyft 开源）——云原生 Service Mesh。
 - **Apache APISIX**（2019，国产开源）——云原生 API 网关。
 - **Traefik**（2015）——云原生反向代理。
 
@@ -179,11 +179,12 @@
 [Closed] → 错误率超阈值 → [Open] → 超时 → [Half-Open]
    ↑                                    ↓
    └────────── 成功 ←───────────────────┘
+                                          └── 探测失败 ──> [Open]
 ```
 
 - **Closed**：正常，请求直达后端。
 - **Open**：熔断，请求直接失败。
-- **Half-Open**：试探，放部分请求看后端是否恢复。
+- **Half-Open**：试探，放部分请求看后端是否恢复；恢复则回 Closed，未恢复则退回 Open。
 
 **缓存策略**：
 
