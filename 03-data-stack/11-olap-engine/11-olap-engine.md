@@ -114,7 +114,7 @@
 
 - 2024：StarRocks 3.x + 向量索引、Doris 2.1 + AI Functions。
 - 2024：Snowflake Cortex + Vector、Databricks Vector Search。
-- 2025：AI 原生 OLAP（自然语言查询、自治优化）。
+- 2025：「AI 原生 OLAP」的两项代表性能力（自然语言查询、自治优化）尚未既成——前者在评测与原型层（L2），后者仍是路线图（L3），成熟度见 §5。
 
 **一句话总结**：**OLAP 引擎从"传统 OLAP"→"MPP 数据库"→"列存向量化"→"实时 OLAP"→"AI 原生"五阶段演进，今天 StarRocks / Doris / ClickHouse 三足鼎立。**
 

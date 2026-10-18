@@ -8,10 +8,10 @@
 
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
-| 1:1 怎么开？频率、内容、技巧？ | §2.1、§4.1 |
-| OJT（On Job Training）怎么设计？ | §2.3、§6 案例 7.4 |
+| 1:1 怎么开？频率、内容、技巧？ | §2.3、§4.1 |
+| OJT（On Job Training）怎么设计？ | §2.3、§6 案例 6.4 |
 | GROW Model 怎么用？ | §2.3、§4.2 |
-| IDP 怎么写？ | §2.1、§4.3 |
+| IDP 怎么写？ | §2.3、§4.5 |
 | Sponsor vs Mentor 的区别？ | §2.1、§2.3 |
 | AI 时代怎么用 AI 辅助辅导？ | §5.1、§5.3 |
 
@@ -160,7 +160,7 @@ OneOnOneValue = Frequency × Depth × Trust
   - Frequency: 每周 1 次（5 分）、每月 1 次（3 分）、偶尔（1 分）
   - Depth: 触及成长卡点（5 分）、只聊工作（3 分）、走过场（1 分）
   - Trust: 心理安全（5 分）、形式化（3 分）、表面（1 分）
-  - 总分 ≥ 60 分（每维度 3 分 × 20）：高质量 1:1
+  - 总分 ≥ 60 分（满分 5 × 5 × 5 = 125，约当三个维度各 ≈3.9 分）：高质量 1:1
 ```
 
 **Feedback 的有效性模型**：
@@ -303,10 +303,10 @@ I：这让作者不知道代码质量是否过关，也影响团队 CR 质量
 
 - [§3. 设计模式与范式](07-mentorship-section-3-sec3.md)
 - [§4. 工程实现](07-mentorship-section-4-sec4.md)
-- [§9. 资源](07-mentorship-section-9-sec9.md)
 - [§5. 前沿演进（AI 时代）](07-mentorship-section-5-ai.md)
 - [§6. 落地实践](07-mentorship-section-6-sec6.md)
 - [§7. 与其他方法对比](07-mentorship-section-7-sec7.md)
 - [§8. 面试真题集](07-mentorship-section-8-sec8.md)
+- [§9. 资源](07-mentorship-section-9-sec9.md)
 
 ---

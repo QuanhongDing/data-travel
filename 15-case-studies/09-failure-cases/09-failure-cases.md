@@ -1,6 +1,6 @@
-# 失败案例研究案例研究
+# 失败案例研究
 
-> **一句话定位**：失败是最好的老师——本文剖析 8 个真实的工业级失败案例（Facebook 2019、AWS S3 2017、Cloudflare 2019、字节 2020、阿里 2018、Robinhood 2020、Uber 2018、加州/阴影的 AI 项目），帮数据架构师避免重蹈覆辙。
+> **一句话定位**：失败是最好的老师——本文剖析 8 个真实的工业级失败案例（Facebook 2019、AWS S3 2017、Cloudflare 2019、字节 2020、阿里 2018、Robinhood 2020–2021、Uber 2018、加州/阴影的 AI 项目），帮数据架构师避免重蹈覆辙。
 
 > 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**09-失败案例研究**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 复用经验。
 
@@ -14,11 +14,11 @@
 | Cloudflare 2019 故障 | §3.2.3 |
 | 字节 2020 故障 | §3.2.4 |
 | 阿里 2018 中台争议 | §3.2.5 |
-| Robinhood 2020 故障 | §3.2.6 |
+| Robinhood 2020–2021 故障 | §3.2.6 |
 | Uber 2018 数据丢失 | §3.2.7 |
 | AI 项目失败案例 | §3.2.8 |
 | FailOps 失败运营方法论 | §4 |
-| 复用清单 | §6.4 |
+| 复用清单 | §6.6 |
 
 ---
 
@@ -42,8 +42,8 @@
 | **大规模宕机** | Facebook 2019、AWS S3 2017、Cloudflare 2019 | 单点故障、配置错误 |
 | **数据丢失** | Uber 2018、Github 2018 | 备份缺失、误操作 |
 | **架构争议** | 阿里 2018 中台、字节 2020 故障 | 过度中心化、复杂度失控 |
-| **金融事故** | Robinhood 2020 | 风控缺失、合规不足 |
-| **AI 项目失败** | 麦肯锡 2018、IBM Watson Health 2020 | AI 过度承诺、数据不足 |
+| **金融事故** | Robinhood 2020–2021 | 风控缺失、合规不足 |
+| **AI 项目失败** | 麦肯锡 2018、IBM Watson Health 2022 | AI 过度承诺、数据不足 |
 | **人为失误** | AWS 2017、Cloudflare 2019 | 变更管理不足 |
 
 ---
@@ -120,7 +120,7 @@
 - [§3. 失败案例分析](09-failure-cases-section-3-sec3.md)
 - [§4. FailOps 失败运营方法论](09-failure-cases-section-4-failops.md)
 - [§5. 关键决策](09-failure-cases-section-5-sec5.md)
-- [§6. 复用经验](09-failure-cases-section-6-sec6.md)
+- [§6. 落地实践](09-failure-cases-section-6-sec6.md)
 - [§7. 与同类案例对比](09-failure-cases-section-7-sec7.md)
 - [§8. 面试真题集](09-failure-cases-section-8-sec8.md)
 
@@ -133,7 +133,7 @@
 - [§3. 失败案例分析](09-failure-cases-section-3-sec3.md)
 - [§4. FailOps 失败运营方法论](09-failure-cases-section-4-failops.md)
 - [§5. 关键决策](09-failure-cases-section-5-sec5.md)
-- [§6. 复用经验](09-failure-cases-section-6-sec6.md)
+- [§6. 落地实践](09-failure-cases-section-6-sec6.md)
 - [§7. 与同类案例对比](09-failure-cases-section-7-sec7.md)
 - [§8. 面试真题集](09-failure-cases-section-8-sec8.md)
 

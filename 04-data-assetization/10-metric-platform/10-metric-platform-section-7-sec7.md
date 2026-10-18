@@ -83,7 +83,7 @@
 
 **由此必然导出的性质**：**因为定义与消费解耦，所以同一份口径能同时被看板、业务系统、Agent 消费，口径变更只需改一处，且「谁在什么时候把过滤条件从已支付改成已发货」在版本历史里可查；代价是多了一层编译——语义层的表达力弱于手写 SQL，窗口函数、递归、跨周期复杂运算这类加工往往表达不出来，只能先把中间结果物化成表、让语义层只做聚合。** 这一条代价在实践中非常具体：它意味着你可能需要一个额外的调度层来生产中间表，而这层调度不在语义层工具的职责范围内。
 
-**公开证据**：【公开】dbt 的指标以 YAML 声明并区分 simple / derived / ratio / cumulative 等类型（来源：dbt Labs 官方文档「About the dbt Semantic Layer」与「MetricFlow」，docs.getdbt.com；dbt Semantic Layer 2022 年推出、MetricFlow 2022 年开源）；【公开】Cube 把 measure / dimension 声明为 schema、对外只暴露 API（来源：Cube 官方文档中 measures / dimensions / filters 的设计说明，docs.cube.dev；该文档随版本更新，没有单一发布年份，能力请按当前版本核对）；【公开】Airbnb 以「指标定义与查询分离」实现 Headless BI（来源：Airbnb 工程博客《Minerva: Building a Scalable Metrics Platform》，2020 年前后）；【经验】字节 OSCAR 的定位与定义形态在书内只有二手记录，且两处归属不一致（[§4.3 工具链清单](10-metric-platform-section-4-sec4.md) 把它记为字节的开源指标平台，[§6 案例 10.1](10-metric-platform-section-6-sec6.md) 记录的五要素则挂在阿里 OneMetric 名下，详见 7.3.2），故本节不把它当一手出处引用。**具体某版本支持哪些能力，请以官方文档当前版本为准**。
+**公开证据**：【公开】dbt 的指标以 YAML 声明并区分 simple / derived / ratio / cumulative 等类型（来源：dbt Labs 官方文档「About the dbt Semantic Layer」与「MetricFlow」，docs.getdbt.com；dbt Semantic Layer 2022 年推出、MetricFlow 2022 年开源）；【公开】Cube 把 measure / dimension 声明为 schema、对外只暴露 API（来源：Cube 官方文档中 measures / dimensions / filters 的设计说明，docs.cube.dev；该文档随版本更新，没有单一发布年份，能力请按当前版本核对）；【公开】Airbnb 以「指标定义与查询分离」实现 Headless BI（来源：Airbnb 工程博客《Minerva: Building a Scalable Metrics Platform》，2020 年前后）；【经验】字节 OSCAR 的定位与定义形态在书内只有二手记录，且两处归属不一致（[§4.3 工具链清单](10-metric-platform-section-4-sec4.md) 把它记为字节的开源指标平台，[§6 案例 6.1](10-metric-platform-section-6-sec6.md) 记录的五要素则挂在阿里 OneMetric 名下，详见 7.3.2），故本节不把它当一手出处引用。**具体某版本支持哪些能力，请以官方文档当前版本为准**。
 
 **失效条件**：消费端只有一个、指标数在几十个以内时，解耦的收益为负——你付出了编译层与定义登记流程，却只服务一张报表。这时「全面上语义层」是最常见的一次过度投资。
 
@@ -104,7 +104,7 @@
 
 **由此必然导出的性质**：**因为定义是版本化的声明对象，所以变更可以 diff、可以评审、可以回滚，口径从「谁记得」变成「谁签字」；代价是每个指标都要走登记流程，长尾指标的登记成本高于直接写一行 SQL——这个成本差正是「口径统一」在长尾上反复失败的原因。** 本章 §3.7 的判据「出现团队名即视为无主」同源：无主的东西不会有人为它的口径负责。
 
-**公开证据**：【经验】「把口径写成结构化要素」这一形态在书内是有记录的——[§6 案例 10.1](10-metric-platform-section-6-sec6.md) 把「Owner / Statistic / Caliber / Attribute / Reference」五要素列为阿里 OneMetric 的核心组件，而 [§4.3](10-metric-platform-section-4-sec4.md) 又把 OSCAR 记为字节的开源指标平台；两处归属不一致，且都只是书内二手记录（§3.2.6 对同一线索的结论也是【经验】），故本节按【经验】而不按【公开】引用，也不裁定这五要素出自谁；其设计与归属可按厂商公开仓库与产品文档自行核对。【公开】同一脉络的另一条建模法——阿里 OneMetric 的「原子指标 + 修饰词 + 时间周期 + 维度」——有公开成书出处（来源：阿里巴巴数据技术团队《大数据之路：阿里巴巴大数据实践》，该书是该方法论的标准出处，见 [§ 8 参考来源](10-metric-platform-section-8-sec8.md)；出版信息可按书名核对），主文件 [§1.4 演进历程](10-metric-platform.md) 亦收录。【经验】Owner 制在实践中的可持续性随组织规模变化，无单一权威来源，故本节只给判定方法而不给覆盖率数值。
+**公开证据**：【经验】「把口径写成结构化要素」这一形态在书内是有记录的——[§6 案例 6.1](10-metric-platform-section-6-sec6.md) 把「Owner / Statistic / Caliber / Attribute / Reference」五要素列为阿里 OneMetric 的核心组件，而 [§4.3](10-metric-platform-section-4-sec4.md) 又把 OSCAR 记为字节的开源指标平台；两处归属不一致，且都只是书内二手记录（§3.2.6 对同一线索的结论也是【经验】），故本节按【经验】而不按【公开】引用，也不裁定这五要素出自谁；其设计与归属可按厂商公开仓库与产品文档自行核对。【公开】同一脉络的另一条建模法——阿里 OneMetric 的「原子指标 + 修饰词 + 时间周期 + 维度」——有公开成书出处（来源：阿里巴巴数据技术团队《大数据之路：阿里巴巴大数据实践》，该书是该方法论的标准出处，见 [§ 8 参考来源](10-metric-platform-section-8-sec8.md)；出版信息可按书名核对），主文件 [§1.4 演进历程](10-metric-platform.md) 亦收录。【经验】Owner 制在实践中的可持续性随组织规模变化，无单一权威来源，故本节只给判定方法而不给覆盖率数值。
 
 **失效条件**：登记与复核的人力是线性的，指标数量的增长常常不是。当指标过千、增长快于治理人数时，Owner 制会退化成「有 Owner 字段但没人真的管」——此时要压缩的是登记对象的范围（只强制治理核心指标），而不是加人。
 
@@ -237,11 +237,13 @@ AI 增强        成本 ≈ 语义层全部成本 + 召回索引维护 + 评测�
 | 小团队、指标几十个、只有一张看板 | BI 工具内建指标 | Cube.js 自建 API | 语义层的编译层收益覆盖不了定义登记成本 |
 | 已重度使用 dbt、100–500 个指标 | dbt Semantic Layer | Cube | 换栈要重建已跑通的模型与测试 |
 | 要把指标嵌进自有产品对外提供 | Cube | dbt Semantic Layer | API-first 定位与嵌入式场景更贴 |
-| 万级指标、跨 BU、要指标级血缘与 Owner | 自研平台 / OneMetric / DataFinder / WeData | 语义层 + 数据目录 | 纯语义层不提供审批流与 Owner 制度 |
+| 核心指标 > 500（与 §7.5 同口径）、跨 BU、要指标级血缘与 Owner | 自研平台 / OneMetric / DataFinder / WeData | 语义层 + 数据目录 | 纯语义层不提供审批流与 Owner 制度 |
 | 数据不能出云 / 需私有化 | 开源语义层 + ClickHouse / Doris / StarRocks | 云厂商 AI 增强 | 云厂商的 NL 入口绑定在其数据平台上 |
 | 需要自然语言取数且定义已结构化 | Cortex Analyst / Genie / Quick BI + 通义 | 自建 Text-to-Metric | 自建要额外维护召回索引与评测集 |
 | 业务方强烈要求直连明细做自助分析 | 语义层 + 受控直连通道 | 开放明细表权限 | 无口径层的直连会让治理被旁路（7.2） |
 | 团队小、ETL 人力本就充足 | 汇总层宽表承载口径 | 轻量语义层 | 宽表口径无法区分「改口径」与「补数据」 |
+
+> **口径说明**：本表与 §7.5 决策树的规模阈值，都按**核心指标数**（需要统一口径、被多方消费的指标）计；§3.3 / §3.8 里「指标上万」用的是**指标总量**口径。两者不是同一个计数口径，不能直接比较——「核心指标 > 500」与「指标总量上万」并不矛盾。
 
 **五条常见组合**（每条都要说清职责边界与运维代价）：
 

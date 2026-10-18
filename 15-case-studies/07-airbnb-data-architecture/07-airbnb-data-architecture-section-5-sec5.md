@@ -259,4 +259,4 @@ Airbnb 的六个坑落在五个不同的层上（指标层、元数据层、实�
 
 > 💡 **思考锚点**：做一次绕行测试——直接调你们旧的直连入口 / 旧脚本，它今天还能拿到同一个数字吗（能拿到就说明集中还没完成，无论新平台使用量多高）？再抽 5 个被跨团队引用的指标让两个团队各写一遍算法，分歧数是多少？这两个数里，你先让哪个降到零？
 
-> 配合 [主文件 § 2 挑战](07-airbnb-data-architecture.md)、[§ 3 架构演进](07-airbnb-data-architecture-section-3-sec3.md)、[§ 4 关键决策](07-airbnb-data-architecture-section-4-sec4.md) 与 [§ 6 复用经验](07-airbnb-data-architecture-section-6-sec6.md) 阅读。
+> 配合 [主文件 § 2 挑战](07-airbnb-data-architecture.md)、[§ 3 架构演进](07-airbnb-data-architecture-section-3-sec3.md)、[§ 4 关键决策](07-airbnb-data-architecture-section-4-sec4.md) 与 [§ 6 落地实践](07-airbnb-data-architecture-section-6-sec6.md) 阅读。

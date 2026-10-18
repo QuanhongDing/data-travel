@@ -2,7 +2,7 @@
 
 ## 2. 核心原理（深度版）
 
-### 2.4 Iceberg Manifest 文件格式详解
+### 2.5 Iceberg Manifest 文件格式详解
 
 **核心数据结构**：每个 Iceberg 表由 **3 层结构** 组成：
 
@@ -50,7 +50,7 @@ Table (snapshot-id=1234)
 - Iceberg：扫描 3% 文件（耗时 1.8s）
 - 加速比：**33 倍**
 
-### 2.5 Hidden Partition 算法详解
+### 2.6 Hidden Partition 算法详解
 
 **问题**：传统 Hive 分区要求用户在 SQL 显式写 `WHERE dt='2024-01-15'` 才能 partition pruning，否则**不命中分区**。
 
@@ -78,7 +78,7 @@ Set<StructLike> matchingPartitions = pred literals();
 
 **实际效果**：用户写 `SELECT * FROM orders WHERE order_time >= '2024-01-15'`，Iceberg **自动**做时间分区剪裁，无需 `dt='2024-01-15'`。
 
-### 2.6 Z-Order 与 Hilbert Space Filling Curve
+### 2.7 Z-Order 与 Hilbert Space Filling Curve
 
 **问题**：多维查询（如同时按 `order_time` 和 `user_id` 过滤）下，单纯按某列聚簇，另一列会"散落"在所有文件里，导致扫全表。
 
@@ -107,7 +107,7 @@ Set<StructLike> matchingPartitions = pred literals();
 | Z-Order (时间+用户) | 10% 扫描 | 15% 扫描 |
 | Hilbert (时间+用户) | 8% 扫描 | 12% 扫描 |
 
-### 2.7 Compaction 算法详解
+### 2.8 Compaction 算法详解
 
 **问题**：高频写入（CDC / 流式）产生大量小文件（如 1-10 MB），导致：
 - 文件数爆炸（Hive Metastore OOM）
@@ -155,7 +155,7 @@ Set<StructLike> matchingPartitions = pred literals();
 
 **核心原则**：**compaction 不能阻塞读写**。用「**异步 + 分组**」策略。
 
-### 2.8 Snapshot Isolation 的形式化证明
+### 2.9 Snapshot Isolation 的形式化证明
 
 **定理（Iceberg Snapshot Isolation）**：
 
@@ -174,7 +174,7 @@ Set<StructLike> matchingPartitions = pred literals();
 
 **Snapshot ID 严格递增**：每次 commit 都会得到一个**全局唯一**的 snapshot id（基于 `TableMetadata` 的 `last-sequence-number + 1`），保证**全局一致的视图序列**。
 
-### 2.9 MVCC 与 Time Travel 实现
+### 2.10 MVCC 与 Time Travel 实现
 
 **原理**：
 
@@ -203,7 +203,7 @@ SELECT count(*) FROM orders FOR SYSTEM_TIME AS OF '2024-01-15 10:00:00';
 
 **底层机制**：每个 query 的 `Planner` 都会把 manifest 列表限定到「**AS OF 时间点对应的 snapshot 集合**」，从而只读那个时刻可见的数据文件。
 
-### 2.10 Catalog 抽象与跨引擎查询
+### 2.11 Catalog 抽象与跨引擎查询
 
 **关键抽象**：Catalog 是「**表的元数据存储**」与「**查询引擎**」之间的接口层。
 
@@ -232,7 +232,7 @@ Hive Metastore   Nessie   AWS Glue   Polaris
 - **多 region + 大规模**：Nessie（Git-like，天然支持跨 region 复制）或 Polaris（Apache 2024+ 新项目）
 - **云原生**：AWS Glue / Databricks Unity Catalog（与云服务深度集成）
 
-### 2.11 性能模型（量化公式）
+### 2.12 性能模型（量化公式）
 
 **查询时间 ≈ IO + CPU + Network**
 

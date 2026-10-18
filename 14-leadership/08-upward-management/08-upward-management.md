@@ -189,7 +189,7 @@ Expectations = Explicit × Implicit × Historical
 ROI = (Benefits - Costs) / Costs
   - Benefits: 业务收益（量化）
   - Costs: 投入（HC、算力、预算）
-  - 健康标准：ROI ≥ 3x
+  - 门槛：ROI > 1（每一档方案都必须守住不亏本这条线；口径与敏感性判定见 §9. 预期 ROI）
 ```
 
 ### 2.3 关键算法 / 方法
@@ -239,17 +239,17 @@ ROI = (Benefits - Costs) / Costs
 | AI 能力场景数 | +10 | +12 | +2 |
 ```
 
-> 💡 **思考锚点**：把 2.2 的两个式子填上你自己的数。**Explicit（老板明确说出口的期望）** 占他全部期望的几成？式子里给的线是 80%，低于它，你超额交付的可能是他根本没打算要的东西；再看 `ROI ≥ 3x` 那一档——你上次汇报里报的那件成果，Benefits 与 Costs 各自的数字是当场能报出的，还是只有定性描述？报不出的那一项，就是你下次 1:1 之前要先补齐的。
+> 💡 **思考锚点**：把 2.2 的两个式子填上你自己的数。**Explicit（老板明确说出口的期望）** 占他全部期望的几成？式子里给的线是 80%，低于它，你超额交付的可能是他根本没打算要的东西；再看 ROI 门槛那一档（每一档方案的 ROI 是否都 > 1）——你上次汇报里报的那件成果，Benefits 与 Costs 各自的数字是当场能报出的，还是只有定性描述？报不出的那一项，就是你下次 1:1 之前要先补齐的。
 
 - [§3. 设计模式与范式](08-upward-management-section-3-sec3.md)
 - [§4. 工程实现](08-upward-management-section-4-sec4.md)
-- [§4. 预期 ROI](08-upward-management-section-4-roi.md)
 - [§5. 前沿演进（AI 时代）](08-upward-management-section-5-ai.md)
-- [§5. Q4 计划](08-upward-management-section-5-q4.md)
-- [§5. 双向输入（2 分钟）](08-upward-management-section-5-sec5.md)
 - [§6. 落地实践](08-upward-management-section-6-sec6.md)
 - [§7. 与其他方法对比](08-upward-management-section-7-sec7.md)
 - [§8. 面试真题集](08-upward-management-section-8-sec8.md)
+- [§9. 预期 ROI](08-upward-management-section-4-roi.md)
+- [§10. Q4 计划](08-upward-management-section-5-q4.md)
+- [§11. 双向输入（2 分钟）](08-upward-management-section-5-sec5.md)
 
 ---
 
@@ -259,12 +259,12 @@ ROI = (Benefits - Costs) / Costs
 
 - [§3. 设计模式与范式](08-upward-management-section-3-sec3.md)
 - [§4. 工程实现](08-upward-management-section-4-sec4.md)
-- [§4. 预期 ROI](08-upward-management-section-4-roi.md)
 - [§5. 前沿演进（AI 时代）](08-upward-management-section-5-ai.md)
-- [§5. Q4 计划](08-upward-management-section-5-q4.md)
-- [§5. 双向输入（2 分钟）](08-upward-management-section-5-sec5.md)
 - [§6. 落地实践](08-upward-management-section-6-sec6.md)
 - [§7. 与其他方法对比](08-upward-management-section-7-sec7.md)
 - [§8. 面试真题集](08-upward-management-section-8-sec8.md)
+- [§9. 预期 ROI](08-upward-management-section-4-roi.md)
+- [§10. Q4 计划](08-upward-management-section-5-q4.md)
+- [§11. 双向输入（2 分钟）](08-upward-management-section-5-sec5.md)
 
 ---

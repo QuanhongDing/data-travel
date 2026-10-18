@@ -56,7 +56,7 @@
 
 **AI 时代的新诉求**：
 
-- **AI 原生架构**：AI 应用需要 Lakehouse + 向量库 + LLM。
+- **AI 原生架构**：AI 应用需要 Lakehouse + 向量库 + LLM——注意这是**产品组合说法**、不是可判定的架构范式，取数链路真正缺的是机器可读的语义层与权限下推（见 [§5](07-architecture-decisions-section-5-ai.md)）。
 - **Agent 友好**：架构需支持 Agent 调用（统一 API）。
 - **自治决策**：AI 辅助架构决策。
 
@@ -99,13 +99,13 @@
 - 2021-2022：Iceberg / Hudi / Delta 三足鼎立。
 - 2023-2024：Lakehouse 成为事实标准。
 
-**第五阶段：AI 原生架构（2024-至今）**
+**第五阶段：AI 时代的方向提法（2024-至今，不是架构范式）**
 
-- 2024：Lakehouse + 向量库 + LLM 融合。
-- 2024-2025：AI 原生决策（LLM 辅助选型）。
-- 2025：自治架构（Self-Driving Architecture）。
+- 2024：「AI 原生架构 = Lakehouse + 向量库 + LLM」的**产品组合提法**开始流行——它不是可判定的架构范式，取数链路真正缺的是机器可读的语义层与权限下推（见 [§5](07-architecture-decisions-section-5-ai.md)）。
+- 2024-2025：AI 辅助选型（LLM 读需求 → 推荐范式）停留在演示与小范围试用（判为 L3）。
+- 2025：自治架构（Self-Driving Architecture）——成立的一半是确定性优化，由模型决策的那半尚未成立（见 [§5](07-architecture-decisions-section-5-ai.md)）。
 
-**一句话总结**：**架构范式从"Hadoop 单层"→"Lambda 双层"→"Kappa 单层"→"Lakehouse 融合"→"AI 原生"五阶段演进，今天 Lakehouse 是主流，AI 原生是未来。**
+**一句话总结**：**架构范式从"Hadoop 单层"→"Lambda 双层"→"Kappa 单层"→"Lakehouse 融合"演进，今天 Lakehouse 是主流；第五阶段（「AI 原生」「自治架构」）是方向提法、不是可判定的范式。**
 
 ---
 

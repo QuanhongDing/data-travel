@@ -298,4 +298,4 @@ V5.0 AI Native（2023–2025）
 
 > 💡 **思考锚点**：数两件事代进本节那张代际表——「有几个不写 SQL 的人在取数」，以及「你的核心指标总共有几份实现」。若消费者数还停在 V1.0 的量级、指标却已出现多份实现，你落在表里哪一行；而本节说这条路径长自十余年（2008–2025），你打算用几年走完、又准备跳过哪一代把问题变成组织共识的过程？
 
-> 配合 [主文件 § 1 背景与 § 2 挑战](07-airbnb-data-architecture.md)、[§ 4 关键决策](07-airbnb-data-architecture-section-4-sec4.md) 与 [§ 6 复用经验](07-airbnb-data-architecture-section-6-sec6.md) 阅读。
+> 配合 [主文件 § 1 背景与 § 2 挑战](07-airbnb-data-architecture.md)、[§ 4 关键决策](07-airbnb-data-architecture-section-4-sec4.md) 与 [§ 6 落地实践](07-airbnb-data-architecture-section-6-sec6.md) 阅读。

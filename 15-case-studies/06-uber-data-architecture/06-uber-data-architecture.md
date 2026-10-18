@@ -2,7 +2,7 @@
 
 > **一句话定位**：Uber 用 14 年时间构建了一套以「Schemaless + Docstore + Apache Hudi + Michelangelo ML 平台」为核心的全球化数据架构，是实时调度 + Marketplace 业务数据化最值得借鉴的海外样本。
 
-> 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**06-Uber 数据架构**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 复用经验。
+> 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**06-Uber 数据架构**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 落地实践。
 
 ## 0. 本章速读地图
 
@@ -123,7 +123,7 @@ UberX / Eats / Freight / Elevate——每个业务线都有自己的数据团队
 - [§3. 架构演进](06-uber-data-architecture-section-3-sec3.md)
 - [§4. 关键决策](06-uber-data-architecture-section-4-sec4.md)
 - [§5. 踩坑与教训](06-uber-data-architecture-section-5-sec5.md)
-- [§6. 复用经验](06-uber-data-architecture-section-6-sec6.md)
+- [§6. 落地实践](06-uber-data-architecture-section-6-sec6.md)
 - [§7. 与同类案例对比](06-uber-data-architecture-section-7-sec7.md)
 - [§8. 面试真题集](06-uber-data-architecture-section-8-sec8.md)
 
@@ -136,7 +136,7 @@ UberX / Eats / Freight / Elevate——每个业务线都有自己的数据团队
 - [§3. 架构演进](06-uber-data-architecture-section-3-sec3.md)
 - [§4. 关键决策](06-uber-data-architecture-section-4-sec4.md)
 - [§5. 踩坑与教训](06-uber-data-architecture-section-5-sec5.md)
-- [§6. 复用经验](06-uber-data-architecture-section-6-sec6.md)
+- [§6. 落地实践](06-uber-data-architecture-section-6-sec6.md)
 - [§7. 与同类案例对比](06-uber-data-architecture-section-7-sec7.md)
 - [§8. 面试真题集](06-uber-data-architecture-section-8-sec8.md)
 

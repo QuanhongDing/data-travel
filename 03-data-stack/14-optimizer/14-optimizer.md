@@ -93,7 +93,7 @@
 - 2022：Trino AQE、CBO 增强。
 - 2024：AI 驱动优化（Snowflake、StarRocks）。
 
-**第五阶段：自治优化（2024-至今）**
+**第五阶段：自治优化（2024-至今；目前是方向，§5.2.3 按成熟度判为 L3 观望）**
 
 - 2024：LLM 自动调优。
 - 2025：自治优化器（Self-Driving Optimizer）。
@@ -136,13 +136,13 @@
 **自适应查询执行（AQE）**：
 
 - 运行时根据实际数据调整计划。
-- Spark 3.0+、Trino 400+、StarRocks 2.5+。
+- Spark 3.0+、Trino、StarRocks（Trino 与 StarRocks 的版本以各自官方发布说明为准）。
 
 **Join 顺序优化**：
 
 - N 张表 Join 有 N! 种顺序。
 - 动态规划算法（DP）：O(2^N)。
-- 贪心算法：O(N^2)。
+- 贪心算法：O(N^2 log N)。
 
 **Join 算法**：
 
@@ -198,7 +198,7 @@ Network = Shuffle × ShuffleDataSize
 **Join 顺序的复杂度**：
 
 - 动态规划（DP）：O(2^N)。
-- 贪心算法（Greedy）：O(N^2)。
+- 贪心算法（Greedy）：O(N^2 log N)。
 
 ### 2.3 关键算法 / 方法
 
@@ -310,7 +310,7 @@ print(diagnosis)
 - CBO：编译期优化。
 - AQE：运行时优化。
 
-> 💡 **思考锚点**：数一下你最慢那条 SQL 参与 Join 的表有几个——CBO 排 Join 顺序是 O(2^N) 的 DP（§2.2），N 到多少你们会退回 O(N²) 的贪心？更要紧的是统计信息（NDV / 直方图）上次 ANALYZE 是什么时候：它过期后 CBO 估的 filtered_rows 已经偏了，你还指望它替你选对 Broadcast Hash Join 吗？
+> 💡 **思考锚点**：数一下你最慢那条 SQL 参与 Join 的表有几个——CBO 排 Join 顺序是 O(2^N) 的 DP（§2.2），N 到多少你们会退回 O(N² log N) 的贪心？更要紧的是统计信息（NDV / 直方图）上次 ANALYZE 是什么时候：它过期后 CBO 估的 filtered_rows 已经偏了，你还指望它替你选对 Broadcast Hash Join 吗？
 
 ---
 

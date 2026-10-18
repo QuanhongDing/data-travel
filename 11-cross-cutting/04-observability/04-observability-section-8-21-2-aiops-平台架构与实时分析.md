@@ -1,6 +1,6 @@
 > 本文件是 **04-observability.md** § 8 面试真题集的子主题。完整章节请回到 [index](04-observability.md) 或 [§ 8 索引](04-observability-section-8-sec8.md)。
 
-### 8.2 §21.2 AIOps 平台架构与实时分析
+### 8.9 §21.2 AIOps 平台架构与实时分析
 
 > 本主题考察 AIOps（AI for IT Operations）的核心架构、实时分析流水线、异常检测与根因分析能力。面试官真正想听的是「机器学习在大规模运维中的真实落地路径」，而不是「sklearn 调几个模型」。
 

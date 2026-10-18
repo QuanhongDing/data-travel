@@ -11,7 +11,7 @@
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
 | 流式存储与传统消息队列的本质区别？ | §1.1 |
-| Kafka / Pulsar / RocketMQ 怎么选？ | §7.1 |
+| Kafka / Pulsar / RocketMQ 怎么选？ | §7.1 判据、§7.6 选型矩阵 |
 | Tiered Storage（分层存储）原理是什么？ | §2.1 |
 | Kafka 3.7+ 的 KRaft、AutoMQ、Warpstream 有哪些新趋势？ | §5.1 表第 9 / 11 行、§5.4 |
 | 流批一体存储（Paimon / Fluss）怎么落地？ | §3.2.7 |
@@ -115,7 +115,7 @@
 - 2021：Pulsar 分层存储成熟（支持 S3/OSS）。
 - 2022：Kafka KRaft（去 ZooKeeper）。
 - 2023：AutoMQ、Warpstream（云原生无 Kafka 协议）。
-- 2024：Apache Fluss（前 Flink Table Store 衍生）流式存储。
+- 2024：Apache Fluss 流式存储。
 - 2025：Kafka 4.0（KIP-1030、KIP-1080）、流批一体存储成熟。
 
 **一句话总结**：**流式存储从"传统 MQ"→"日志型 Kafka"→"计算存储分离 Pulsar"→"云原生无服务器 AutoMQ"四阶段演进，今天已与 Lakehouse 深度融合。**
@@ -210,7 +210,7 @@
 
 **3. Kafka KRaft**：
 
-- 2022 年 Kafka 2.8 引入，2023 年 Kafka 3.3 默认支持。
+- Kafka 2.8 以早期访问形态引入，Kafka 3.3 宣布生产可用。
 - 用 Raft 协议替代 ZooKeeper 做元数据管理。
 - **优势**：部署简单（无 ZK 集群）、启动快（秒级）、元数据可扩展。
 
@@ -230,7 +230,7 @@
 **6. 流批一体存储（Streaming + Lakehouse）**：
 
 - **Paimon**：基于 LSM Tree 的流式表格式，Kafka + Flink → Paimon → 实时查询。
-- **Apache Fluss（前 Flink Table Store 衍生）**：流式原生存储，毫秒级延迟。
+- **Apache Fluss**：流式原生存储，毫秒级延迟。
 
 ### 2.4 与相邻概念的关系
 

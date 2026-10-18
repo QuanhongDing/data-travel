@@ -154,14 +154,13 @@ CREATE INDEX ON products USING hnsw (embedding vector_cosine_ops);
 SELECT id, name
 FROM products
 WHERE category = 'phone' AND price < 5000  -- 标量过滤
-ORDER BY embedding <=> $1  -- 向量距离排序（<=> 是 L2 距离）
+ORDER BY embedding <=> $1  -- 向量距离排序（<=> 是余弦距离）
 LIMIT 10;
 ```
 
-`<=>` 是 pgvector 的距离算子（L2 距离），其他算子：
-- `<->`：余弦距离（pgvector 0.7+ 用 `<=>` 表示余弦）。
+`<=>` 是 pgvector 的距离算子（余弦距离），其他算子：
+- `<->`：L2 距离。
 - `<#>`：内积距离。
-- `<=>`：欧氏距离（L2）。
 
 **HNSW 在 pgvector 的实现**：
 

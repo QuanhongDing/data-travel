@@ -368,7 +368,7 @@ final_features = combine_features(semantic_features, traditional_features)
 
 - **0 → 1（单域最小可用）**：5–10 个核心特征（见 4.1 Step 4），一份离线定义 + 一份在线 KV，手动物化。**变贵的是**：几乎没有，一台缓存 + 一个调度即可。**先坏的是**：PIT 取数口径——它做错了不报错，只会让离线指标虚高（见 4.10 小结）。
 - **1 → 100（多团队平台化）**：特征定义进平台（Feast / Hopsworks / Tecton 一类）、Flink 实时链路、数百特征、向量特征、Feature Catalog。**变贵的是**：①在线常驻成本（实体基数 × 特征数）；②实时状态规模——窗口越长 checkpoint 越慢、故障恢复越久（4.2）；③换 embedding 的全量向量重算。**先坏的是**：一致性（Step 5）与 PIT（Step 6）——平台越大，定义翻译器一处错就放大到所有特征；其次是物化时滞，面板全绿而推理吃旧值。
-- **100 →（下一道坎）**：AI 原生——Prompt / Embedding / Tool / Memory 统一登记、Feature as a Service、跨组织联邦。**变贵的是**：输入快照的整体版本化与向量索引运维。**先坏的是**：同一个快照 ID 两次评测对不上（4.2「LLM / 向量特征接入」）。方向见 [§5 前沿演进](01-feature-store-section-5-ai.md)。
+- **100 →（下一道坎）**：AI 原生——Prompt / Embedding 统一登记、Feature as a Service、跨组织联邦（§5 判为 L2，先做 PoC）；Tool / Memory 这类 Agent 运行时状态的统一登记属 Agent Feature Store，§5 判为 L3、不排进排期。**变贵的是**：输入快照的整体版本化与向量索引运维。**先坏的是**：同一个快照 ID 两次评测对不上（4.2「LLM / 向量特征接入」）。方向见 [§5 前沿演进](01-feature-store-section-5-ai.md)。
 
 ### 4.9 自检清单
 

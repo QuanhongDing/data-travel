@@ -11,8 +11,8 @@
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
 | 未来 3-5 年数据架构师的核心命题是什么？ | §1 |
-| 从 P7 到 P8 的"路径图"长什么样？ | §2.1 |
-| 必备技能树（Data + AI + Soft）怎么搭？ | §2.2 |
+| 从 P7 到 P8 的"路径图"长什么样？ | §2.2 |
+| 必备技能树（Data + AI + Soft）怎么搭？ | §2.1 |
 | 系统学习 / 项目实战 / 社区参与三条路径怎么选？ | §3 |
 | 年度 OKR 模板可以直接抄吗？ | §4 |
 | 我当下应该立即做的三件事是什么？ | §5 |
@@ -145,7 +145,7 @@ AI 应用上线不再只是"算法准不准"，而是"**用得对不对、放得
 - [§3. 实战建议](01-future-plans-section-3-sec3.md)
 - [§4. 关键行动项](01-future-plans-section-4-sec4.md)
 - [§5. 风险与陷阱](01-future-plans-section-5-sec5.md)
-- [§6. 终极思考](01-future-plans-section-6-sec6.md)
+- [§6. 落地实践](01-future-plans-section-6-sec6.md)
 - [§7. 推荐行动 / 推荐阅读](01-future-plans-section-7-sec7.md)
 - [§8. 面试真题集](01-future-plans-section-8-sec8.md)
 
@@ -158,7 +158,7 @@ AI 应用上线不再只是"算法准不准"，而是"**用得对不对、放得
 - [§3. 实战建议](01-future-plans-section-3-sec3.md)
 - [§4. 关键行动项](01-future-plans-section-4-sec4.md)
 - [§5. 风险与陷阱](01-future-plans-section-5-sec5.md)
-- [§6. 终极思考](01-future-plans-section-6-sec6.md)
+- [§6. 落地实践](01-future-plans-section-6-sec6.md)
 - [§7. 推荐行动 / 推荐阅读](01-future-plans-section-7-sec7.md)
 - [§8. 面试真题集](01-future-plans-section-8-sec8.md)
 

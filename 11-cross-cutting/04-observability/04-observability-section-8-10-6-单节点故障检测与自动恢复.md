@@ -1,6 +1,6 @@
 > 本文件是 **04-observability.md** § 8 面试真题集的子主题。完整章节请回到 [index](04-observability.md) 或 [§ 8 索引](04-observability-section-8-sec8.md)。
 
-### 8.2 §10.6 单节点故障检测与自动恢复
+### 8.6 §10.6 单节点故障检测与自动恢复
 
 > 本主题考察 Hadoop/Spark 集群单节点故障的检测机制与恢复策略。面试官真正想听的是「NodeManager 健康度检测 + YARN Container 重试 + 自动故障转移 + 节点Decommission」的完整链路。
 

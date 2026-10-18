@@ -1,6 +1,6 @@
 > 本文件是 **04-observability.md** § 8 面试真题集的子主题。完整章节请回到 [index](04-observability.md) 或 [§ 8 索引](04-observability-section-8-sec8.md)。
 
-### 8.2 §21.3 AIOps 基础概念与价值认知
+### 8.10 §21.3 AIOps 基础概念与价值认知
 
 > 本主题考察 AIOps 的基础概念、价值认知、落地挑战与具体应用场景。面试官真正想听的是「AIOps 不是替代 oncall，而是辅助 oncall」的产品定位。
 

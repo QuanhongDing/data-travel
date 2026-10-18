@@ -153,7 +153,7 @@ M ∈ R^(4 能力域 × 5 等级 × N 子能力)
 ### 4.4 代码 / 配置示例
 
 ```yaml
-# capability_model.yaml — 4 域 × 5 级的能力地图
+# capability_model.yaml — 4 域 × 4 级（P5-P8）的能力地图
 domains:
   - name: 基础（数据基础域）
     levels:
@@ -215,7 +215,7 @@ domains:
 
 ### 6.1 真实案例
 
-- **阿里 P 序列**：技术 P + 管理 M 双通道，每通道 5 级；评估基于 271 强制分布。
+- **阿里 P 序列**：技术 P + 管理 M 双通道；评估基于 271 强制分布。
 - **字节 2-1 到 4-1**：技术 6 级 + 职级 4 段；评估基于 OKR + 360 评估。
 - **美团 L6-L9**：4 级技术通道；L8/L9 是资深架构师，对应本项目目标画像。
 - **Netflix P-Track**：Senior / Staff / Senior Staff / Principal / Distinguished 5 级。

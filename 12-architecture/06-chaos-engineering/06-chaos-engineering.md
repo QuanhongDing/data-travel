@@ -110,9 +110,9 @@
 **AI 原生阶段（2020+）**：
 
 - 2020-2022：K8s 原生混沌工具成熟（Chaos Mesh、LitmusChaos）。
-- 2023：AI 辅助故障选择（基于 ML 推荐"最值得注入的故障"）。
+- 2023：AI 辅助故障选择（基于 ML 推荐"最值得注入的故障"）——**属 [§5.1](06-chaos-engineering-section-5-ai.md) 判定的 L3**（只有演示与自研，①不成立、②核不到），此处按"出现时间"记录，不代表已是可用能力，等 §5.6 的信号再投入。
 - 2024：AI 链路混沌（Agent 工具故障、LLM API 故障、GPU 故障）。
-- 2025+：Self-Healing Chaos（系统自动注入故障 + 自动修复）。
+- 2025+：Self-Healing Chaos（系统自动注入故障 + 自动修复）——**属 [§5.1](06-chaos-engineering-section-5-ai.md) 判定的 L3，[§5.5](06-chaos-engineering-section-5-ai.md) 指出其被过度宣传**：成立的是确定性的自动回滚（既有 L2 能力），"由 AI 判断该不该回滚"那半等 §5.6 的信号。
 
 ---
 
@@ -130,7 +130,7 @@
 - **回滚（Abort）**：实验失败时立即回滚（恢复系统）。
 - **韧性（Resilience）**：系统在故障下仍能提供服务的能力。
 - **韧性测试（Resilience Testing）**：通过故障注入验证韧性的测试。
-- **AI 辅助混沌（AI-Assisted Chaos）**：用 ML 推荐故障 / 识别异常 / 自动恢复。
+- **AI 辅助混沌（AI-Assisted Chaos）**：用 ML 推荐故障 / 识别异常 / 自动恢复——**三项均属 [§5.1](06-chaos-engineering-section-5-ai.md) 的 L3**（只有演示与自研）；其中"自动恢复"里确定性的那一半（时间 / 指标触发）才是既有 L2 能力（§5.1）。
 - **生产环境混沌（Production Chaos）**：在真实生产环境做混沌实验（Netflix 风格）。
 - **预生产环境混沌（Pre-Production Chaos）**：在准生产环境（Staging、Pre-Prod）做混沌实验。
 - **持续混沌（Continuous Chaos）**：把混沌实验自动化、常态化（每次发布都跑）。
@@ -224,8 +224,8 @@
    - **手动触发**：值班人员手动停止。
 
 7. **AI 时代混沌工程**：
-   - **AI 故障推荐**：用 LLM 分析系统架构，推荐"最值得注入的故障"。
-   - **AI 自动恢复**：故障注入后 AI 自动判断是否回滚。
+   - **AI 故障推荐**：用 LLM 分析系统架构，推荐"最值得注入的故障"——**属 [§5.1](06-chaos-engineering-section-5-ai.md) 的 L3**。
+   - **AI 自动恢复**：故障注入后 AI 自动判断是否回滚——**属 [§5.1](06-chaos-engineering-section-5-ai.md) 的 L3**（确定性的自动回滚是既有 L2 能力）。
    - **AI 智能体韧性**：测试 Agent 在 LLM API 失败时的降级能力。
 
 ### 2.4 与相邻概念的关系

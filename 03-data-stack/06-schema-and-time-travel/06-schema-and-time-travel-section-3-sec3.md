@@ -120,7 +120,7 @@ Schema Registry（存放不可变的版本序列）
   [magic byte(1)] [schema id(4)] [Avro/Protobuf 二进制体]
         ▲ 消费者先读 id → 取写者 schema → 用自己的读者 schema 双向解析
 
-兼容性模式：BACKWARD / FORWARD / FULL / NONE（规则在服务端执行，不合规直接拒绝注册）
+兼容性模式：NONE / BACKWARD / FORWARD / FULL（及后三者的传递变体 _TRANSITIVE）（规则在服务端执行，不合规直接拒绝注册）
 ```
 
 **为什么这样设计有效**：因为 schema 集中存放、消息只带一个 id，所以演进是「改一处、全网生效」，单条消息只多 5 字节开销【推算】（= magic 1 字节 + schema id 4 字节，见上方线格式）；因为兼容性检查在注册时执行，不兼容的 schema 根本发不出去，问题在生产者本地暴露而不是在消费者线上爆。
@@ -129,7 +129,7 @@ Schema Registry（存放不可变的版本序列）
 
 **失效点**：当主题有多个团队消费时，选 `BACKWARD`（新 schema 能读旧数据）对生产者最省事，但老消费者读新消息需要 `FORWARD`——只保 BACKWARD 时，一次**删字段**上线会让所有未升级的消费者反序列化失败，因为老 reader 的字段在新 writer 里已经消失，而 reader schema 里没有默认值可补，解析只有报错一条路。反过来，**加字段**（带默认值）同时满足 BACKWARD 与 FORWARD，对老消费者无害：Avro 的 schema resolution 明确规定「writer 有、reader 没有的字段直接忽略」。把「加字段＝危险」当成直觉，是这条约束最常被搞反的地方——真正会翻车的方向是字段与类型在变小，不是变大。
 
-**真实使用**：【公开】Confluent Schema Registry 定义并使用 BACKWARD / FORWARD / FULL / NONE 四种兼容性模式（Confluent 官方文档，2015 年起，可自行核验）；主文件 §1.4 已述 2015 年 Confluent Schema Registry 解决 Kafka 消息 Schema 演进问题。这两条只证明机制与产品存在，不指名采用方——「谁在用、用了多久、付了什么代价」本文件无从核实。判断一个主题是否真在用集中注册：看该 topic 的 `<topic>-value` subject 下是否有多个注册版本，以及消费者进程里是否存在指向 Registry 的连接与本地 schema 缓存。
+**真实使用**：【公开】Confluent Schema Registry 定义并执行七种兼容级别——NONE、BACKWARD、FORWARD、FULL，以及后三者的传递变体 BACKWARD_TRANSITIVE / FORWARD_TRANSITIVE / FULL_TRANSITIVE（Confluent 官方文档 Schema Compatibility 一节，级别清单随产品版本演进，以当前版本为准；2015 年起，可自行核验）；主文件 §1.4 已述 2015 年 Confluent Schema Registry 解决 Kafka 消息 Schema 演进问题。这两条只证明机制与产品存在，不指名采用方——「谁在用、用了多久、付了什么代价」本文件无从核实。判断一个主题是否真在用集中注册：看该 topic 的 `<topic>-value` subject 下是否有多个注册版本，以及消费者进程里是否存在指向 Registry 的连接与本地 schema 缓存。
 
 #### 3.2.5 Paimon 主键 + Schema
 
@@ -265,7 +265,7 @@ ALTER TABLE dwd_order_pk ADD coupon_amount decimal(18,2) DEFAULT 0;
 | --- | --- | --- | --- | --- |
 | 单表 → 千表，改名频率上升 | 靠评审 + 人工通知 | 改名变成每周数十次，人工通知必然漏 | Iceberg ID-based + 变更进 CI 门禁 | 存量表统一 field id（新建即合规，存量按访问热度分批） |
 | 写入方从 1 个管道 → 多个团队直写 | Delta 自动 `mergeSchema` | 每个写入方都能改表的形状，表主人失去控制权 | mergeSchema 关闭 + 白名单 + 显式变更流程 | 需清理历史上被合并进来的垃圾列（读旧版本比对 schema 历史） |
-| 消费者从同步升级 → 长期滞后 | 主题兼容性 `BACKWARD` | 老消费者读新消息失败 | 升到 `FULL`（双向兼容） | 现网必须补默认值/可选字段，可能有几轮 schema 往返 |
+| 消费者从同步升级 → 长期滞后 | 主题兼容性 `BACKWARD` | 老消费者读新消息失败 | 升到 `FULL_TRANSITIVE`（双向兼容，覆盖可能落后多个版本的消费者） | 现网必须补默认值/可选字段，可能有几轮 schema 往返 |
 | 回溯需求从「看昨天」→「复现去年」 | 默认的短保留窗口 | 旧文件与旧 commit 已被清理，回溯能力静默缩水 | 分层保留：近期全量 + 关键节点永久 + 归档到对象存储 | 归档层的读取路径与主表不同，需要一个能读归档快照的独立查询入口 |
 | 单引擎 → 多引擎读同一批表 | 各引擎各自解析表 | 同一张表在不同引擎下解析出不同的列 | 统一元数据目录 + Schema 标准化 | 目录接入、权限模型统一、历史表名映射一次性梳理 |
 | 追加表 → 主键更新表 | 表格式原生 append | 下游要自己做去重与最新值聚合，成本转嫁 | Hudi/Paimon 主键表 + merge-engine | 全量重写一次（分桶依据变了），且流作业要改写成 upsert |
@@ -291,7 +291,7 @@ ALTER TABLE dwd_order_pk ADD coupon_amount decimal(18,2) DEFAULT 0;
 
 | 你的约束 | 建议模式 | 关键理由（机制层面） |
 | --- | --- | --- |
-| 消息流、消费者多且升级不同步 | Avro/Protobuf + Schema Registry（`FULL`） | 集中裁决 + 双向兼容，不兼容的 schema 根本注册不进去 |
+| 消息流、消费者多且升级不同步 | Avro/Protobuf + Schema Registry（`FULL_TRANSITIVE`） | 集中裁决；双向兼容需覆盖可能落后多个版本的消费者，故取传递级 |
 | 表、下游多、改名/加列频繁 | Iceberg ID-based Schema | 字段身份是 id，改名只是元数据编辑，老文件不动 |
 | 写入方不受控、要开自动合并 | Delta Schema Check + Merge（配白名单） | 合并必须显式，否则表的形状由写入方随机决定 |
 | 增量写入 + 按提交点回溯 | Hudi Timeline + Schema | schema 版本与 commit 绑定，数据与 schema 不会错配 |

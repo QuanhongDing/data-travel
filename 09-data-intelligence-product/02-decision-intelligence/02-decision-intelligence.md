@@ -148,7 +148,7 @@
 - 2024-2025：Agent for Decision（智能体决策）成为前沿——Multi-Agent 框架（AutoGen、CrewAI、LangGraph）让决策从「单点智能」走向「协同智能」。
 - 2025：决策智能平台（Decision Intelligence Platform, DIP）兴起——Diwo、Zeta、Aera、Tellius、Quantiphi、阿里决策引擎、字节智能决策、蚂蚁决策大脑、平安智慧决策。
 
-**一句话总结**：**决策智能从「DSS → BI → ML 决策 → 实时决策 → Agent 决策」五阶段演进，今天是「AI Native + 实时 + 因果 + 可解释 + 自动化」的关键节点。**
+**一句话总结**：**决策智能从「DSS → BI → ML 决策 → 实时决策」演进，今天是「AI Native + 实时 + 因果 + 可解释 + 自动化」的关键节点；Agent 决策是 2024–2025 兴起的前沿探索方向，成熟度仍低（[§5.2.2](02-decision-intelligence-section-5-ai.md) 判 L3），只记录、不进架构排期。**
 
 ---
 

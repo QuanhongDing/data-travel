@@ -82,8 +82,7 @@
 - **2000s**：Cost-Benefit Analysis 在企业 IT 决策中普及；TOGAF / Zachman 框架推广。
 - **2010s**：Tech Radar（ThoughtWorks 2010+）成为组织级选型指南；敏捷决策推动轻量化框架。
 - **2014**：AWS Well-Architected Framework 5 根支柱（Operational Excellence / Security / Reliability / Performance Efficiency / Sustainability）成为云架构选型标准。
-- **2020-2024**：AI / ML 选型（模型、向量库、Agent 框架）催生新决策维度（幻觉率、合规、成本）。
-- **2024-2025**：Decision Intelligence（Gartner 顶级战略技术趋势）；AI 辅助选型。
+- **2020-2024**：AI / ML 选型（模型、向量库、Agent 框架）催生新决策维度（幻觉率、合规、成本）；**2022** 年 Decision Intelligence 进入 Gartner 顶级战略技术趋势（以当年清单原文为准），AI 辅助选型。
 
 ---
 

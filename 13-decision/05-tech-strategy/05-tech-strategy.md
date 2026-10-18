@@ -14,7 +14,7 @@
 | 3-5 年技术路线图怎么写？ | §4.1 / §4.5 |
 | 技术雷达（Gartner / ThoughtWorks）怎么用？ | §3.2 |
 | 技术投资组合怎么管理？ | §3.3 |
-| 技术战略怎么向老板 / 业务方汇报？ | §4.1（Step 7 战略沟通）/ §4.5（模板 7 汇报提纲）/ §6 案例 5.4 |
+| 技术战略怎么向老板 / 业务方汇报？ | §4.1（Step 7 战略沟通）/ §4.5（模板 7 汇报提纲）/ §6 案例 6.4 |
 
 ---
 
@@ -89,8 +89,9 @@
 - **2010-2014**：Gartner Magic Quadrant 普及；AWS Well-Architected Framework 发布。
 - **2018**：CNCF TAG App Delivery 把技术战略纳入云原生治理。
 - **2020**：AI / 机器学习工程化（MLOps）成为技术战略新主题。
+- **2022**：Decision Intelligence 被 Gartner 列入《Top Strategic Technology Trends 2022》顶级战略技术趋势。
 - **2023-2025**：生成式 AI（LLM / Agent）成为技术战略最热门话题。
-- **2024-2025**：AI 技术战略 / AI Governance / Decision Intelligence 标准化。
+- **2024-2025**：AI 技术战略 / AI Governance 标准化。
 
 ---
 
@@ -119,7 +120,7 @@
 - **AI Strategy（AI 战略）**：AI 时代的特有战略（数据 / 算法 / 算力 + 治理）。
 - **AI Governance Strategy（AI 治理战略）**：AI 伦理、合规、安全的战略。
 - **AI-First Strategy（AI 优先战略）**：把 AI 作为核心战略（如 Google / Anthropic）。
-- **Decision Intelligence（决策智能）**：把决策作为战略资产（Gartner 2025 趋势）。
+- **Decision Intelligence（决策智能）**：把决策作为战略资产（Gartner《Top Strategic Technology Trends 2022》趋势清单列入项）。
 
 ### 2.2 数学 / 形式化基础
 

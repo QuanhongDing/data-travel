@@ -35,7 +35,7 @@
 
 **CAP 理论（Eric Brewer, 2000）**：
 
-分布式系统三选二：
+分布式系统三个属性（**注意：不是「三选二」**）：
 - **C（Consistency）**：强一致性
 - **A（Availability）**：可用性
 - **P（Partition Tolerance）**：分区容忍
@@ -79,16 +79,16 @@
 
 **传统阶段（1970s-2000s）**：
 
-- 1976：CAP 雏形。
 - 1989：2PC（Two-Phase Commit）。
 - 1998：Paxos 论文（Lamport）。
 - 1999：BASE 理论。
+- 2000：CAP 理论（Eric Brewer 提出）。
 
 **云原生阶段（2000s-2020）**：
 
 - 2012：Spanner 论文（Google）。
 - 2014：Raft 论文（Diego Ongaro）。
-- 2016：Apache Kafka Exactly-Once 语义。
+- 2017：Apache Kafka Exactly-Once 语义。
 - 2017：CockroachDB 1.0。
 
 **AI 时代（2020+）**：
@@ -104,7 +104,7 @@
 
 ### 2.1 关键概念定义
 
-- **CAP 理论**：C、A、P 三选二。
+- **CAP 理论**：P 必须满足（网络分区不可避免），只能在 C 与 A 之间权衡——不是「三选二」。
 - **BASE 理论**：Basically Available、Soft state、Eventual consistency。
 - **强一致（Strong Consistency）**：所有节点同时看到最新写入。
 - **最终一致（Eventual Consistency）**：保证最终一致（无时间保证）。

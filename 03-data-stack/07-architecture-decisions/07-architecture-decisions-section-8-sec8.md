@@ -75,7 +75,7 @@
 - **0 → 1 阶段**：业务简单，**数仓**优先（Hive / MaxCompute / Snowflake），快速交付 BI。
 - **1 → 10 阶段**：日志 / 埋点 / 行为数据暴涨 → 引入**数据湖**（OSS + Parquet）。
 - **10 → 100 阶段**：湖治理恶化 + AI 训练 + 实时查询 → **湖仓一体**（Iceberg + 多引擎）。
-- **AI 原生阶段**：向量检索 + LLM + Agent 介入 → **AI 原生湖仓**（Lakehouse + LanceDB + Milvus）。
+- **AI 原生阶段**：向量检索 + LLM + Agent 介入 → 在湖仓上叠加向量检索（Lakehouse + LanceDB + Milvus，属索引选型），并补机器可读的语义层与权限下推（「AI 原生湖仓」是产品组合提法，见 [§5](07-architecture-decisions-section-5-ai.md) §5.5）。
 
 **第五层：典型反例与经验。**
 
@@ -93,7 +93,7 @@
 
 **4. 追问预测**
 
-- **「数据量 100TB 是否需要上 Lakehouse？」** 答：不必。100TB 量级 Hive + Spark 完全胜任；Lakehouse 真正的优势要到 PB 级、多团队协作时才显现。
+- **「数据量 100TB 是否需要上 Lakehouse？」** 答：不必。100TB 量级 Hive + Spark 即可胜任；上不上 Lakehouse 的判据是**消费方数量与引擎数量**、不是数据量（见 [§7.5 Q4](07-architecture-decisions-section-7-sec7.md)）——只有当多个异构引擎或团队要共读同一份数据时，表格式契约才带来收益。
 - **「Snowflake 与 Databricks 的本质区别？」** 答：Snowflake 是**云数仓产品化**（专有存储 + 计算资源池化）；Databricks 是**湖仓 + AI 平台**（开放格式 + Spark + MLflow + LLM）。前者 BI 体验最佳，后者 AI 生态最佳。
 - **「湖仓时代 BI 工具怎么选？」** 答：BI 工具与湖仓解耦——Tableau / Power BI / FineBI / 网易有数都可直连 Iceberg/Delta。**字节 DataFinder** + 内部 BI 工具直连 StarRocks 提供亚秒查询。
 - **「数据沼泽如何治理？」** 答：① 入湖前 **Schema 校验**（Confluent SR / Apache Gravitino）；② 入湖后 **生命周期**（Iceberg expire + remove_orphan）；③ 使用 **Lakehouse 治理平台**（Unity Catalog / Gravitino / DataHub）。
@@ -156,22 +156,22 @@
   - **Netflix Keystone**（Kafka + Flink + Iceberg + Pinot）EB 级数据用 Lakehouse 流批融合，支撑 AB 测试。
   - **字节 ByteLake** 用 OSS + Iceberg + Spark/Flink + StarRocks/ClickHouse，替代传统 Lambda，成本有显著下降（【经验】档：本节无法给出可溯源的降幅数字）。
 - **AI 平台 / 训练（高吞吐 + 重计算 + 复现性）**：
-  - 推荐 **流批一体 + Lakehouse + AI 原生**。
-  - **Databricks Data Intelligence Platform**（2024）Lakehouse + MLflow + LLM 一体化，AI 原生架构标杆。
+  - 推荐 **流批一体 + Lakehouse**；AI 消费侧要补的是机器可读的语义层与权限下推（「AI 原生」是产品组合说法、不是可判定的范式，见 [§5](07-architecture-decisions-section-5-ai.md) §5.5）。
+  - **Databricks Data Intelligence Platform**（2024）把 Lakehouse + MLflow + LLM 打包成产品——「AI 原生架构」是其宣传语，不是范式（判定方法同 [§5](07-architecture-decisions-section-5-ai.md) §5.5：逐条落到能力名上核对）。
   - **米哈游** 用 Iceberg + Spark/Flink + StarRocks 训练特征表，每次训练用 snapshot tag 复现。
 
 **第四层：演进路径（Lambda → Kappa → 流批一体）。**
 
 - **阶段 1（0 → 1）**：业务简单，**Lambda** 双链路快速跑通；批层 Hive + Spark、流层 Storm/Flink。
-- **阶段 2（1 → 10）**：数据量 PB 化、双链路维护成本剧增 → **Kappa** 或 **流批一体**。
+- **阶段 2（1 → 10）**：业务扩张、双链路维护成本剧增（触发换模式的不是「数据量」本身，而是双链路带来的对账义务，见 [§3.6](07-architecture-decisions-section-3-sec3.md)）→ **Kappa** 或 **流批一体**。
   - 选 **Kappa**：纯实时业务（日志、监控），Kafka + Flink，重放历史用 Kafka Tiered Storage + Flink 状态重启。
   - 选 **流批一体**：混合业务（实时 + 离线），Flink + Paimon + StarRocks，代码复用率最高。
-- **阶段 3（10 → 100）**：AI 训练 + Agent 介入 → **AI 原生架构**（Lakehouse + 向量库 + LLM）。
+- **阶段 3（10 → 100）**：AI 训练 + Agent 介入 → 补机器可读的语义层与权限下推（「AI 原生架构 = Lakehouse + 向量库 + LLM」是产品组合说法，见 [§5](07-architecture-decisions-section-5-ai.md) §5.5；向量库属索引选型）。
 
 **第五层：常见工程权衡。**
 
 - **Lambda 的合并复杂度**：批流结果如何按时间窗口合并、晚到事件（late event）如何处理——是 Lambda 落地最大难点。**LinkedIn** 在 Lambda 实践中开发了专门的"merge view"服务做窗口合并。
-- **Kappa 的重放成本**：PB 级数据重放耗时以小时计（【经验】档：时长随数据量与集群规模而异，本节无法给出可溯源的统一数字）——必须在 Kafka 上配 Tiered Storage（S3/OSS）+ Flink 增量 checkpoint。**Netflix Keystone** 用 Kafka Tiered Storage 把重放耗时显著压缩（【经验】档：本节无法给出可溯源的压缩前后时长数字）。
+- **Kappa 的重放成本**：重放耗时由「需重放的窗口 × 日均吞吐 ÷ 重放吞吐」决定，随数据量、集群规模与重放吞吐而异，本节无法给出可溯源的统一数字（推导见 [§7.4](07-architecture-decisions-section-7-sec7.md)）——它把「架构简单」换算成「历史可重算的边界」。必须在 Kafka 上配 Tiered Storage（S3/OSS）+ Flink 增量 checkpoint。**Netflix Keystone** 用 Kafka Tiered Storage 把重放耗时显著压缩（【经验】档：本节无法给出可溯源的压缩前后时长数字）。
 - **流批一体的引擎约束**：Flink 流模式 + 批模式要求引擎统一版本；Paimon 0.9+ 才支持完整的流批读写。**阿里 Flink + Paimon** 是阿里云实时计算 Flink 版上的生产可用组合（【经验】档：本节未附该组合的官方出处与 SLA，引用时请以阿里云官方文档为准）。
 
 **3. 常见陷阱**
@@ -716,29 +716,29 @@ tools:
 
 ---
 
-## 3 横向小结
+### 8.3 横向小结
 
 > 本节题目的横切主题分布——按跨章节反复考察的能力维度回顾：
 
-- **架构演进与未来趋势**：数仓 → 数据湖 → 湖仓 → AI 原生，Lambda → Kappa → 流批一体。
+- **架构演进与未来趋势**：数仓 → 数据湖 → 湖仓，Lambda → Kappa → 流批一体（「AI 原生」是产品组合说法、不是范式）。
 - **湖仓与存储架构**：Iceberg / Hudi / Delta / Paimon 表格式选型，Lakehouse + 开放表格式 + 多引擎。
 - **资源调度与多租户隔离**：Airflow / DolphinScheduler / Azkaban 多租户与云原生调度。
 - **OLAP 与查询性能**：Doris / StarRocks / ClickHouse / Snowflake / BigQuery 选型与场景适配。
 - **计算引擎分工**：Spark（批 + AI）/ Flink（流 + CDC）/ Trino（Ad-hoc + 联邦）。
 - **决策工程化**：ADR + 决策矩阵 + AI 辅助选型的协同闭环。
 
-## 4 本章小结
+### 8.4 本章小结
 
 > 本面试真题集收录 7 道题，覆盖 7 个原 PDF 主题、4 个核心架构决策维度。
 > 题号沿用原题库编号，便于跨文章交叉检索。读者可按需查阅。
 
-### 4.1 推荐学习路径
+#### 8.4.1 推荐学习路径
 
 1. 先看「[§1 全景视图](#81-全景视图)」了解题目分布
 2. 按「[§2 分主题展开](#8-面试真题集)」逐主题学习
-3. 最后用「[§3 横向小结](07-architecture-decisions-section-3-sec3.md)」回顾横切主题
+3. 最后用「[§8.3 横向小结](#83-横向小结)」回顾横切主题
 
-### 4.2 返回
+#### 8.4.2 返回
 
 - 返回 [03-data-stack 章节目录](../README.md)
 - 返回 [项目根目录](../../README.md)

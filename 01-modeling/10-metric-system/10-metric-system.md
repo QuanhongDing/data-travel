@@ -6,6 +6,21 @@
 
 ---
 
+## 0. 本章速读地图
+
+| 你将解决的问题 | 直接跳到 |
+| --- | --- |
+| 指标体系到底是什么、为什么是数仓的语义层 | §1.1、§1.3 |
+| 原子 / 派生 / 复合指标怎么分，OSCAR 五要素怎么拆 | §2.1、§2.2.1 |
+| OSCAR、语义层、物化、实时流该怎么选 | §3.2、§3.3、§7.5 |
+| 从零到一搭一套指标平台（顺序、判据与存量迁移） | §4.1、§4.4 |
+| 命名模板、元数据 Schema、血缘与权限长什么样 | §4.5 |
+| AI 时代指标平台往哪走（NL2Metric、自动归因） | §5.1—§5.4 |
+| 大厂落地踩过哪些坑 | §6.1—§6.6 |
+| 面试怎么答指标治理与语义层 | §8.2—§8.4 |
+
+---
+
 ## 1. 概念与定位
 
 ### 1.1 是什么
@@ -16,7 +31,7 @@
 
 - **指标定义（Metric Definition）**：指标的精确计算逻辑（公式、口径、维度）
 - **指标口径（Metric Specification / SOT）**：指标的单一事实来源（Single Source of Truth）
-- **指标命名规范**：业务可理解的、有业务语义的命名（如 `活跃用户数_7日_自然周`）
+- **指标命名规范**：业务可理解的、有业务语义的命名（如 `自然日_全渠道_活跃用户数_用户`）
 - **指标分类（Taxonomy）**：原子指标 / 派生指标 / 复合指标 / 复合衍生指标的层次
 - **指标元数据**：Owner、业务域、数据源、计算频率、负责人、版本
 - **指标服务（Metric Service / API）**：对外提供"指标取数 + 指标解释"的能力
@@ -140,7 +155,7 @@
 | **时间周期（Time Period）** | 统计的时间窗口 | 自然日、自然周、自然月、滚动 7 天、滚动 30 天 |
 | **统计窗口（Statistical Window）** | 时间窗口的累计 / 滚动方式 | 累计至今、过去 7 天、过去 30 天、YTD |
 | **指标口径（Metric Spec）** | 指标的精确定义（公式 + 数据源 + 维度 + 过滤） | 见 §2.2 |
-| **指标命名（Metric Naming）** | 业务可理解的命名规范 | 订单金额_支付_近7日_PC端 |
+| **指标命名（Metric Naming）** | 业务可理解的命名规范 | 近7日_PC端_订单金额_订单 |
 | **指标分类（Taxonomy）** | 指标的层次分类（O / S / C / A / R） | OSCAR 模型 |
 | **指标平台（Metric Platform）** | 指标定义 / 服务 / 治理的一站式平台 | 见 §4.3 |
 | **Metric 语义层（Semantic Layer）** | 跨 BI / AI 工具复用的指标定义层 | dbt Semantic Layer / Cube |
@@ -163,14 +178,14 @@
 派生指标公式：
 
 ```
-派生指标 = R(原子指标) ⊕ C(业务过程) ⊕ S(业务修饰) ⊕ A(统计周期)
+派生指标 = O(业务对象) ⊕ S(业务修饰) ⊕ C(业务过程) ⊕ A(统计周期) ⊕ R(原子指标)
 ```
 
 **示例**：
 
 - 原子指标：`订单金额` = `SUM(订单表.支付金额) WHERE 状态=已支付`
-- 派生指标 1：`订单金额_支付_近7日_PC端` = `SUM(...) WHERE 渠道=PC AND 时间近7天`
-- 派生指标 2：`订单金额_支付_本月_新用户` = `SUM(...) WHERE 用户类型=新用户 AND 时间本月`
+- 派生指标 1：`近7日_PC端_订单金额_订单` = `SUM(...) WHERE 渠道=PC AND 时间近7天`
+- 派生指标 2：`本月_新用户_订单金额_订单` = `SUM(...) WHERE 用户类型=新用户 AND 时间本月`
 
 #### 2.2.2 指标的可计算形式
 
@@ -248,9 +263,10 @@ composite:
 **输出**：原子指标定义
 
 ```python
-def define_atomic_metric(process, measure, agg, filters):
+def define_atomic_metric(object_, process, measure, agg, filters):
     return {
         "name": f"{process}_{measure}_{agg}",
+        "object": object_,
         "process": process,
         "measure": measure,
         "aggregation": agg,
@@ -271,12 +287,13 @@ def derive_metric(atomic_metric, modifiers, period):
     derived["period"] = period
     derived["type"] = "derived"
     
-    # 自动生成命名：原子指标_业务过程_时间周期_业务修饰（与 §2.1 / §2.2.1 的示例名同序）
+    # 自动生成命名：统计周期_业务修饰_原子指标_业务对象（与 §3.5 / §4.5.1 的模板同序）
     name_parts = [
-        atomic_metric["name"],                    # "订单金额"
-        atomic_metric["process"],                 # "支付"
         period["name"],                           # "近7日"
-    ] + [m["name"] for m in modifiers]            # ["PC端", "新用户"]
+    ] + [m["name"] for m in modifiers] + [         # ["PC端"]
+        atomic_metric["name"],                     # "订单金额"
+        atomic_metric["object"],                   # "订单"
+    ]
     
     derived["full_name"] = "_".join(name_parts)
     return derived
@@ -461,7 +478,7 @@ def metric_root_cause(metric_anomaly, dimensions):
 - **指标体系**：业务指标库（用于 BI / 报表）
 - 关系：Feature Store 服务于 ML，指标体系服务于 BI；两者可互通（特征可来自指标）
 
-> 💡 **思考锚点**：把你的指标清单按 §2.2.1 的公式拆成 R ⊕ C ⊕ S ⊕ A 四段——同一组「原子指标 × 业务修饰」组合，你库里有没有两个不同名字（违反同义一致性）或一个名字两套口径（违反同名一致性）？再数一次 §2.2.4 的五条一致性约束里，你现在能自动校验的是哪几条？
+> 💡 **思考锚点**：把你的指标清单按 §2.2.1 的公式拆成 O ⊕ S ⊕ C ⊕ A ⊕ R 五段——同一组「原子指标 × 业务修饰」组合，你库里有没有两个不同名字（违反同义一致性）或一个名字两套口径（违反同名一致性）？再数一次 §2.2.4 的五条一致性约束里，你现在能自动校验的是哪几条？
 
 ---
 

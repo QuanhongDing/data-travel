@@ -249,7 +249,7 @@ Cost(plan) = α × I/O + β × CPU + γ × Network
 - **列剪裁（Column Pruning）**：只读需要的列。
 - **Join Reorder**：调整 JOIN 顺序（小表驱动大表）。
 - **Join 优化算法**：Broadcast Hash Join（小表广播）、Shuffle Hash Join、Sort Merge Join、Nested Loop Join。
-- **Adaptive Query Execution（AQE）**：运行时根据实际数据量调整计划（Spark 3.x+、StarRocks 2.5+）。
+- **Adaptive Query Execution（AQE）**：运行时根据实际数据量调整计划（Spark 与 StarRocks 均提供；具体版本以各自官方发布说明为准，见 [§5](../../03-data-stack/14-optimizer/14-optimizer-section-5-ai.md) 的版本纪律）。
 
 ### 2.4 与相邻概念的关系
 

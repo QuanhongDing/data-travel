@@ -137,13 +137,13 @@ Tech Debt Ratio = Tech Debt / Development Cost
 其中 Development Cost = 代码行数 × 行业基准开发成本
 ```
 
-→ 行业基准 < 5%（优秀）；5-10%（良好）；10-20%（一般）；> 20%（糟糕）。
+→ 【经验】分档 < 5%（优秀）；5-10%（良好）；10-20%（一般）；> 20%（糟糕）。这组档位属工具默认值与团队习惯的常见取值，不是行业标准（判定门槛以你自己的 Quality Gate 配置为准，[§7.4](06-tech-debt-section-7-sec7.md)）。
 
 **技术债利息（年度）**：
 
 ```
 Annual Interest = Tech Debt × Interest Rate
-其中 Interest Rate ≈ 25%（业界经验值）
+其中 Interest Rate ≈ 25%（【经验】档：比例常数，无单一权威来源，仅用于同量级比较，[§7.4](06-tech-debt-section-7-sec7.md)）
 ```
 
 → 1000 万技术债 → 每年 250 万利息（开发效率损失）。

@@ -198,7 +198,7 @@ CALL lake.system.remove_orphan_files(     -- 清理不在任何快照引用中�
 | 治理 | DataHub、OpenLineage、Apache Atlas、Great Expectations、Soda、Apache Ranger、AWS Lake Formation | 血缘是否要精确到字段；权限是否要跨引擎一致；断言能否被自动执行 | 权限、保留策略、血缘各配一遍，且没有机制能发现两套配置已经分叉 |
 | 云厂商一体化 | Databricks Data Intelligence Platform、Snowflake Iceberg Tables、阿里云 DLF、腾讯云 DLC、华为云 DWS Lakehouse、AWS Lake Formation | 训练与治理工具是否已在同一生态内；是否需要跨云或跨引擎 | 一体化省掉的集成层，会在需要跨引擎时以格式边界的形式还回来 |
 
-**表格式当前的能力差异（每一项都请自行核验）**：Iceberg 的 V3 规范在 v2 已有的行级删除文件机制之外，还提出删除向量、增量读取、向量类型与 Variant 类型等；Hudi 提供时间线（Timeline）服务一类能力；Delta Lake 的 UniForm 让一份数据可被其它格式的读者读取；Paimon 主打 LSM 结构、主键索引与流批融合。**核验方法**：先按能力名去格式项目的规范与发布说明里查（Iceberg 在其规范文档里检索 `deletion vector`、`variant`、`vector`；Hudi 检索 `timeline`；Delta 检索 `UniForm`；Paimon 检索 `primary key`、`LSM`），再回你用到的那个引擎的发布说明确认它是否已实现。**某个能力在你的引擎上是否可用，取决于该引擎的实现进度，而不是取决于格式规范**——这是选型时必须分开核的两件事。
+**表格式当前的能力差异（每一项都请自行核验）**：Iceberg 的 V3 规范在 v2 已有的行级删除文件机制之外，还提出删除向量、增量读取与 Variant 类型等；Hudi 提供时间线（Timeline）服务一类能力；Delta Lake 的 UniForm 让一份数据可被其它格式的读者读取；Paimon 主打 LSM 结构、主键索引与流批融合。**核验方法**：先按能力名去格式项目的规范与发布说明里查（Iceberg 在其规范文档里检索 `deletion vector`、`variant`、`vector`；Hudi 检索 `timeline`；Delta 检索 `UniForm`；Paimon 检索 `primary key`、`LSM`），再回你用到的那个引擎的发布说明确认它是否已实现。**某个能力在你的引擎上是否可用，取决于该引擎的实现进度，而不是取决于格式规范**——这是选型时必须分开核的两件事。
 
 **候选列里有两处按类别写、不点名具体产品**，核验方法同上：存储底座那一行的跨云访问写的是「跨云对象存储网关一类」——你在别处可能见到 `Multi-Cloud Gateway` 这类写法，指的就是同一层能力，网关的命名与形态各家不同，以你所选云商的官方文档当前版本为准；Hudi 一行给的是时间线（Timeline）服务一类能力，`Lakehood` 集成这一项不在候选之列——若你在某个 Hudi 版本或资料里见到这项，同样按 Hudi 官方文档当前的组件列表核对。
 
@@ -293,7 +293,7 @@ PROPERTIES ("iceberg.catalog.type" = "hive", "iceberg.catalog.uri" = "thrift://m
 
 **怎么用**：三格要改的只有 Catalog 名、metastore 地址与桶路径；**不要照抄的是 `createOrReplace()` 用在 Silver / Gold 上**——上线后这两层应改为按分区追加或 MERGE，否则每次重跑都会重建整张表并制造一批新快照。这段代码的用处是验证链路能不能通，不是生产作业模板。
 
-**模板 2：Iceberg 向量类型（V3 规范能力，落地前先核引擎支持）**
+**模板 2：向量列 + 独立向量索引（落地前先核引擎与规范支持）**
 
 ```python
 # 向量列 + 独立向量索引：湖管事实与版本，索引管召回

@@ -114,7 +114,7 @@
 - 2023：AI 推理服务跨 Region 部署（OpenAI、Anthropic 全球多 Region）。
 - 2024：跨 Region 的 LLM API 路由（按地域选择最近 / 最便宜的模型）。
 - 2024：向量数据库跨 Region 同步（Milvus、Pinecone）。
-- 2025+：AI 辅助多 Region 决策（智能体自动调度流量、自动选择 Region）。
+- 2025+：AI 辅助多 Region 决策（智能体自动调度流量、自动选择 Region）——属前瞻方向，成熟度 L3，当前只适合输出建议与报告（见 [§5.2.4](02-multi-region-section-5-ai.md)）。
 
 ---
 
@@ -238,12 +238,12 @@ TT.now() 返回 [earliest, latest] 区间，保证真实时间在区间内
    - **TiDB**：MySQL 兼容，国内主流。
    - **OceanBase**（蚂蚁）：国产化，金融级。
 
-5. **异地容灾等级**（国家标准 GB/T 20988-2007）：
+5. **异地容灾等级**（业内俗称口径：数据级 / 应用级 / 业务级、同城双活 / 异地多活 / 全球多活的分类对照，不是某一份国家标准的等级命名，裁定见 [§ 7.5](02-multi-region-section-7-sec7.md) 阈值依据②）：
    - **Level 1**：数据级灾备（RPO < 24h）
    - **Level 2**：应用级灾备（RPO < 1h，RTO < 12h）
    - **Level 3**：业务级灾备（RPO < 分钟级，RTO < 分钟级）
    - **Level 4**：同城双活（RPO = 0，RTO < 秒级）
-   - **Level 5**：异地多活（RPO = 0，RTO < 秒级）
+   - **Level 5**：异地多活（RPO = 秒级，RTO < 秒级）
    - **Level 6**：全球多活（RPO = 0，RTO < 秒级，跨大洲）
 
 ### 2.4 与相邻概念的关系
@@ -256,7 +256,7 @@ TT.now() 返回 [earliest, latest] 区间，保证真实时间在区间内
 | 数据一致性（Ch12 §08） | 数学基础 | CAP 理论是异地多活的数学基础 |
 | 混沌工程（Ch12 §06） | 验证手段 | 混沌工程验证异地多活的容错能力 |
 
-> 💡 **思考锚点**：拿你系统的真实 RPO 与 RTO 在 2.3 的 Level 1–6 上对档——实际落在哪一级，对外宣称的又是哪一级？若目标是 Level 5（异地多活，RPO=0），按 2.2 的 PACELC 你必须先答：分区时选 Availability 还是 Consistency；选了 A 又要 RPO=0，写冲突靠向量时钟检出、LWW 合并（认不认时钟漂移）还是 CRDT 消解？
+> 💡 **思考锚点**：拿你系统的真实 RPO 与 RTO 在 2.3 的 Level 1–6 上对档——实际落在哪一级，对外宣称的又是哪一级？若目标是 Level 5（异地多活，RPO=秒级），按 2.2 的 PACELC 你必须先答：分区时选 Availability 还是 Consistency；选了 A 就意味着接受跨区异步的复制窗口，写冲突靠向量时钟检出、LWW 合并（认不认时钟漂移）还是 CRDT 消解？
 ---
 
 - [§3. 设计模式与范式](02-multi-region-section-3-sec3.md)

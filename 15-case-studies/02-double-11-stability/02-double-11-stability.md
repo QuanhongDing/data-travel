@@ -2,7 +2,7 @@
 
 > **一句话定位**：阿里用 16 年时间把"双 11"从一个营销活动变成了一场全集团级别的稳定性大考——全链路压测、单元化部署、限流降级、混沌工程、实时大屏、值班机制，构成了一整套"老板最怕的事"的工程范式，是中文互联网最值得借鉴的大促稳定性样本。
 
-> 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**02-双 11 稳定性保障**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 复用经验。
+> 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**02-双 11 稳定性保障**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 落地实践。
 
 ## 0. 本章速读地图
 
@@ -130,7 +130,7 @@ Blink 集群在双 11 跑 2000+ 实时任务，**故障恢复时间（Failover T
 - [§3. 架构演进](02-double-11-stability-section-3-sec3.md)
 - [§4. 关键决策](02-double-11-stability-section-4-sec4.md)
 - [§5. 踩坑与教训](02-double-11-stability-section-5-sec5.md)
-- [§6. 复用经验](02-double-11-stability-section-6-sec6.md)
+- [§6. 落地实践](02-double-11-stability-section-6-sec6.md)
 - [§7. 与同类案例对比](02-double-11-stability-section-7-sec7.md)
 - [§8. 面试真题集](02-double-11-stability-section-8-sec8.md)
 
@@ -143,7 +143,7 @@ Blink 集群在双 11 跑 2000+ 实时任务，**故障恢复时间（Failover T
 - [§3. 架构演进](02-double-11-stability-section-3-sec3.md)
 - [§4. 关键决策](02-double-11-stability-section-4-sec4.md)
 - [§5. 踩坑与教训](02-double-11-stability-section-5-sec5.md)
-- [§6. 复用经验](02-double-11-stability-section-6-sec6.md)
+- [§6. 落地实践](02-double-11-stability-section-6-sec6.md)
 - [§7. 与同类案例对比](02-double-11-stability-section-7-sec7.md)
 - [§8. 面试真题集](02-double-11-stability-section-8-sec8.md)
 

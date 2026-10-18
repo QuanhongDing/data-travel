@@ -130,13 +130,13 @@
 | 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
 | --- | --- | --- | --- |
 | 图 / GNN 训练框架 | PyTorch Geometric (PyG) / DGL（含 GraphBolt 大图训练）/ tf-gnn / Spektral / Jraph | 与既有训练栈同源（PyTorch → PyG，TF → tf-gnn，JAX → Jraph）；要大图采样与多机 → DGL 或 PyG 的采样器；要复现论文 → 优先选论文实现所在的那个库 | 换栈意味着模型与采样器都要重写，可用算子面同时变窄 |
-| 工业级分布式图训练 | 阿里 GraphScope（含 Flex / Cluster / AutoML 等组件）/ Aligraph（沉淀了 EGES、ESMM、GraphSAGE 等模型）/ Ant Graph（Ant Graph Learn）/ 腾讯 Plato / 华为 Euler / 百度 Paddle Graph / DGL-KE / PyTorch BigGraph | 边数进入十亿量级、单机放不下 → 分布式图引擎；只需要大图嵌入而不是 GNN → DGL-KE / PyTorch BigGraph 这类专做大图嵌入的库；风控场景且团队能自建 → 参考厂商方案的开源部分 | 单机采样训练在亿级以上会卡在显存与通信，靠加机器解决不了 |
+| 工业级分布式图训练 | 阿里 GraphScope（含 Flex / Cluster / AutoML 等组件）/ Aligraph（沉淀了 EGES、ESMM、GraphSAGE 等模型）/ Ant Graph（Ant Graph Learn）/ 腾讯 Plato / 华为 Euler / 百度 Paddle Graph / DGL-KE / PyTorch BigGraph | 节点进入十亿量级、单机放不下 → 分布式图引擎；只需要大图嵌入而不是 GNN → DGL-KE / PyTorch BigGraph 这类专做大图嵌入的库；风控场景且团队能自建 → 参考厂商方案的开源部分 | 单机采样训练在亿级以上会卡在显存与通信，靠加机器解决不了 |
 | 图数据库 / 图计算 | Neo4j（含 GDS、NaLLM 一类 LLM/Cypher 集成）/ NebulaGraph（含 Explorer 一类可视化组件）/ TigerGraph / ArangoDB / Memgraph / Amazon Neptune / Azure Cosmos DB（Gremlin API）/ JanusGraph / Kùzu / Apache TinkerPop 与 Gremlin | 点查与沿关系遍历是一等需求 → 图数据库；只要聚合统计 → 回列存；嵌入式本地分析 → 嵌入式图库；要标准查询语言 → 走 Cypher / Gremlin 一类；要托管 → 云厂商方案 | 用遍历型存储做聚合型任务性能差一个量级【经验】；反过来用列存做多跳遍历要反复 JOIN |
 | GraphRAG 工具 | Microsoft GraphRAG / Neo4j LLM Knowledge Graph Builder / NebulaGraph GraphRAG / Ant Group Ant GraphRAG / LlamaIndex GraphRAG / LangChain GraphRAG / Kùzu GraphRAG / LightRAG / FastGraphRAG | 需要「全局性问题」的社区摘要 → 选做社区发现 + 摘要的路线；只要多跳事实问答 → 选图查询 + 向量双路；已有图库 → 优先用它官方的 GraphRAG 组件，实体归一才能与主数据同口径 | 索引期重复做实体抽取与归一，两套实体口径会让图碎成互不相连的孤岛 |
 | 图基础模型 / 新工具 | OpenGraph / OFA（One-For-All）/ G-Retriever / LLaGA / GraphGPT / KG-GPT / ToG（Think-on-Graph）/ RoG / AnyGraph / UniGraph / GraphAlign | 下游任务多、标签少 → 先用公开骨干跑零样本，与「图特征 + 梯度提升树」基线对比，赢了才进入预训练投入；文本属性重的图 → 选图与文本对齐的路线；只要多跳问答 → 走 LLM-as-Reasoner over KG 一类方法，不必自建骨干 | 单任务自建预训练摊不平成本，且骨干更新会波及所有下游任务 |
 | 图可视化 | Neo4j Browser / Bloom / NebulaGraph Studio / Dashboard / Gephi / Cytoscape.js / Graphistry / AntV G6 / AntV X6 | 只做排障与讲解 → 用图库自带的可视化；要看大规模图的全局结构 → 面向大图的可视化；要嵌进产品前端 → 前端图可视化库 | 用产品级前端库做一次性排障，或把学术工具接进产品，都会在规模上翻车 |
 
-表里最容易被误选的是**图数据库**：团队把「做图推理」等同于「上一套图数据库」，于是把全表聚合与统计类查询也放到图库上跑。图库的机制是沿关系做遍历与点查，聚合扫描不是它的强项，性能会差一个量级【经验】（§3.5 的「图数据库当万能存储」）。第二个高频误选是**自建分布式图训练**：在亿级边以下【经验】，通用分布式框架的分区与通信开销常常吃掉全部收益，而「单机采样 + 图分区」往往已经够用，判断依据见 §3.6 的规模跃迁表。此外，本节不锁定各库的版本号 —— 具体某个版本支持哪些能力（向量索引、GraphRAG 组件、采样器特性），请以官方文档当前版本为准。
+表里最容易被误选的是**图数据库**：团队把「做图推理」等同于「上一套图数据库」，于是把全表聚合与统计类查询也放到图库上跑。图库的机制是沿关系做遍历与点查，聚合扫描不是它的强项，性能会差一个量级【经验】（§3.5 的「图数据库当万能存储」）。第二个高频误选是**自建分布式图训练**：在亿级节点以下【经验】，通用分布式框架的分区与通信开销常常吃掉全部收益，而「单机采样 + 图分区」往往已经够用，判断依据见 §3.6 的规模跃迁表。此外，本节不锁定各库的版本号 —— 具体某个版本支持哪些能力（向量索引、GraphRAG 组件、采样器特性），请以官方文档当前版本为准。
 
 ### 4.4 存量迁移
 
@@ -353,7 +353,7 @@ def pra_score(graph: nx.DiGraph, source: str, target: str,
 
 - **0 → 1（最小可用）**：只读图投影——从 DWD 挑 1–2 类语义最清的边建小图，跑图算法（社区 / 度 / PageRank / 连通分量）产出结构特征，挂到既有规则或梯度提升树上（4.4 ①）。**变贵的是「边的语义定义」这层人力**，不是算力；**先坏的是边定义合并**：两个团队各建各的图、边语义没登记，合并后名单里出现业务上无关的实体（4.1 Step 1、4.2 失效条件）——它不以「跑不出来」暴露。
 - **1 → 100（规模化）**：上 GNN（归纳式优先）+ 在线子图采样 + 图版本治理 + 影子流量对拍。**变贵的是 fanout^K 的在线推理成本与图版本存储**（4.6）；**先坏的是冷启动**：转导式模型 + 高占比新节点 → 新实体被统一打成默认分，而离线全量指标正常（4.2「训练样本」「在线推理」的失效条件）。
-- **100 →（下一道坎）**：GraphRAG / GFM / LLM-as-Reasoner over KG（见 [§ 5 前沿演进](07-graph-reasoning-section-5-ai.md)）。**变贵的是实体归一与图-文本对齐**——两套实体口径会让图碎成互不相连的孤岛（4.3 表）；**先坏的是「模型能换、实体口径不能漂」**：骨干升级可控，实体映射一漂则全体下游重算。
+- **100 →（下一道坎）**：GraphRAG 与 LLM-as-Reasoner over KG（§5.1 记 L2）；GFM 只做技术预研（§5.1 记 L3，不要为它预留架构假设）（见 [§ 5 前沿演进](07-graph-reasoning-section-5-ai.md)）。**变贵的是实体归一与图-文本对齐**——两套实体口径会让图碎成互不相连的孤岛（4.3 表）；**先坏的是「模型能换、实体口径不能漂」**：骨干升级可控，实体映射一漂则全体下游重算。
 
 > 判据：你能否一句话说出「信号的最小单位」（4.1 Step 0）——说不清，说明还在 0 → 1，先别谈换模型。
 

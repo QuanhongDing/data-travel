@@ -1,6 +1,6 @@
 > 本文件是 **04-observability.md** § 8 面试真题集的子主题。完整章节请回到 [index](04-observability.md) 或 [§ 8 索引](04-observability-section-8-sec8.md)。
 
-### 8.2 §9.7 调度器实战配置与问题诊断
+### 8.5 §9.7 调度器实战配置与问题诊断
 
 > 本主题考察 YARN Capacity Scheduler 与 Fair Scheduler 的核心区别、深度配置、多租户隔离，以及队列资源利用率异常时的诊断。面试官真正想听的是「配置含义 + 业务影响 + 治理路径」，而不是「在 Ambari 里点几下」。
 

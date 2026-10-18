@@ -107,7 +107,7 @@
 
 - 2024：Iceberg V3 规范、Variant 类型、向量类型。
 - 2024：Delta UniForm GA、Iceberg/Paimon 全支持 Schema Evolution。
-- 2025：AI 驱动的 Schema 推断（LLM 自动生成 schema）。
+- 2025：AI 驱动的 Schema 推断（LLM 自动生成 schema）——注明：本行记的是**方向**而非已落地的能力；按 [§5.1](06-schema-and-time-travel-section-5-ai.md) 判定，公开材料里可核验的正式能力项只到「自动生成列注释 / 数据分类」这类窄能力，该方向当前为 L3。
 
 **一句话总结**：**Schema 演进从"传统 DDL 改造"→"消息 Schema Registry"→"Lakehouse 表格式"→"AI 原生"四阶段演进，今天是 Lakehouse 的核心能力。**
 

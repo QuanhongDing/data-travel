@@ -1,6 +1,6 @@
 # 阿里数据中台演进史案例研究
 
-> **一句话定位**：阿里用 20 年时间把分散在 30+ 业务线的烟囱式数据体系重塑为「OneData / OneID / OneService / OneMetric」四位一体的数据中台，并在大模型时代进一步演进为「AI 中台」——这是中文互联网最完整、最有借鉴价值的中台演进样本。
+> **一句话定位**：阿里用 20 年时间把分散在二十余个业务线的烟囱式数据体系重塑为「OneData / OneID / OneService / OneMetric」四位一体的数据中台，并在大模型时代进一步演进为「AI 中台」——这是中文互联网最完整、最有借鉴价值的中台演进样本。
 
 > 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**01-阿里数据中台演进史**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 复用经验。
 
@@ -13,9 +13,9 @@
 | 中台的"存、通、用"具体是什么 | §3.4、§4.1 |
 | 双 11 数据洪峰怎么扛住的 | §3.2.3、§4.1（Step 5） |
 | 中台组织怎么搭 | §5.2.3、§7.2.3 |
-| 阿里怎么把中台能力变成云上商业产品 | §4.3、§6 的 1.2 |
+| 阿里怎么把中台能力变成云上商业产品 | §4.3、§6.2 |
 | 大模型时代阿里中台怎么演进的 | §4.1（Step 7）、§5.2.5 |
-| 哪些坑可以提前避免 | §6 的 1.6、§7.6 |
+| 哪些坑可以提前避免 | §6.6、§7.6 |
 | 我司适合学哪些、不适合学哪些 | §7.3、§7.5 |
 
 ---
@@ -38,7 +38,7 @@
 - **2022：大模型入场**。通义千问系列模型发布；数据中台向「AI Native」演进。
 - **2024：「AI 中台」全面铺开**。阿里云百炼平台 + 数据中台深度融合，数据 → 模型 → 应用的一体化平台成型。
 
-**业务背景**：阿里集团 2024 财年 GMV 约 8 万亿元、活跃买家 9 亿+，有淘宝 / 天猫 / 1688 / 闲鱼 / 支付宝 / 菜鸟 / 阿里云 / 飞猪 / 优酷 / 高德 / 饿了么 / 盒马 / Lazada / 速卖通等 30+ 业务线。每个 BU 都有自己独立的用户、商品、订单、支付、营销、风控数据，是中台需求最强烈的场景。
+**业务背景**：阿里集团 2024 财年 GMV 约 8 万亿元、活跃买家 9 亿+，有淘宝 / 天猫 / 1688 / 闲鱼 / 支付宝 / 菜鸟 / 阿里云 / 飞猪 / 优酷 / 高德 / 饿了么 / 盒马 / Lazada / 速卖通等二十余个业务线。每个 BU 都有自己独立的用户、商品、订单、支付、营销、风控数据，是中台需求最强烈的场景。
 
 ### 1.2 行业与监管
 
@@ -63,14 +63,14 @@
 - **数据治理委员会**（横跨组织）：约 30+ 名"数据 P0 / P1"级专家，负责制定集团口径、解决跨 BU 争议。
 - **组织演变**：从 2016 的"业务 BU 自有数据团队" → 2019 的"数据 BP 模式"（数据团队作为 BU 的 Business Partner） → 2022 的"数据中台公司化"（阿里云数据中台团队统一对外）。
 
-> 💡 **思考锚点**：把你司的业务线数一遍，和阿里的 30+ 对一对：阿里用了 2000+ 人、16+ 年才把 OneData / OneID / OneService 三件套立起来（§1.1、§1.3）——你司现在有几条业务线在各自定义同一份用户 / 订单 / 支付数据？如果只有个位数，你是真需要三件套，还是先把两条业务线的实体定义与指标口径对齐就够了？
+> 💡 **思考锚点**：把你司的业务线数一遍，和阿里的二十余个对一对：阿里用了 2000+ 人、16+ 年才把 OneData / OneID / OneService 三件套立起来（§1.1、§1.3）——你司现在有几条业务线在各自定义同一份用户 / 订单 / 支付数据？如果只有个位数，你是真需要三件套，还是先把两条业务线的实体定义与指标口径对齐就够了？
 
 ---
 
 - [§3. 挑战](01-alibaba-data-middle-platform-section-3-sec3.md)
 - [§4. 架构演进](01-alibaba-data-middle-platform-section-4-sec4.md)
 - [§5. 关键决策](01-alibaba-data-middle-platform-section-5-sec5.md)
-- [§6. 踩坑与教训](01-alibaba-data-middle-platform-section-6-sec6.md)
+- [§6. 落地实践](01-alibaba-data-middle-platform-section-6-sec6.md)
 - [§7. 复用经验](01-alibaba-data-middle-platform-section-7-sec7.md)
 - [§8. 面试真题集](01-alibaba-data-middle-platform-section-8-sec8.md)
 - [§9. 参考资料](01-alibaba-data-middle-platform-section-9-sec9.md)
@@ -84,7 +84,7 @@
 - [§3. 挑战](01-alibaba-data-middle-platform-section-3-sec3.md)
 - [§4. 架构演进](01-alibaba-data-middle-platform-section-4-sec4.md)
 - [§5. 关键决策](01-alibaba-data-middle-platform-section-5-sec5.md)
-- [§6. 踩坑与教训](01-alibaba-data-middle-platform-section-6-sec6.md)
+- [§6. 落地实践](01-alibaba-data-middle-platform-section-6-sec6.md)
 - [§7. 复用经验](01-alibaba-data-middle-platform-section-7-sec7.md)
 - [§8. 面试真题集](01-alibaba-data-middle-platform-section-8-sec8.md)
 - [§9. 参考资料](01-alibaba-data-middle-platform-section-9-sec9.md)

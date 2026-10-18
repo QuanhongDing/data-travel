@@ -95,8 +95,8 @@
 
 **大数据阶段（2010s–2020）**：
 
+- 2011：Schema.org 由 Google / Bing / Yahoo 联合发布，标志着本体「走出学术、走向 SEO」。
 - 2010s 中：Linked Open Data（LoD）项目爆发，DBpedia、WikiData 成为开放本体典范。
-- 2013：Schema.org 被 Google / Bing / Yahoo 联合采用，标志着本体「走出学术、走向 SEO」。
 - 2017：SHACL（W3C 推荐标准）补齐 RDF 验证的最后一块拼图。
 - 2018–2020：工业级图数据库（Neo4j、Stardog、GraphDB）把 OWL 推理能力下沉到图存储。
 
@@ -147,9 +147,9 @@
    - Tableau 算法（HermiT、Pellet）。
    - Consequence-based（ELK，专为 EL 优化）。
    - Rewriting-based（Quonto，针对 Quill）。
-5. **SHACL 校验**：自底向上验证每个节点是否满足所有形状约束，违反即报告。
-6. **本体演化（Ontology Evolution）**：通过 `owl:versionInfo`、`owl:priorVersion`、PROV-O 记录变更；支持增量 commit 与回滚。
-7. **本体嵌入（Ontology Embedding）**：用机器学习把本体概念嵌入向量空间。代表方法：Owl2Vec*、EL Embeddings、BoxE、Query2Box。
+4. **SHACL 校验**：自底向上验证每个节点是否满足所有形状约束，违反即报告。
+5. **本体演化（Ontology Evolution）**：通过 `owl:versionInfo`、`owl:priorVersion`、PROV-O 记录变更；支持增量 commit 与回滚。
+6. **本体嵌入（Ontology Embedding）**：用机器学习把本体概念嵌入向量空间。代表方法：Owl2Vec*、EL Embeddings、BoxE、Query2Box。
 
 ### 2.4 与相邻概念的关系
 

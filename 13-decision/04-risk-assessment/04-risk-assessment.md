@@ -14,7 +14,7 @@
 | 如何量化一个风险？P × I 矩阵怎么用？ | §2.2 |
 | 风险评估怎么落到工程？ | §4 |
 | AI 时代风险评估有哪些新趋势？ | §5 |
-| 数据架构师该做哪些风险预判？ | §6 案例 4.3（微软 STRIDE 威胁建模） |
+| 数据架构师该做哪些风险预判？ | §6.3（微软 STRIDE 威胁建模） |
 
 ---
 
@@ -82,9 +82,9 @@
 - **1960s**：贝尔实验室发展故障树分析（FTA, Fault Tree Analysis）。
 - **1970s**：化工 / 核电行业广泛使用 HAZOP（Hazard and Operability Study）。
 - **1990s**：金融行业引入 VAR（Value at Risk）量化模型。
-- **2002**：ISO 31000 风险管理标准发布（2024 年发布修订版）。
+- **2000s**：ISO 31000 风险管理标准发布；现行版本为 **ISO 31000:2018《Risk management — Guidelines》**（版本沿革以 ISO 官方发布为准）。
 - **2010s**：DevOps / SRE 引入风险评估（Error Budget、SLO）。
-- **2017**：NIST 800-30《Risk Management Framework》。
+- **2012**：NIST SP 800-30 Rev.1《Guide for Conducting Risk Assessments》。
 - **2020s**：AI / ML 风险评估（AI RMF, 2023 NIST 100-1）。
 - **2024-2025**：LLM 风险评估（幻觉、数据泄露、模型滥用）、AI 辅助 FMEA、量子风险评估。
 
@@ -103,14 +103,14 @@
 - **FTA（Fault Tree Analysis）**：故障树分析——从顶层「不希望事件」反推到底层原因（用 AND / OR 逻辑门）。
 - **Bowtie Analysis（领结分析）**：把威胁、后果、预防 / 缓解措施画成「领结」形图。
 - **HAZOP（Hazard and Operability Study）**：危险与可操作性研究——化工 / 过程行业标准。
-- **概率影响矩阵（Probability-Impact Matrix）**：把风险按 P × I 二维评分，分红黄绿三色。
+- **概率影响矩阵（Probability-Impact Matrix）**：把风险按 P × I 二维评分，分五档（极低 / 低 / 中 / 高 / 极高）。
 - **ERM（Enterprise Risk Management）**：企业风险管理——全公司层面的风险管理体系。
 - **Risk Appetite（风险偏好）**：组织愿意接受的风险水平（由董事会 / 高管定）。
 - **Risk Tolerance（风险容忍度）**：具体可接受风险偏差范围。
 - **Inherent Risk vs Residual Risk**：固有风险（无控制）vs 残留风险（控制后）。
 - **Risk Treatment（风险应对）**：四象限——Avoid（避免）/ Transfer（转移）/ Mitigate（缓解）/ Accept（接受）。
 - **Monte Carlo Simulation**：蒙特卡洛模拟——用概率分布采样评估风险。
-- **AI RMF（AI Risk Management Framework）**：NIST 2023 发布的 AI 风险管理框架（2024 正式版）。
+- **AI RMF（AI Risk Management Framework）**：AI RMF 1.0（NIST AI 100-1，2023-01）；生成式 AI 专题文件 AI 600-1 于 2024-07 另发。
 - **Redundancy（冗余）**：通过备份 / 多副本降低单点故障概率。
 - **Fault Isolation（故障隔离）**：通过限流 / 熔断 / 隔离舱壁降低影响扩散。
 

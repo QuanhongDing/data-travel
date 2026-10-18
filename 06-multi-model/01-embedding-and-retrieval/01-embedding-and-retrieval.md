@@ -20,9 +20,9 @@
 | 代码示例（OpenAI / BGE-M3 / Cohere / ColBERT / Cohere Rerank） | §4.5 |
 | 长文本 / 多语言 / Late Interaction 前沿演进 | §5 |
 | 2024-2025 学术工业进展（Snowflake Arctic / Nomic Embed / ColBERT v2 / Cohere Rerank 3） | §5.4 |
-| 真实案例与踩坑经验 | §6 落地实践 §1.1–§1.4、§1.6 |
-| 0→1 / 1→10 / 10→100 落地路径 | §6 落地实践 §1.5 |
-| ROI 评估（检索准确率 vs 成本） | §6 落地实践 §1.7 |
+| 真实案例与踩坑经验 | §6 落地实践 §6.1–§6.4、§6.6 |
+| 0→1 / 1→10 / 10→100 落地路径 | §6 落地实践 §6.5 |
+| ROI 评估（检索准确率 vs 成本） | §6 落地实践 §6.7 |
 | 与全文检索 / 图数据库 / 传统 RAG 对比 | §7.x |
 
 ---
@@ -283,15 +283,6 @@ $$s_i = g_\theta(q, d_i)$$
 - **Embedding vs Fine-Tuning**：通用 Embedding 适合 80% 场景，垂直领域（医疗、法律）需 Fine-Tuning。
 
 > 💡 **思考锚点**：把你的语料套进本节的两条线——它落在「通用 Embedding 就够的 80%」还是需要 Fine-Tuning 的垂直领域，向量规模又落在 HNSW（内存装得下）还是 IVF 那档、要不要靠 PQ 把索引压 10–100 倍——两条线上你各站哪一格，它决定了「召回 1000 → 重排 10」这条链路里哪一段先撑不住？
-
----
-
-- [§3. 设计模式与范式](01-embedding-and-retrieval-section-3-sec3.md)
-- [§4. 工程实现](01-embedding-and-retrieval-section-4-sec4.md)
-- [§5. 前沿演进（AI 时代）](01-embedding-and-retrieval-section-5-ai.md)
-- [§6. 落地实践](01-embedding-and-retrieval-section-6-sec6.md)
-- [§7. 与其他方法对比](01-embedding-and-retrieval-section-7-sec7.md)
-- [§8. 面试真题集](01-embedding-and-retrieval-section-8-sec8.md)
 
 ---
 

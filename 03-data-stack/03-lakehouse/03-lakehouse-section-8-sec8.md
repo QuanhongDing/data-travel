@@ -64,7 +64,7 @@
 **第五层：2024-2025 的关键收敛信号。**
 
 - **Delta UniForm（2024 SIGMOD 论文）**：写一次 Delta，下游可选 Iceberg / Hudi 协议读。
-- **Iceberg V3 规范（2024）**：删除向量 + Variant 类型 + 向量类型（行级删除文件机制自 v2 规范起已提供），缩小与 Delta 的「能力差」。
+- **Iceberg V3 规范（2024）**：删除向量 + Variant 类型（行级删除文件机制自 v2 规范起已提供），缩小与 Delta 的「能力差」。
 - **Paimon 1.0 Apache 毕业（2024）+ Paimon 1.1（2025）**：LSM 调优、Changelog 增强，确认「流批一体底座」路线。
 
 选型不再是非此即彼，而要回答「**主用谁、补位谁、互认层怎么搭**」。
@@ -79,7 +79,7 @@
 
 **4. 追问预测**
 
-- **「Delta UniForm 和 Iceberg V3 都是「一份数据多协议读」，它们解决的问题有何本质差异？」** 答：UniForm 是从 Delta 出发在 commit 时同步发出 Iceberg/Hudi 元数据，保持 Delta 写入主路径；Iceberg V3 是规范本身扩展（删除向量 + 向量类型），让任何对接 V3 的引擎天然支持新语义。前者解决**多协议互认**，后者解决**单协议能力上限**。
+- **「Delta UniForm 和 Iceberg V3 都是「一份数据多协议读」，它们解决的问题有何本质差异？」** 答：UniForm 是从 Delta 出发在 commit 时同步发出 Iceberg/Hudi 元数据，保持 Delta 写入主路径；Iceberg V3 是规范本身扩展（删除向量 + Variant 类型），让任何对接 V3 的引擎天然支持新语义。前者解决**多协议互认**，后者解决**单协议能力上限**。
 - **「Paimon 的 LSM 写模型和小文件治理是什么关系？为什么它被称作自然不产生小文件？」** 答：LSM 用追加写 + 后台 compaction 的天然结构，写入先落小文件，由后台线程合并成大文件，整个生命周期对小文件是「应收尽收」——Hudi / Iceberg 需要额外的 Compaction 调度（Paimon 几乎不用）。
 - **「如果公司要求 5 年内不绑定单一厂商，技术栈怎么搭？」** 答：底座用对象存储 + Iceberg 协议；Catalog 用开源 Polaris 或 Nessie；引擎层用 Trino 做联邦查询；写端按场景拆分——CDC 走 Flink+Paimon、批走 Spark+Iceberg。这是「格式中立 + 引擎多元化」的最大公约数栈。
 - **「华米欧薇大厂为什么不用 Delta Lake？」** 答：历史包袱（Spark 主导 vs Flink 主导）+ Delta 与 Databricks 商业版深度绑定 + 国内合规要求多云中立。当前国内主流是 Iceberg + Paimon + Hudi 三足鼎立，而非 Delta。
@@ -495,7 +495,7 @@ Paimon 本质是**把 LSM 树结构搬到了湖表**：写入先入 memtable，f
 **1. 考察点**
 
 - 是否理解 AI 时代数据需求的**三个新特征**：① 多模态（结构化 + 文本 + 图像 + 向量）；② 可追溯（训练数据可重现 / 数据血缘保留 / 可解释）；③ 高频演进（schema 反复变、embedding 模型迭代）。
-- 能否说清 Iceberg V3 的 Variant / Vector 类型、Paimon 的 Changelog 在 RAG 中的角色。
+- 能否说清 Iceberg V3 的 Variant 类型与「向量进表」的方向、Paimon 的 Changelog 在 RAG 中的角色。
 - 是否能把 **Lakehouse → 向量库 / 特征平台 / Agent 平台** 的连接讲清楚——这是 2024-2025 一线架构师高频题。
 - 加分项：能把 LanceDB / Delta Vector Search / Snowflake Cortex 这类「向量能力嵌入表格式」的产品放进地图里。
 
@@ -517,7 +517,7 @@ Paimon 本质是**把 LSM 树结构搬到了湖表**：写入先入 memtable，f
 **第三层：向量能力的嵌入路径。**
 
 - **路径 A：向量外挂**——湖仓存结构化，向量库（Milvus / LanceDB / Pinecone）存 Embedding。**代价**：双存储、双写入、双删除。
-- **路径 B：Iceberg V3 Variant / Vector 类型**——Iceberg V3 在 2024 引入 Variant 与向量类型原生支持，可以把 Embedding 与原数据放在同一份表里。**目前**（截至 2025）尚在早期阶段，但方向明确。
+- **路径 B：Iceberg V3 Variant 类型 / 向量进表方向**——Iceberg V3 在 2024 引入 Variant 类型；把 Embedding 作为向量列与原数据放在同一份表，是这一方向的延伸，**规范里有没有向量类型须回规范的类型章节核对**。**目前**（截至 2025）尚在早期阶段，但方向明确。
 - **路径 C：LanceDB 模式**——LanceDB 设计为「AI 原生列式存储」，结构化 + 向量 + 文本统一在一份文件里。与 Iceberg / Delta 互补，常作为湖仓的「向量旁路」。
 - **路径 D：Delta Vector Search**——Databricks Unity Catalog 内置向量检索能力，背后是 Lance + 高效 ANN 索引；这是当前最商业落地的方案。
 
@@ -555,12 +555,12 @@ Paimon 本质是**把 LSM 树结构搬到了湖表**：写入先入 memtable，f
 
 - **「RAG 召回准但溯源说不清楚，怎么解决？」** 答：在 Bronze 阶段保留**原始 chunk 与 chunk_id** 的对应关系，Iceberg 索引主键就是 chunk_id；向量检索拿到 chunk_id 后回查 Iceberg 拿原文，**双向可解释**。
 - **「Embedding 模型频繁升级，向量索引如何重建？」** 答：避免「全量重建」，采用**双写 + 切流**——新模型向 Iceberg 新列写新 Embedding，下游检索用同一 chunk_id 取不同 Embedding；观测质量确认稳定后切到新列，旧列 expire snapshot。
-- **「Iceberg V3 向量类型能用了吗？」** 答：能用，但生态还在追赶。2025 年早期阶段建议**Iceberg 存文本 + 旁路向量库**为主；Vector 类型用作长期演进方向。
+- **「Iceberg V3 向量类型能用了吗？」** 答：先别假定规范里有这一条——**回 Iceberg 规范的类型章节核对有没有向量类型**；即便有，生态也还在追赶。当前阶段建议**Iceberg 存文本 + 旁路向量库**为主；向量类型用作长期演进方向。
 - **「训练数据合规审计怎么设计？」** 答：把 PII 字段标记为「敏感」列；湖表权限层（Unity Catalog / Lake Formation）按列授权；训练任务启动前由权限服务**断言「当前 session 没有 PII 可见性」**；Time Travel 给审计员回放能力，让合规检查可重现。
 
 **5. 参考资料**
 
-- Apache Iceberg V3 规范（2024）与「Variant / Vector Type」RFC——表格式原生支持向量类型的官方时间线。
+- Apache Iceberg V3 规范（2024）与「Variant / Vector Type」RFC——表格式原生支持 Variant 类型的官方时间线（**向量类型是否进入规范，须回规范的类型章节核对**）。
 - LanceDB 官方文档与 GitHub——多模态列式存储 + ANN 索引的工业级实现。
 - Databricks「Unity Catalog for AI/ML」白皮书——Lakehouse + AI Functions + Vector Search 的一体化范式。
 - Snowflake Cortex + Iceberg Tables 官方文档——商业云数仓的 AI 原生演进。

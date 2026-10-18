@@ -9,8 +9,8 @@
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
 | RACI 矩阵是什么？怎么用？ | §1.1、§2.1、§4.2 |
-| 跨 BU 数据共享怎么推动？ | §3.2.3、§6 案例 4.1 |
-| 影响无授权团队（Influence Without Authority）怎么做？ | §2.3、§6 案例 4.2 |
+| 跨 BU 数据共享怎么推动？ | §3.2.3、§6 案例 6.1 |
+| 影响无授权团队（Influence Without Authority）怎么做？ | §2.3、§6 案例 6.2 |
 | Stakeholder 管理 4 象限怎么用？ | §2.2、§4.1 |
 | Shared Service / Platform Team 怎么设计？ | §3.2.3、§3.2.4、§4.1 |
 | 跨团队冲突怎么解？ | §2.3、§4.5 示例 5 |
@@ -112,7 +112,7 @@
 - 2010：Google 推行「**Platform Team**」+「**SRE**」模式。
 - 2012：Spotify「**Squad / Tribe / Chapter / Guild**」模型。
 - 2014：阿里巴巴「**中台战略**」= 跨 BU 共享服务团队。
-- 2017：Team Topologies（Skelton + Pais）正式出版。
+- 2019：Team Topologies（Skelton + Pais）正式出版。
 
 **AI 原生阶段（2020+，LLM + Agent 驱动）**：
 

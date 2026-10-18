@@ -71,7 +71,7 @@
 
 **4. 追问预测**
 
-- **「统计信息陈旧时，CBO 选错计划，怎么救？」** 答：三层兜底——A. 强制 Hint 锁定计划（`/*+ BROADCAST */`、`/*+ LEADING(t1 t2 t3) */`）；B. 启用 AQE 在运行时调整（Spark 3.x / Trino 420+ / StarRocks 2.5+）；C. 启动**统计信息自动刷新**（Snowflake 风格 / Databricks 风格），从根源上消除误差。生产经验上，"切到 AQE + 上自动统计信息"是性价比最高的组合。
+- **「统计信息陈旧时，CBO 选错计划，怎么救？」** 答：三层兜底——A. 强制 Hint 锁定计划（`/*+ BROADCAST */`、`/*+ LEADING(t1 t2 t3) */`）；B. 启用 AQE 在运行时调整（Spark 3.x / Trino 420+ / StarRocks）；C. 启动**统计信息自动刷新**（Snowflake 风格 / Databricks 风格），从根源上消除误差。生产经验上，"切到 AQE + 上自动统计信息"是性价比最高的组合。
 - **「CBO 的编译开销在大查询上能达到秒级，怎么优化？」** 答：Cascades 框架的 Memo 结构、Top-Down 剪枝、准备计划缓存（prepared plan）、对外连接卡片化（Join ordering 卡预算）都是常见手段；StarRocks 3.x 引入了**基于历史计划的代价模型预热**。
 - **「Volcano 和 Cascades 的关键区别？」** 答：Volcano 是 Top-Down 搜索，规则改写与代价估算紧密耦合；Cascades 把规则改写与代价估算解耦，允许**规则先生成所有候选、再批量估算代价**，剪枝更激进，搜索质量更好。Goetz Graefe 在 1995 年的 Cascades 论文里明确论述了这一点。
 - **「CBO 为什么很难完全分布式？」** 答：代价估算需要**全局视角**（所有节点的行数与分布），但代价计算的代价随节点数线性增长。Meta F3、Trino、CockroachDB 各自走了不同路线：F3 用样本 + 自适应估算，Trino 用 Coordinator 集中决策 + Worker 本地细化，CockroachDB 用 Volcano 改造 + 节点局部统计。
@@ -422,7 +422,7 @@
   - 由 `enable-adaptive-join-reordering` 与 `enable-dynamic-filtering` 控制。
   - Runtime Filter 是 Trino AQE 的特色——在 Scan 阶段动态生成 Bloom Filter，下推到 Storage Connector，过滤掉大部分不匹配的行。
   - 与 Spark AQE 的差异：Trino 的 AQE 更细粒度，可以在 Stage 中动态注入 Runtime Filter。
-- **StarRocks 2.5+ AQE**：
+- **StarRocks AQE**：
   - 由 `enable_adaptive_runtime_filter` 与 `enable_adaptive_mv_rewrite` 控制。
   - Runtime Filter 是 StarRocks 的核心优化——基于 Join Build 端构建 Filter，下推到 Probe 端的 Scan。
   - StarRocks 的 Runtime Filter 兼容多种类型（IN / Bloom Filter / Min-Max）。
@@ -586,7 +586,7 @@ Calcite 提供了 `MaterializedViewRule.deriveJoinRowCount` 等工具函数做�
 **1. 考察点**
 
 - 是否理解 AI 增强优化器的**三个层次**——LLM 诊断（离线）、自治优化（在线）、神经符号融合（深度融合）。
-- 能否说出当前的**真实落地边界**——LLM 诊断已经成熟，自治优化是研究热点，神经符号融合仍在实验室。
+- 能否说出当前的**真实落地边界**——LLM 诊断可做试点、不要做核心依赖，自治优化是研究热点，神经符号融合仍在实验室。
 - 是否知道**自治优化器的关键挑战**——统计信息反馈、代价模型自适应、Query Workload 预测。
 - 加分项：能说出**当前 AI 优化器的局限**——LLM 不能替代代价模型的核心估算，只能做诊断与推荐。
 
@@ -594,7 +594,7 @@ Calcite 提供了 `MaterializedViewRule.deriveJoinRowCount` 等工具函数做�
 
 **第一层：AI 增强优化器的三个层次。**
 
-- **层次 1：LLM 诊断（已落地）**。用 LLM 分析慢查询的 SQL、EXPLAIN 输出、执行统计，给出诊断建议。典型工具：Snowflake Cortex Query Insights、Databricks Assistant、StarRocks AI Advisor、自研 + GPT 的内部工具。**能力边界**：LLM 不直接修改计划，而是产出文字建议。
+- **层次 1：LLM 诊断（可做试点，不要做核心依赖）**。用 LLM 分析慢查询的 SQL、EXPLAIN 输出、执行统计，给出诊断建议。典型工具：Snowflake Cortex Query Insights、Databricks Assistant、StarRocks AI Advisor、自研 + GPT 的内部工具。**能力边界**：LLM 不直接修改计划，而是产出文字建议。
 - **层次 2：自治优化（探索落地）**。AI 监控查询工作负载、自动推荐索引、自动推荐 MV、自动调整 CBO 参数。**能力边界**：仍是推荐系统，关键决策还是 DBA 拍板。
 - **层次 3：神经符号融合（实验室阶段）**。用神经网络替代部分代价估算，用符号搜索保留可解释性。**能力边界**：研究阶段，工业落地少。
 
@@ -618,7 +618,7 @@ Calcite 提供了 `MaterializedViewRule.deriveJoinRowCount` 等工具函数做�
 - **核心思想**：用神经网络做**代价估算**（特别是不确定性/高基数场景），用符号搜索做**计划枚举与剪枝**。
 - **代表工作**：
   - **Bao（Microsoft Research）**：用 ML 模型做「Set of Hints」的选择，每个 Hint 是一组计划约束，让 CBO 在约束空间内搜索。
-  - **Neo（ETH Zurich）**：用深度学习替代部分基数估计，论文发表于 SIGMOD 2019。
+  - **Neo（ETH Zurich）**：端到端学出来的优化器——用学习替换估算与搜索，论文发表于 VLDB 2019。
   - **HybridQ（Google）**：结合 ML 与符号推理的查询优化器。
   - **LLM-based Optimizer（多篇论文 2024）**：用 LLM 直接产出查询改写。
 - **工程挑战**：① 可解释性——神经网络的代价估算难以解释；② 训练数据——需要大量真实工作负载；③ 推理延迟——神经网络估算比符号代价计算慢。
@@ -664,7 +664,7 @@ Calcite 提供了 `MaterializedViewRule.deriveJoinRowCount` 等工具函数做�
 - **StarRocks AI Advisor 文档** —— 国内 OLAP 引擎 AI 诊断的实践。
 - **Databricks Assistant 文档** —— 自然语言优化与 LLM 集成。
 - **Bao: Learning-based Query Optimizer（Heterogeneity-Aware）等相关论文（SIGMOD 2021）** —— ML 优化器的代表性研究。
-- **Neo: A Learned Query Optimizer（SIGMOD 2019）** —— 神经符号融合的奠基性论文。
+- **Neo: A Learned Query Optimizer（VLDB 2019）** —— 神经符号融合的奠基性论文。
 - **HybridQ: A Hybrid Approach to Query Optimization（Google Research）** —— 神经符号融合的代表工作。
 - **LLM-based Query Optimization 论文（2024 多篇）** —— LLM 直接做查询优化的最新研究。
 - **Meta F3 自适应优化器论文（SIGMOD 2024）** —— 自适应基数估计与代价模型的工业方案。

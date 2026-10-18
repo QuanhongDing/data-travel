@@ -53,7 +53,7 @@
 - **多引擎需求**：Netflix 同时用 Spark（离线 + ML）、Flink（实时）、Trino（ad-hoc 查询），Delta Lake 在 Flink 侧支持弱，Iceberg 是唯一「三端原生」的选项。
 - **不愿被锁定**：Netflix 在 2018 年评估时，Delta Lake 由 Databricks 单方控制，Iceberg 是 Apache 开放治理，符合 Netflix「不被单一供应商绑定」的采购原则。
 - **时间序列优化**：Netflix 主业务是流媒体，event_time 是核心查询谓词，Iceberg 的 `day(ts)` / `hour(ts)` transform 让分区对查询者透明，比 Hive 的「必须按 dt 列 partition」更易演进。
-- **元数据可扩展**：Iceberg 的 manifest 文件独立于 Hive Metastore，partition 元数据随表走，避开了 HMS 的 partition 爆炸瓶颈——这是 Netflix 2015 年踩过的真实坑（见原书 §5.1「元数据爆炸」）。
+- **元数据可扩展**：Iceberg 的 manifest 文件独立于 Hive Metastore，partition 元数据随表走，避开了 HMS 的 partition 爆炸瓶颈——这是 Netflix 2015 年踩过的真实坑（见 §5.2.1「元数据爆炸」）。
 
 **第四层：事实验证。** 2024 年 Databricks 收购 Tabular（Iceberg 创始团队 Ryan Blue、Russell Spindel 创立的公司），投入十亿美元级资源做 Delta UniForm，承认 Iceberg 是事实标准。Snowflake / Google BigQuery / AWS Athena / Dremio 都已原生支持 Iceberg。同期，**蚂蚁集团**在 2023 年公开分享了基于 Iceberg + Flink 的实时湖仓架构，**字节跳动**也在 2022 年内部大规模落地 Iceberg（替换部分 Hive 表），**腾讯**数据湖 T-Hive 兼容 Iceberg 协议——这些都验证了「Iceberg 成为跨厂商事实标准」这一判断。
 
@@ -183,7 +183,7 @@ Netflix 2015 年的真实故障：Hive 表 partition 数到**百万级**后，`S
 
 ---
 
-### 8.2 §15.5.2 实时管道与流批一体
+### 8.3 §15.5.2 实时管道与流批一体
 
 > 本主题考察「湖仓一层的实时语义」：Netflix Keystone 实时管道如何在 Kafka + Flink + Iceberg 上实现端到端 exactly-once？Iceberg 的 snapshot 流批一体是如何让同一张表既支持 Flink 实时写、又支持 Spark/Trino 离线读？这是头部互联网公司实时数仓的核心架构模式，面试官通常从「如何保证不丢不重」切入，下钻到「commit 协议与状态后端」。
 
@@ -377,7 +377,7 @@ Netflix 实际用法：核心交易表走 COW（数据量稳定、按天刷新�
 
 ---
 
-### 8.2 §15.5.3 调度系统与 Data Mesh 治理
+### 8.4 §15.5.3 调度系统与 Data Mesh 治理
 
 > 本主题考察「**湖仓之上层**」：Netflix 为什么自研 Maestro 而不是直接用 Airflow？Data Mesh 四大原则如何在 Netflix 落地？这一主题从「调度系统设计」切入，到「联邦治理范式」，再到「文化变革」——面试官想听的不是工具介绍，而是「为什么这么选、怎么落地、踩了什么坑」。
 
@@ -573,7 +573,7 @@ Zhamak Dehghani 在《Data Mesh: Delivering Data-Driven Value at Scale》（2021
 
 ---
 
-### 8.3 本章小结
+### 8.5 本章小结
 
 本节收录 6 道题，覆盖 Netflix 数据栈的三个核心主题：**表格式选型与湖仓架构**、**实时管道与流批一体**、**调度系统与 Data Mesh 治理**。六道题构成一条完整的「**自下而上**」纵切链路：**底层抽象（表格式 / Iceberg）→ 中层管道（实时 / 流批一体）→ 上层调度（Maestro）+ 治理范式（Data Mesh）**。
 
@@ -586,6 +586,6 @@ Zhamak Dehghani 在《Data Mesh: Delivering Data-Driven Value at Scale》（2021
 - 涉及 Data Mesh，必须强调「**组织变革 > 技术变革**」——这是 Netflix 内部推进缓慢的根本原因。
 - 涉及行业案例，**头部互联网 + 行业垂直**两类都要覆盖——互联网侧 Netflix / Uber / LinkedIn / 字节 / 蚂蚁 / 美团，金融侧招商银行 / 微众银行 / 中信证券，制造侧海尔 / 美的，零售侧永辉 / 屈臣氏，游戏侧米哈游 / 网易雷火。
 
-### 8.4 返回
+### 8.6 返回
 
 - 返回 [15-case-studies 章节目录](../README.md)

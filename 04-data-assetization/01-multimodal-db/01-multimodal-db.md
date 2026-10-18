@@ -9,7 +9,7 @@
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
 | 多模态数据库是什么、为什么需要？ | §1 |
-| 多模态 Embedding（CLIP / ImageBind / Qwen-VL）的原理？ | §2 |
+| 多模态 Embedding（CLIP / ImageBind / BGE-VL）的原理？ | §2 |
 | 多模态数据库的存储与检索模式？ | §3 |
 | MongoDB Atlas / SurrealDB / PostgreSQL + pgvector 怎么选？ | §4 |
 | 2024-2025 多模态 RAG 与 AI 原生数据库的新趋势？ | §5 |
@@ -21,7 +21,7 @@
 
 ### 1.1 是什么
 
-**学术定义**：多模态数据库（Multimodal Database）指能够**统一存储、索引、检索多种模态数据**（文本、图像、音频、视频、表格、3D 模型、传感器数据）的数据库系统。它在传统关系型 / 文档型数据库的基础上，引入了**多模态 Embedding 模型**（如 CLIP、ImageBind、Qwen-VL）和**跨模态检索能力**，使得「以文搜图」「以图搜文」「文 + 图混合检索」成为可能。
+**学术定义**：多模态数据库（Multimodal Database）指能够**统一存储、索引、检索多种模态数据**（文本、图像、音频、视频、表格、3D 模型、传感器数据）的数据库系统。它在传统关系型 / 文档型数据库的基础上，引入了**多模态 Embedding 模型**（如 CLIP、ImageBind、BGE-VL）和**跨模态检索能力**，使得「以文搜图」「以图搜文」「文 + 图混合检索」成为可能。
 
 **工程定义**：在数据架构师手里，多模态数据库是**一份企业多源异构数据的统一索引层**：
 
@@ -73,7 +73,7 @@
    OCR / ASR / 抽帧 / 结构化
         ↓
    [多模态 Embedding]
-   CLIP / ImageBind / Qwen-VL
+   CLIP / ImageBind / BGE-VL
         ↓
    [多模态数据库] ← 本文
         ↓
@@ -120,11 +120,11 @@
 ### 2.1 关键概念定义
 
 - **模态（Modality）**：数据的形态，如文本、图像、音频、视频、表格。
-- **多模态 Embedding**：把不同模态映射到同一向量空间的模型（CLIP / ImageBind / Qwen-VL）。
+- **多模态 Embedding**：把不同模态映射到同一向量空间的模型（CLIP / ImageBind / BGE-VL）。
 - **跨模态检索（Cross-Modal Retrieval）**：用一种模态查询另一种模态（如以文搜图）。
 - **CLIP（Contrastive Language-Image Pretraining）**：OpenAI 2021 的图文对齐模型，512 / 768 维向量。
 - **ImageBind**：Meta 2023 的 6 模态对齐（图像、文本、音频、深度、热力、IMU）。
-- **Qwen-VL**：阿里通义千问的多模态 Embedding，支持中文图文。
+- **Qwen-VL**：阿里通义千问的多模态 LLM，支持中文图文；引用时勿把它当作嵌入端点（§4.2）。
 - **CLAP**：音频-文本对齐模型。
 - **OCR（Optical Character Recognition）**：从图像提取文字（Tesseract、PaddleOCR、EasyOCR）。
 - **ASR（Automatic Speech Recognition）**：从音频提取文字（Whisper、Paraformer）。

@@ -25,10 +25,10 @@
 | 与 RAG / 向量库的融合 | §5.3 |
 | 2024-2025 学术工业进展 | §5.4 |
 | 未来 3-5 年趋势 | §5.6 |
-| 真实案例（Snowflake Cortex、Databricks ai_query、阿里 MaxCompute PAI UDF、MotherDuck） | §6 落地实践 §2.1–§2.4 |
-| 踩坑经验 | §6 落地实践 §2.6 |
-| 0→1 / 1→10 / 10→100 落地路径 | §6 落地实践 §2.5 |
-| ROI 评估 | §6 落地实践 §2.7 |
+| 真实案例（Snowflake Cortex、Databricks ai_query、阿里 MaxCompute PAI UDF、MotherDuck） | §6.1–§6.4 |
+| 踩坑经验 | §6.6 |
+| 0→1 / 1→10 / 10→100 落地路径 | §6.5 |
+| ROI 评估 | §6.7 |
 | LLM in SQL 与传统 ETL + LLM / 外部分析库对比 | §7.1、§7.2、§7.3 |
 
 ---

@@ -83,7 +83,7 @@
 | 隐式反馈 ML | 2010-2015 | CTR 模型 + 行为日志 |
 | RLHF 兴起 | 2017-2022 | Christiano 2017、InstructGPT 2022 |
 | DPO 替代 | 2023 | Rafailov 2023 直接偏好优化 |
-| GRPO 突破 | 2025 | DeepSeek-R1 组内相对优化 |
+| GRPO 提出 → 突破 | 2024-2025 | DeepSeekMath 提出，DeepSeek-R1 组内相对优化 |
 | Self-Improvement | 2024-2025 | Self-Play / Self-Refine / Constitutional AI |
 | Online Learning | 2025+ | 实时反馈驱动实时训练 |
 

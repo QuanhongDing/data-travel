@@ -28,12 +28,12 @@
 
 **工程定义**：AI 计算平台在数据架构师手里，是一份由 **6 层 + 12 子系统** 组成的能力矩阵：
 
-- **L1 基础设施层**：GPU 池（NVIDIA H100 / A100 / 国产卡）、CPU 池、RDMA 网络、存储（并行文件系统 + 对象存储）。
-- **L2 资源调度层**：Kubernetes / KubeRay / Volcano / YARN / Slurm。
-- **L3 训练框架层**：PyTorch / TensorFlow / JAX + DeepSpeed / Megatron / FSDP + Ray / Horovod。
-- **L4 数据 / 特征层**：数据湖 + Feature Store（Feast / Tecton / 阿里特征平台）+ 样本库（Sample Store）。
-- **L5 模型生命周期层**：AutoML（FLAML / AutoGluon / NNI）、训练任务管理（Experiment Tracking + Workflow）、模型注册（Model Registry）。
-- **L6 服务 / 消费层**：推理服务（TorchServe / Triton / vLLM / KServe）、Serverless Inference、模型市场（Model Marketplace）、LLM Gateway。
+- **第一层：基础设施**：GPU 池（NVIDIA H100 / A100 / 国产卡）、CPU 池、RDMA 网络、存储（并行文件系统 + 对象存储）。
+- **第二层：资源调度**：Kubernetes / KubeRay / Volcano / YARN / Slurm。
+- **第三层：训练框架**：PyTorch / TensorFlow / JAX + DeepSpeed / Megatron / FSDP + Ray / Horovod。
+- **第四层：数据 / 特征**：数据湖 + Feature Store（Feast / Tecton / 阿里特征平台）+ 样本库（Sample Store）。
+- **第五层：模型生命周期**：AutoML（FLAML / AutoGluon / NNI）、训练任务管理（Experiment Tracking + Workflow）、模型注册（Model Registry）。
+- **第六层：服务 / 消费**：推理服务（TorchServe / Triton / vLLM / KServe）、Serverless Inference、模型市场（Model Marketplace）、LLM Gateway。
 
 **解决的核心问题**：
 

@@ -25,10 +25,10 @@
 | AI 时代演进方向（Self-Correction、Multi-Agent Data、GraphRAG） | §5.1、§5.2 |
 | 2024-2025 学术工业进展 | §5.4 |
 | 未来 3-5 年趋势 | §5.6 |
-| 真实案例（阿里瓴羊、字节豆包、Salesforce Tableau GPT） | §6 落地实践 §1.1–§1.4 |
-| 踩坑经验（指标口径不一致、SQL 注入、幻觉、权限越界） | §6 落地实践 §1.6 |
-| 0→1 / 1→10 / 10→100 落地路径 | §6 落地实践 §1.5 |
-| ROI 评估（怎么向 CFO 证明价值） | §6 落地实践 §1.7 |
+| 真实案例（阿里瓴羊、字节豆包、Salesforce Tableau GPT） | §6 落地实践 §6.1–§6.4 |
+| 踩坑经验（指标口径不一致、SQL 注入、幻觉、权限越界） | §6 落地实践 §6.6 |
+| 0→1 / 1→10 / 10→100 落地路径 | §6 落地实践 §6.5 |
+| ROI 评估（怎么向 CFO 证明价值） | §6 落地实践 §6.7 |
 | Data Agent 与 ChatBI / 传统 BI / Copilot 对比 | §7.1、§7.2、§7.3 |
 
 ---
@@ -155,7 +155,7 @@
 - 2024-09：LangGraph 让 Data Agent 进入"工作流编排"阶段。
 - 2024-10：阿里通义、智谱、DeepSeek 推出 NL2SQL 专用模型。
 - 2024-12：Spider 2.0（更复杂的企业级 SQL 基准）发布。
-- 2025：Multi-Agent Data（多个 Data Agent 协同）、Self-Correction、GraphRAG + Data Agent 成为主流。
+- 2025：Multi-Agent Data（多个 Data Agent 协同）、Self-Correction、GraphRAG + Data Agent 成为本主题的前沿演进方向——三者的成熟度分级（L2 / L3）见 §5.1。
 
 **一句话总结**：**Data Agent 从「传统 BI → ChatBI → LLM 驱动的 Data Agent → Multi-Agent Data Analyst」四阶段演进，今天正处于第三到第四阶段的临界期——技术成熟度曲线即将跨越"生产可用"鸿沟**。
 

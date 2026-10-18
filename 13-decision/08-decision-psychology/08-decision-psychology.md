@@ -85,8 +85,9 @@
 - **2011**：Dan Ariely《Predictably Irrational》中文版畅销。
 - **2014**：Daniel Kahneman《Thinking, Fast and Slow》中文版《思考，快与慢》出版。
 - **2020s**：Nudge Theory（助推理论）广泛应用。
+- **2022**：Decision Intelligence 被 Gartner 列入年度顶级战略技术趋势。
 - **2023-2024**：AI 决策（人机协同决策）研究爆发。
-- **2024-2025**：Decision Intelligence（Gartner 顶级战略技术趋势）、AI 辅助识别偏误。
+- **2024-2025**：AI 辅助识别偏误。
 
 ---
 
@@ -159,11 +160,11 @@ Score_i = Σ w_j × s_{ij}
 2. **Red Team（红队）**：专门唱反调的团队——抗群体思维。
 3. **Devil's Advocate（魔鬼代言人）**：指定一人专门反驳——抗确认偏误。
 4. **Decision Matrix + Weighted Scoring**：量化打分——抗锚定效应。
-6. **Multi-vote / NPV（净现值）**：财务量化——抗承诺升级。
-7. **Hypothesis-driven Decision**：先列假设再决策——抗可得性启发。
-9. **10-10-10 Rule**：决策前问「10 分钟 / 10 个月 / 10 年后我会怎么想」——抗情绪化。
-11. **Checklist-driven Review**：用 Checklist 强制评审——抗遗漏偏误。
-12. **Bayesian Update**：用新证据更新信念——抗确认偏误。
+5. **Multi-vote / NPV（净现值）**：财务量化——抗承诺升级。
+6. **Hypothesis-driven Decision**：先列假设再决策——抗可得性启发。
+7. **10-10-10 Rule**：决策前问「10 分钟 / 10 个月 / 10 年后我会怎么想」——抗情绪化。
+8. **Checklist-driven Review**：用 Checklist 强制评审——抗遗漏偏误。
+9. **Bayesian Update**：用新证据更新信念——抗确认偏误。
 
 ### 2.4 与相邻概念的关系
 

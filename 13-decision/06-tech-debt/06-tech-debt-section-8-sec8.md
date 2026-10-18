@@ -103,7 +103,7 @@
 **1. 考察点**
 
 - 是否理解技术债量化是「**从经验走向工程**」的转折点——没有量化就没有优先级。
-- 能否说出 SQALE 方法的核心公式与 SonarQube Tech Debt Ratio 的**行业基准**（<5% 优秀 / 5–10% 良好 / >20% 糟糕）。
+- 能否说出 SQALE 方法的核心公式与 SonarQube Tech Debt Ratio 的**经验分档**（<5% 优秀 / 5–10% 良好 / >20% 糟糕；属工具默认值与团队习惯的常见取值，不是行业标准）。
 - 是否了解「**指标陷阱**」——覆盖率、复杂度等单一指标都不能完整刻画技术债，必须组合使用。
 - 加分项：能给出组织级技术债地图（Tech Debt Map）的搭建路径与持续盘点节奏。
 
@@ -124,7 +124,7 @@ Tech Debt Ratio = Tech Debt / Development Cost
 其中 Development Cost = 代码行数 × 行业基准开发成本
 ```
 
-行业经验基准：
+经验分档（工具默认值与团队习惯的常见取值，不是行业标准）：
 
 | 比率 | 评级 |
 | --- | --- |
@@ -167,7 +167,7 @@ Tech Debt Ratio = Tech Debt / Development Cost
 
 **5. 参考资料**
 
-- SonarQube 官方文档中关于 Technical Debt 与 Quality Gates 的章节——Tech Debt Ratio 公式与行业基准的权威出处。
+- SonarQube 官方文档中关于 Technical Debt 与 Quality Gates 的章节——Tech Debt Ratio 公式（债务 / 开发成本）的定义出处；文档给出的是算法，本节 <5% 优秀 … >20% 糟糕 的分档属【经验】档，不是厂商标准。
 - CAST / inspearit 发布的 SQALE 方法白皮书——量化方法学的标准定义。
 - Jean-Louis Letouzey《The SQALE Analysis Model》——SQALE 方法的原始论文；本目录 §7 与本章 §5 均记为 Letouzey 于 2012 年在技术债管理国际研讨会（MTD, 2012）上系统提出 SQALE，年份以该口径为准。
 - Stripe 2018 年《Developer Report》——开发者时间分配与技术债关系的实证依据。

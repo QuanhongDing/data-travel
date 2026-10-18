@@ -1,4 +1,4 @@
-# 海外案例研究案例研究
+# 海外案例研究
 
 > **一句话定位**：从 Databricks Lakehouse / Snowflake 数据共享 / Stripe 财务数据架构 / LinkedIn 大数据 / Anthropic Claude Engineering / OpenAI Engineering 等海外头部案例中，看清 2024–2025 年数据架构 + AI 平台的前沿趋势。
 
@@ -17,7 +17,7 @@
 | OpenAI Engineering 演进 | §3.2.6 |
 | Slack / Notion 数据架构 | §3.2.7 |
 | 前沿演进（AI 时代） | §5 |
-| 复用清单 | §6.4 |
+| 复用清单 | §6.5 |
 
 ---
 
@@ -65,7 +65,7 @@ Stripe（支付）、Slack（协作）、LinkedIn（社交+招聘）——海外
 
 #### 2.2.1 规模化
 
-Netflix 1.5 亿用户、LinkedIn 9 亿用户、Meta 30 亿用户——规模化是常态。
+Netflix 3 亿用户、LinkedIn 9 亿用户、Meta 30 亿用户——规模化是常态。
 
 #### 2.2.2 数据合规
 
@@ -87,7 +87,7 @@ AI 公司（Anthropic / OpenAI）面临"模型 + 数据 + 推理"全栈挑战。
 
 跨时区、跨语言、跨文化协同。
 
-> 💡 **思考锚点**：把 2.2.2 的三条合规章到你现在的数据上验一次——欧洲数据本地化、用户删除权（Right to be Forgotten）、血缘可追溯；若你的用户量级走到 2.2.1 那档（Netflix 1.5 亿 / LinkedIn 9 亿），你现在的链路能在不搬全量数据的前提下，按一个用户 ID 就地删除并证明删干净了吗？
+> 💡 **思考锚点**：把 2.2.2 的三条合规章到你现在的数据上验一次——欧洲数据本地化、用户删除权（Right to be Forgotten）、血缘可追溯；若你的用户量级走到 2.2.1 那档（Netflix 3 亿 / LinkedIn 9 亿），你现在的链路能在不搬全量数据的前提下，按一个用户 ID 就地删除并证明删干净了吗？
 
 ---
 

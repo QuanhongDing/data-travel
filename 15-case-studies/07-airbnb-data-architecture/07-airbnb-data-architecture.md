@@ -2,7 +2,7 @@
 
 > **一句话定位**：Airbnb 用十余年时间构建了以「Minerva 指标平台 + Dataportal 元数据 + Airflow 调度 + ML Platform」为核心的元数据驱动数据架构，是数据科学家友好 + 治理成熟度最高的数据架构样本之一。
 
-> 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**07-Airbnb 数据架构**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 复用经验。
+> 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**07-Airbnb 数据架构**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 落地实践。
 
 ## 0. 本章速读地图
 
@@ -122,7 +122,7 @@ Airbnb 内部有 50+ 团队需要共享数据——必须有"中央协作层"。
 - [§3. 架构演进](07-airbnb-data-architecture-section-3-sec3.md)
 - [§4. 关键决策](07-airbnb-data-architecture-section-4-sec4.md)
 - [§5. 踩坑与教训](07-airbnb-data-architecture-section-5-sec5.md)
-- [§6. 复用经验](07-airbnb-data-architecture-section-6-sec6.md)
+- [§6. 落地实践](07-airbnb-data-architecture-section-6-sec6.md)
 - [§7. 与同类案例对比](07-airbnb-data-architecture-section-7-sec7.md)
 - [§8. 面试真题集](07-airbnb-data-architecture-section-8-sec8.md)
 
@@ -135,7 +135,7 @@ Airbnb 内部有 50+ 团队需要共享数据——必须有"中央协作层"。
 - [§3. 架构演进](07-airbnb-data-architecture-section-3-sec3.md)
 - [§4. 关键决策](07-airbnb-data-architecture-section-4-sec4.md)
 - [§5. 踩坑与教训](07-airbnb-data-architecture-section-5-sec5.md)
-- [§6. 复用经验](07-airbnb-data-architecture-section-6-sec6.md)
+- [§6. 落地实践](07-airbnb-data-architecture-section-6-sec6.md)
 - [§7. 与同类案例对比](07-airbnb-data-architecture-section-7-sec7.md)
 - [§8. 面试真题集](07-airbnb-data-architecture-section-8-sec8.md)
 

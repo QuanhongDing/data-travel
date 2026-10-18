@@ -324,4 +324,4 @@ V6.0 AI Native 数据栈（2023–2025）
 
 > 💡 **思考锚点**：按 §3.3 的口诀数两件事——「有几个不写 SQL 的消费者（实验、模型、Agent）在取数」，以及「同一份实体 / 指标 / 特征你有几份」？只要后一个答案是「多份」，你就在欠一笔不会报错的账；再判一次你上一次性能改动动的是引擎还是代际。
 >
-> 配合 [§ 2 挑战](03-byte-data-architecture.md)、[§ 4 关键决策](03-byte-data-architecture-section-4-sec4.md) 与 [§ 6 复用经验](03-byte-data-architecture-section-6-sec6.md) 阅读。
+> 配合 [§ 2 挑战](03-byte-data-architecture.md)、[§ 4 关键决策](03-byte-data-architecture-section-4-sec4.md) 与 [§ 6 落地实践](03-byte-data-architecture-section-6-sec6.md) 阅读。

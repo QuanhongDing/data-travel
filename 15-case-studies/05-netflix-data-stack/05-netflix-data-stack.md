@@ -124,7 +124,7 @@ Netflix 有 30+ 团队需要数据共享，**需要"中心化协作层"** 但不
 - [§3. 架构演进](05-netflix-data-stack-section-3-sec3.md)
 - [§4. 关键决策](05-netflix-data-stack-section-4-sec4.md)
 - [§5. 踩坑与教训](05-netflix-data-stack-section-5-sec5.md)
-- [§6. 复用经验](05-netflix-data-stack-section-6-sec6.md)
+- [§6. 落地实践](05-netflix-data-stack-section-6-sec6.md)
 - [§7. 与同类案例对比](05-netflix-data-stack-section-7-sec7.md)
 - [§8. 面试真题集](05-netflix-data-stack-section-8-sec8.md)
 
@@ -137,7 +137,7 @@ Netflix 有 30+ 团队需要数据共享，**需要"中心化协作层"** 但不
 - [§3. 架构演进](05-netflix-data-stack-section-3-sec3.md)
 - [§4. 关键决策](05-netflix-data-stack-section-4-sec4.md)
 - [§5. 踩坑与教训](05-netflix-data-stack-section-5-sec5.md)
-- [§6. 复用经验](05-netflix-data-stack-section-6-sec6.md)
+- [§6. 落地实践](05-netflix-data-stack-section-6-sec6.md)
 - [§7. 与同类案例对比](05-netflix-data-stack-section-7-sec7.md)
 - [§8. 面试真题集](05-netflix-data-stack-section-8-sec8.md)
 

@@ -113,7 +113,7 @@ Data Vault 在整个数据架构栈中的位置如下：
 - 2021：Databricks Lakehouse + Data Vault 2.0 成为新基线
 - 2023：LLM 出现，Data Vault 的标准化结构被用于"自动元数据发现 + 自动数据文档生成"
 - 2024：Microsoft Fabric、Databricks Unity Catalog、阿里云 DataWorks 都内置了 Data Vault 风格的元数据湖
-- 2025：Agent 平台开始把 Data Vault 的 Hub/Link/Satellite 作为"自动 schema 演化 + 自动数据血缘"的载体
+- 方向（尚无产品发布说明支撑，见 §5）：Agent 平台开始把 Data Vault 的 Hub/Link/Satellite 作为"自动 schema 演化 + 自动数据血缘"的载体——§5 判其为 L3，记录并做技术预研，不写进架构假设
 - 核心矛盾：**人工建模→AI 辅助建模；批量全量→实时增量；结构固定→持续演化**
 
 **一句话总结**：每阶段的核心矛盾都是"**业务变化速度 vs 模型变化成本**"——Data Vault 通过"加 Satellite 不改表"从根本上解决了这个矛盾。

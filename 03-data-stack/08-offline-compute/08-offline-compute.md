@@ -107,7 +107,7 @@
 
 - 2023：Spark 3.5+、Trino 420+。
 - 2024：Spark 4.0 路线图、DuckDB 1.0 发布（内嵌 OLAP）。
-- 2025：AI 原生计算（LLM 驱动的 Spark 调优）。
+- 2025：AI 原生计算（LLM 驱动的 Spark 调优）进入议题讨论；按 §5 判据仍属观望档（L3，记录即可，不要在架构里为它预留假设）。
 
 **一句话总结**：**离线计算从"MapReduce"→"Spark 革命"→"联邦查询"→"AI 原生 + 内嵌 OLAP"四阶段演进，今天 Spark + DuckDB + Trino 三足鼎立。**
 

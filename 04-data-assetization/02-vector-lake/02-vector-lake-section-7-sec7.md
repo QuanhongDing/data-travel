@@ -203,7 +203,7 @@
    │                                          是 → 向量湖 / pgvector
    │                                          否 → 内存服务形态（Milvus standalone / Qdrant）
    │
-   ├── 1 亿 – 10 亿 ───────────────► SSD 向量库（DiskANN / Milvus Distributed）
+   ├── > 1 亿 – 10 亿 ─────────────► SSD 向量库（DiskANN / Milvus Distributed）
    │                                    └── [稳定峰值 QPS 是否超过单副本能力？]
    │                                          是 → 自建多副本（成本随副本线性上升）
    │                                          否 → 可以先试 Serverless 托管

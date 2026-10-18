@@ -121,7 +121,7 @@ TikTok 全球运营需要全球多区域数据团队，跨语言、跨时区、�
 - [§3. 架构演进](03-byte-data-architecture-section-3-sec3.md)
 - [§4. 关键决策](03-byte-data-architecture-section-4-sec4.md)
 - [§5. 踩坑与教训](03-byte-data-architecture-section-5-sec5.md)
-- [§6. 复用经验](03-byte-data-architecture-section-6-sec6.md)
+- [§6. 落地实践](03-byte-data-architecture-section-6-sec6.md)
 - [§7. 与同类案例对比](03-byte-data-architecture-section-7-sec7.md)
 - [§8. 面试真题集](03-byte-data-architecture-section-8-sec8.md)
 
@@ -134,7 +134,7 @@ TikTok 全球运营需要全球多区域数据团队，跨语言、跨时区、�
 - [§3. 架构演进](03-byte-data-architecture-section-3-sec3.md)
 - [§4. 关键决策](03-byte-data-architecture-section-4-sec4.md)
 - [§5. 踩坑与教训](03-byte-data-architecture-section-5-sec5.md)
-- [§6. 复用经验](03-byte-data-architecture-section-6-sec6.md)
+- [§6. 落地实践](03-byte-data-architecture-section-6-sec6.md)
 - [§7. 与同类案例对比](03-byte-data-architecture-section-7-sec7.md)
 - [§8. 面试真题集](03-byte-data-architecture-section-8-sec8.md)
 
