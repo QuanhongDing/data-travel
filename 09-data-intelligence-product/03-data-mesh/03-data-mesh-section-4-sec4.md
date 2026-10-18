@@ -166,7 +166,7 @@
 | 联邦目录 | DataHub（LinkedIn 开源）/ OpenMetadata / Apache Gravitino（Apache 软件基金会项目，孵化与毕业节点以 Apache 官方项目状态页为准）/ Unity Catalog（Databricks）/ Apache Polaris（incubating）/ Apache Atlas / Amundsen（Lyft） | 判据是「登记能否阻断发布」与「新增一个域是否只需配置」；只能事后补录的目录，覆盖率会随时间下降 | 目录退化成另一份文档，跨域消费前先要问人 |
 | 联邦血缘 | OpenLineage（Linux Foundation 标准）/ DataHub Lineage / Apache Atlas Lineage / Manta / Marquez | 判据是「采集是否自动」与「覆盖度能否按来源类型分别报数」；依赖人工登记的血缘在季度量级过期【经验】 | 变更影响面算不出来，没人敢改上游 |
 | 联邦治理 | OPA + Rego / Apache Ranger / AWS Lake Formation / IAM + ABAC / RBAC / Immuta / Collibra | 判据是「执行点有没有强制能力」与「策略能否被单测」；按各引擎自带 ACL 各写一份必然漂移 | 策略只存在于文档与评审记录里 |
-| 联邦查询 | Trino（PrestoSQL）/ Starburst（Trino 商业发行版）/ Apache Calcite / Denodo / Apache Gluten | 判据是「高频跨域路径就地算还是物化」与「连接器对方言的覆盖」 | 高频聚合被硬做成联邦，性能投诉替代了架构讨论 |
+| 联邦查询 | Trino（PrestoSQL）/ Starburst（Trino 商业发行版）/ Apache Calcite / Denodo | 判据是「高频跨域路径就地算还是物化」与「连接器对方言的覆盖」 | 高频聚合被硬做成联邦，性能投诉替代了架构讨论 |
 | 开放表格式 | Apache Iceberg / Apache Hudi / Delta Lake | 判据是「catalog 的可用性与降级预案」与「引擎覆盖是否够用」 | catalog 成为单点，一次抖动等于全部门查询失败 |
 | 对象存储 | AWS S3 / 阿里云 OSS / 腾讯云 COS / MinIO | 判据是「一致性语义与权限模型能否与统一策略引擎对接」 | 权限只能停在桶级，字段级密级无处执行 |
 | 数据契约 | Bitol / ODCS（Open Data Contract Standard）/ Data Contract CLI / Pact | 判据是「契约能否被 CI 校验并阻断发布」；Pact 解决的是 API 合约测试，不是数据交付承诺 | 契约无法阻断，退化为文档 |

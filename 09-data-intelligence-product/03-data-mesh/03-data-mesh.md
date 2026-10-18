@@ -192,7 +192,7 @@
 - **联邦元数据（Federated Metadata）**：跨域元数据管理。代表：Apache Atlas、DataHub、OpenMetadata、Gravitino。
 - **联邦质量（Federated Quality）**：跨域数据质量。代表：Great Expectations、Monte Carlo、Anomalo、 Soda。
 - **联邦语义（Federated Semantics）**：跨域语义对齐。代表：知识图谱（KG）、本体（Ontology）、SHACL、OWL。
-- **联邦查询（Federated Query）**：跨域联邦查询，不移动数据。代表：Trino（Presto 演进）、Apache Calcite、Denodo、Starburst、Apache Gluten（2024 加速器）。
+- **联邦查询（Federated Query）**：跨域联邦查询，不移动数据。代表：Trino（Presto 演进）、Apache Calcite、Denodo、Starburst。（**Apache Gluten 不在此列**——它是把 Velox 一类执行引擎嵌进 Spark/Trino 的**向量化执行加速器**，属性能路线而非联邦语义，见 Ch4 §9 §5.1 的同类说明。）
 - **数据网格协议（Data Mesh Protocol）**：跨域数据消费协议。代表：MCP（Model Context Protocol）级协议正在 2024-2025 形成。
 - **数据网格成熟度（Data Mesh Maturity Model）**：Data Mesh 落地的成熟度评估框架。代表：Maturity Model v1（数据域、所有权、产品化、平台、治理）。
 - **Zhamak Dehghani**：Data Mesh 之母，Thoughtworks 首席技术顾问。
