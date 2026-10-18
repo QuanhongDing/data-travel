@@ -1,225 +1,296 @@
-> 本文件是 **02-multi-region.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](02-multi-region.md)。
+> 本文件是 **02-multi-region.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](02-multi-region-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](02-multi-region.md)。
 
 ## 4. 工程实现
 
+本节按「业务分级 → 数据分层 → 同步链路 → 流量调度 → 演练验证」的顺序组织，每一步给三件事：**产物**（这一步结束手上多出什么可检查的东西）、**判据**（怎么知道做对了）、**为什么必须在这一步**（换序或省掉会付出什么）。模式本身的取舍（Active-Passive / Active-Active / 单元化 / Global Database / 分层多活）在 [§ 3](02-multi-region-section-3-sec3.md) 已给出机制、代价与失效点，本节不复述。
+
+**本文件面向两类读者，读法不同。** 4.1–4.3 与 4.5 面向**从零搭建**的人：按顺序执行即可，第一件事是给业务分级。**4.4 存量迁移**面向**已经有一个单 Region 或主备系统、要在上面改造**的人：这类读者的第一步不是「设计同步链路」，而是「先决定哪些数据根本不进多活、哪些读流量可以先挪走」——请先读 4.4 的第 ① 小节，再回到 4.1。两类读者在 4.6 用同一份自检清单。
+
 ### 4.1 落地步骤
 
-#### 阶段 1：业务分级
+**Step 1：业务分级（先分级，再谈架构；1–2 周【经验，随业务条数与评审层级变化】）**
 
-1. **核心业务**：必须异地多活（如下单、支付）。
-2. **重要业务**：同城双活（如商品详情）。
-3. **一般业务**：Active-Passive（如评论、推荐）。
-4. **内部业务**：单 Region（成本优先）。
+- 把全部业务按「停多久会伤到业务」分成四档：**核心业务**（必须异地多活，如**下单、支付**）、**重要业务**（同城双活，如**商品详情**）、**一般业务**（Active-Passive，如**评论、推荐**）、**内部业务**（单 Region，成本优先）。
+- 分档依据只能填「一次停机的业务后果」，不能填「数据量大小」「系统重要性感觉」。
+- **产物**：一张**业务分级表**（业务 / 可停时长 / 目标档位 / 目标 RPO / 目标 RTO / Owner）与一张**多活例外表**（明确不进多活的业务及理由）。
+- **判据**：抽 3 个业务，拿着分级表去问 Owner「如果这个 Region 停 30 分钟，你的回答是什么」——答不出或与表里不一致的，说明这一档是拍出来的。再抽 3 张核心表，问它们的 Owner「这张表进哪一档、依据是什么」。
+- **为什么必须这一步 / 为什么在这个位置**：这一步是后面所有成本的分母。跳过它直接设计同步链路，会在两处立刻付代价——预算评审时全部业务按异地多活报价，被整体否掉；或者按平均档位落地，在第一次故障时发现最该保的链路被排进了「一般业务」。换序也不行：先选技术再倒推承诺，得到的是「RPO=0、RTO 五分钟」的制度文件与只覆盖机房级故障的架构。
 
-#### 阶段 2：数据分层
+**Step 2：数据分层与写入拓扑确定（2–4 周【经验，随表数量与是否需要跨团队确认归属键变化】）**
 
-1. **强一致数据**：订单、支付 → 同城双活 + Global Database。
-2. **最终一致数据**：商品、库存 → 异地多活 + CDC 同步。
-3. **弱一致数据**：评论、日志 → Active-Active + 异步同步。
-4. **不可同步数据**：用户密码、密钥 → 单 Region + 加密存储。
+- 按一致性要求把数据分成四类并各自指定机制：**强一致数据**（订单、支付 → 同城双活 + Global Database）、**最终一致数据**（商品、库存 → 异地多活 + CDC 同步）、**弱一致数据**（评论、日志 → Active-Active + 异步同步）、**不可同步数据**（用户密码、密钥 → 单 Region + 加密存储，只做备份不做同步）。
+- 对「最终一致」那一类逐张表写出**归属键**（按哪个字段切分写路径）。写不出归属键的表，退回上一类的处置方式，而不是「先放进多活」。
+- 为每个可多写实体显式选定一种**冲突解决**策略：LWW / 向量时钟 / CRDT / 应用层——四选一，没有「都不用」这一档。
+- **产物**：**数据分层表**（表 → 一致性类别 → 机制 → 归属键 → 归并规则 → Owner）与**不可切分数据清单**（全局唯一编号、跨用户强事务、全局榜单）。
+- **判据**：随机抽 3 张被标为「可多写」的表，看归属键是否写在表登记里且与分区/主键口径一致；抽 3 张「不可切分」的表，看它们是否出现在清单上（不在清单上的不可切分数据，就是未来的爆炸半径决定者）。再抽 1 张表端到端走一遍：它的写入在两个 Region 同时发生时，按哪条规则留下谁。
+- **为什么必须这一步 / 为什么在这个位置**：分层决定了同步链路要建几条、每条要付多少延迟；先建链路再补分层，会出现「所有表都走同一条跨区强同步」这种最贵的形态，且拆回来的成本等于重做。冲突规则也必须在这里定，因为同步链路的设计依赖它——单向复制不需要归并规则，双向复制必须有一条，链路的复杂度从这里分叉。
 
-#### 阶段 3：同步链路设计
+**Step 3：同步链路设计（4–8 周【经验，随源类型数量与是否双向变化】）**
 
-1. **同步通道**：CDC / binlog / 消息队列 / 自研同步工具。
-2. **冲突解决**：LWW / 向量时钟 / CRDT / 应用层。
-3. **数据校验**：定期对账、发现数据不一致。
+- 选**同步通道**：CDC / binlog / 消息队列 / 自研同步工具，逐类数据选一种（链路形态见 4.3）。
+- 定**冲突解决**的落地位置：在应用层、在复制层、还是在存储层，三者只能选一处作为权威，重复实现会让两套规则互相打架。
+- 定**数据校验**：定期对账的粒度（行数 / 关键字段摘要）、频率、差异归属人。
+- **产物**：**同步链路图**（源 → 通道 → 目标 → 每段的延迟目标与失败处置）与**对账方案**（比对口径、频率、差异表结构）。
+- **判据**：拿同步链路图问值班同学「这一段断了，谁会收到告警、告警长什么样」——答不出的段落就是监控盲区。再对每条链路压一次「上游批量更新」的场景（例如一次几十万行的批处理），看消费滞后能否回落到基线；滞后不回落即为容量不够。
+- **为什么必须这一步 / 为什么在这个位置**：同步链路是数据的常驻支出与常驻风险，它的参数（单向/双向、同步/异步、全量/增量）一旦被下游系统依赖，改动就是全链路协调。放在分层之后做，才能只同步必要的数据；放在流量调度之前做，才能保证切流时目标 Region 的数据是可用的。
 
-#### 阶段 4：流量调度
+**Step 4：流量调度（2–4 周【经验，随调度层数与是否需要引入服务网格变化】）**
 
-1. **DNS 调度**：粗粒度（Region 级）。
-2. **GSLB**：中粒度（地域级 + 网络质量）。
-3. **服务网格**：细粒度（服务级 / 用户级）。
+- 三层分工，不要用一层做全部的事：**DNS 调度**（粗粒度，Region 级）、**GSLB**（中粒度，地域级 + 网络质量 + 健康检查）、**服务网格**（细粒度，服务级 / 用户级）。分界的依据是**粒度**：按用户、租户、比例这类**请求属性**分流只能落在服务网格上，粗粒度的 DNS 与 GSLB 做不到（DNS 只能按地理与网络质量整片切，且解析结果还会被递归缓存放大）。另一条边界是**探测范围**：每一层的健康检查只对「它自己配的那个探针端点」负责，探针绿不等于它下面的 Region 整体可用——Region 内的数据库、消息、共享控制面或第三方依赖垮掉时，探针可能仍是绿的，此时照旧把流量切过去，等于把故障从「一个 Region 不可用」放大成「两个 Region 都不对」。
+- 核心域名的记录 TTL 单独复核一次，把它与 RTO 承诺放在一起看：TTL 是分钟级时，「秒级 RTO」在解析层面就不成立【经验，TTL 量级随配置】。
+- **产物**：**调度策略表**（域名/服务 → 调度层 → 依据 → 切流动作 → 回退动作）与**切流脚本**（含回退分支）。
+- **判据**：做一次「只切 1% 流量到第二 Region 再切回」的灰度操作，看是否真的按比例分流（若比例被 TTL 与递归解析器缓存烧成 0% 或 100%，说明细粒度错误地落在了 DNS 层）；同时确认长连接与连接池在切流后是否仍在向旧 Region 发送请求。
+- **为什么必须这一步 / 为什么在这个位置**：调度是唯一能在故障时真正把用户挪走的一层，但如果目标 Region 的数据还没同步好（Step 3 未完成），切流只是把故障从「一个 Region 不可用」放大成「两个 Region 都不对」。它必须排在同步链路之后。
 
-#### 阶段 5：演练验证
+**Step 5：演练验证（首次 2–4 周，之后持续，季度级【经验，随演练覆盖路径数变化】）**
 
-1. **单 Region 故障演练**：模拟 Region A 故障，观察流量切到 Region B。
-2. **数据同步演练**：验证同步链路、数据一致性。
-3. **冲突解决演练**：制造冲突，验证解决策略。
+- **单 Region 故障演练**：模拟 Region A 故障，观察流量是否按预期切到 Region B，并**记录三个数**：数据缺口（差多少条 / 多久）、切换耗时、对账发现的不一致条数。
+- **数据同步演练**：验证同步链路的延迟回落能力与 schema 变更后的字段完整性。
+- **冲突解决演练**：在受控条件下制造一次真实的并发写（同一实体在两个 Region 几乎同时被改），看最终留下哪个版本、有没有留下痕迹。
+- **产物**：**演练报告**（三个实测数 + 暴露出的依赖清单）与**依赖隔离整改单**。
+- **判据**：演练报告里三个数缺任何一个，这次演练不算通过；报告里不得只写「切换成功」。另外把主 Region 的入口**完全摘掉**（不是只切流量）后，备 Region 能否在零原 Region 依赖的前提下跑完一轮完整业务——走业务而不是看监控绿灯。
+- **为什么必须这一步 / 为什么在这个位置**：没演练过的切流路径在真故障时本身就是二次故障源。它必须排在最后，因为它检验的是前四步的产物是否自洽；但它不能只做一次——所以它是本节唯一一条「有起点、无终点」的步骤。
+
+**最常被跳过的一步是 Step 1（业务分级）**：它不产出任何可部署的东西，评审会上没有可展示物，因此在排期压力下最先被压缩成「都按核心业务做」。跳过后第一个出问题的时点**往往不是故障，而是下一次预算评审**——全量业务按最高档位报价，项目被整体延期；如果预算通过了，问题会推迟到第一次真实故障时才暴露，那时表现为「影响面与预期完全不符」。
 
 ### 4.2 关键技术点
 
-#### 1. CDC 同步（Debezium）
+**CDC 同步（Debezium 类日志采集）**
+
+- **做法**：从源库的 binlog（MySQL、PolarDB 一类）或 WAL（PostgreSQL 一类）捕获行级变更并转成事件流，下游消费写入对端 Region；只声明跨区**必需**的表，初始快照与增量分开控制（配置见 4.5 模板二）。
+- **机制**：因为读的是数据库的重做日志而不是业务表，所以采集不侵入业务 SQL、不要求应用改代码，也能覆盖删除与更新这类「差异快照拿不到」的变更——这是「同步链路与业务代码解耦」的来源。
+- **失效条件**：**当单次大事务（例如一次批量更新几十万行）或写峰值超过单分区吞吐时**，这条链路会以「消费滞后持续上涨且不回落」的形式坏掉——滞后是累积量，追不上就永远追不上；症状是跨区延迟指标单调上升，而源库本身毫无异常。第二个失效点是 schema 变更：上游加列或改类型后，下游若没有自动演进能力，会出现**选择性静默丢字段**（同步仍在跑，数据已经不完整）。
+- **档位**：吞吐与滞后阈值随分区数、批大小与硬件变化，不给固定值【经验】。
+
+**消息层跨 Region 复制（Pulsar 跨集群复制 / Kafka MirrorMaker 一类）**
+
+- **做法**：把跨区同步交给消息系统的地理复制能力——把两个集群加入同一个 namespace，由消息层按 topic 复制；应用只对本地集群生产与消费（命令见 4.5 模板二）。
+- **机制**：因为复制由消息层完成，写入端本地提交即返回，跨区那一跳从写路径上被移走——代价是它变成了一致性窗口，而不是消失。
+- **失效条件**：**当业务需要「跨分区有序」或「恰好一次」时**，这条链路会坏：地理复制多为异步且只在分区内有序，故障切换时重复投递几乎必然出现；消费端不带幂等键时，症状是切换后出现重复记账、重复扣减这类**不报错的错误数据**，只能靠对账发现。
+- **档位**：复制延迟随 Region 距离变化【经验，量级与主文件 §2.1 的跨区延迟口径一致】。
+
+**向量时钟冲突检测**
+
+- **做法**：每个 Region 维护一个计数器向量，本区写入时自增本区分量；收到对端版本时逐分量取最大值合并；两个版本的分量互不支配（互有大小）即判定为并发冲突（实现见 4.5 模板三）。
+- **机制**：因为向量记录的是**因果关系**而不是「谁的时间戳更大」，所以它能区分「B 的写入确实发生在 A 之后」与「A、B 同时写」——LWW 做不到这个区分，这是它唯一的价值。它不是 LWW 的升级版：它只负责**发现**冲突，发现之后仍要由人或应用裁决。
+- **失效条件**：**当参与者数量增长到几十个量级时**，向量本身要随每个副本携带并逐分量合并，其存储与比较开销会接近它保护的数据量【经验，随参与者数量线性增长】。更常见的坏法不在性能：**冲突计数在涨，但没有任何流程消费它**——数据在各 Region 各留一份，直到对账才发现；判别信号是「冲突表有没有人看」而不是「冲突有多少条」。
+- **档位**：参与者数量的痛感阈值随写入频率与记录大小变化，不给固定值【经验】。
+
+**CRDT：G-Counter（可交换合并）**
+
+- **做法**：把可加、且**永不减少**的量（计数器、累加型指标）建模成每个 Region 一个分量的计数器；本区只增本区分量，合并时逐分量取最大，读取时求和（实现见 4.5 模板三）。
+- **机制**：因为「逐分量取最大」满足交换律、结合律与幂等，同一批更新以任意顺序、任意次数到达，结果都相同——它一次性消掉了跨区场景里最常见的两个问题（重复投递与乱序），重放因此是安全的。
+- **失效条件**：**当业务需要「减」或需要「不超过某个上限」时**，G-Counter 直接坏掉——它单调不减，退款、纠错、库存回滚都表达不了；硬用会出现「库存只增不减」或「负数靠应用层修补」的形态。上限约束要换成有界计数器一类结构，而各 Region 在总量接近上限时必须协商，协商本身就把免协调的收益抵消掉了。
+- **档位**：无固定阈值；判断依据是「这个量在业务上有没有可能变小」【经验】。
+
+**流量调度三层（DNS / GSLB / 服务网格）**
+
+- **做法**：Region 级用 DNS/GSLB 按地理位置、网络质量与健康检查分流；服务级与用户级用服务网格按请求属性路由。三层是同一套调度在不同粒度上的分工，不是互相替代的三个选项（口径与主文件 §1.1、§2.3 一致）。
+- **机制**：因为越靠近客户端的调度粒度越粗、越靠近服务的调度越细，所以「切得广」（覆盖全部入口）由粗粒度层承担、「切得准」（按用户、按比例）由细粒度层承担；把两件事压在一层做，必然得到「切得动的范围太窄」或「切得太慢」。
+- **失效条件**：**当 DNS 记录 TTL 处于分钟或小时级时**，Region 级切流会以「后台显示已切换、实际流量只降了一部分」的形式坏掉，因为递归解析器缓存与已建立的连接池不会随解析变化立即重连【经验，TTL 与连接保活时长随配置】。反向的失效同样常见：用服务网格做 Region 级故障切换，而网格的控制面恰好就在被切掉的那个 Region。
+- **档位**：【经验】，无固定阈值。
+
+**定期对账（异步复制的兜底）**
+
+- **做法**：按业务主键抽样或全量比对两侧的记录数与关键字段摘要，差异写入差异表并指派归属人；比对窗口要跳过最近一段尚未定型的写入——**窗口长度与复制延迟同量级，延迟越大，等待窗口越长**，否则比的是「已同步的旧数据」与「还没轮到同步的新数据」，差异表会被假差异淹没。对账频率是另一个参数，它的**周期**由业务可容忍的差异时长反推（见下方档位），且不得短于等待窗口——短于等待窗口时，每次比对的大部分记录都还在途中。
+- **机制**：因为异步复制与冲突归并都可能**静默**改变最终值，而这类改变不产生错误日志，所以「系统没报错」与「两侧一致」必须分开验证——对账是唯一能在生产上发现静默覆盖的手段。
+- **失效条件**：**当对账范围只覆盖行数而不覆盖字段值时**，它会以「天天全绿但数据不一致」的形式失效：行数一致、金额不同。第二个失效点是差异被记录但没人处理，差异表变成只增不减的垃圾桶——判断方法是看**最近一个季度差异的关闭率**，而不是看差异条数。
+- **档位**：抽样比例、对账频率与可接受的差异窗口【经验，随业务可容忍差异时长变化】。
+
+### 4.3 工具链与平台
+
+下表按「类别 → 候选 → 选型判据 → 不选它的代价」给出，替代「推荐组合」式清单。**候选的版本、特性与配额随时间变化，采用前请以官方文档当前版本为准**；这里给出的判据是用来在你的约束下重推一遍，不是替你选。
+
+**一、跨 Region 强一致存储（Global Database）**
+
+| 候选 | 选型判据（在什么约束下选它） | 不选它的代价 |
+| --- | --- | --- |
+| **CockroachDB**（Cockroach Labs，开源） | 需要跨区强一致、PostgreSQL 兼容、且不愿被单一云绑定 | 把强一致留在应用层：自研分布式事务与补偿逻辑，并自己维护归并规则 |
+| **Google Spanner / Google Cloud Spanner**（Google） | 可接受跨区写延迟（共识 + 一跳 RTT），且已在该云上；TrueTime 用有界时钟区间给外部一致性【公开，论文《Spanner: Google's Globally-Distributed Database》，OSDI 2012；可按「Spanner OSDI 2012」检索官方版本核验】 | 把跨区强一致的需求退回应用层，或用异步复制再补对账 |
+| **TiDB**（PingCAP，MySQL 兼容） | 存量以 MySQL 为主、团队 MySQL 经验强，迁移成本是首要约束 | 方言与生态适配成本；应用侧改造面扩大 |
+| **OceanBase**（蚂蚁） | 国产化与金融合规要求排在性能之前 | 国产化清单一票否决，方案整体重做 |
+| **YugabyteDB**（Yugabyte） | 需要同时覆盖 PostgreSQL 与 Cassandra 两种访问范式 | 为两类负载各养一套存储与两套一致性模型 |
+| **AWS Aurora Global Database**（AWS） | 只需要跨区只读 + 灾备级复制延迟目标，**不需要跨区写** | 把「读放大」问题升级成「写一致性」问题：为不存在的多写需求付冲突解决的复杂度 |
+| **Azure Cosmos DB**（Microsoft） | 需要多模型 API、且多云/合规偏好 Azure | 多模型分别选型，集成与运维面按模型数量增长 |
+
+**二、CDC 与数据同步**
+
+| 候选 | 选型判据（在什么约束下选它） | 不选它的代价 |
+| --- | --- | --- |
+| **Debezium**（开源） | 已用或愿意引入 Kafka Connect；需要多源（MySQL / PostgreSQL 等）统一日志采集 | 每种源各写一套解析：口径不一，采集端数量随源类型增长 |
+| **Canal**（阿里开源） | 只需 MySQL 增量订阅，且要轻量部署 | 为单一 MySQL 源引入整套 Kafka Connect 运维负担 |
+| **Maxwell**（开源） | 只需 MySQL binlog → JSON 的简单链路 | 轻量需求被重量方案拖累；反之把简单链路工具用在多源场景需自建扩展 |
+| **阿里 DTS / 腾讯 DTS**（云厂商托管） | 团队没有自建同步链路的运维人力，且业务已在该云上 | 自建链路的 on-call、故障处理与升级成本变成常驻支出 |
+| **Apache SeaTunnel**（Apache） | 同步任务批流混合、需要插件化连接器 | 批与流各养一套工具，口径与调度各自维护 |
+| **DataX**（阿里开源） | 只需要批式离线搬运（历史数据搬迁），不需要持续增量 | 用流式工具做一次性搬迁，配置与运维成本高于需求 |
+
+**三、流量调度**
+
+| 候选 | 选型判据（在什么约束下选它） | 不选它的代价 |
+| --- | --- | --- |
+| **AWS Route 53**（AWS） | 已在 AWS，需要 DNS + 健康检查 + 地理/延迟路由 | Region 级切流要自研健康探测与解析联动 |
+| **阿里云 DNS**（阿里云） | 业务主体在国内网络、已在阿里云 | 同上：解析层与健康检查要自己接 |
+| **Cloudflare**（Cloudflare） | 需要 Anycast 与边缘就近，不想自建 GSLB | 就近能力要在每个 Region 前置一层自建入口 |
+| **NS1**（NS1） | 需要可编程 DNS、且团队有能力自行编写流量策略 | 策略表达能力受限，复杂灰度只能推到应用层 |
+| **F5 BIG-IP DNS**（F5） | 已有 F5 设备与运维体系，需要与企业 DNS / 负载均衡统一控制面 | 引入第二套调度控制面，两套策略需要人工对齐 |
+| **Istio**（开源） | 需要服务级 / 用户级路由与灰度，且已上容器与网格 | 细粒度灰度只能写成业务代码里的开关，规则散落在应用里 |
+
+**这一类里最容易被误选的是「把粗粒度层当细粒度层用」**：用 DNS 做 1% 灰度、或用服务网格做 Region 级故障切换。前者的后果是比例被 TTL 与解析器缓存烧成 0% 或 100%（灰度发布变成全量发布，且事后从监控上很难看出是被缓存吃掉的）；后者的后果是切流工具本身随被切 Region 一起失效——控制面与数据面部署在同一故障域里，是这类误选最常见的形态。
+
+### 4.4 存量迁移
+
+**① 先做什么：把只读流量挪出去（可立刻见效、可一步回退）**
+
+不碰写路径、不改数据模型：在第二 Region 起只读副本与应用的无状态读实例，用 GSLB 先只切「读为主」的流量（详情页、查询接口）。回退动作只有一句「把权重调回 100%」，不需要数据操作。这一步的价值是先量出一个数——**切走之后对端多久能读到刚写入的记录**，这个数就是你的不一致窗口；先把它量出来，再谈要不要缩小、以及要不要花代价做多写。判据：从第三地发起写入，记录它在本 Region 与对端可见的时间差（多次取分布而不是平均值），并与业务能接受的「刚写完读不到」时长对照。
+
+**② 历史资产怎么分类处理（三类，不要一刀切）**
+
+- **必须返工的**：被定为核心/重要档、且写路径上存在跨区调用的表（典型是订单主表、账户表）。它们要有归属键，否则「多活」只增加了副本、没减少依赖。识别方法很具体：**把第二 Region 的入口摘掉，看第一 Region 的写路径上还有没有指向它的调用**——有，就必须返工；没有，可以先不动。
+- **只改动的部分**：非核心的分析表、特征表、日志表。策略是「下次改动时顺手补登记与归属」，不做全量返工。代价是它会长期停在「已登记但未分级」的状态——因此必须给这批数据设一个到期复核（例如每季度过一遍未分级清单），否则它会永久留在那里，且因为不报错，没人会记得。
+- **打标挂账的**：**不可切分的全局数据**（全局唯一编号、跨用户强事务、全局榜单）与**不可同步数据**（用户密码、密钥、单 Region 存储的敏感数据）。它们不进多活，但必须显式登记在**多活例外表**上，并在每次容量规划与故障演练时被复读。注意两条口径：其一，不可切分数据是**爆炸半径的真正决定者**，把它列出来比把它做掉更重要；其二，「不可同步」不等于「不用备份」，它只是不参与跨区同步。
+
+**③ 双轨怎么维持、维持多久**
+
+双轨的形态是「归属键 + 分流开关」：已迁移的实体走新路径（落在它自己的单元/Region），未迁移的仍走老路径（原 Region 单写）。双轨期必须同时满足两条纪律，缺一条就会制造出新的故障源：
+
+- **同一实体不能被两条路径同时写**。否则你等于在应用层手工制造了冲突，而 §3 里所有归并规则都不再适用（它们假设写发生在 Region 之间，不是发生在同一套应用的两次调用之间）。
+- **对账范围必须覆盖两条路径的并集**。只对账新路径，会让老路径上的问题在双轨期悄悄积累，等到退出双轨时一次性暴露。
+
+双轨时长的经验口径与「单元数 × 每个单元的迁移验证周期」同量级，通常以季度为单位【经验，随数据量、可停机窗口与业务条数变化】。但比时长更有用的判据是两条曲线：**老路径的写 QPS 是否连续多周只减不增**，以及**例外表上的条目数是否停止增长**。只要还有一类业务必须回老路径，双轨就不能退——「暂时没人走老路径」和「没人需要走老路径」是两件事，退出前必须把前者排除掉。
+
+**④ 什么信号说明可以退出双轨**
+
+四条同时成立才退：其一，连续多个**演练**周期（不是自然周）里，「摘掉任一 Region 入口」后的业务成功率与常态一致；其二，老路径的切回开关在一个完整业务周期内（含月末、大促这类高峰）**一次都没有被启用过**；其三，对账差异的关闭率稳定，且新增差异全部能被复制延迟解释；其四，多活例外表不再增长——仍在增长说明还有人在往「不可切分」的方向加东西，此时退出双轨只是把一条路径删掉，而不是把风险收敛掉。
+
+### 4.5 模板 / 示例
+
+**模板一：业务分级与例外登记表**
+
+| 业务 / 表 | 以写为主还是以读为主 | 可停时长 | 可否按归属键切分 | 目标档位 | 目标 RPO | 目标 RTO | 归并规则 | Owner |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 订单主表 | 写重 | 秒级 | 可（`user_id`） | 单元化多活 | ≈ 0 | 秒级 | 归属键（无需归并） | {Owner} |
+| 商品详情 | 读重 | 分钟级 | 可 | 同城双活 | ≈ 0 | 分钟级 | 同城同步，单写者 | {Owner} |
+| 评论 | 读重 | 小时级 | 可 | Active-Passive | 分钟级 | 小时级 | LWW | {Owner} |
+| 全局订单号 | 写重 | 秒级 | **不可** | 例外表（不参与多活） | — | — | 无 | {Owner} |
+
+**怎么用**：只填你能给出可核验依据的格子；「可否按归属键切分」填「可」但写不出归属键字段的，一律改成「不可」。**档位列不要照抄**——它由前三列反推得出，直接照抄等于跳过 Step 1 的推理过程。`{Owner}` 必须落到人而不是团队。
+
+**模板二：同步链路配置片段**
 
 ```yaml
-# Debezium MySQL Source
-apiVersion: kafka.strimzi.io/v1beta2
-kind: KafkaConnector
-metadata:
-  name: mysql-source-connector
+# Debezium MySQL 源连接器（Kafka Connect 形态；属性名以官方文档当前版本为准）
 spec:
   class: io.debezium.connector.mysql.MySqlConnector
   config:
-    database.hostname: mysql.region-a.local
-    database.port: 3306
-    database.user: debezium
-    database.password: ${DEPLOY_PASSWORD}  # env var reference
-    database.server.id: 184054
-    database.server.name: region-a-mysql
+    database.hostname: mysql.region-a.internal
+    database.server.id: 184054                  # 同一 MySQL 上不得与既有采集器冲突
+    database.server.name: region-a-mysql        # 逻辑名：决定事件流里的来源标识
     database.include.list: mydb
-    table.include.list: mydb.orders,mydb.payments
-    snapshot.mode: initial
+    table.include.list: mydb.orders,mydb.payments   # 只同步跨区必需的表
+    snapshot.mode: initial                      # 首次全量快照，之后转增量
+    database.user: ${CDC_USER}                  # 占位符形态随 config provider 配置而异
+    database.password: ${CDC_PASSWORD}          # 走密钥管理，不写进配置文件
 ```
-
-#### 2. Pulsar 跨 Region 复制
 
 ```bash
-# 在 cluster-a 创建 namespace 并开启跨集群复制
-pulsar-admin namespaces create-cluster-subscription \
-  --cluster cluster-a \
-  --tenant public \
-  --namespace my-namespace
-
-# cluster-b 订阅 cluster-a 的数据
+# Pulsar：把 cluster-b 加入同一 namespace，开启跨集群复制
 pulsar-admin namespaces set-clusters \
-  --tenant public \
-  --namespace my-namespace \
-  --clusters cluster-a,cluster-b
+  --tenant public --namespace my-namespace --clusters cluster-a,cluster-b
 ```
 
-#### 3. 向量时钟冲突检测
+**怎么用**：YAML 里照抄的是「只列跨区必需的表 + 凭据不落进配置文件」这个结构，`server.id`、逻辑名与库表清单必须换成你自己的。凭据那两行的占位符**不是写上去就会被解析**：Kafka Connect 的变量替换由 config provider 提供，`${...}` 的具体形态（要不要 provider 前缀、环境变量 provider 是否默认启用）随 Kafka Connect 与所用的 operator 版本而异，provider 未启用时未解析的字符串会被**按字面量**传给连接器。采用前请以你所装版本的 config provider 文档为准，或改用 operator 提供的 `secretKeyRef` / `valueFrom` 一类注入方式。命令片段只开启复制，**不解决重复投递**——消费端仍要自己做幂等键，否则切换时会出现重复应用。
+
+**模板三：向量时钟与 G-Counter 参考实现（Python）**
 
 ```python
+# 向量时钟：只负责"发现冲突"，不负责"裁决"
 class VectorClock:
-    def __init__(self, regions):
-        self.clock = {r: 0 for r in regions}
-    
-    def increment(self, region):
-        self.clock[region] += 1
-    
+    def __init__(self, regions): self.clock = {r: 0 for r in regions}
+    def increment(self, region): self.clock[region] += 1
     def merge(self, other):
-        for r in self.clock:
-            self.clock[r] = max(self.clock[r], other.clock[r])
-    
+        for r in self.clock: self.clock[r] = max(self.clock[r], other.clock[r])
     def is_concurrent(self, other):
-        # A 在 B 之前：如果 A 的每个分量 ≤ B，且至少一个 < B
-        a_before_b = all(self.clock[r] <= other.clock[r] for r in self.clock) \
-                     and any(self.clock[r] < other.clock[r] for r in self.clock)
-        b_before_a = all(other.clock[r] <= self.clock[r] for r in self.clock) \
-                     and any(other.clock[r] < self.clock[r] for r in self.clock)
-        return not (a_before_b or b_before_a)
-```
+        le = all(self.clock[r] <= other.clock[r] for r in self.clock)
+        ge = all(other.clock[r] <= self.clock[r] for r in self.clock)
+        return not (le or ge)          # 互不支配 ⇒ 并发 ⇒ 必须裁决
 
-#### 4. CRDT：G-Counter
-
-```python
-# G-Counter：每个 Region 独立计数，合并时取最大值
+# G-Counter：可加、可交换、幂等——同一批更新重放任意次结果不变
 class GCounter:
-    def __init__(self, regions):
-        self.counters = {r: 0 for r in regions}
-    
-    def increment(self, region, value=1):
-        self.counters[region] += value
-    
+    def __init__(self, regions): self.counters = {r: 0 for r in regions}
+    def increment(self, region, value=1): self.counters[region] += value
     def merge(self, other):
-        for r in self.counters:
-            self.counters[r] = max(self.counters[r], other.counters[r])
-    
-    def value(self):
-        return sum(self.counters.values())
+        for r in self.counters: self.counters[r] = max(self.counters[r], other.counters[r])
+    def value(self): return sum(self.counters.values())
 ```
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+**怎么用**：`is_concurrent` 返回 True 时**不要**默默挑一个版本，要写进冲突表交给业务裁决——这段代码只解决「发现」。G-Counter 只在你确认这个量**永不减少**时可用；退款、纠错这类会减少的业务请换成别的结构。
 
-#### Global Database
-
-| 工具 | 出品方 | 特点 |
-| --- | --- | --- |
-| **Google Spanner** | Google | 全球强一致，TrueTime 专利 |
-| **CockroachDB** | Cockroach Labs | 开源 Spanner 风格，PostgreSQL 兼容 |
-| **YugabyteDB** | Yugabyte | PostgreSQL / Cassandra 兼容 |
-| **TiDB** | PingCAP | MySQL 兼容，国内主流 |
-| **OceanBase** | 蚂蚁 | 国产化，金融级 |
-| **AWS Aurora Global Database** | AWS | 跨 Region 复制，< 1s RPO |
-| **Azure Cosmos DB** | Microsoft | 多模型，全球分布 |
-| **Google Cloud Spanner** | Google Cloud | 云上 Spanner |
-
-#### CDC 工具
-
-| 工具 | 出品方 | 特点 |
-| --- | --- | --- |
-| **Debezium** | 开源 | CDC 平台，基于 binlog |
-| **Maxwell** | 开源 | MySQL binlog 解析 |
-| **阿里 DTS** | 阿里云 | 数据传输服务，商业化 |
-| **腾讯 DTS** | 腾讯云 | 数据传输服务 |
-| **Apache SeaTunnel** | Apache | 大数据同步 |
-| **DataX** | 阿里 | 批量数据迁移 |
-| **Canal** | 阿里 | MySQL binlog 增量订阅 |
-
-#### 流量调度
-
-| 工具 | 出品方 | 特点 |
-| --- | --- | --- |
-| **AWS Route 53** | AWS | DNS + GSLB |
-| **阿里云 DNS** | 阿里云 | DNS + GSLB |
-| **Cloudflare** | Cloudflare | DNS + Anycast |
-| **NS1** | NS1 | DNS + GSLB |
-| **F5 BIG-IP DNS** | F5 | 商业 GSLB |
-| **Istio** | 开源 | 服务网格层流量调度 |
-
-### 4.4 代码 / 示例
-
-#### Spring Boot 多数据源 + LWW
+**模板四：Spring Boot 多数据源 + LWW（示例骨架）**
 
 ```java
-// 多 Region 写入，LWW 冲突解决
-@Service
-public class MultiRegionOrderService {
-    
-    @Autowired
-    @Qualifier("regionADataSource")
-    private DataSource regionA;
-    
-    @Autowired
-    @Qualifier("regionBDataSource")
-    private DataSource regionB;
-    
-    @Transactional
-    public Order createOrder(Order order) {
-        // 1. 写入本地 Region（Region A）
-        order.setTimestamp(Instant.now());
-        order.setRegion("region-a");
-        orderRepositoryA.save(order);
-        
-        // 2. 异步同步到 Region B（CDC / MQ）
-        kafkaTemplate.send("order-updates", order);
-        
-        return order;
-    }
-    
-    @KafkaListener(topics = "order-updates")
-    public void syncOrder(Order order) {
-        // 接收其他 Region 的更新，应用 LWW
-        Order existing = orderRepositoryB.findById(order.getId()).orElse(null);
-        if (existing == null || order.getTimestamp().isAfter(existing.getTimestamp())) {
-            order.setRegion("region-b");
-            orderRepositoryB.save(order);
-        }
+@Transactional
+public Order createOrder(Order order) {
+    order.setUpdatedAt(Instant.now());   // 归并依据：必须存在且跨区可比
+    order.setOriginRegion("region-a");   // 保留"谁写的"，事后才可能复现冲突
+    orderRepositoryA.save(order);
+    kafkaTemplate.send("order-updates", order);   // 异步跨区：写路径不等远端
+    return order;
+}
+
+@KafkaListener(topics = "order-updates")
+public void applyRemote(Order incoming) {
+    Order local = orderRepositoryB.findById(incoming.getId()).orElse(null);
+    if (local == null || incoming.getUpdatedAt().isAfter(local.getUpdatedAt())) {
+        orderRepositoryB.save(incoming);          // 后到者胜；旧值覆盖新值时不会报错
+    } else {
+        conflictLog.record(incoming, local);      // 被丢弃的一方必须留痕，否则无法对账
     }
 }
 ```
 
-#### CockroachDB 跨 Region 部署
+**怎么用**：注意 `updatedAt` 必须来自**同一套时钟口径**（跨区时钟不可比时 LWW 不成立）；`originRegion` 与 `conflictLog` 不是可选项——去掉它们，这段代码就退化成静默覆盖，问题只会在对账时以无法判责的形式出现。照抄骨架，不要照抄字段名与表名。
+
+**模板五：CockroachDB 跨 Region 建表（locality）**
 
 ```sql
--- 创建跨 Region 的表
-CREATE TABLE orders (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id INT NOT NULL,
-    amount DECIMAL NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-) WITH (
-    constraint_schema = 'INTERLEAVE IN PARENT users (user_id)',
-    locality = 'GLOBAL'
-);
-
--- 用户表按 Region 分区
+-- 用 locality 声明"这张表的数据住在哪、能不能全 Region 复制"
 CREATE TABLE users (
-    id INT PRIMARY KEY,
+    id     INT PRIMARY KEY,
     region STRING NOT NULL,
-    'name' STRING NOT NULL
-) WITH (
-    locality = 'REGIONAL BY region'
-);
+    name   STRING NOT NULL
+) LOCALITY REGIONAL BY TABLE IN "region-a";   -- 数据固定落在一个 Region
+
+CREATE TABLE orders (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id    INT NOT NULL,
+    amount     DECIMAL NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+) LOCALITY GLOBAL;                             -- 全 Region 复制，读可就近
 ```
 
----
+**怎么用**：照抄的是「一张表选一种 locality 取向」这个结构；具体取值与可用选项（含按行定位的变体）请以官方文档当前版本为准。这张表的选择直接决定写路径要不要跨区——`GLOBAL` 换来就近读，代价是写要复制到全部 Region。
+
+### 4.6 自检清单
+
+以下 12 条只问**执行期**才有的状态：谁在做、多久没动过、有没有留下可查的痕迹。模式层面的检查（写者拓扑是否说清、归并规则是否写明、跨层依赖与成本模型）已由 [§ 3.7 自检清单](02-multi-region-section-3-sec3.md) 覆盖，本节不重复。
+
+- [ ] 新增一张表进入多活时，走的是「先分级 → 再定归属键 → 再建链路」，还是「先配同步、后补登记」？最近一次新增走的是哪条？
+- [ ] 跨区同步的表清单是显式列出的，还是「默认全同步」？后者按「未分级」处理。
+- [ ] 历史资产里「只改动的部分」（非核心分析表、特征表、日志表）有没有到期复核记录？停在「已登记但未分级」的清单，比上一季度短了还是长了？
+- [ ] 对账方案是否比对到字段值，而不只是行数？最近一个季度的差异**关闭率**是多少（不是差异条数）？
+- [ ] 冲突表（并发写留下的痕迹、被丢弃的版本）最近一次被人打开是什么时候？这条问的是「有没有流程消费冲突」，不是冲突有几条。
+- [ ] 核心域名的 DNS TTL 现在是多少？把它与 RTO 承诺并排写在一处，两者是否自洽？
+- [ ] 切流脚本的回退分支，最近一次**真的被执行过**吗——演练里走的是切换，还是切换加回退？
+- [ ] 演练是否覆盖过**双轨期**：已迁移实体走新路径、未迁移实体走老路径的那一轮，摘掉一个 Region 后能不能跑完？（只演练全量迁移后的终态，等于把双轨期最脆的一段留在盲区里。）
+- [ ] 演练报告除了三个实测数，有没有把暴露出的依赖转成**依赖隔离整改单**？整改单的关闭率是多少？
+- [ ] 双轨期「同一实体不能被两条路径同时写」这条纪律，在代码或配置上有没有强制点，还是只写在文档里？
+- [ ] 多活例外表（不可切分数据 + 不可同步数据）现在有几条？较上一季度是增还是减？
+- [ ] 尚未退出双轨的路径，是否还有业务必须走它？「暂时没人走」与「没人需要走」是否被区分过？
+
+### 4.7 小结
+
+> 本节小结：整条落地链里唯一那个决定成败的环节，是**Step 1 的业务分级与 Step 2 的数据分层**——它决定后面每一段链路要付多少代价（同步几条、要不要归并规则、写路径能否留在本地），而它本身不产出任何可部署的东西，因此在排期压力下最容易被跳过。其余步骤做错了可以返工，唯独第一二步做错时，返工的对象是数据的归属规则与全部存量数据。
+>
+> 判断自己是否已经越过分界线，只需回答一句：**故障发生时，用户会不会被自动路由到他数据所在的那个 Region 之外？** 会，则前面所有工作都还停在「多买了几份副本」的阶段。
+>
+> 配合 [§ 2 核心原理](02-multi-region.md)、[§ 3 设计模式与范式](02-multi-region-section-3-sec3.md) 与 [§ 6 落地实践](02-multi-region-section-6-sec6.md) 阅读。

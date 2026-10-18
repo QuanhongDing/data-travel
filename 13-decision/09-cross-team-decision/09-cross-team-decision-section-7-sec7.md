@@ -53,7 +53,7 @@
 | 名义群体法（NGT） | 共识技术 | 先各自独立书面产出，再集中讨论，避免第一个发言者定调 | 会上发言高度不均、少数意见易被淹没时 | 与德尔菲法同属群体决策技术，可按公开教材核验 |
 | 德尔菲法（Delphi） | 共识技术 | 多轮匿名专家评估，逐轮收敛 | 专家分散、无法集中开会时 | 由研究机构在预测研究中推广，可按公开文献核验 |
 | 罗马投票（Roman Voting） | 共识技术 | 每方一票，分「支持 / 有保留地支持 / 反对」三档，保留意见必须记录 | 需要快速感知共识程度时 | 敏捷实践中的公开做法，可按公开实践材料核验 |
-| 升级到指导委员会 | 例外通道 | 决策在约定时限内未收敛时，按既定路径上升一层 | 已设分层决策、需要防止无限扯皮时 | 主文件 [§ 2.3](09-cross-team-decision.md) 方法清单第 11 项「Steering Committee Escalation」；[§ 3](09-cross-team-decision-section-3-sec3.md) 3.3 反模式第 3 条把「设截止日期 + Escalation 机制」列为「扯皮会」的解法 |
+| 升级到指导委员会 | 例外通道 | 决策在约定时限内未收敛时，按既定路径上升一层 | 已设分层决策、需要防止无限扯皮时 | 主文件 [§ 2.3](09-cross-team-decision.md) 方法清单第 11 项「Steering Committee Escalation」；[§ 3](09-cross-team-decision-section-3-sec3.md) 3.5 反模式第 3 条把「设截止日期 + Escalation 机制」列为「扯皮会」的解法 |
 | Cross-functional Squad（Spotify 模型） | 组织结构 | 跨职能小队自治，靠部落 / 章节 / 公会做横向对齐 | 产品研发组织，需要自治与对齐并存时 | Spotify 公开的工程组织描述是其公开形态 |
 | Sociocracy / Holacracy | 组织治理 | 无等效异议即通过；角色与圈子替代传统层级 | 小型组织与社群 | 各自的公开治理章程可核验 |
 | MCDA（多准则决策分析） | 决策分析工具 | 把多准则显式化为权重与打分，用于方案排序 | 需要把取舍写下来讨论时 | 详见 [../02-tradeoff-frameworks/02-tradeoff-frameworks.md](../02-tradeoff-frameworks/02-tradeoff-frameworks.md)（该章与本节所在目录同级，不在本目录内） |
