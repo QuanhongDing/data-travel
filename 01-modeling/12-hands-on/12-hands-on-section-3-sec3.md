@@ -165,7 +165,7 @@ TBLPROPERTIES (
 - **为什么这样设计有效**：因为表格式把"数据文件"与"表状态"分离，所以改 schema、改分区、回滚都是元数据操作而不是重写数据 → **变更成本与数据量解耦**（改一次 schema 不需要扫一遍数据），这也是它能让多个引擎共享同一份存储的原因。粒度在此不再是全局唯一的一件事：ODS 的变更记录、DWD 的事件、ADS 的汇总可以共存于同一张逻辑表的时间线里。
 - **代价**：小文件问题与 compaction 作业成为常设负担（流式写入天然产生小文件）；catalog 成为新的依赖点——元数据服务不可用则整个湖不可写；多引擎写同一张表必须靠 catalog 的并发提交控制，配置错误会损坏表；"存算分离"意味着查询性能高度依赖文件布局（分区、排序、文件大小），它需要的是一支长期维护的团队，不是一次性的迁移项目。
 - **失效点**：当写入以高频小批（分钟级）为主、且没有常开的 compaction 时，「变更成本与数据量解耦」反转成「越写越慢、越查越慢」；因为每个数据文件都对应一次对象存储交互与元数据开销，文件数增长把固定开销乘以文件数——读放大取代了写效率。此时开放表格式还在，共享能力还在，但性能优势已经反转，而团队通常先把它归因为"引擎不够快"，从而买更多算力。
-- **真实使用**：Apache Iceberg（由 Netflix 开源后捐入 Apache 基金会，现为基金会顶级项目）、Apache Hudi、Apache Paimon 的规范与文档【公开，定位符：Iceberg 的《Iceberg Table Spec》（format v1 / v2，iceberg.apache.org/spec）、Hudi 官方文档站（hudi.apache.org）、Paimon 官方文档站（paimon.apache.org）；三份规范均为持续维护的活文档，版本号以站点当前 release 为准】；Databricks 的 Lakehouse 论文（CIDR 2021）【公开】。主文件 §4.3 给出了 Iceberg / Hudi / Paimon 的建表示例。
+- **真实使用**：Apache Iceberg（由 Netflix 开源后捐入 Apache 基金会，现为基金会顶级项目）、Apache Hudi、Apache Paimon 的规范与文档【公开，定位符：Iceberg 的《Iceberg Table Spec》（format v1 / v2，iceberg.apache.org/spec）、Hudi 官方文档站（hudi.apache.org）、Paimon 官方文档站（paimon.apache.org）；三份规范均为持续维护的活文档，版本号以站点当前 release 为准】；Databricks 的 Lakehouse 论文（CIDR 2021）【公开】。主文件 §4.5 给出了 Iceberg / Hudi / Paimon 的建表示例。
 
 #### 3.2.5 AI 原生数据栈
 
@@ -173,7 +173,7 @@ TBLPROPERTIES (
 - **结构**：
 
 ```yaml
-# 指标 / 语义层定义：机器可读，不是文档（OSCAR 模型，见主文件 §4.4）
+# 指标 / 语义层定义：机器可读，不是文档（OSCAR 模型，见主文件 §4.5）
 - metric_id: gmv_1d
   metric_name: 当日 GMV
   metric_type: 派生指标
@@ -198,7 +198,7 @@ Agent 取数路径（必须经过语义层，而不是直接猜表）
        │      匹配不到 → 明确回答「这个度量没有定义」
        │                    （而不是猜一个表名）
        ▼
-  生成 SQL ──► ADS 层（ads_gmv_daily 一类，见主文件 §4.1）
+  生成 SQL ──► ADS 层（ads_gmv_daily 一类，见主文件 §4.5）
        ▼
   返回 答案 + 所用口径 + 数据截止时间
        ↑ 缺了后两项，它就不是可审计的接口，只是更快的猜测器
@@ -272,7 +272,7 @@ owner:
 
 **组合三：湖仓一体 + 维度建模 + 指标平台 / AI 原生**
 
-- 构成：湖仓承载 ODS→DWD→DWS→ADS 的物化，表格式让批、流、ML 共享；ADS 之上由指标平台统一口径，Agent 经语义层取数（主文件 §4.1 的分层示例 + §4.4 的指标定义）。
+- 构成：湖仓承载 ODS→DWD→DWS→ADS 的物化，表格式让批、流、ML 共享；ADS 之上由指标平台统一口径，Agent 经语义层取数（主文件 §4.5 的分层示例 + 指标定义）。
 - 各自职责边界：湖仓负责存储与共享；星型负责粒度与查询；指标平台负责口径唯一性；Agent 只做翻译不做定义。
 - 组合的运维代价：compaction 与元数据维护成为常设作业；口径补齐需要持续人力；模型调用成本需要单独归口，否则账单无法解释。
 - 适合的规模：表数万级【经验】、消费方同时含 BI 与 Agent 的组织。
