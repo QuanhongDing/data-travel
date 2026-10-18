@@ -170,8 +170,8 @@
 - **Standard**：标准层，毫秒级首字节延迟，$0.023/GB/月（年化 $0.276/GB/年）。适合频繁访问的热数据。
 - **Standard-IA（Infrequent Access）**：低频层，毫秒级延迟，但有最小存储时长（30 天）+ 最小对象大小（128 KB）门槛，单价 $0.0125/GB/月（年化 $0.15/GB/年）。适合 30 天以上、偶尔访问的数据。
 - **Glacier Instant Retrieval**：毫秒级检索的归档层，单价 $0.004/GB/月（年化 $0.048/GB/年），介于 IA 与 Glacier Flexible 之间。
-- **Glacier Flexible Retrieval**：默认 5 分钟 - 12 小时检索，单价 $0.0036/GB/月（年化约 $0.043/GB/年），低于 Instant Retrieval 档。适合长期归档。
-- **Glacier Deep Archive**：12 - 48 小时检索，单价 $0.00099/GB/月（年化约 $0.0119/GB/年）。S3 里最便宜的层（自建磁带 $0.001/GB/年 还要更低，但取回要挂载）。
+- **Glacier Flexible Retrieval**：默认 5 分钟 - 12 小时检索，单价低于 Instant Retrieval 档（具体数值以 AWS S3 定价页当前版本为准）。适合长期归档。
+- **Glacier Deep Archive**：12 - 48 小时检索，单价 $0.00099/GB/月（年化约 $0.0119/GB/年）。S3 里最便宜的层（自建磁带 $0.001/GB/年还要更低，但取回要挂载）。
 
 以上均为 AWS 公布价【公开：AWS S3 定价页, 2024】——**是月度单价**，与其他章节引用时一律先乘 12 换到年化再加总，否则会差 12 倍。
 
