@@ -26,6 +26,7 @@
 
 1. **OSCAR 五要素：把"指标定义"形式化为可校验的结构（核心创新）**
    - 关键设计：**任何指标必须完整填写五要素——Owner、Statistic（算法）、Caliber（业务口径）、Attribute（维度）、Reference（来源表字段）**；缺项不允许提交，命名需通过机器校验
+   - **体系区分（OSCAR 同名不同义）**：本案例这里的 OSCAR 是 OneMetric 一系的五要素（O=Owner / S=Statistic / C=Caliber / A=Attribute / R=Reference）；数据建模章另有阿里 OneData 一系的 OSCAR（O=业务对象 / S=修饰词 / C=业务过程 / A=统计周期 / R=原子指标，见 [Ch1-10 指标体系](../../01-modeling/10-metric-system/10-metric-system.md)）。两套缩写字母相同、拆分完全不同，跨章引用时必须先指明属于哪一系。
    - 关键能力：**"同名不同义"在定义层就被拦住**——不是靠事后对齐，而是靠定义时就无法含糊
    - 关键数字：**指标标准化 100%、指标数 10 万+**
    - 关键示意：

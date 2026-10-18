@@ -2,7 +2,7 @@
 
 > **一句话定位**：从 Databricks Lakehouse / Snowflake 数据共享 / Stripe 财务数据架构 / LinkedIn 大数据 / Anthropic Claude Engineering / OpenAI Engineering 等海外头部案例中，看清 2024–2025 年数据架构 + AI 平台的前沿趋势。
 
-> 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**10-海外案例研究**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 复用经验。
+> 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**10-海外案例研究**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 落地实践。
 
 ## 0. 本章速读地图
 
@@ -88,15 +88,6 @@ AI 公司（Anthropic / OpenAI）面临"模型 + 数据 + 推理"全栈挑战。
 跨时区、跨语言、跨文化协同。
 
 > 💡 **思考锚点**：把 2.2.2 的三条合规章到你现在的数据上验一次——欧洲数据本地化、用户删除权（Right to be Forgotten）、血缘可追溯；若你的用户量级走到 2.2.1 那档（Netflix 3 亿 / LinkedIn 9 亿），你现在的链路能在不搬全量数据的前提下，按一个用户 ID 就地删除并证明删干净了吗？
-
----
-
-- [§3. 架构演进（分案例）](10-overseas-cases-section-3-sec3.md)
-- [§4. 关键决策](10-overseas-cases-section-4-sec4.md)
-- [§5. 前沿演进（AI 时代）](10-overseas-cases-section-5-ai-native---2024-2025.md)
-- [§6. 落地实践](10-overseas-cases-section-6-sec6.md)
-- [§7. 与同类案例对比](10-overseas-cases-section-7-sec7.md)
-- [§8. 面试真题集](10-overseas-cases-section-8-sec8.md)
 
 ---
 

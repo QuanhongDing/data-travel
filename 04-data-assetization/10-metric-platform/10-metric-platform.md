@@ -131,7 +131,7 @@
 - **Cube.js**：开源指标 API 平台。
 - **MetricFlow**：dbt 开源指标定义框架。
 - **Airbnb Minerva**：指标定义 + 查询框架。
-- **OSCAR**：指标平台框架。
+- **OSCAR**：两套「同名不同义」的指标要素模型共用此缩写——本书本主题指 OneMetric 一系（O=Owner / S=Statistic / C=Caliber / A=Attribute / R=Reference，见 [§6 案例 6.1](10-metric-platform-section-6-sec6.md)）；数据建模章另指阿里 OneData 一系（O=业务对象 / S=修饰词 / C=业务过程 / A=统计周期 / R=原子指标，见 [Ch1-10 指标体系](../../01-modeling/10-metric-system/10-metric-system.md)）。引用时须先指明属于哪一系。
 - **LookML**：Looker 的指标定义语言。
 - **Snowflake Cortex Analyst**：自然语言查询指标平台。
 - **Databricks Genie**：自然语言查询平台。
@@ -260,15 +260,6 @@ GET /api/v1/metric/new_user_gmv?filter=city:Beijing&time_range=last_quarter
 - **指标平台 vs Agent**：Agent 调用指标 API 完成数据查询。
 
 > 💡 **思考锚点**：挑一条你被问得最多的指标，把它拆成 §2.2 的乘式——原子指标 × 修饰词 × 时间周期 × 维度：四个乘数各有唯一 Owner 吗，还是某项散在某张看板 SQL 里？拆不出唯一答案的那一项，就是 §2.4 里 Agent 通过指标 API 取数时会取到两种口径的地方。
-
----
-
-- [§3. 设计模式与范式](10-metric-platform-section-3-sec3.md)
-- [§4. 工程实现](10-metric-platform-section-4-sec4.md)
-- [§5. 前沿演进（AI 时代）](10-metric-platform-section-5-ai.md)
-- [§6. 落地实践](10-metric-platform-section-6-sec6.md)
-- [§7. 与其他方法对比](10-metric-platform-section-7-sec7.md)
-- [§8. 面试真题集](10-metric-platform-section-8-sec8.md)
 
 ---
 

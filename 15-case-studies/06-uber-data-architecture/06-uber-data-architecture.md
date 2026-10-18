@@ -120,15 +120,6 @@ UberX / Eats / Freight / Elevate——每个业务线都有自己的数据团队
 
 ---
 
-- [§3. 架构演进](06-uber-data-architecture-section-3-sec3.md)
-- [§4. 关键决策](06-uber-data-architecture-section-4-sec4.md)
-- [§5. 踩坑与教训](06-uber-data-architecture-section-5-sec5.md)
-- [§6. 落地实践](06-uber-data-architecture-section-6-sec6.md)
-- [§7. 与同类案例对比](06-uber-data-architecture-section-7-sec7.md)
-- [§8. 面试真题集](06-uber-data-architecture-section-8-sec8.md)
-
----
-
 ## 章节内容导航
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：

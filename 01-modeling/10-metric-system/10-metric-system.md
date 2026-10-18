@@ -121,7 +121,7 @@
 **阶段 3 · 2010-2020：互联网指标平台化（OneMetric Era）**
 
 - 阿里、字节、美团等互联网公司沉淀出 **指标平台（Metric Platform）** 模式。
-- 阿里 OSCAR（O = 业务对象，S = 修饰词，C = 业务过程，A = 统计周期，R = 原子指标）成为业界标杆。
+- 阿里 OneData 的 OSCAR（O = 业务对象，S = 修饰词，C = 业务过程，A = 统计周期，R = 原子指标）成为业界标杆（同名不同义：Ch4 指标平台中阿里 OneMetric 另有一个 OSCAR，五要素展开不同，见 §2.2.1）。
 - 关键产品：阿里 Quick BI / DataPhin 指标中台、字节火山引擎指标平台、美团指标平台、滴滴 DiDi 数据指标中台。
 - 关键概念：原子指标、派生指标、业务修饰、时间周期。
 
@@ -160,14 +160,16 @@
 | **指标平台（Metric Platform）** | 指标定义 / 服务 / 治理的一站式平台 | 见 §4.3 |
 | **Metric 语义层（Semantic Layer）** | 跨 BI / AI 工具复用的指标定义层 | dbt Semantic Layer / Cube |
 | **MetricQL** | Cube.js 定义的指标查询 DSL | 类似 SQL |
-| **OSCAR** | 阿里提出的指标五要素模型 | O+S+C+A+R |
+| **OSCAR** | 阿里 OneData 提出的指标五要素模型（与 Ch4 指标平台中 OneMetric 的同名 OSCAR 不同义，见 §2.2.1） | O+S+C+A+R |
 | **自然语言查询指标（NL2Metric）** | LLM 把自然语言翻译为指标查询 | ChatBI、Text2SQL |
 
 ### 2.2 数学 / 形式化基础
 
-#### 2.2.1 OSCAR 模型（阿里指标体系）
+#### 2.2.1 OSCAR 模型（阿里 OneData 指标体系）
 
-阿里提出的 OSCAR 模型把指标拆解为五个维度：
+阿里 OneData 提出的 OSCAR 模型把指标拆解为五个维度：
+
+> **同名不同义提示**：本书另有一个 OSCAR——Ch4 指标平台中阿里 OneMetric 的 OSCAR（见 [10-metric-platform §6 案例](../../04-data-assetization/10-metric-platform/10-metric-platform-section-6-sec6.md)），其五要素展开为 O=Owner（责任人）/ S=Statistic（算法）/ C=Caliber（业务口径）/ A=Attribute（维度）/ R=Reference（来源表字段）。两个 OSCAR 是**同名不同物**，字母展开不可互换、不可统一——本节讲的是 OneData 指标体系口径下的 OSCAR。
 
 - **O（Object）**：业务对象（用户、订单、商品）
 - **S（Service / Modifier）**：业务修饰（用户类型、地区、渠道）
@@ -479,15 +481,6 @@ def metric_root_cause(metric_anomaly, dimensions):
 - 关系：Feature Store 服务于 ML，指标体系服务于 BI；两者可互通（特征可来自指标）
 
 > 💡 **思考锚点**：把你的指标清单按 §2.2.1 的公式拆成 O ⊕ S ⊕ C ⊕ A ⊕ R 五段——同一组「原子指标 × 业务修饰」组合，你库里有没有两个不同名字（违反同义一致性）或一个名字两套口径（违反同名一致性）？再数一次 §2.2.4 的五条一致性约束里，你现在能自动校验的是哪几条？
-
----
-
-- [§3. 设计模式与范式](10-metric-system-section-3-sec3.md)
-- [§4. 工程实现](10-metric-system-section-4-sec4.md)
-- [§5. 前沿演进（AI 时代）](10-metric-system-section-5-ai.md)
-- [§6. 落地实践](10-metric-system-section-6-sec6.md)
-- [§7. 与其他方法对比](10-metric-system-section-7-sec7.md)
-- [§8. 面试真题集](10-metric-system-section-8-sec8.md)
 
 ---
 

@@ -2,7 +2,7 @@
 
 > **一句话定位**：Netflix 用 15 年时间构建了一套以「Iceberg 表格式 + Spark/Flink + Maestro 调度 + Data Mesh 自治」为核心的现代化数据栈，是大规模数据栈 + 工程师自治文化最值得借鉴的海外样本。
 
-> 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**05-Netflix 数据栈**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 复用经验。
+> 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**05-Netflix 数据栈**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 落地实践。
 
 ## 0. 本章速读地图
 
@@ -118,15 +118,6 @@ Data Mesh 思想下，数据所有权应该分散到业务团队——但 Netfli
 Netflix 有 30+ 团队需要数据共享，**需要"中心化协作层"** 但不强制集中。
 
 > 💡 **思考锚点**：把 §2.2.2 里 Hive 的四条痛点——ACID 缺失、分区爆炸小文件、无 Time Travel、Schema Evolution 不灵活——对着你现在的表格式数一遍，你正被其中几条咬？若你的单表已到 PB 级（§2.2.1），再对照 §2.3：你们是 30+ 团队共享、靠「中心化协作层」而不强制集中，还是把定义权收归中心——那么下一步你会先补表格式，还是先补协作层？
-
----
-
-- [§3. 架构演进](05-netflix-data-stack-section-3-sec3.md)
-- [§4. 关键决策](05-netflix-data-stack-section-4-sec4.md)
-- [§5. 踩坑与教训](05-netflix-data-stack-section-5-sec5.md)
-- [§6. 落地实践](05-netflix-data-stack-section-6-sec6.md)
-- [§7. 与同类案例对比](05-netflix-data-stack-section-7-sec7.md)
-- [§8. 面试真题集](05-netflix-data-stack-section-8-sec8.md)
 
 ---
 

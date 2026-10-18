@@ -105,18 +105,18 @@
 | 跨模态推理 | 图↔文天然，其余模态需外挂 | 模态间通过图像投影天然互通 |
 | 工业成熟度 | 极高（多年 SOTA 基线） | 中（学术 SOTA，工程生态尚浅） |
 
-**第四层：工业选型建议。** 通用图文（含跨语种）→ OpenCLIP / SigLIP 等 CLIP 衍生；中文图文 → BAAI 的 BGE-VL 或阿里 Qwen-VL；图文 + 音频 → ImageBind 或 AudioCLIP；纯文本检索 → BGE-M3 / GTE-Qwen 那一脉更专业。多模态 Embedding 没有「最强」，只有「最匹配业务模态组合」。
+**第四层：工业选型建议。** 通用图文（含跨语种）→ OpenCLIP / SigLIP 等 CLIP 衍生；中文图文 → BAAI 的 BGE-VL；图文 + 音频 → ImageBind 或 AudioCLIP；纯文本检索 → BGE-M3 / GTE-Qwen 那一脉更专业。多模态 Embedding 没有「最强」，只有「最匹配业务模态组合」。
 
 **3. 常见陷阱**
 
-- **把 CLIP 当作通用 Embedding。** CLIP 在中文场景表现平庸，必须用 BGE-VL 或 Qwen-VL 替代。
+- **把 CLIP 当作通用 Embedding。** CLIP 在中文场景表现平庸，必须用 BGE-VL 一类中文图文 Embedding 替代。
 - **以为 ImageBind 已经支持视频。** ImageBind 原论文只覆盖 6 模态，视频检索要用 VideoCLIP / InternVideo 这类时序模型。
 - **忽略向量维度对齐。** 即使宣称「统一空间」，生产中常见 512/768/1024 维度混用，必须靠线性投影或统一 Encoder 拉齐。
 
 **4. 追问预测**
 
 - **「CLIP 的温度参数 τ 怎么设？」** 答：CLIP 把它建模成可学习的 `exp(logit_scale)`，训练中通过梯度上升避免 τ 过小；推理时通常 clamp 到 100（约 logit_scale ≈ 4.6），否则 softmax 过锐。
-- **「中文为啥不用 CLIP？」** 答：CLIP 训练语料以英文为主，中文文本-图像对分布有偏，导致中文短句 zero-shot 能力远弱于 BGE-VL / Qwen-VL。
+- **「中文为啥不用 CLIP？」** 答：CLIP 训练语料以英文为主，中文文本-图像对分布有偏，导致中文短句 zero-shot 能力远弱于 BGE-VL。
 - **「ImageBind 怎么落地到商品检索？」** 答：常见做法是 ImageBind 提向量 + 业务微调：保留视觉 Encoder，把文本 Encoder 用商品文案继续微调，使向量空间适配业务。
 
 **5. 参考资料**
@@ -124,9 +124,9 @@
 - OpenAI 论文《Learning Transferable Visual Models From Natural Language Supervision》（ICML 2021）——CLIP 原始论文，是图文对比学习的标准出处。
 - Meta AI 论文《ImageBind: One Embedding Space To Bind Them All》（2023，公开技术报告）——六模态对齐的原始定义与训练数据策略。
 - BAAI 公开的 BGE-VL（BAAI General Embedding - Vision-Language）技术报告——中文多模态 Embedding 的工业对标。
-- 阿里通义 Qwen-VL 系列技术报告与公开博客——中文长上下文图文问答与 Embedding 的工业实践。
+- 阿里通义 Qwen-VL 系列技术报告与公开博客——中文长上下文图文问答与多模态 LLM 的工业实践。
 - SigLIP（Sigmoid Loss for Image-Text Pre-training，Google 2023）——CLIP 训练目标改进方向，对比损失去掉 softmax 让 batch 独立性提升，是后续工业 SOTA 模型的常用基线。
-- **京东「拍照购」商品视觉检索** —— 公开技术博客与多份公开分享披露其商品图搜链路长期以 CLIP 衍生结构与跨语种 Embedding 为底，是「中文电商为何不用原生 CLIP、转向 BGE-VL / Qwen-VL」的工业对照案例。
+- **京东「拍照购」商品视觉检索** —— 公开技术博客与多份公开分享披露其商品图搜链路长期以 CLIP 衍生结构与跨语种 Embedding 为底，是「中文电商为何不用原生 CLIP、转向 BGE-VL」的工业对照案例。
 - **Shein 跨语言服装视觉检索系统** —— 公开材料显示其将多语种服装图像与短描述投影到同一向量空间，是图文对比学习在跨境电商落地的代表实践，回答了跨语种零样本检索的工业诉求。
 - **宁德时代电池缺陷视觉检索** —— 公开案例显示其将电池外观缺陷图像、生产工况时序与产线标签对齐检索，覆盖 ImageBind 这类「以图像为锚的多模态对齐」思路在工业质检的真实落地。
 - **Shein** —— Shein 跨境供应链实时数据——日均千万订单走实时分发 + 离线对账，柔性供应链的核心。
@@ -503,8 +503,8 @@
 
 补充三条本章特有的答题锦囊：
 
-1. **Embedding 模型没有"最强"，只有"最匹配业务模态组合"**。中文用 BGE-VL / Qwen-VL，跨六模态用 ImageBind，纯文档检索用 ColPali。
-2. **多模态架构不是把多套系统拼起来，而是统一向量空间 + 统一治理**。Weaviate Modules、SurrealDB、Milvus 2.x 都是这条路径上的不同选择。
+1. **Embedding 模型没有"最强"，只有"最匹配业务模态组合"**。中文用 BGE-VL，跨六模态用 ImageBind，纯文档检索用 ColPali。
+2. **多模态架构不是把多套系统拼起来，而是统一向量空间 + 统一治理**。Weaviate Modules、SurrealDB、Milvus 2.x 是一套系统内承载多向量 / 多模型的不同底座；但它们本身都不提供跨模态语义空间，统一空间取决于你接入的对齐编码器（见 §7.2）。
 3. **生产治理比模型选择更重要**。召回-精排可观测、评估闭环、归因追踪、缓存压缩——这四件事决定绝大部分的工业效果（按【经验】档表述，无精确统计口径）。
 
 ### 8.4 返回

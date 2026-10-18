@@ -285,15 +285,6 @@ Text2SQL 在数学上是「**结构化预测（Structured Prediction）**」问�
 
 ---
 
-- [§3. 设计模式与范式](01-data-agent-section-3-sec3.md)
-- [§4. 工程实现](01-data-agent-section-4-sec4.md)
-- [§5. 前沿演进（AI 时代）](01-data-agent-section-5-ai.md)
-- [§6. 落地实践](01-data-agent-section-6-sec6.md)
-- [§7. 与其他方法对比](01-data-agent-section-7-sec7.md)
-- [§8. 面试真题集](01-data-agent-section-8-sec8.md)
-
----
-
 ## 章节内容导航
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：

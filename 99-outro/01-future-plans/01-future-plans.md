@@ -142,15 +142,6 @@ AI 应用上线不再只是"算法准不准"，而是"**用得对不对、放得
 
 ---
 
-- [§3. 实战建议](01-future-plans-section-3-sec3.md)
-- [§4. 关键行动项](01-future-plans-section-4-sec4.md)
-- [§5. 风险与陷阱](01-future-plans-section-5-sec5.md)
-- [§6. 落地实践](01-future-plans-section-6-sec6.md)
-- [§7. 推荐行动 / 推荐阅读](01-future-plans-section-7-sec7.md)
-- [§8. 面试真题集](01-future-plans-section-8-sec8.md)
-
----
-
 ## 章节内容导航
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：

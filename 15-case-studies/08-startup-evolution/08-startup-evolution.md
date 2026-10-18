@@ -2,7 +2,7 @@
 
 > **一句话定位**：初创公司如何在 1–5 年内从"Excel + 数据库"演进到"AI 原生数据栈"——这是一份给早期 / 成长期公司数据架构师的实战指南，结合 Anthropic / Cursor / Cognition / Notion / Figma 等 AI Native 公司的演进路径。
 
-> 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**08-从 0 到独角兽的数据栈**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 复用经验。
+> 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**08-从 0 到独角兽的数据栈**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 落地实践。
 
 ## 0. 本章速读地图
 
@@ -113,15 +113,6 @@ AI 时代必须从"传统数据栈"演进到"AI Native 数据栈"。
 全球化后，数据合规复杂度指数级上升。
 
 > 💡 **思考锚点**：把你公司现在的阶段代入 §2 的挑战分层——你正被哪一条约束：2.1.1「数据栈做太好是浪费」与 2.2.1「业务量 10x、100x 后必须跟着扩」？说出你现在的数据规模离下一档（10x）还差多少，以及 2.3 的三类后期挑战（多区域 / AI Native / 合规）里哪一条会在你到那一步之前先到？
-
----
-
-- [§3. 架构演进](08-startup-evolution-section-3-sec3.md)
-- [§4. 关键决策](08-startup-evolution-section-4-sec4.md)
-- [§5. 踩坑与教训](08-startup-evolution-section-5-sec5.md)
-- [§6. 落地实践](08-startup-evolution-section-6-sec6.md)
-- [§7. 与同类案例对比](08-startup-evolution-section-7-sec7.md)
-- [§8. 面试真题集](08-startup-evolution-section-8-sec8.md)
 
 ---
 

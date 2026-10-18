@@ -2,7 +2,7 @@
 
 > **一句话定位**：字节跳动用 12 年时间把"数据驱动 + AB 实验"内化为公司 DNA，构建了从 Lakehouse + 实时 + AI 原生的完整数据栈（ByteHouse、DataLeap、AB 平台、火山引擎），是"数据驱动决策"文化与"工程化 AB 实验"最值得借鉴的样本。
 
-> 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**03-字节跳动数据架构**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 复用经验。
+> 本文是 data-travel 项目 [Ch15 · 案例库](../../README.md) 的子章节（**03-字节跳动数据架构**）。标准化案例结构：背景 → 挑战 → 架构演进 → 关键决策 → 踩坑 → 落地实践。
 
 ## 0. 本章速读地图
 
@@ -115,15 +115,6 @@ TikTok 面临全球多法域合规，**GDPR（欧洲）、CCPA（加州）、COP
 TikTok 全球运营需要全球多区域数据团队，跨语言、跨时区、跨法规协同难度大。
 
 > 💡 **思考锚点**：把你自己的组织往 §2 的三类挑战上套——你有几个「App / 业务线」要打通（字节是 20+），你的决策 / 推荐链路延迟要求是多少毫秒（抖音是 < 200ms、AB 分流 < 1 秒），你的日活与单日请求量落在哪个量级（字节是 7 亿日活、百亿级推荐请求）？三个数里，哪一个先把你「各建各的」这条路堵死？
-
----
-
-- [§3. 架构演进](03-byte-data-architecture-section-3-sec3.md)
-- [§4. 关键决策](03-byte-data-architecture-section-4-sec4.md)
-- [§5. 踩坑与教训](03-byte-data-architecture-section-5-sec5.md)
-- [§6. 落地实践](03-byte-data-architecture-section-6-sec6.md)
-- [§7. 与同类案例对比](03-byte-data-architecture-section-7-sec7.md)
-- [§8. 面试真题集](03-byte-data-architecture-section-8-sec8.md)
 
 ---
 

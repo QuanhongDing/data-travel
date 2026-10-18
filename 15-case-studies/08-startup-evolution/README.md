@@ -13,7 +13,7 @@
 | 3. 架构演进 | [08-startup-evolution-section-3-sec3.md](08-startup-evolution-section-3-sec3.md) |
 | 4. 关键决策 | [08-startup-evolution-section-4-sec4.md](08-startup-evolution-section-4-sec4.md) |
 | 5. 踩坑与教训 | [08-startup-evolution-section-5-sec5.md](08-startup-evolution-section-5-sec5.md) |
-| 6. 复用经验 | [08-startup-evolution-section-6-sec6.md](08-startup-evolution-section-6-sec6.md) |
+| 6. 落地实践 | [08-startup-evolution-section-6-sec6.md](08-startup-evolution-section-6-sec6.md) |
 | 7. 与同类案例对比 | [08-startup-evolution-section-7-sec7.md](08-startup-evolution-section-7-sec7.md) |
 | 8. 面试真题集 | [08-startup-evolution-section-8-sec8.md](08-startup-evolution-section-8-sec8.md) |
 

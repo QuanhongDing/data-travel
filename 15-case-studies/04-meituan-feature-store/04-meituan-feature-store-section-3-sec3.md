@@ -308,4 +308,4 @@ CREATE TABLE feature_online_kv (
 >
 > 💡 **思考锚点**：拿你们平台上最常被争的那条特征，按 §3.3 的判据走一遍——「这个特征是谁的、怎么算的、改了影响谁」三个问题，是查出来的还是问出来的？再核一次回填样本的时间戳，看有没有样本引用了事件之后才产生的特征值，即 §3.5 说的那条不报错的「回填泄漏未来信息」。
 >
-> 配合 [§ 1–2 背景与挑战](04-meituan-feature-store.md)、[§ 4 关键决策](04-meituan-feature-store-section-4-sec4.md) 与 [§ 6 复用经验](04-meituan-feature-store-section-6-sec6.md) 阅读。
+> 配合 [§ 1–2 背景与挑战](04-meituan-feature-store.md)、[§ 4 关键决策](04-meituan-feature-store-section-4-sec4.md) 与 [§ 6 落地实践](04-meituan-feature-store-section-6-sec6.md) 阅读。

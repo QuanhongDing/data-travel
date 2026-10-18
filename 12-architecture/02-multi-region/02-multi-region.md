@@ -91,7 +91,7 @@
 - 2005：Google 论文《BigTable》《MapReduce》开启大数据时代。
 - 2007：Amazon Dynamo 引入最终一致性，启发了 NoSQL 运动。
 - 2012：Google **Spanner** 论文发布，引入 TrueTime API，实现全球强一致的分布式数据库。
-- 2012：阿里启动"异地多活"项目。
+- 阿里启动"异地多活"项目（启动年份本书内各节口径不一，不锁定，以阿里公开材料为准）。
 
 **多活落地（2013-2018）**：
 
@@ -257,15 +257,6 @@ TT.now() 返回 [earliest, latest] 区间，保证真实时间在区间内
 | 混沌工程（Ch12 §06） | 验证手段 | 混沌工程验证异地多活的容错能力 |
 
 > 💡 **思考锚点**：拿你系统的真实 RPO 与 RTO 在 2.3 的 Level 1–6 上对档——实际落在哪一级，对外宣称的又是哪一级？若目标是 Level 5（异地多活，RPO=秒级），按 2.2 的 PACELC 你必须先答：分区时选 Availability 还是 Consistency；选了 A 就意味着接受跨区异步的复制窗口，写冲突靠向量时钟检出、LWW 合并（认不认时钟漂移）还是 CRDT 消解？
----
-
-- [§3. 设计模式与范式](02-multi-region-section-3-sec3.md)
-- [§4. 工程实现](02-multi-region-section-4-sec4.md)
-- [§5. 前沿演进（AI 时代）](02-multi-region-section-5-ai.md)
-- [§6. 落地实践](02-multi-region-section-6-sec6.md)
-- [§7. 与其他方法对比](02-multi-region-section-7-sec7.md)
-- [§8. 面试真题集](02-multi-region-section-8-sec8.md)
-
 ---
 
 ## 章节内容导航
