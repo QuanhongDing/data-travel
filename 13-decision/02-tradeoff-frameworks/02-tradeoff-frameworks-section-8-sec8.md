@@ -160,7 +160,7 @@
 
 - Michael Nygard《Documenting Architecture Decisions》（2011 博客文章 / ThoughtWorks 技术雷达推荐实践）——ADR 的原始模板，是权重 / 分数决策归档的工程起点。
 - ThoughtWorks Technology Radar（持续更新）——技术雷达 + ADR 配套实践，是组织级选型框架的范本。
-- AWS Well-Architected Framework（官方文档，2014 起持续更新）——5 根支柱 / 6 支柱（Sustainability）的原始定义，是云架构选型维度体系的行业标杆。
+- AWS Well-Architected Framework（官方文档，2015 年首版、其后持续修订）——5 根支柱 / 6 支柱（Sustainability）的原始定义，是云架构选型维度体系的行业标杆。
 - Google Cloud Architecture Framework（官方文档）——与 AWS Well-Architected 对齐的设计原则集合。
 - Microsoft Azure Well-Architected Framework（官方文档）——微软版 5 根支柱，是跨云选型的参考基线。
 - Ralph L. Keeney & Howard Raiffa《Decisions with Multiple Objectives》（1976，剑桥大学出版社）——多属性效用理论的奠基著作。
