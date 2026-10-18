@@ -146,10 +146,10 @@ flowchart TB
 
 本章是**总论 / 全景图**，自身没有技术子主题。本章承载的是为后续章节提供「**能力地图**」的作用：
 
-- AI 时代数据架构师的目标画像（5 项浓缩能力）
-- 4 能力域 + 4 横线的全景图
-- 难度梯度表与 4 类读者路径
-- 跨章术语表（Glossary，重点扩充 AI 时代术语）
+- [ ] **[能力地图（Capability Model）](01-capability-model/01-capability-model.md)**：AI 时代数据架构师的目标画像（5 项浓缩能力）、4 能力域 + 4 横线的全景图
+- [ ] **[横切主题（Cross-cutting Lines）](02-cross-cutting-lines/02-cross-cutting-lines.md)**：贯穿各章的横向能力（质量 / 安全 / 成本 / 可观测 / 血缘等）
+- [ ] **[难度梯度（Difficulty and Paths）](03-difficulty-and-paths/03-difficulty-and-paths.md)**：难度梯度表与 4 类读者路径
+- [ ] **[术语表（Glossary）](04-glossary/04-glossary.md)**：跨章术语对照，重点扩充 AI 时代术语
 
 后续 Ch1–Ch15 会按这张地图分章节展开。
 
