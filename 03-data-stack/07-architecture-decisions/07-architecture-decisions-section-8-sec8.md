@@ -10,7 +10,7 @@
 
 > 本节整合 7 个原 PDF 子章节、共 7 道真题，覆盖「数据栈架构决策」核心主题：基础范式选型（数仓 / 湖 / 湖仓）、流批架构演进（Lambda / Kappa / 流批一体）、表格式选型（Iceberg / Hudi / Delta / Paimon）、OLAP 引擎选型（Doris / StarRocks / ClickHouse / Snowflake / BigQuery）、计算引擎选型（Spark / Flink / Trino）、调度系统选型（Airflow / DolphinScheduler / Azkaban）、ADR 工程化落地。下表按主题汇总。
 
-| 原 PDF §N.M | 主题 | 题号范围 | 收录题数 | 主/辅 |
+| 主题号 | 主题 | 题号范围 | 收录题数 | 主/辅 |
 | --- | --- | --- | :---: | :---: |
 | §10.1 | 数仓 / 数据湖 / 湖仓选型 | 10.1.1 | 1 | 主 |
 | §10.2 | Lambda / Kappa / 流批一体 | 10.2.1 | 1 | 主 |
