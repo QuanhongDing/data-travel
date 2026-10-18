@@ -281,9 +281,9 @@ def guarded(node, budget_ms, fallback_action):
 g = StateGraph(dict)
 for name, fn in [("features", load_features), ("rules", match_rules), ("model", predict)]:
     g.add_node(name, guarded(fn, BUDGET_MS[name], "MANUAL_REVIEW"))
-g.add_node("decide", guarded(decide_by_policy, BUDGET_MS["log"], "MANUAL_REVIEW"))   # 策略层：唯一能决定动作的地方
+g.add_node("log", guarded(decide_by_policy, BUDGET_MS["log"], "MANUAL_REVIEW"))   # 写日志段（策略层）：唯一能决定动作的地方
 g.set_entry_point("features")
-g.add_edge("features", "rules"); g.add_edge("rules", "model"); g.add_edge("model", "decide"); g.add_edge("decide", END)
+g.add_edge("features", "rules"); g.add_edge("rules", "model"); g.add_edge("model", "log"); g.add_edge("log", END)
 ```
 
 **怎么用**：四段预算合计不超过总预算，取值要按你自己链路的实测分布填，**别照抄任何文档里的示例比例**；`fallback_action` 一律填保守动作，并让 `degraded` 进监控（降级率长期偏高说明预算给得不合理）。LangGraph 的 API 名与图 API 随版本变化，以项目官方文档当前版本为准。

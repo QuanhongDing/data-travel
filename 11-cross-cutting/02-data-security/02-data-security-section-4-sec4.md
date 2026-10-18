@@ -299,8 +299,8 @@ from pyspiffe.workloadapi import X509Source
 x509_source = X509Source()
 svid = x509_source.fetch_x509_svid()   # 短生命周期的可验证工作负载身份
 
-response = requests.get("http://internal-api/orders",
-                        headers={"Authorization": f"Bearer {svid.token()}"})
+# 用法是 mTLS：X.509 SVID 承载的是「证书链 + 私钥」，把它作为 TLS 客户端证书
+# 向对端出示，对端按证书里的 SPIFFE ID 授权——它不是能塞进 Authorization 头的令牌
 ```
 
 **怎么用**：`insecure_bootstrap = true` 只能用于首次引导，生产要走正式的节点认证方式；`svid` 是短生命周期凭据，**撤销的生效时延等于它的有效期**——这正是零信任「撤销按单次请求计」的落地方式。`trust_domain` 换成你家的域，SPIFFE / SPIRE 的配置项以官方文档当前版本为准。

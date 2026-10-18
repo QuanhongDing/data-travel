@@ -105,7 +105,7 @@
 
 **5. 开放表格式的写入参数**
 
-- **做法**：显式配置写格式（`write.format.default`）、目标文件大小（`write.target-file-size-bytes`）、分布模式（`write.distribution-mode`）与格式版本（`format-version`）；Hudi 侧显式声明表类型（`type`）、主键（`primaryKey`）与预合并字段（`precombineField`）。属性名与默认值以你所用的引擎版本与表格式规范版本为准。
+- **做法**：显式配置写格式（`write.format.default`）、目标文件大小（`write.target-file-size-bytes`）、分布模式（`write.distribution-mode`）与格式版本（`format-version`）；Hudi 侧显式声明表类型（`type`）、主键（`primaryKey`）与预合并字段（`preCombineField`）。属性名与默认值以你所用的引擎版本与表格式规范版本为准。
 - **机制**：因为表格式把「表状态」与「数据文件」分离，改 schema 与回滚是元数据操作、代价与数据量解耦；代价是写入侧必须产出并维护元数据，文件布局（分区、文件大小、排序）直接决定读性能——**参数不配，收益拿不到**。
 - **失效条件**：**当写入以高频小批（间隔远短于 compaction 的调度周期）为主、且 compaction 不是常驻作业时，这条失效**——模式层的机制与代价见 §3.2.4，此处只补落地期的观测面。症状是写入与查询同时变慢，规划阶段要打开的 manifest 数量随时间增长；可观测信号有两条：表的文件数曲线单调上升而平均文件大小持续下降，以及最近一次 compaction 的执行时间戳不再前移。此时团队通常会先怀疑引擎，而不是文件布局——所以把这两条信号放进日常监控，比换引擎便宜得多。
 - **档位**：属性名【公开，可按 Iceberg / Hudi / Paimon 官方文档的表属性页对照当前版本核验】；「高频小批」的量级属【经验】。
@@ -224,7 +224,7 @@ WHERE dt >= '${biz_date - 30}'
 GROUP BY date_key, dt;
 ```
 
-**怎么用**：照抄的是四层的**顺序与粒度关系**（一行代表什么、上层的度量从哪来），不是表名与列名。`${biz_date}` 是调度参数，落地时必须换成你所用调度系统的参数写法并验证幂等重跑；这四条 DDL 都是示意写法，其中三条 `CREATE TABLE ... AS SELECT` 生产上应改为先建表（带分区与 `COMMENT` 粒度声明）再按分区 `INSERT OVERWRITE`，否则无法只回刷某一天；改造成这种两段式时，分区列 `dt` 必须同时出现在建表列清单、每层的 `SELECT` 投影与 `WHERE` 里（示例已贯穿 DWD / DWS / ADS 三层），漏在任何一层都会让上一层的 `WHERE dt = ...` 报「找不到列」；`dim_user` / `dim_merchant` / `dim_date` 的代理键与 SCD2 区间不要照抄成单列主键。
+**怎么用**：照抄的是四层的**顺序与粒度关系**（一行代表什么、上层的度量从哪来），不是表名与列名。`${biz_date}` 是调度参数，落地时必须换成你所用调度系统的参数写法并验证幂等重跑；这四条 DDL 都是示意写法，其中三条 `CREATE TABLE ... AS SELECT` 生产上应改为先建表（带分区与 `COMMENT` 粒度声明）再按分区 `INSERT OVERWRITE`，否则无法只回刷某一天；改造成这种两段式时，分区列 `dt` 必须用 `PARTITIONED BY` 声明（Hive / MaxCompute 下不写进列清单，见上面 ODS 例；Spark 的 `USING` 语法相反，须写进列清单，见模板 3），并同时出现在每层的 `SELECT` 投影与 `WHERE` 里（示例已贯穿 DWD / DWS / ADS 三层），漏在 `SELECT` 或 `WHERE` 里都会让上一层的 `WHERE dt = ...` 报「找不到列」；`dim_user` / `dim_merchant` / `dim_date` 的代理键与 SCD2 区间不要照抄成单列主键。
 
 **模板 2：MaxCompute + Hologres 实时数仓**
 
@@ -301,7 +301,7 @@ CREATE TABLE hudi.ods.user_events (
 OPTIONS (
     'type'                        = 'mor',     -- Merge on Read：写入快、读时合并
     'primaryKey'                  = 'event_id',
-    'precombineField'             = 'event_time',
+    'preCombineField'             = 'event_time',
     'hoodie.enable.data.skipping' = 'true'
 )
 PARTITIONED BY (dt);

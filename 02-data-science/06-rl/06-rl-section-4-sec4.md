@@ -254,7 +254,7 @@ def grpo_loss(new_logp, ref_logp, rewards, group_size=4, clip=0.2, kl_coef=0.04)
     ratio = torch.exp(new_logp - ref_logp)
     policy_loss = -torch.min(ratio * adv,
                              torch.clamp(ratio, 1 - clip, 1 + clip) * adv).mean()
-    kl = (ref_logp - new_logp).mean()      # KL 必须留：它是"别跑太远"的唯一约束
+    kl = (new_logp - ref_logp).mean()      # KL 必须留：它是"别跑太远"的唯一约束（new-ref：按当前策略采样时其期望即 KL 散度、非负；写成 ref-new 会把符号反过来，梯度反而奖励策略远离 reference）
     return policy_loss + kl_coef * kl
 ```
 

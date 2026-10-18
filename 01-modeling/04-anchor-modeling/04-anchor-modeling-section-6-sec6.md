@@ -3,18 +3,18 @@
 
 ## 6. 落地实践
 
-### 6.1 Lars Rönnbäck"**Anchor Modeling 6NF 时序建模**"12+ 年（2012-2024）
+### 6.1 Lars Rönnbäck"**Anchor Modeling 6NF 时序建模**"14+ 年（2010-2024）
 
 **背景（Why）**
 
-Lars Rönnbäck 2012 年面临**时序数据建模的经典困境**：
+Lars Rönnbäck 2010 年面临**时序数据建模的经典困境**：
 - **6NF 理论上最灵活**——每个属性一张表，**Schema 演进零成本**
 - **但 6NF 工程上不可用**——查一个实体要 join 30+ 张表
 - **业务现实**——属性**变更频率差异极大**（手机号几年一改、余额秒级变），传统范式只能按最快频率设计
 
 **触发点（What）**
 
-2012 年 Lars Rönnbäck 发布 **Anchor Modeling**（[Anchor Modeling 2012]），目标三条：
+2010 年 Lars Rönnbäck 发布 **Anchor Modeling**（[Anchor Modeling 2010]；提出者与规范年份的归属在公开资料中说法不一，见主文件 §5.1），目标三条：
 - **Schema 演进零成本**——新增属性**不动已有表**
 - **时序天然支持**——每个属性自带**生效时间**
 - **查询可用**——通过**视图层**把 6NF 重新组装成「看起来像 3NF」
@@ -65,7 +65,7 @@ Anchor Modeling 的**5 大核心组件**：
    - 关键能力：**存储最省 + 查询可用**——视图把 join 封装掉
    - 关键数字：**存储比 3NF 省 80%**（枚举 / 空值场景）
 
-**Anchor Modeling 关键数字**（[Anchor Modeling 2012 公开数据]）：
+**Anchor Modeling 关键数字**（[Anchor Modeling 2010 公开数据]）：
 
 | 指标 | 改前 | 改后 | 提升 |
 | --- | --- | --- | --- |
@@ -396,7 +396,7 @@ Anchor Modeling 的**5 大核心组件**：
 
 > **本节小结**：
 > - 4 个真实案例（Anchor Modeling / 字节 / 阿里 / 美团）印证：**Anchor Modeling 不是「传统 DW」，是「6NF + 时序 + Anchor + Tie + Knot + 语义层」6 件套**。
-> - 关键时间线：Anchor Modeling 12+ 年 / 字节 5+ 年 / 阿里 4+ 年 / 美团 3+ 年 —— **Anchor Modeling 是 3+ 年长期工程**。
+> - 关键时间线：Anchor Modeling 14+ 年 / 字节 5+ 年 / 阿里 4+ 年 / 美团 3+ 年 —— **Anchor Modeling 是 3+ 年长期工程**。
 > - 选型第一原则：「**Anchor + 1 个 Attribute**」（**最简单**）——**10+ Anchor** → 「**Knot 共享 + 视图层**」（**必须**）→ 「**Tie 时序 + 语义层集成**」（**生产**）→ 「**6NF 物化 + 实时 Anchor**」（**AI 时代**）。
 > - 99% 的失败来自「**传统 DW 不够 + 时序数据 + 语义层缺失**」——必须有 **Anchor Modeling + Knot 治理 + 视图层**。
 > - 真正的 ROI 来自「**存储 -80% + 审计 100% + 时序 99%**」——是**大厂核心时序数据仓库基础设施的命脉**。

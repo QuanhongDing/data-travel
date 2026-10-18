@@ -93,18 +93,20 @@ CREATE TABLE dwd_order_detail (            -- 一行 = 一个订单明细行（�
 - **做法**：维度表加三列（生效时间、失效时间、是否当前版本），并在同一套体系里**只选一种「当前版本」表示法**（`9999-12-31` 或 `NULL`，不混用）；每次装载先关旧行、再插新行。
 
 ```sql
--- 1) 关掉旧版本（只对发生变化的键）
+-- 1) 关掉旧版本（只对发生变化的键；判定列 = 第 2 步要写入的全部属性列，少一列则该列的变化会被漏判）
 UPDATE dim_user SET expire_dt = DATE '${biz_date}', is_current = FALSE
 WHERE user_id IN (SELECT user_id FROM ods_user WHERE dt = '${biz_date}')
   AND is_current = TRUE
-  AND (user_name, city, vip_level) IS DISTINCT FROM
-      (SELECT user_name, city, vip_level FROM ods_user WHERE dt = '${biz_date}' AND user_id = dim_user.user_id);
+  AND (user_name, age, city, vip_level) IS DISTINCT FROM
+      (SELECT user_name, age, city, vip_level FROM ods_user WHERE dt = '${biz_date}' AND user_id = dim_user.user_id);
 
--- 2) 插入新版本
+-- 2) 插入新版本（只插刚被关掉旧版本的键与首次出现的新键；未变化的键其当前版本仍在仓，不再插）
 INSERT INTO dim_user
-SELECT user_id, user_name, age, city, vip_level,
+SELECT o.user_id, o.user_name, o.age, o.city, o.vip_level,
        DATE '${biz_date}' AS effective_dt, DATE '9999-12-31' AS expire_dt, TRUE AS is_current
-FROM ods_user WHERE dt = '${biz_date}';
+FROM ods_user o
+WHERE o.dt = '${biz_date}'
+  AND NOT EXISTS (SELECT 1 FROM dim_user d WHERE d.user_id = o.user_id AND d.is_current = TRUE);
 ```
 
 - **机制**：因为属性变更被表达成「区间」而不是「覆盖」，所以历史事实表可以按**事实发生时点的维度版本**去关联，得到「当时他是银卡」而不是「现在他是金卡」——这一条正是数仓「时变」特征在表结构上的落地。

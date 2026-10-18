@@ -56,7 +56,7 @@
 | 具名条目 / 产品 | 归属本节哪一行 | 核验方式 |
 | --- | --- | --- |
 | Iceberg V3 规范里的类型（Variant 一类，2024） | 半结构化类型进表格式 | 查该格式规范文档中该类型的标记（正式 / 提案）与所属版本，不看第三方解读 |
-| Iceberg V3 规范的第三项：行级删除（2024） | Schema 演进与 Time Travel 本身 | 查 Iceberg 表规范里删除文件的表达方式（§7.2 第 4 行、§7.3.4 的读放大）；它是回溯窗口的成本项，不是类型能力 |
+| Iceberg V3 规范的第三项：删除向量（2024） | Schema 演进与 Time Travel 本身 | 查 Iceberg 表规范里删除文件的表达方式（§7.2 第 4 行、§7.3.4 的读放大）；它是回溯窗口的成本项，不是类型能力 |
 | Delta 的向量 / 半结构化能力（Delta Lake；向量 / 半结构化类型本节不给版本断言，见 5.2.3） | 半结构化类型进表格式 | 查官方文档与 release note；「表格式的类型」与「某个引擎的私有扩展」是两件事 |
 | Paimon 的向量类型与 Schema 校验（Paimon；向量类型本节不给版本断言，见 5.2.3） | 半结构化类型进表格式 | 查该项目 release note 中该特性的状态与适用版本 |
 | Delta UniForm（随 Delta Lake 3.0 公布，2023） | 联邦 Schema 管理 | 查官方文档说明它如何让同一份数据被不同格式读取；读得到了不等于类型语义一致 |
@@ -200,7 +200,7 @@
 ### 5.4 公开进展与文献
 
 - **序列化与兼容性规则**：【公开】Apache Avro 规范（Schema Resolution 一节；1.11 系列为 2021–2024 年间的版本，规则文本以规范当前版本为准）；【公开】Confluent Schema Registry 的兼容级别文档（7.x 系列，2024；级别清单随产品版本演进，七级与非传递级别的边界见 §7.3.2）。
-- **表格式规范与实现历史**：【公开】Apache Iceberg 表规范（V3 规范 2024：Variant、Vector、行级删除；字段以 id 标识、id 不可复用；Iceberg 2018 年进入 ASF 孵化）；【公开】Delta Lake 协议规范与官方文档（Delta Lake 2019 年开源；Delta Lake 3.2 于 2024 年引入 Delta UniForm 与列映射）；【公开】Apache Hudi 的 commit 元数据与清理策略（Hudi 2017 年开源、2019 年进入 ASF；Hudi 1.0 于 2024 年发布）；【公开】Apache Paimon 1.1（2024）：主键演进与 Schema 校验。以上年份与 §4.3 的工具链梳理同源。
+- **表格式规范与实现历史**：【公开】Apache Iceberg 表规范（V3 规范 2024：Variant、Vector、删除向量；字段以 id 标识、id 不可复用；Iceberg 2018 年进入 ASF 孵化）；【公开】Delta Lake 协议规范与官方文档（Delta Lake 2019 年开源；Delta UniForm 与列映射随 Delta Lake 3.0 于 2023 年公布）；【公开】Apache Hudi 的 commit 元数据与清理策略（Hudi 2017 年开源、2019 年进入 ASF；Hudi 1.0 于 2024 年发布）；【公开】Apache Paimon 1.1：主键演进与 Schema 校验。以上年份与 §4.3 的工具链梳理同源。
 - **回溯与保留的官方口径**：【公开】Iceberg 的 `expire_snapshots`、Delta 的 `VACUUM` 保留期、Hudi 的 `clean` 与保留 commit 数（分别记在 2024 年前后版本的官方文档里，版本对应关系见 §4.3）——它们是判断「回溯窗口有多长」的唯一可靠依据，日志与博客都不算。
 - **联邦登记点**：【公开】Iceberg REST 目录规范（Iceberg 项目随版本发布的目录规范文档，查其中该部分的标记与所属版本）；【公开】目录实现与其年份——Unity Catalog（Databricks，2021 年发布、2024 年的联邦目录形态）与 Polaris（Snowflake，2024），§4.3 的「元数据目录」已列出。判定联邦能力看协议版本，不看集成清单。
 - **消息侧的兼容性标准**：【公开】Kafka 生态与注册中心的兼容级别（Confluent 的七级清单，2024 年前后版本；§6.1 的 LinkedIn 案例有 2014–2024 年的公开工程材料，判据见 §7.3.2）。判断某级别够不够用，看消费者最多落后几个版本，而不是看配置界面给了几个选项。

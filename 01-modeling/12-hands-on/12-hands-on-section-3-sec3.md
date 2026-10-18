@@ -79,8 +79,7 @@ CREATE TABLE dwd_trade_order_created (
   merchant_key BIGINT,
   date_key     INT,
   order_amount DECIMAL(18,2),          -- 度量
-  order_count  INT,                    -- 度量（可加）
-  dt           STRING
+  order_count  INT                     -- 度量（可加）
 ) PARTITIONED BY (dt STRING);
 ```
 

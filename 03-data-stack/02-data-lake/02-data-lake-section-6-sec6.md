@@ -282,15 +282,15 @@ AWS 2014 年面临**"湖"越建越像"沼泽"的行业普遍困境**：
 AWS 数据湖的**5 大核心组件**：
 
 1. **存算分离 + 三层分区布局（核心创新）**
-   - 关键设计：**S3 只负责存，计算由 Athena / EMR / Redshift 按需拉起**；湖内按 `raw / curated / aggregated` 三层布局，每层职责固定
+   - 关键设计：**S3 只负责存，计算由 Athena / EMR / Redshift 按需拉起**；湖内按 `raw / cleansed / curated` 三层布局，每层职责固定
    - 关键能力：**存储与计算解耦后，扩容不再需要搬数据**，这也是"湖"能承载 EB 级而成本可控的根本
    - 关键数字：**EB 级、存算独立扩缩**
    - 关键示意：
      ```text
      s3://data-lake/
        raw/        （原始区，只增不改）   ── Glue Crawler 建 catalog
-       curated/    （清洗区，Iceberg）     ── Lake Formation 列/行级权限
-       aggregated/ （聚合区，供 Athena）   ── Athena / Redshift Spectrum 查询
+       cleansed/   （清洗区，Iceberg）     ── Lake Formation 列/行级权限
+       curated/    （精化区，供 Athena）   ── Athena / Redshift Spectrum 查询
      ────────────────────────────────────────────────
      治理面（Lake Formation）
        · 统一 catalog：Athena / EMR / Glue / Redshift 共享同一张表定义
@@ -351,7 +351,7 @@ AWS 数据湖的**5 大核心组件**：
 **0 → 1 阶段：3-6 个月**
 
 - 选「**对象存储 + 一种表格式（Iceberg）+ 一个引擎**」（**最简单**）——**PB 级以下、1 个业务**
-- 产出：**三层目录布局（raw/curated/aggregated）+ 表格式接入 + 基础分区策略**
+- 产出：**三层目录布局（raw/cleansed/curated）+ 表格式接入 + 基础分区策略**
 - 团队：**2-3 人**
 - 验证标准：**Schema 演进不停机**、**快照可回溯**、**PB 级表查询规划 ≤ 10s**
 

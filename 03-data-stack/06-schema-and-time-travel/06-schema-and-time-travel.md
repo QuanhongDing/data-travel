@@ -166,7 +166,7 @@
 **Schema 兼容性检查的形式化**：
 
 - **加列 + 默认值**：∀ 旧数据，新 schema 可读取 → Backward Compatible。
-- **删列**：旧 schema 字段被新数据忽略 → Forward Compatible。
+- **删列**：新 schema 读旧数据时忽略已删字段 → Backward Compatible（被破坏的是 Forward：旧 reader 读新数据时该字段缺失、且无默认值可补，解析报错）。
 - **类型扩展（int → long）**：新 schema 可读旧数据 → Backward Compatible。
 - **类型收缩（long → int）**：可能溢出 → Not Compatible。
 

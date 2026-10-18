@@ -204,12 +204,13 @@ CREATE TABLE customer_name (
 );
 -- Attribute：低频变化字段合并进一张表
 CREATE TABLE customer_simple_attrs (
-    customer_id BIGINT NOT NULL,
-    gender      CHAR(1),
-    birthday    DATE,
-    valid_from  TIMESTAMPTZ NOT NULL,
-    valid_to    TIMESTAMPTZ,
-    loaded_at   TIMESTAMPTZ NOT NULL,
+    customer_id   BIGINT NOT NULL,
+    gender        CHAR(1),
+    birthday      DATE,
+    valid_from    TIMESTAMPTZ NOT NULL,
+    valid_to      TIMESTAMPTZ,
+    loaded_at     TIMESTAMPTZ NOT NULL,
+    source_system VARCHAR(50) NOT NULL,
     PRIMARY KEY (customer_id, valid_from, loaded_at),
     FOREIGN KEY (customer_id) REFERENCES customer(id)
 );
@@ -245,12 +246,13 @@ CREATE TABLE order_amount (
     valid_from       TIMESTAMPTZ NOT NULL,
     valid_to         TIMESTAMPTZ,
     loaded_at        TIMESTAMPTZ NOT NULL,
+    source_system    VARCHAR(50) NOT NULL,
     FOREIGN KEY (order_id) REFERENCES "order"(id),
     FOREIGN KEY (currency_knot_id) REFERENCES knot_currency(id)
 );
 ```
 
-**怎么用**：照抄结构与主键，但**时态列一律用带时区的 `TIMESTAMPTZ`** —— 用无时区的 `TIMESTAMP` 时，跨时区装载会把同一个 `valid_from` 解释成两个不同的时刻，而这类错误只在跨区域对账时才现形。四处不要照抄：`BIGSERIAL` 换成你所在库的等价写法、`metadata JSONB` 按需删掉、`deleted_at` 这一可选列只在需要区分「删了」与「改了」时保留（不留就连它的判定逻辑一起删）、`source_system` 一列如果上游只有单一来源可以省（Anchor / Attribute / Tie 三处一起省）。**最容易照抄踩中的是 ID 生成方式**：模板里两张 Anchor 表的主键都用 `BIGSERIAL`，这只在「一个域一套 ID 空间」时成立；一旦装载要在两个域或多个源之间合并同一实体，两段自增序列无法对齐，症状是跨域报表里客户数偏多（失效条件见 4.2「Anchor DDL 规范」）。这种情形下要换成全局分配 + 兼并对齐表，并在 Step 2 就写进规范。
+**怎么用**：照抄结构与主键，但**时态列一律用带时区的 `TIMESTAMPTZ`** —— 用无时区的 `TIMESTAMP` 时，跨时区装载会把同一个 `valid_from` 解释成两个不同的时刻，而这类错误只在跨区域对账时才现形。四处不要照抄：`BIGSERIAL` 换成你所在库的等价写法、`metadata JSONB` 按需删掉、`deleted_at` 这一可选列只在需要区分「删了」与「改了」时保留（不留就连它的判定逻辑一起删）、`source_system` 一列如果上游只有单一来源可以省（Attribute / Tie 两处一起省）。**最容易照抄踩中的是 ID 生成方式**：模板里两张 Anchor 表的主键都用 `BIGSERIAL`，这只在「一个域一套 ID 空间」时成立；一旦装载要在两个域或多个源之间合并同一实体，两段自增序列无法对齐，症状是跨域报表里客户数偏多（失效条件见 4.2「Anchor DDL 规范」）。这种情形下要换成全局分配 + 兼并对齐表，并在 Step 2 就写进规范。
 
 **模板 2：Bitemporal CDC 装载（四段式）**
 

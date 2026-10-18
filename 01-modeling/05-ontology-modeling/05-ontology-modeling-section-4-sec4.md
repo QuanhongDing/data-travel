@@ -232,7 +232,7 @@
                           owl:onProperty :hasLifetimeValue ;
                           owl:someValuesFrom [ a rdfs:Datatype ;
                                                owl:onDatatype xsd:decimal ;
-                                               xsd:minInclusive 10000 ] ] .
+                                               owl:withRestrictions ( [ xsd:minInclusive "10000"^^xsd:decimal ] ) ] ] .
 
 :hasCustomerId a owl:DatatypeProperty , owl:FunctionalProperty ;
     rdfs:domain :Customer ; rdfs:range xsd:string .
@@ -249,6 +249,7 @@
 
 ```turtle
 @prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix : <http://example.com/ecom#> .
 
 :CustomerShape a sh:NodeShape ;
