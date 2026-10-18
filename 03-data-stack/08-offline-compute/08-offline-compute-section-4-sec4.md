@@ -1,184 +1,227 @@
-> 本文件是 **08-offline-compute.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](08-offline-compute.md)。
+> 本文件是 **08-offline-compute.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](08-offline-compute-section-3-sec3.md) 里选定的模式装进一个真实的集群与一批存量作业：顺序、判据、产物与存量迁移。完整章节请回到 [index](08-offline-compute.md)。
 
 ## 4. 工程实现
 
+§3 把 8 个模式按「被什么约束逼出来」拆过一遍，并给了选型决策表。§4 回答下一个问题：**引擎定了之后，集群容量按什么口径规划、作业模板里固定住哪几条、已有的 Hive 资产怎么办。** 术语沿用主文件 [§2 核心原理](08-offline-compute.md) 与 §3，不另立口径：**中间结果落点**、**shuffle 放大倍数**、**执行屏障**、**表格式与快照**、**Metastore**、**AQE**、**数据倾斜**。
+
+读者分两类。**从零搭建**的团队按 4.1 的六步走，4.4 可以略读；**已有 Hive / Spark 存量作业与调度**的团队建议先读 4.4——存量组织最贵的成本不是把 Spark 配好，而是决定哪些作业原地不动、哪些只改动的部分、哪些打标挂账，这件事的顺序与新建完全不同。主文件速读地图指向的那一节（数据倾斜怎么治理）就是 4.2。
+
 ### 4.1 落地步骤
 
-**Step 1：选型引擎（1-2 周）**
+**Step 1：选型引擎（1–2 周【经验】，随候选引擎数与存量方言差异变）**
 
-- 通用：Spark。
-- 联邦：Trino。
-- 内嵌：DuckDB。
-- 阿里：MaxCompute。
+1. 把候选压到四个默认档：通用批处理用 Spark；跨源即席查询用 Trino；单机装得下的分析用 DuckDB；EB 级单表且接受绑定的用 MaxCompute（阿里）一类云托管算力。
+2. 不按「统一技术栈」选，按作业的关键约束选：含不含多轮宽依赖、需不需要跨源、单次扫描量除以内存是多少（§3.3 决策表）。
+3. 存量侧先只回答一个问题：现有表有没有 Metastore 条目——有，迁移是换执行引擎；只有对象存储 URI，迁移要先补一层表格式与注册流程。
 
-**Step 2：集群规划（2-4 周）**
+- **产物**：引擎清单 + 每个引擎负责的作业类型；存量表按「有 / 无 Metastore 条目」分两栏的清单。
+- **判据**：拿一个最典型的作业，逐条对 §3.3 的决策表，能否指出唯一一个该用的引擎（能指出两个说明判据还没定死）；再抽 10 张存量表，分别答出它的 Metastore 状态。
+- **为什么必须第一步**：引擎决定了后面所有的调优参数、运维面与排障路径——每多引入一种引擎，就多一条排障路径（§3.7 最后一条）。顺序反了不会立刻出错，但会把选型的代价推给三年后的迁移。
 
-- 节点数（按数据量 / 业务）。
-- Executor 内存 / Core 配置。
-- 动态分配。
+**Step 2：集群与容量规划（2–4 周【经验】，随并行作业数与中间结果规模变）**
 
-**Step 3：SQL / DataFrame 编程规范（1-2 周）**
+1. 容量口径以**中间结果**为准，不以输入量为准：先量出最近一次全量作业的 shuffle 落盘量，再乘并行作业数得到磁盘与网络的底数。
+2. Executor 内存与 core 按「峰值并发分区数 × 单分区处理内存」估，不按模板抄。
+3. 开启动态分配，同时为倾斜作业保留上限——动态分配解决的是「空闲时空转」，不解决「峰值时倾斜」。
 
-- 优先 DataFrame。
-- AQE 开启。
-- 分区剪裁、列剪裁。
+- **产物**：容量规划表（峰值并发作业数 × 单作业 shuffle 落盘量 = 磁盘需求；节点数 / Executor 内存 / core 三个参数及其依据）。
+- **判据**：算出最近一次全量作业的 shuffle 放大倍数（落盘量 ÷ 输入量），看是否大于 1–3 倍【经验】——大于时容量必须按中间结果做；再核一遍本地盘能否装下这个量级，装不下就先改落对象存储，而不是加节点（§3.6 第二条跃迁）。
+- **为什么排在编程规范之前**：容量口径错了，后面所有调优都是在错误的瓶颈上做局部优化；而这条口径由依赖形态（多轮宽依赖）决定，不由数据量数字决定。
+
+**Step 3：SQL / DataFrame 编程规范（1–2 周【经验】）**
+
+1. 优先 DataFrame / Spark SQL；RDD 只在 SQL 表达不了的场合用（§3.5 第一条反模式）。
+2. 确认 AQE 真的生效：`spark.sql.adaptive.enabled` 自 Spark 3.2.0 起默认为 true【公开，Apache Spark 3.2 Release Notes, 2021，可在官方发布说明中按版本号与条目 SPARK-33679 核验】，旧版本需显式开启——「3.0 引入」与「3.2 起默认」是两件事，不要合并。
+3. 把所有下推前提写进模板：分区剪裁、列剪裁、谓词下推；自定义 UDF 单独评审，因为它让优化器整段失效。
+4. 资源请求、分区策略与写入格式固定进作业模板，不要散落在提交脚本里。
+
+- **产物**：一份作业模板（含 AQE 与下推相关配置、资源请求、写入格式）+ 一条 CI 检查。
+- **判据**：抽 3 个新作业，打开执行计划看扫描的分区数与列数是否等于过滤后的量；再 grep 一遍作业代码里有没有 `map` / `reduceByKey` 这类算子级 API 与未经评审的 UDF。
+- **为什么必须这一步**：它是唯一能在写代码阶段就消掉倾斜与小文件成因的一步——后面两步都是事后治理，成本形态完全不同。
 
 **Step 4：数据倾斜治理（持续）**
 
-- AQE 自动处理。
-- 手动优化两阶段聚合。
+1. 先量再治：把「stage 内最长 task 耗时 ÷ 中位 task 耗时」做成例行指标，比值到一个量级就当作倾斜【经验，同 §3.5】。
+2. AQE 侧打开倾斜 Join 处理与分区合并；手动侧用两阶段聚合（加盐）、广播 Join、先过滤倾斜 key 三条。
+3. 把治理动作固化进模板：加盐片段、广播阈值、倾斜 key 清单都写进作业模板，而不是每次临时改。
 
-**Step 5：监控 + 调优（持续）**
+- **产物**：倾斜 key 清单 + 一个「最长 / 中位 task 耗时比」的看板 + 写进模板的加盐片段（见 4.5 模板 5）。
+- **判据**：抽 3 个历史慢作业，看比值现在是否落回一个量级内；再比对加盐后局部聚合与全局聚合两次结果与治理前是否一致——这一步不能只对耗时，必须对结果。
+- **为什么排在监控之前**：倾斜的代价在被屏障的引擎上按「最慢分区」计费（§3.5），所以必须先有倾斜的判定口径，监控面板才知道该画哪条线；先建监控再定口径，会得到一个看不出倾斜的漂亮看板。
 
-- Spark UI / History Server。
-- Ganglia / Prometheus + Grafana。
+**Step 5：监控与调优（持续）**
+
+1. 接三大件：Spark UI / History Server 看单作业；Ganglia 或 Prometheus + Grafana 看集群与主机。
+2. 面板只留三个进决策的指标：shuffle 放大倍数、单分区文件数、最长 / 中位 task 耗时比。
+3. 每个作业带 Owner 与 SLA，慢作业的排障结论回写到模板，否则同一个坑每次都重踩。
+
+- **产物**：三个指标的看板 + 慢作业排障记录。
+- **判据**：随便挑一个作业，能否在 5 分钟内回答「它慢在哪」——答案要落在「数据倾斜 / 小文件 / UDF / 资源不足」中的某一个，而不是「再跑一遍看看」。
+- **为什么必须持续做**：这三个指标反映的是作业形态随数据增长的变化（单分区文件数随每日写入线性增长），不做的后果不是不知道现状，而是不知道它什么时候变了。
 
 **Step 6：AI 集成（按需）**
 
-- Spark AI Functions。
-- DuckDB + LLM。
+1. 模型调用表达成列表达式 / 表函数，与普通算子一起进计划，让过滤与剪裁在调用之前生效。
+2. 外呼必须限流、退避重试并加幂等键；结果先物化再复用，避免重跑即重新付费。
+3. DuckDB + LLM 这类本地路径用于「已经算好的结果集」上的交互分析，不要用它承接生产批作业。
+
+- **产物**：AI 特征 / Embedding 的物化表 + 幂等键设计 + 「调用成本进入作业成本函数」的一行记录。
+- **判据**：用 `EXPLAIN` 看过滤是否在调用算子之前生效；再算一次「单次调用成本 × 调用次数」，与「先物化再复用」的方案对比。
+- **为什么放在最后**：它把外部调用的成本与失败模式引进作业，必须在容量口径与监控指标稳定之后再上，否则一次重跑会同时打爆配额与账单。
+
+**最常被跳过的是 Step 3 里的两条**——「确认 AQE 真的生效」与「UDF 评审」。它们看起来是常识，所以没人专门做。跳过后第一个出问题的时点通常不是上线当天，而是第一次全量重跑：表现为「SQL 逻辑一样、结果一样，就是比隔壁团队慢」，查执行计划才发现优化器从来没看到那段逻辑（§3.5 滥用 UDF 的暴露方式）。
 
 ### 4.2 关键技术点
 
 **1. Spark AQE 配置**
 
+- **做法**：确认 `spark.sql.adaptive.enabled`、`skewJoin`、`coalescePartitions` 三项生效；倾斜阈值按自己的分区大小分布取值，不要照抄示例。
+
 ```sql
--- 开启 AQE
 SET spark.sql.adaptive.enabled = true;
 SET spark.sql.adaptive.skewJoin.enabled = true;
 SET spark.sql.adaptive.coalescePartitions.enabled = true;
+-- 以下两项是示例取值：按你自己的分区大小分布重新定
 SET spark.sql.adaptive.skewJoin.skewedPartitionFactor = 5;
 SET spark.sql.adaptive.skewJoin.skewedPartitionThresholdInBytes = 256mb;
 ```
 
+- **机制**：因为 AQE 在 stage 完成后拿真实统计信息重规划，所以分区数与 Join 策略由运行时数据决定，而不是由编译期估计决定——「末段大量空分区仍要调度」与「小分区过多」这两类低效因此在计划层被消掉。
+- **失效条件**：**当作业是长窗口、stage 数量很少、或含大量 UDF 时**，AQE 能调整的空间很小——它调整的是分区与 Join，修正不了「优化器看不见的逻辑」。症状是把 AQE 打开后耗时几乎没变；此时该查的是 UDF 与算子级 API，不是继续调 AQE 参数。
+- **档位**：默认值事实为【公开】（Apache Spark 3.2 Release Notes, 2021）；阈值取值为【经验】。
+
 **2. 数据倾斜治理**
 
-```python
-# 两阶段聚合（Salting）
-from pyspark.sql.functions import concat, lit, rand
+- **做法**：三选一或叠加——AQE 倾斜 Join 处理（自动）、两阶段聚合加盐（手动，见 4.5 模板 5）、小表广播；极端倾斜 key 先过滤再聚合。
+- **机制**：因为屏障型引擎在 stage 边界等最慢的分区，倾斜的代价按最慢分区而不是平均值计费，所以把大 key 拆成若干子 key 做局部聚合、再合并，能把「一个 task 跑几小时」压成「若干 task 各跑几分钟」。
+- **失效条件**：**当热点 key 随时间漂移（今天的爆款不是明天的）时**，写死的盐值与广播阈值会从优化变成负担。症状是治过的作业过一段时间又慢回来，且加盐代码里还留着上一轮的热点 key 清单。修法是把热点识别做成例行任务，而不是一次性清单。
+- **档位**：为【经验】。
 
-# 加盐
-salted_df = df.withColumn("salt_key", concat(col("user_id"), lit("_"), (rand() * 10).cast("int")))
+**3. Spark + Iceberg（写入与 Time Travel）**
 
-# 局部聚合
-partial_agg = salted_df.groupBy("salt_key", "user_id") \
-    .agg({"amount": "sum"})
-
-# 全局聚合
-final_agg = partial_agg.groupBy("user_id") \
-    .agg({"sum(amount)": "sum"})
-```
-
-**3. Spark + Iceberg**
-
-```python
-# Spark + Iceberg 写入
-df.writeTo("iceberg.orders") \
-    .partitionedBy(days("order_time")) \
-    .createOrReplace()
-
-# Time Travel
-df_yesterday = spark.read \
-    .option("as-of-timestamp", "2025-01-15 10:00:00") \
-    .table("iceberg.orders")
-```
+- **做法**：写入走表格式的写入口并显式声明分区；回溯用快照（`as-of-timestamp` 或快照 ID），不复制一份数据。写法见 4.5 示例 1。
+- **机制**：因为表格式把表定义与快照从 Metastore 抽到数据文件旁的元数据文件里，所以同一份数据可以被 Spark 写、被 Trino 读、被 DuckDB 直读——写读分离才在工程上成立（§3.2.3）。
+- **失效条件**：**当写入方从一个变成多个时**，「一份数据两处用」会反转成快照互相覆盖、口径对不上，因为提交协议只在单写者语义下保证原子性（§3.2.3 的失效点）。另一个方向是快照保留过长：症状是存储放大持续上升，而回溯需求一年也发生不了几次。
+- **档位**：Iceberg 由 Netflix 开发并开源、2018 年捐入 Apache 基金会孵化器、2020 年毕业为顶级项目【公开，可在 Apache 基金会项目公告与 Iceberg 官网核验】。
 
 **4. DuckDB 内嵌分析**
 
-```python
-import duckdb
+- **做法**：进程内直读 Parquet 路径，或把已经在内存里的 DataFrame（`pd.read_parquet` / 上游 pandas 算出的结果）按变量名交给 SQL 引擎直接查询——两条路径不同，后者省掉的是二次解析而不是扫描；只用于单机装得下的分析与 Notebook 场景，分析对象优先取「已经算好的结果表」（写法见 4.5 示例 2）。
+- **机制**：因为引擎在进程内按列式批次向量化执行，省掉的是 shuffle 与调度这两项开销，而不是少算了数据——单机能容纳的数据上，这部分开销往往就是大部分耗时（§3.2.5）。
+- **失效条件**：**当单次扫描量超过内存约 5 倍时**（64 GB 内存约 320 GB）【经验】，「省掉 shuffle」反转成磁盘往返主导，此后每个算子都要读写盘。症状是同一查询在 1 倍、2 倍、5 倍内存的数据量上耗时呈超线性上升。它没有分布式出路，也没有细粒度恢复——单进程失败即重来。
+- **档位**：倍数阈值为【经验】。
 
-# 直接查询 Parquet
-result = duckdb.query("""
-    SELECT
-        region,
-        SUM(amount) AS gmv,
-        COUNT(DISTINCT user_id) AS users
-    FROM read_parquet('s3://lake/orders/*.parquet')
-    WHERE order_time BETWEEN '2025-01-01' AND '2025-01-31'
-    GROUP BY region
-    ORDER BY gmv DESC
-""").to_df()
-```
+**5. Spark 4.0 及后续版本的新特性**
 
-**5. Spark 4.0 新特性（2024 路线图）**
+- **做法**：按发布记录逐项核验后再用，而不是按路线图排期：Spark Connect（把客户端与执行端解耦）、Structured Streaming 的持续改进、模型调用类表函数（AI Functions）、Spark SQL 的半结构化与向量类型（如 VARIANT）。
+- **机制**：因为模型调用被表达成计划里的一个算子，分区剪裁与谓词下推能在它之前生效，调用次数因此由数据的选择性决定，而不是由表的大小决定（§3.2.8）。
+- **失效条件**：**当模型调用位于计划下游、且上游数据量极大时**，「下推省调用」反转成「重跑即重新付费」——任何一次 stage 失败都会让已算数据上的调用重打一遍。修法是先把结果物化，再对其加幂等键。
+- **档位**：开源发行版提供半结构化类型与 Spark Connect 一类能力，模型调用类表函数主要由托管发行版提供，**具体函数与可用性以你所用发行版的官方文档为准**（该接口随版本演进，故不锚定年份）。
 
-- **Spark Connect**：解耦 Driver / Executor，远程连接。
-- **Structured Streaming 改进**：流批融合。
-- **AI Functions**：内置 Embedding / LLM。
-- **Spark SQL 增强**：Variant 类型、向量类型。
+**6. 小文件合并（compaction）**
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+- **做法**：写入侧定期合并 + 用表格式自带的合并机制；把「单分区文件数」做成监控指标并设触发阈值。
+- **机制**：因为文件级元数据操作与任务调度开销随文件数增长，而计算量不随文件数增长，所以文件数到某个量级后启动开销会超过处理时间——此时加机器没用，因为瓶颈不在算力。
+- **失效条件**：**当单分区文件数到上万【经验】时**（§3.5 的症状口径），作业启动时间超过计算时间。另一个症状更隐蔽：同一份数据合并之后，谓词下推能裁掉的分区才真正被裁掉，扫描量可能下降一个量级——所以合并不只是提速，它还改变了扫描口径。
+- **档位**：文件数量级为【经验】。
 
-**离线计算引擎（2024-2025）**：
+### 4.3 工具链与平台
 
-| 工具 | 版本 | 特点 |
+表里给的是类别与判据，不是推荐组合。版本号不写死：各引擎的版本与能力以官方发布记录为准，接进来之前在发布说明里逐条核验。
+
+| 类别 | 候选 | 选型判据 | 不选它的代价 |
+| --- | --- | --- | --- |
+| 通用批处理 | Apache Spark | 作业含多轮宽依赖、需要细粒度恢复与表格式写入 | 换成不设执行屏障的引擎，一次 stage 失败就要整条重跑 |
+| SQL-on-Hadoop | Apache Hive（保留 Metastore 与方言兼容角色） | 表定义、分区、权限已在 Metastore 里，且不打算一次性迁移 | 直接换引擎而不保留 Metastore，等于把元数据迁移的风险提前到第一天 |
+| 联邦查询 | Trino；Presto（分叉前身，主线已转向 Trino） | 数据分散在数仓 / 关系库 / 消息队列，且跨源查询是例外而非常态 | 把联邦查询当日常，每次都在源端重复全表扫描（§3.2.4 失效点） |
+| 内嵌 OLAP | DuckDB | 单次扫描量装得进内存、分析在本地或 Notebook 完成 | 用它承接生产批作业，扫描量一旦越过内存数倍，既无分布式出路也无细粒度恢复 |
+| 云托管算力 | MaxCompute（阿里）一类托管引擎 | EB 级单表，且接受与云端元数据、调度、权限绑定 | 拒绝绑定就要自建容量与跨层优化，而这两件事在多引擎拼接的栈里没有人负责 |
+| 资源调度 | YARN；Kubernetes；自研调度（字节、Netflix 一类有自研栈的组织） | 集群是专有还是与在线服务混部；是否有多租户配额需求 | 调度是隐式选择时，资源争抢会以「作业偶发变慢」的形式出现，且查不到原因 |
+| 多租户 SQL 网关 | Apache Kyuubi | 多个团队共用一套 Spark 集群，需要排队、配额与鉴权 | 一个团队的倾斜作业会拖慢所有人，排障只能靠人工协调 |
+| 作业提交与交互 | Apache Livy（REST 提交）；Apache Zeppelin / Jupyter（Notebook） | 是否需要把作业提交做成服务；分析师是否需要 Notebook 入口 | 靠手工提交脚本时，资源请求与参数会散落在各人的 shell 历史里 |
+| 可观测 | Spark UI / History Server；Prometheus + Grafana；Ganglia（历史方案） | 面板上的指标能否直接进决策（shuffle 放大倍数 / 单分区文件数 / 最长与中位 task 耗时比） | 只上通用主机监控时，CPU 与内存都正常，而作业已经倾斜 |
+
+**这一类里最容易被误选的是「把 Presto 与 Trino 当成同一个产品」**：两者在 2018 年末分叉、2019 年初各自发布，主线与社区适配都在 Trino 一侧（时间线见 §3.2.4，属【公开】事实）。选错了不会立刻坏，但连接器适配、版本升级与社区支持的落点会持续偏离——症状是照着 Trino 文档配的参数在自己的 Presto 上不生效。判定方法只有一个：查自己部署的发行版与版本号，按该发行版官方发布记录核验连接器是否仍在维护。
+
+### 4.4 存量迁移
+
+存量迁移的目标不是「全量重写」，而是**在不中断产出的前提下把已有资产迁到新的引擎与表格式上，并且随时可回退**。四步按「只读盘点 + 立刻见效的动作 → 分类处置 → 双轨 → 收口」排。
+
+**① 先做两件立刻见效且可回退的事（1–2 周【经验】）**
+
+第一件：给现有表分两栏——有 Metastore 条目的、只有对象存储 URI 的。只读不改，产出的是一份事实基线，决定后面工作量是「换引擎」还是「补一层表格式与注册流程」。第二件：把 AQE 与动态分配打开并实测一次全量作业（旧版本需显式开启，3.2.0 起默认 true【公开，Apache Spark 3.2 Release Notes, 2021】），记录 shuffle 放大倍数与最长 / 中位 task 耗时比。两件都可回退：前者不改数据，后者是配置项，随手可关。
+
+**判据**：两栏各有多少张表？把「只有 URI」那一栏乘以每张表补表格式的工时，就是迁移工期的底数（周级到月级【经验】）；再看实测出的 shuffle 放大倍数是否大于 1–3 倍【经验】，大于则容量规划按中间结果重做。
+
+**② 历史资产分类处置（不要全部返工）**
+
+| 存量资产 | 处置 | 理由 |
 | --- | --- | --- |
-| Apache Spark | 3.5+（4.0 路线） | 主流离线引擎 |
-| Apache Hive | 3.x | 传统 SQL-on-Hadoop |
-| Trino | 420+ | 联邦查询 |
-| Presto | 0.28x（停滞） | Trino 前身 |
-| DuckDB | 1.x | 内嵌 OLAP，AI 时代新宠 |
-| MaxCompute（阿里） | - | 云原生离线 |
+| 表与分区 | 有 Metastore 条目的原地不动；只有 URI 的打标挂账，标注「待注册」 | 一次性重写分区与文件布局的风险高于收益，而且不能停机 |
+| 作业 SQL（HQL） | 只改「本季度要动的那些」，其余保留在 Hive on Spark 上 | HQL 到 Spark SQL 的方言差异按作业逐个暴露，批量重写会把它集中在一次发布里爆发 |
+| 自定义 UDF | 逐个评审：能换成内置函数或向量化实现的先换，其余登记为「不可下推逻辑」 | UDF 是优化器看不到的逻辑，它决定这个作业未来还能不能被优化（§3.5） |
+| 小文件 | 先只合并「被查得最多的那批表」的分区 | 合并要重写数据、有成本，按访问频率排优先级比按表数量平均推进划算 |
+| 调度与依赖 | 原地不动，把 DAG 依赖作为血缘的一部分保留 | 换调度是独立项目，与算力迁移捆在一起会让两个风险同时爆发 |
 
-**资源调度**：
+**判据**：抽 3 个已完成迁移的作业，比对迁移前后的产出——行数与关键聚合是否**逐分区**一致（这是双跑校验的最小口径，只比总行数会漏掉分区错位）；再抽 3 个 UDF，确认每一个都有「保留 / 替换」的结论，没有「暂时没管」的。
 
-- YARN：传统。
-- K8s：云原生。
-- 自研（字节 / Netflix）。
+**③ 双轨怎么维持、维持多久**
 
-**辅助工具**：
+双轨有两条常见形态：**引擎双轨**（同一份数据在 Hive on Spark 与新引擎上各跑一遍，对比产出）与**表双轨**（旧 Hive 表与新表格式表并存，写入侧双写一段时间）。维持 **1–3 个月**【经验，随表数量与产出时点敏感度变——财务类 T+1 产出的双跑窗口通常更长】。
 
-- Apache Zeppelin / Jupyter：Notebook。
-- Apache Livy：Spark REST。
-- Apache Kyuubi：多租户 Spark SQL 网关。
+双轨期三条纪律：① 同一份逻辑只有一个权威版本，另一侧只做产出对比、不对外供数；② 每次对比都要记录差异行数与差异原因，差异不能以「大致一致」结案；③ 双轨期产出延迟上升是必然的，不要在双轨期同时压延迟指标。
 
-### 4.4 代码 / 示例
+**④ 什么信号说明可以退出双轨**
 
-**示例 1：Spark + Iceberg + AQE**
+三个可观测信号，同时出现两个即可收口：① 新路径的逐分区产出与旧路径连续若干周期完全一致（不是「大致一致」）；② 新作业不再产生 HQL，且存量作业里本季度没有回退到旧引擎的记录；③ 「只有对象存储 URI」的表数量已归零，或只剩挂账清单里明确不再维护的部分。
+
+**恰好只有一个信号成立（1/3）时的动作，是既有的规则里最容易卡住读者的一档**：它既没到两个信号的收口线，也还没到「缩小双轨范围」的地步，正确动作是**继续双轨，但把下一周期的动作限定为「补齐那两条不成立信号各自的前置条件」**——例如只有 ① 成立（产出已经对得上）、② ③ 不成立时，下一周期就只做两件事：把「待注册」的表注册完、把还在产出 HQL 的作业列出名单；而不是原样再等一个周期看同样的三个信号。判据是：同一个信号连续两个周期不成立，说明卡住它的是某个具体前置条件（缺注册流程、缺方言改写人天），不是时间不够，此时应当去解那个条件。
+
+若经过两个完整周期三个信号全不成立（0/3），正确的动作是**把双轨范围缩小到「本季度必须迁的那几张表」**，而不是继续全量双轨：双轨的隐性成本是所有作业的资源与产出时点都被拉长，而收益只体现在少数关键表上。三个信号一档比一档更接近收口，动作也各不相同：2–3 个 → 收口；1 个 → 补前置条件；0 个 → 缩小范围。
+
+**迁移期最常见的三个错误**：① **先改表格式、再补容量口径**——表格式让扫描与写入形态都变了，此时才发现容量是按输入量估的，要重算的就不只是数字；② **把双跑校验做成「总行数对比」**——分区错位与口径漂移都看不出来，等发现时已经对外供数；③ **迁移与调度改造同时开工**——两个风险同时爆发时，排障无法区分是算力问题还是依赖问题。
+
+### 4.5 模板 / 示例
+
+**示例 1：Spark + Iceberg + AQE（写入侧与回溯）**
 
 ```python
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, sum, count
+from pyspark.sql.functions import col, sum as _sum, count
 
-spark = SparkSession.builder \
-    .appName("OfflineLakehouse") \
-    .config("spark.sql.catalog.iceberg", "org.apache.iceberg.spark.SparkCatalog") \
-    .config("spark.sql.catalog.iceberg.type", "hive") \
-    .config("spark.sql.catalog.iceberg.uri", "thrift://metastore:9083") \
-    .config("spark.sql.adaptive.enabled", "true") \
-    .config("spark.sql.adaptive.skewJoin.enabled", "true") \
-    .getOrCreate()
+spark = (SparkSession.builder
+    .appName("OfflineLakehouse")
+    .config("spark.sql.catalog.iceberg", "org.apache.iceberg.spark.SparkCatalog")
+    .config("spark.sql.catalog.iceberg.type", "hive")
+    .config("spark.sql.catalog.iceberg.uri", "thrift://<metastore>:9083")
+    .config("spark.sql.adaptive.enabled", "true")
+    .config("spark.sql.adaptive.skewJoin.enabled", "true")
+    .getOrCreate())
 
-# 读取 Iceberg 表
-df = spark.read.table("iceberg.silver.orders")
+df = spark.read.table("iceberg.silver.orders")            # 过滤尽量下推到读
+gold = (df.filter(col("dt").between("2025-01-01", "2025-01-31"))
+          .groupBy("user_id", "dt")
+          .agg(_sum("amount").alias("gmv"), count("order_id").alias("orders")))
 
-# 离线聚合（Gold 层）
-gold_df = df.groupBy("user_id", "dt") \
-    .agg(
-        sum("amount").alias("gmv"),
-        count("order_id").alias("orders")
-    )
+gold.writeTo("iceberg.gold.user_daily_orders").partitionedBy("dt").createOrReplace()
 
-# 写入 Iceberg Gold
-gold_df.writeTo("iceberg.gold.user_daily_orders") \
-    .partitionedBy("dt") \
-    .createOrReplace()
+yesterday = (spark.read                                  # 回溯：按快照读，不复制数据
+             .option("as-of-timestamp", "2025-01-15 10:00:00")
+             .table("iceberg.orders"))
 ```
 
-**示例 2：DuckDB AI 时代分析（2024 新工具）**
+**怎么用**：catalog 类型与 uri 两格必须换成本地实际的 Metastore 地址；`partitionedBy` 的分区键要与查询里最常出现的过滤列一致，否则回溯能力有了、剪裁没生效；`as-of-timestamp` 是示例时间，实际按快照时间点或快照 ID 填；写入方必须唯一（§3.2.3 的失效点），多引擎同时写这张表时先解决提交协议再谈迁移。
+
+**示例 2：DuckDB 内嵌分析（先确认上界）**
 
 ```python
 import duckdb
 
-# 直接读 Parquet + 向量化计算
 result = duckdb.query("""
-    SELECT
-        region,
-        product_category,
-        SUM(amount) AS gmv,
-        COUNT(DISTINCT user_id) AS unique_users,
-        AVG(amount) AS avg_order
+    SELECT region, product_category,
+           SUM(amount) AS gmv,
+           COUNT(DISTINCT user_id) AS unique_users,
+           AVG(amount) AS avg_order
     FROM read_parquet('s3://lake/orders/dt=2025-01-01/*.parquet')
     WHERE order_status = 'paid'
     GROUP BY region, product_category
@@ -186,49 +229,79 @@ result = duckdb.query("""
     LIMIT 100
 """).to_df()
 
-print(result.head())
-
-# DuckDB + Pandas（嵌入分析）
+# DuckDB + Pandas（嵌入分析）：对已在内存的 DataFrame 直接查询
 import pandas as pd
-df = pd.read_parquet("s3://lake/orders/dt=2025-01-01/")
+
+df = pd.read_parquet("s3://lake/orders/dt=2025-01-01/")   # 数据先进内存
 result = duckdb.query("""
     SELECT region, SUM(amount) FROM df GROUP BY region
 """).to_df()
 ```
 
-**示例 3：Trino 联邦查询**
+**怎么用**：路径与分区两格换成自己的；跑之前先量一次 `read_parquet` 的扫描量，超过内存约 5 倍【经验】就换引擎（§3.2.5 的失效点）——这条上界是选它的前提，给不出上界时不要用它接生产任务。它没有 Metastore、没有权限体系与并发写，别把它当成共享资产的出口。
+
+第二段与第一段不是同一条路径，不要混用：`duckdb.query` 里的 `FROM df` 是按变量名引用 Python 作用域里**已经在内存中的 DataFrame**（`pd.read_parquet` 已经把它读进来一次），DuckDB 不再自己去扫 Parquet；第一段的 `read_parquet(...)` 是让 DuckDB 按路径直读、由它决定读哪些列与行。选第二段的唯一理由是数据**已经**在内存里（Notebook 里刚算完、或上游已经 pandas 读过一次），此时省掉的是二次解析；若数据还在盘上，直接走第一段——先 pandas 读一遍再交给 DuckDB，等于把同一份数据搬两趟，内存占用还多一份。
+
+**示例 3：Trino 联邦查询（含下推核验）**
 
 ```sql
--- Trino 跨源查询（Hive + MySQL + Kafka）
-SELECT
-    o.order_id,
-    o.amount,
-    c.user_name,
-    c.email,
-    k.event_type
-FROM hive.sales.orders o
-JOIN mysql.crm.customers c ON o.user_id = c.id
-LEFT JOIN kafka.events.user_events k ON o.user_id = k.user_id
-WHERE o.dt = '2025-01-01';
+SELECT o.order_id, o.amount, c.user_name, c.email, k.event_type
+FROM   hive.sales.orders  o
+JOIN   mysql.crm.customers c ON o.user_id = c.id
+LEFT   JOIN kafka.events.user_events k ON o.user_id = k.user_id
+WHERE  o.dt = '2025-01-01';
 ```
 
-**示例 4：Spark Structured Streaming（流批融合）**
+**怎么用**：跑一次之后看**源端实际返回的行数**，而不是只看总耗时——下推不到的跨源查询会把整表拉进计算集群；同时观察 Coordinator 与 worker 谁先饱和（规划发生在单点上）。跨源查询从例外变成常态时，正确动作是把高频部分物化成表，不是继续优化这条 SQL。
+
+**示例 4：Structured Streaming 的离线语义（流批一体过渡）**
 
 ```python
-# Spark Structured Streaming Trigger.Once 模式（流式接口 + 离线语义）
-streaming_df = spark.readStream \
-    .format("kafka") \
-    .option("kafka.bootstrap.servers", "kafka:9092") \
-    .option("subscribe", "orders") \
-    .load()
+streaming_df = (spark.readStream.format("kafka")
+                     .option("kafka.bootstrap.servers", "<broker>:9092")
+                     .option("subscribe", "orders").load())
 
-# 离线语义：只处理一次（Trigger.Once）
-query = streaming_df.writeStream \
-    .format("iceberg") \
-    .option("path", "iceberg.orders") \
-    .option("checkpointLocation", "s3://checkpoints/orders") \
-    .trigger(availableNow=True) \  # 类似 Trigger.Once，处理完所有数据后停止
-    .start()
+query = (streaming_df.writeStream
+         .format("iceberg")
+         .option("path", "iceberg.silver.orders")     # sink 目标：不可省
+         .option("checkpointLocation", "s3://<bucket>/ckpt/orders")
+         .trigger(availableNow=True)      # 处理完当前可用数据就停，非常驻
+         .start())
 ```
 
----
+**怎么用**：sink 目标参数（`.option("path", "<库>.<表>")`，或 catalog 限定写法 `.toTable("<catalog>.<库>.<表>")`，§3.2.6 用的是后一种）是**必须给的一格**——只写 `.format("iceberg")` 与 `checkpointLocation` 会在 `start()` 时直接报「没有指定 sink」而启动失败；两种写法二选一，`path` 里给的是表标识而不是文件目录。`checkpointLocation` 同样必须维护，丢了等价于重跑，不要放在会被清理的路径下；`availableNow` 决定它是「按批跑一次」而不是常驻流作业，端到端延迟的下限就是批间隔——延迟要求压到批间隔以下时换常驻作业，而不是把触发间隔调短（§3.2.6 的失效点）。Kafka 与 catalog 的连接参数按你所用发行版的官方文档填。
+
+**模板 5：两阶段聚合（加盐）**
+
+```python
+from pyspark.sql.functions import col, concat, lit, rand
+
+salted = df.withColumn(
+    "salt_key", concat(col("user_id"), lit("_"), (rand() * 10).cast("int")))  # 桶数为示例
+
+partial = salted.groupBy("salt_key", "user_id").agg({"amount": "sum"})  # 局部聚合
+final   = partial.groupBy("user_id").agg({"sum(amount)": "sum"})         # 全局聚合
+```
+
+**怎么用**：盐桶数（示例里的 10）按倾斜 key 的占比定——桶数太少拆不开，太多会让小 key 也产生额外分区；加盐必须同时改局部与全局两步的聚合口径，只改一步会算错；跑完之后必须对一次结果（与治理前的总量一致），不能只对耗时。热点 key 会漂移，盐值要与例行的热点识别任务一起维护。
+
+### 4.6 自检清单
+
+1. 抽 3 张事实表，能否答出它是「有 Metastore 条目」还是「只有一个对象存储 URI」？
+2. 最近一次全量作业的 shuffle 放大倍数（落盘量 ÷ 输入量）是多少？大于 1–3 倍【经验】时，容量是否按中间结果规划？
+3. 执行计划里还能看到多少 `map` / `reduceByKey` 这类算子级 API？
+4. 每个 UDF 是否都有「换成内置函数 / 向量化实现 / 保留并登记」的结论？
+5. 抽一个作业，打开执行计划看扫描的分区数与列数是否等于过滤后的量（下推是否真的生效）？
+6. AQE 打开了，但作业耗时没变——查过 UDF 与算子级 API 了吗？
+7. 「stage 内最长 task 耗时 ÷ 中位 task 耗时」有没有做成例行指标？比值到一个量级【经验】的作业有几个？
+8. 加盐治过之后，结果与治理前对得上吗（局部与全局两步都改了吗）？
+9. 单分区文件数有没有进监控？上万【经验】的分区有多少个？
+10. 同一张表是否存在多个写入引擎？若有，提交协议与冲突处理写在哪里？
+11. 模型调用类算子是否按选择性下推？重跑一次是否会把已算数据上的调用重打一遍？
+12. 新增一种引擎之前，算过它会新增几条排障路径吗？
+
+### 4.7 小结
+
+> 本节小结：六步里唯一不可替代的是 **Step 2 的容量口径——以中间结果而不是输入量做规划**。它把「多轮宽依赖」这件事从代码里的写法变成了资源与恢复粒度的决定因素：口径对了，倾斜、小文件、重跑代价都能被提前算进容量；口径错了，后面所有调优都只是在错误的瓶颈上做局部优化，而且不会报错。它比其余环节更值得投入，是因为这条口径一次定下就能同时约束选型、模板与迁移顺序，而其余每一步的返工都要求它先正确。
+>
+> 配合 [§ 2 核心原理](08-offline-compute.md)、[§ 3 设计模式与范式](08-offline-compute-section-3-sec3.md) 与 [§ 6 落地实践](08-offline-compute-section-6-sec6.md) 阅读。存量集群的迁移顺序以 4.4 为准；[§ 7 与其他方法对比](08-offline-compute-section-7-sec7.md) 给出引擎之间的机制差异与成本函数对比。
