@@ -59,7 +59,7 @@
 | Iceberg V3 规范的第三项：行级删除（2024） | Schema 演进与 Time Travel 本身 | 查 Iceberg 表规范里删除文件的表达方式（§7.2 第 4 行、§7.3.4 的读放大）；它是回溯窗口的成本项，不是类型能力 |
 | Delta 的向量 / 半结构化能力（Delta Lake；向量 / 半结构化类型本节不给版本断言，见 5.2.3） | 半结构化类型进表格式 | 查官方文档与 release note；「表格式的类型」与「某个引擎的私有扩展」是两件事 |
 | Paimon 的向量类型与 Schema 校验（Paimon；向量类型本节不给版本断言，见 5.2.3） | 半结构化类型进表格式 | 查该项目 release note 中该特性的状态与适用版本 |
-| Delta UniForm（Delta Lake 3.2，2024） | 联邦 Schema 管理 | 查官方文档说明它如何让同一份数据被不同格式读取；读得到了不等于类型语义一致 |
+| Delta UniForm（随 Delta Lake 3.0 公布，2023） | 联邦 Schema 管理 | 查官方文档说明它如何让同一份数据被不同格式读取；读得到了不等于类型语义一致 |
 | Unity Catalog（Databricks，2021 年发布、2024 年的联邦目录形态）/ Apache Polaris（Snowflake，2024）/ Iceberg REST | 联邦 Schema 管理 | 查各自声明的目录协议版本与治理归属（§4.3「元数据目录」列出前两者的定位与年份；Iceberg REST 是协议不是实现，去查 Iceberg 项目的 REST 目录规范） |
 | Confluent Schema Registry（含 7.x 系列，2024） | 兼容性自动测试与 CI 门禁 | 查其兼容级别文档与当前版本（§7.3.2 已给出七级清单与非传递级别的边界） |
 | Databricks Genie / Snowflake Cortex | 自然语言取数与 AI 生成（不是 Schema 方向本身） | 查文档中具体组件的状态；「Cortex」是托管 AI 函数族的产品名，不是 schema 能力 |
