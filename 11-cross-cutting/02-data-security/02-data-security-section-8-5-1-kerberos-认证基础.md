@@ -97,7 +97,7 @@
 
 **第四层：Kerberos 的局限。** Kerberos 不解决授权（你要单独配 Ranger / Sentry）；KDC 是 SPOF，需要 HA；时钟依赖让跨地域部署麻烦；不适合跨公网（公钥体系更适合）。这就是为什么云原生场景越来越多用 SPIFFE / mTLS。
 
-**第五层：工业案例。** Windows Active Directory 是 Kerberos 最大的工业落地——全球数十亿设备通过 AD 域登录。Hadoop 集群默认认证；MIT Kerberos 仍是 Linux 内网事实标准；苹果 macOS 用户登录也用 Kerberos。阿里云 EMR、AWS EMR、Azure HDInsight 均默认 Kerberos。
+**第五层：工业案例。** Windows Active Directory 是 Kerberos 最大的工业落地——全球数十亿设备通过 AD 域登录。Hadoop 的生产安全部署通常启用 Kerberos（需显式开启，并非集群默认）；MIT Kerberos 仍是 Linux 内网事实标准；苹果 macOS 用户登录也用 Kerberos。阿里云 EMR、AWS EMR、Azure HDInsight 均支持 Kerberos，但需在安全配置中显式开启。
 
 **3. 常见陷阱**
 

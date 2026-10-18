@@ -185,7 +185,7 @@
 
 - Anthropic 的 Model Context Protocol 规范（2024 年 11 月公开发布）——工具调用协议的公开入口；书内 [§8](10-metric-platform-section-8-sec8.md) 的来源清单亦收录该规范与 Function Calling 文档。
 - OpenAI 的 Function Calling 文档（2023 年发布）——工具调用的既有形态，与 MCP 是同一机制的两套协议实现。
-- dbt Semantic Layer / MetricFlow 的官方文档与开源仓库（MetricFlow 由 dbt 开源，主文件 §1.4 记为 2022 年）——「指标定义即代码」的公开入口。
+- dbt Semantic Layer / MetricFlow 的官方文档与开源仓库（MetricFlow 由 Transform 开源、后被 dbt 收购，主文件 §1.4 记为 2022 年）——「指标定义即代码」的公开入口。
 - Cube（前身 Cube.js）的官方文档与开源仓库——指标 API 形态的公开入口；核验入口 = 文档站与仓库里「指标定义格式 / 指标 API」的正式章节（本条只给仓库与文档站入口，不给年份与版本号，版本口径见下条说明）。
 - 说明：OSCAR（字节指标平台）、dbt Semantic Layer 与 Cube 的版本号（「1.0+」「1.x」）**本节不复述具体版本**，改给判定入口：查对应项目的 release note / 仓库 tag，确认「指标 API 的对外形态」与「定义格式版本」是否为正式条目。
 

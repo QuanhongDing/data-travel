@@ -1,6 +1,6 @@
 > 本文件是 **15-one-data.md** 的子文件（§6. 落地实践），与主文件 [§2 核心原理](15-one-data.md) 配套阅读。本节按「**背景 → 触发点 → 详细做法 → 具体数字 → 失败教训**」5 段结构组织 4 个深度 OneData 案例。
 >
-> 说明：本节聚焦「**OneData 作为一套建模与口径方法论**」（分层 / 命名 / 指标定义 / 主体打通 / 统一服务）；数据中台在组织与产品层面的形态见 [15-case-studies/01-alibaba-data-middle-platform](../../15-case-studies/01-alibaba-data-middle-platform/01-alibaba-data-middle-platform-section-6-sec6.md)。
+> 说明：本节聚焦「**OneData 作为一套建模与口径方法论**」（分层 / 命名 / 指标定义 / 主体打通 / 统一服务）；数据中台在组织与产品层面的形态见 [15-case-studies/01-alibaba-data-middle-platform](../../15-case-studies/01-alibaba-data-middle-platform/01-alibaba-data-middle-platform-section-5-sec5.md)。
 > 方括号内是**来源类型 + 年份**（如「Netflix 公开材料 2018-2024」），不是可指名的文档；这类材料属**建设方自述**，不构成本书 §5 判据里要求的「第三方（非厂商）公开生产案例」，读者需按其官方材料自行核验。
 
 ## 6. 落地实践

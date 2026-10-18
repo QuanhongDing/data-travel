@@ -43,14 +43,14 @@
 
 - **Delta Lake（Databricks，2019 开源）**：假设"读者主要是 Spark"。基于 `_delta_log`（JSON/Checkpoint + Parquet）的**乐观并发控制**，commit 时追加 JSON 协议文件，靠 Spark 的访问模式做了大量优化。与 Spark 深度耦合——随 Delta Lake 3.0 公布 Delta UniForm 协议对外暴露 Iceberg 协议，让 Trino/Flink 也能读同一份 Delta 表。
 - **Apache Hudi（Uber，2016 立项、2017 开源）**：假设"更新密集场景"。起源于 Uber 的增量 ETL 痛点（每天亿级司机/订单 upsert），内置 **Copy-on-Write（COW）+ Merge-on-Read（MOR）** 两种表类型，时间线（Timeline）由 commit/clean/delta/rollback 四类动作组成，原生支持 upsert、soft delete、CDC 写入。
-- **Apache Iceberg（Netflix / Apple，2018）**：假设"读者是任何引擎、社区中立"。采用**快照隔离（Snapshot Isolation）+ manifest list / manifest file** 的层级元数据，元数据不绑定任何计算引擎。Trino / Spark / Flink / Dremio 都可读。
+- **Apache Iceberg（Netflix，2018）**：假设"读者是任何引擎、社区中立"。采用**快照隔离（Snapshot Isolation）+ manifest list / manifest file** 的层级元数据，元数据不绑定任何计算引擎。Trino / Spark / Flink / Dremio 都可读。
 - **Apache Paimon（Flink Table Store，2023 年进入 ASF 孵化，2024 年毕业）**：假设"读者主要是 Flink 流批一体"。基于 **LSM Tree** 的流式表格式——内存表 + 排序文件 + 增量文件，天然支持流式 upsert 与高并发写入，是 Flink 生态的事实标准流式湖格式。
 
 **第二层：四把刀的差异维度。**
 
 | 维度 | Delta Lake | Apache Hudi | Apache Iceberg | Apache Paimon |
 | --- | --- | --- | --- | --- |
-| 母公司 / 起源 | Databricks | Uber | Netflix / Apple（社区） | 阿里 Flink 生态 |
+| 母公司 / 起源 | Databricks | Uber | Netflix（社区） | 阿里 Flink 生态 |
 | 元数据布局 | `_delta_log` JSON+Checkpoint | Timeline + 文件元数据 | manifest list / manifest file | LSM（snapshot / manifest） |
 | 并发控制 | 乐观 CC（冲突即重试） | 乐观 CC + 锁服务可选 | 乐观 CC（snapshot 隔离） | MVCC + LSM 合并 |
 | 主要读者引擎 | Spark 原生 | Spark + Flink（HoodieFlink） | Trino / Spark / Flink 平等 | Flink 流批原生 + Spark |

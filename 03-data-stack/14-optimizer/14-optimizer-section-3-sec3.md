@@ -79,7 +79,7 @@ AQE 的介入点：shuffle 写完、下一个 stage 开始之前
 - **为什么这样设计有效**：因为决策点被推迟到「实测值已经拿到」之后，这一层完全不需要估计——分区到底多大是数出来的，不是算出来的，估算误差在边界处被清零。
 - **代价**：一次查询被切成更多阶段（边界处要物化 shuffle 数据），且**只能改阶段之间的计划**：阶段内部的排序、聚合、UDF 一旦启动就不可替换。这是结构决定的边界，不是实现缺陷。
 - **失效点**：当瓶颈落在单个阶段内部（单个超大 key 的聚合、排序落盘、慢 UDF）时，「在边界重规划」的优点反转成无力——因为边界恰好没有出现。这类问题只能靠倾斜键预处理或资源调整解决，AQE 帮不上。
-- **真实使用**：Spark 3.0（2020）引入 AQE，3.2.0（2021）起默认开启（`spark.sql.adaptive.enabled`），倾斜参数 `spark.sql.adaptive.skewJoin.skewedPartitionFactor`（默认 5）与 `spark.sql.adaptive.skewJoin.skewedPartitionThresholdInBytes`（默认 256MB）【公开】Apache Spark 官方配置文档。Trino 与 StarRocks 并列为 AQE 适用引擎，其中 Trino 的版本是 420+、StarRocks 的版本未标注。这些版本对应关系请以各项目官方发布说明为准。
+- **真实使用**：Spark 3.0（2020）引入 AQE，3.2.0（2021）起默认开启（`spark.sql.adaptive.enabled`），倾斜参数 `spark.sql.adaptive.skewJoin.skewedPartitionFactor`（默认 5）与 `spark.sql.adaptive.skewJoin.skewedPartitionThresholdInBytes`（默认 256MB）【公开】Apache Spark 官方配置文档。Trino 与 StarRocks 并列为 AQE 适用引擎（Trino 420+、StarRocks 3.x）。这些版本对应关系请以各项目官方发布说明为准。
 - **判断方法**：对比 AQE 关闭与开启后的计划，若 Join 策略与分区数完全一致，说明你的查询里不存在 AQE 能改写的边界（例如全是窄依赖的 map-only 作业），此时开启它只是多付了一层阶段切分的成本。
 
 #### 3.2.3 AI 驱动优化（2024 新）

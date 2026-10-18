@@ -28,7 +28,7 @@
 Uber 成立于 2009 年，至今 17 年。数据栈演进的关键时间节点：
 
 - **2009–2012：早期阶段**。从 MySQL + MongoDB 起步，主要解决"司机 + 乘客"匹配。
-- **2013：Schemaless 立项**。Uber 自研分布式 KV 存储（基于 MySQL）。
+- **Schemaless 立项**（自研存储的起始年份无可核来源，见 [§7.1](06-uber-data-architecture-section-7-sec7.md)，本章按【经验】档不给精确值）。Uber 自研分布式 KV 存储（基于 MySQL）。
 - **2014：Cassandra / HBase 大规模使用**。
 - **2015：实时调度平台 V1**。Uber Marketplace 实时匹配系统。
 - **2016：Apache Hudi 立项**。Vinoth Chandar 在 Uber 内部开始研发 Hudi（最初叫"Hoodie"）。

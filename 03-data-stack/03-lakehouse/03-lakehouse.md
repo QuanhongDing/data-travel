@@ -236,7 +236,7 @@
 
 | 维度 | Iceberg | Hudi | Delta Lake | Paimon |
 | --- | --- | --- | --- | --- |
-| 母公司 | Netflix / Apple | Uber | Databricks | Alibaba / Flink |
+| 母公司 | Netflix | Uber | Databricks | Alibaba / Flink |
 | 核心优势 | 社区活跃、Trino/Snowflake 深度支持 | 更新密集场景强 | Spark 生态最深 | Flink 生态原生、流批一体 |
 | 写模型 | Copy-on-Write | COW + MOR | COW | LSM（流式） |
 | 主键索引 | 弱 | 强 | 中 | 强 |

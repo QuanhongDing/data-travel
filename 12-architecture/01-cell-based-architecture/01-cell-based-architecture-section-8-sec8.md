@@ -467,7 +467,7 @@ rules:
 - 能否说清**单元化可观测性**的特殊性——"按 Cell 维度"组织指标 / 日志 / Trace，而传统系统按"服务 / 主机"组织。
 - 是否真正设计过**单 Cell 故障的 RTO 链路**——检测（Metric / Trace / 日志三路信号）+ 切流（Router 一次性摘除）+ 业务恢复（DB 接管 + 缓存回填）。
 - 能否讲清**混沌工程在单元化系统中的位置**——单元化是混沌演练的最佳载体（爆炸半径可控制），但 Cell 间依赖反而增加演练复杂度。
-- 加分项：AI 时代新形态——AIOps 自动调度 + GPU Cell 监控 + Agent Cell 状态可观测（每 Cell 独立 Agent 集群）。
+- 加分项：AI 时代新形态的**方向**——AIOps 辅助调度（L3）+ GPU Cell 监控（条件式，L2）+ Agent Cell 状态可观测（L3）；三者的分级与「不要预设」见 [§5](01-cell-based-architecture-section-5-ai.md) §5.1（「不要为每个 Cell 常备 GPU 产能」「不要为 Agent 单独建 Cell」）。
 
 **2. 参考答案框架**
 
@@ -503,11 +503,11 @@ Metric/Log    值班人工       Router 一键摘   DB 接管 + 缓存回填
 - **典型演练**：阿里"断网演练"（真实拔光纤，按 Cell 维度）+ 字节"故障注入平台"（按 Cell 维度 kill 进程 / 注入网络延迟）+ 京东"机房间断电演练"。
 
 **第四层：AI 时代的单元化可观测性新形态。**
-1. **AIOps 自动调度**：用 LLM 分析历史告警，自动触发 Cell 切流 / 扩容 / 缩容；阿里"智能调度大脑"、字节"AI Oncall"是代表。
-2. **GPU Cell 监控**：每 Cell 持有独立 GPU 池，需监控 GPU 利用率 / 显存 / 推理延迟 / 排队长度；NVIDIA DCGM + Prometheus exporter 是标准方案。
-3. **Agent Cell 状态**：每 Cell 独立 Agent 集群，需监控 Agent 状态机、工具调用成功率、Token 消耗、规划成功率；这是 2024+ 的新维度。
-4. **预测式告警**：用时序模型（Prophet / Informer / Transformer）预测 Cell 故障，提前切流——避免被动响应。
-5. **Cell 调度智能化**：基于业务量预测，自动调整每 Cell 容量（如早高峰北京 Cell 扩容、晚高峰华南 Cell 扩容）——AI 主导的 Cell 编排。
+1. **AIOps 辅助调度**：用 LLM 分析历史告警，给出 Cell 切流 / 扩容 / 缩容的**建议**，由人确认后执行（级别 L3、不要预设：现阶段的合理位置是「只读指标 + 只写建议」、不直连路由表；阿里"智能调度大脑"、字节"AI Oncall"属厂商自述、无可核验出处——见 [§5](01-cell-based-architecture-section-5-ai.md) §5.1 / §5.7）。
+2. **GPU Cell 监控（条件式）**：**若**按状态归属确实需要为有状态推理预留独立 GPU（属 L2、不要预设，见 [§5](01-cell-based-architecture-section-5-ai.md) §5.1 / §5.7「不要为每个 Cell 常备 GPU 产能」），则需监控 GPU 利用率 / 显存 / 推理延迟 / 排队长度；NVIDIA DCGM + Prometheus exporter 是标准方案。
+3. **Agent 状态可观测（条件式）**：Agent 状态按既有做法先留在单 Cell（属 L3、不要预设，见 [§5](01-cell-based-architecture-section-5-ai.md) §5.1 / §5.7「不要为 Agent 单独建 Cell」），需监控 Agent 状态机、工具调用成功率、Token 消耗、规划成功率；这是 2024+ 的新维度。
+4. **预测式告警**：用时序模型（Prophet / Informer / Transformer）预测 Cell 故障，提前给出切流建议（级别 L3、不要预设，见 [§5](01-cell-based-architecture-section-5-ai.md) §5.1）——避免被动响应。
+5. **Cell 调度智能化（L3）**：基于业务量预测，给出每 Cell 容量的调整**建议**（如早高峰北京 Cell 扩容、晚高峰华南 Cell 扩容），由人确认后执行，而非自动调整——AI 主导的 Cell 编排属 L3、不要预设（见 [§5](01-cell-based-architecture-section-5-ai.md) §5.1 / §5.7）。
 
 **第五层：可观测性平台的工程参考。**
 
@@ -524,12 +524,12 @@ Metric/Log    值班人工       Router 一键摘   DB 接管 + 缓存回填
 - **告警未分级**：所有告警都 P0 / P1，导致告警疲劳；必须按"用户影响范围 + 持续时间"分级（单 Cell <5% 用 P2；单 Cell 全挂 P0）。
 - **混沌演练无回滚预案**：演练后无法快速恢复——必须有"一键回滚"开关 + 演练值班手册。
 - **忽视 GPU / Agent 维度**：AI 时代只监控 CPU / 内存 / 网络，漏掉 GPU / Token / 规划成功率——监控盲区会让 AI 业务故障定位失效。
-- **告警与切流未联动**：发现 Cell 故障后还要人工介入切流，导致 RTO 拉长；必须做"告警自动触发切流"。
+- **告警与切流未联动**：发现 Cell 故障后还要人工介入切流，导致 RTO 拉长；应把切流做成**预置 Runbook + 值班联动**、保证「告警响了就有人动」——**不是"告警自动触发切流"**（§5 把「自动切流」判为 L3，明确不要给自动切流授权，见 [§5](01-cell-based-architecture-section-5-ai.md) §5.1 / §5.7）。
 
 **4. 追问预测**
 
 - **「单元化告警和传统告警的最大差别？」** 答：必须带 Cell 维度——传统告警只说"用户服务异常"，单元化告警必须说"用户服务在 Cell-7 异常"。
-- **「如何在单元化系统上做容量规划？」** 答：用 AI 时序模型预测各 Cell 未来 7 天的流量，提前扩容 / 缩容；阿里 / 字节都已上线容量预测系统。
+- **「如何在单元化系统上做容量规划？」** 答：用 AI 时序模型预测各 Cell 未来 7 天的流量，给出扩容 / 缩容建议，由容量评审会确认（该方向属 L3、不要预设；「阿里 / 字节已上线容量预测系统」属厂商自述、无可核验出处，见 [§5](01-cell-based-architecture-section-5-ai.md) §5.1 / §5.4）。
 - **「GPU Cell 如何监控？」** 答：DCGM 采集 GPU 利用率 / 显存 / 温度 / 功耗 + 推理服务队列长度 + 请求 P99 延迟；阈值告警 + 自动扩缩 MIG 实例。
 - **「未来 3-5 年单元化可观测性的演进？」** 答：AIOps 主导（LLM 自动分析告警 + 自动切流）+ 跨云 Cell（统一监控跨云厂商）+ 边缘 Cell（边缘节点作为 Cell，可观测性需下沉到边缘）。
 
@@ -541,8 +541,8 @@ Metric/Log    值班人工       Router 一键摘   DB 接管 + 缓存回填
 - SkyWalking 官方文档——APM / Trace 平台对单元化染色的支持。
 - ChaosBlade / Chaos Mesh 官方文档——单元化维度的混沌工程注入。
 - NVIDIA DCGM 文档——GPU Cell 监控的工业标准。
-- **阿里** —— StarAgent + 智能调度大脑——单元化 + AIOps 的工业级实现。
-- **字节跳动** —— Diode 智能 Oncall——告警自动聚合 + 自动切流。
+- **阿里** —— StarAgent + 智能调度大脑——单元化 + AIOps 的厂商自述（无可核验出处，按 [§5](01-cell-based-architecture-section-5-ai.md) §5.1 / §5.4 的降档口径，不作为「工业级实现」断言）。
+- **字节跳动** —— Diode 智能 Oncall——告警自动聚合 + 自动切流，属厂商自述、无可核验出处（按 [§5](01-cell-based-architecture-section-5-ai.md) §5.1 / §5.4 的降档口径，不作为既有生产能力断言）。
 - **美团** —— 单元化 + 业务监控大屏——按 Cell 维度的可视化运营。
 - **京东** —— JSF + Cell 监控——单元化可观测性在电商的代表实践。
 - **Netflix** —— Atlas / Edda / ICE——可观测性 + 容量规划的全套平台。

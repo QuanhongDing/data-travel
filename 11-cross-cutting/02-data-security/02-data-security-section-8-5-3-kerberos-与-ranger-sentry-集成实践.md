@@ -41,7 +41,7 @@
 
 **第四层：不能替代的原因。** PKI / OAuth / mTLS 可以替代 Kerberos 的"身份认证"职能，但不能替代 Ranger / Sentry 的"细粒度授权"——后者关注的是"这个用户能访问哪些表 / 列 / 行"，需要的是策略模型而不是认证协议。
 
-**第五层：工业实践。** Hadoop 默认认证 / 授权组合：Kerberos（强身份）+ Ranger（细粒度授权）。阿里云 EMR / AWS EMR / Azure HDInsight / Cloudera CDH 都遵循这一组合。Uber 在其数据平台中明确"Kerberos 身份 + Ranger 授权"的组合是规模化数据访问的最低门槛。LinkedIn 在 Espresso 数据平台中也使用相同的组合。
+**第五层：工业实践。** Hadoop 的生产安全部署通常启用「Kerberos（强身份）+ Ranger（细粒度授权）」这一组合（**需显式开启，并非集群默认**）。阿里云 EMR / AWS EMR / Azure HDInsight / Cloudera CDH 都遵循这一组合。Uber 在其数据平台中明确"Kerberos 身份 + Ranger 授权"的组合是规模化数据访问的最低门槛。LinkedIn 在 Espresso 数据平台中也使用相同的组合。
 
 **3. 常见陷阱**
 

@@ -47,7 +47,7 @@
 
 **第二层：四家的设计原点对比。**
 
-- **Apache Iceberg（Netflix / Apple 主导）**：设计原点是「让任何引擎都能安全读」。Catalog 与物理路径完全解耦，metadata 文件层级 `metadata.json -> manifest list -> manifest -> data file`。**写模型默认 COW**，Spark / Trino / Flink / StarRocks 全兼容，社区最广。**代价**是主键索引弱、依赖 `MERGE INTO` 做 upsert，性能不如 Hudi MOR。
+- **Apache Iceberg（Netflix 主导）**：设计原点是「让任何引擎都能安全读」。Catalog 与物理路径完全解耦，metadata 文件层级 `metadata.json -> manifest list -> manifest -> data file`。**写模型默认 COW**，Spark / Trino / Flink / StarRocks 全兼容，社区最广。**代价**是主键索引弱、依赖 `MERGE INTO` 做 upsert，性能不如 Hudi MOR。
 - **Apache Hudi（Uber 主导）**：设计原点是「CDC 主键 upsert」。Timeline + Record-Level Index 让 upsert 在 PB 级也能秒级完成，**CDC 场景通常显式切到 MOR** 让写快读时合并（Hudi 的默认表类型其实是 COW，与 Iceberg 一致）。代价是 Flink 集成偏后、社区贡献者比 Iceberg 少。Uber 把 Hudi 用在 UberEats 的实时订单流，是 CDC 路线最深的工业案例。
 - **Delta Lake（Databricks）**：设计原点是「Spark 之上最强 ACID」。Transaction Log（`_delta_log`）以 JSON+Parquet 维护，**Spark API 集成最深**，配合 Unity Catalog 与 Vector Search 形成 AI 一体化闭环。**代价**是 Flink 写入生态比较薄（2024 之前的痛点）；随 Delta Lake 3.0（2023）公布的 **Delta UniForm** 通过写一份 Delta 同时发布 Iceberg/Hudi 元数据开始回应这一问题。
 - **Apache Paimon（Alibaba / Flink 生态）**：设计原点是「流批一体的 LSM 树」。LSM 让流式写入天然防小文件、Changelog Producer 输出变更流直接驱动物化视图增量刷新。代价是 Trino / StarRocks 的批端兼容性还在追赶。
