@@ -252,7 +252,7 @@ spec:
     avg_quality: 0.87
 ```
 
-**怎么用**：填 `trigger` / `steps` / `success_criteria` / `counter_examples` 四段，缺一不可——但四段齐备只说明这条 Skill 能被检索、能被验证。§7.8 小结末段的三问（谁批准过、依据是哪几条轨迹、上一次被验证是什么时候）落在另外三格上：`owner`、每一步的 `evidence`、`source.last_verified`，逐条判定项见 §3.5 的修法列与 §3.7 自检第 5 条。`owner` 必须是人；`source` 与 `eval` 两段由管道回填，不要手写；`last_updated` 与 `last_verified` 是两个字段，只有一个时，被命中的 Skill 可能从未被验证过。示例里的条数与比率是占位示例，不要照抄。另有一项当场可做的检查：抄出库里命中率最高的 10 条触发条件，看有没有两条会在同一个任务上同时命中（§7.3.3 末段）。
+**怎么用**：填 `trigger` / `steps` / `success_criteria` / `counter_examples` 四段，缺一不可——但四段齐备只说明这条 Skill 能被检索、能被验证。§7.8 小结末段的三问（谁批准过、依据是哪几条轨迹、上一次被验证是什么时候）落在另外三格上：`owner`、每一步的 `evidence`、`source.last_verified`，逐条判定项见 §3.5 的修法列与 §3.7 自检第 1–3 条。`owner` 必须是人；`source` 与 `eval` 两段由管道回填，不要手写；`last_updated` 与 `last_verified` 是两个字段，只有一个时，被命中的 Skill 可能从未被验证过。示例里的条数与比率是占位示例，不要照抄。另有一项当场可做的检查：抄出库里命中率最高的 10 条触发条件，看有没有两条会在同一个任务上同时命中（§7.3.3 末段）。
 
 **模板 2：从轨迹簇抽象 Skill 的 Prompt 与调用**
 

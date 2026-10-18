@@ -215,7 +215,8 @@ public class HighValueCustomerDiscountRule {
 
 // 重量形态（Drools）：同一张 DMN 表编译后由 KieSession 执行，命中结果同样落决策日志
 KieSession kieSession = KieServices.Factory.get().newKieClasspathContainer().newKieSession();
-kieSession.insert(new Applicant("Alice", 720, 120000, 300000)); recordHit(kieSession.fireAllRules());
+// Applicant(姓名, 分值, 收入, 申请金额)：分值 720 落 700–749 档、收入 30 万 ≥15 万 → APPROVED
+kieSession.insert(new Applicant("Alice", 720, 300000, 120000)); recordHit(kieSession.fireAllRules());
 assertEquals("APPROVED", applicant.getEligibility());   // 上线前拿真实样例回归，防止改 DMN 时漏改
 ```
 

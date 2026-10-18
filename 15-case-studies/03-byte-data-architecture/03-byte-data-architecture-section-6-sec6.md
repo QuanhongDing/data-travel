@@ -1,6 +1,6 @@
 > 本文件是 **03-byte-data-architecture.md** 的子文件（§6. 落地实践），与主文件 [§ 2 核心原理](03-byte-data-architecture.md) 配套阅读。本节按「**背景 → 触发点 → 详细做法 → 具体数字 → 失败教训**」5 段结构组织 4 个深度字节数据架构案例。
 >
-> 说明：本节聚焦「**数据与算力基础设施本身**」；团队拓扑与协作机制见 [14-leadership/11-team-topology](../../14-leadership/11-team-topology/11-team-topology-section-6-sec6.md) 与 [14-leadership/09-remote-team](../../14-leadership/09-remote-team/09-remote-team-section-6-sec6.md)。
+> 说明：本节以「**数据与算力基础设施本身**」为主（§6.1–§6.3），并含一个协作机制案例（§6.4）；团队拓扑与协作机制的方法论见 [14-leadership/11-team-topology](../../14-leadership/11-team-topology/11-team-topology-section-6-sec6.md) 与 [14-leadership/09-remote-team](../../14-leadership/09-remote-team/09-remote-team-section-6-sec6.md)。
 > 方括号内是**来源类型 + 年份**（如「Netflix 公开材料 2018-2024」），不是可指名的文档；这类材料属**建设方自述**，不构成第三方生产案例，读者需按其官方材料自行核验。
 
 ## 6. 落地实践
@@ -432,7 +432,7 @@ ByteFSDP 与配套优化的**5 大核心组件**：
 | 「**讨论放在会议里**」 | 1 次 | N/A | N/A | 1 次 | 「**讨论前置到文档，会议只做决策**」 |
 | 「**文档只写结论不写上下文**」 | N/A | N/A | N/A | 1 次 | 「**写全背景、约束与可选项**」 |
 
-### 6.7 ROI 评估（4 个公司真实数据）
+### 6.7 ROI 评估（4 个案例真实数据）
 
 | 指标 | 改前 | 改后 | 提升 |
 | --- | --- | --- | --- |

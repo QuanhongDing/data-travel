@@ -441,7 +441,7 @@
 
 **4. 追问预测**
 
-- **「OpenLineage 怎么落地到 Flink？」** 答：用  集成；Flink Job 启动时通过 LifecycleListener 触发 Lineage Event；事件发 Kafka，Marquez / DataHub 消费。
+- **「OpenLineage 怎么落地到 Flink？」** 答：用 `openlineage-flink` 集成；Flink Job 启动时通过 LifecycleListener 触发 Lineage Event；事件发 Kafka，Marquez / DataHub 消费。
 - **「冷存储怎么办？」** 答：血缘事件存 Iceberg / Hudi，按 `event_time` 分区；老的全量归档供事故排查。
 - **「实时血缘精度与延迟怎么权衡？」** 答：事件级精度 + 秒级延迟是常见目标；表达级别精度 + 分钟级延迟是更精细但重的选择。
 - **「AI 时代实时血缘怎么扩展？」** 答：LLM 调用作为一类 Source；Agent 决策作为一类 Transform；Langfuse / LangSmith 自动产生事件。

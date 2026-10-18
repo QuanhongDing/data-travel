@@ -39,7 +39,7 @@
 
 **4. 追问预测**
 
-- **「Flink Reactive Mode 怎么用？」** 答：开启 ，配置  与 ，Flink 自动按 Slot 利用率扩缩容。
+- **「Flink Reactive Mode 怎么用？」** 答：开启 `scheduler-mode: reactive`，配置 `scheduling.source.assignments` 与 `taskmanager.numberOfTaskSlots`，Flink 自动按 Slot 利用率扩缩容。
 - **「Kafka 缩分区怎么办？」** 答：先扩分区（如 12 → 24），做 partition reassignment 让数据均匀分布；老 consumer 自然迁移到新分区；老的 12 分区仍可消费但不再写入。
 - **「如何保证弹性时不丢数据？」** 答：① Flink 用 exactly-once + checkpoint；② Kafka 用 `acks=all` + 幂等 producer；③ 业务层做幂等消费。
 - **「云原生 Flink 的成本怎么算？」** 答：存算分离 + 抢占式 Spot 实例 + 自动缩容，按实际使用计费；一般可比 YARN 模式降本 30%–50%。
@@ -103,7 +103,7 @@
 - **「ClickHouse 内存熔断具体怎么配？」** 答：用 （单查询）+ （单用户）+ （全集群）；超阈值查询被 kill，错误码 。
 - **「ProxySQL 在 ClickHouse 上的角色？」** 答：ProxySQL 可做 SQL 路由、读写分离、慢查询拦截；ClickHouse 也有自己的 Proxy（内置）；自研 Gateway 更灵活。
 - **「如何熔断？」** 答：限流算法（令牌桶 / 漏桶）+ 熔断算法（滑动窗口 + 半开恢复）+ 优先级队列；用 Sentinel 做分布式熔断。
-- **「多租户 ClickHouse 怎么计费？」** 答：按扫描字节数 / CPU 时间 / 存储容量三维度计费；按租户生成账单；用  统计。
+- **「多租户 ClickHouse 怎么计费？」** 答：按扫描字节数 / CPU 时间 / 存储容量三维度计费；按租户生成账单；用 `system.query_log` 统计。
 
 **5. 参考资料**
 
@@ -320,7 +320,7 @@
 - **「Session Cluster vs Per-Job Cluster 怎么选？」** 答：低延迟小作业用 Session（启动快）；大状态 / 关键作业用 Per-Job（隔离强）；混合用 Application Cluster。
 - **「跨集群怎么同步？」** 答：用 Kafka MirrorMaker / Cluster Linking 做跨集群同步；ClickHouse 用 Distributed Table 做跨集群查询。
 - **「吵闹邻居（Noisy Neighbor）怎么解决？」** 答：① 限速（Quota）+ 限并发（Semaphore）；② 资源预留（Resource Reserve）；③ 大租户迁独立集群；④ 用 ClickHouse Resource Groups / Flink Slot 共享池。
-- **「多租户审计怎么做？」** 答：所有租户操作走统一审计（CloudTrail / Ranger Audit / Kafka Audit）；按  标记日志；用 SIEM 集中分析。
+- **「多租户审计怎么做？」** 答：所有租户操作走统一审计（CloudTrail / Ranger Audit / Kafka Audit）；按 `tenant_id` 标记日志；用 SIEM 集中分析。
 
 **5. 参考资料**
 
@@ -474,7 +474,7 @@
 **4. 追问预测**
 
 - **「Prometheus vs InfluxDB 怎么选？」** 答：Prometheus 适合短保留 + 多维标签 + 拉模式；InfluxDB 适合长保留 + 时序聚合 + 推模式。超大规模建议 Prometheus + Thanos（长保留）。
-- **「Flink Metrics Reporter 怎么接 Prometheus？」** 答：Flink 自带 Prometheus Reporter；通过  配置 ；Prometheus 拉取 9249 端口。
+- **「Flink Metrics Reporter 怎么接 Prometheus？」** 答：Flink 自带 Prometheus Reporter；通过 `flink-conf.yaml` 配置 `metrics.reporter.prom.factory.class`；Prometheus 拉取 9249 端口。
 - **「如何避免告警风暴？」** 答：① 告警聚合（同根因合并）；② 告警抑制（上下游）；③ 告警静默（维护窗口）；④ 动态阈值（分位数）。
 - **「监控系统的可观测性本身怎么监控？」** 答：用 Meta Monitoring（监控监控系统）：Prometheus 自监控 + AlertManager 自监控 + 演练告警。
 
