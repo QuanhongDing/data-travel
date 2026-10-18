@@ -93,7 +93,7 @@
 
 - Snowflake 官方文档《Snowflake Architecture》——存储层 / 计算层 / 云服务层三层计费模型的权威出处。
 - Databricks 公开博客《What is a Lakehouse?》与其关于 Lakehouse 成本收益的后续材料（后者本书无法核验报告名与发布年份）——Lakehouse 替代 Lambda 的工业主张。
-- Apache Iceberg / Apache Hudi / Delta Lake 官方文档的 hidden partitioning + compaction 章节——湖表小文件治理与增量读的标准实现。
+- Apache Iceberg 官方文档的 hidden partitioning 章节，以及 Apache Hudi / Delta Lake 官方文档的 compaction 章节——湖表小文件治理与增量读的标准实现。（hidden partitioning 是 **Iceberg 的特性**，Hudi / Delta 没有等价物，不要写成「湖表」通用能力）
 - Netflix Technology Blog 关于 Iceberg 与增量处理的公开文章——头部流媒体公司用增量读替代每日全量重算的工程实践。
 - 阿里云 DataWorks / MaxCompute 公开技术文档——国内存算分离 + 弹性资源组的工程范式。
 - Flexera 2024 State of the Cloud 报告——全球云成本浪费与超预算比例的一手统计。
@@ -265,7 +265,7 @@
 **1. 考察点**
 
 - 能否定义"冷 / 温 / 热"数据的**判别标准**——访问频率、最近访问时间、数据年龄、业务重要性——并指出"判错"会带来哪些隐性代价（把热数据放冷层 → 查询延迟爆炸）。
-- 能否列出至少三种**工程上常见**的分层手段（S3 Lifecycle / 湖表 hidden partitioning / Alluxio 缓存 / Z-Order 等），并说出各自的"成本 vs 性能"边界。
+- 能否列出至少三种**工程上常见**的分层手段（S3 Lifecycle / Iceberg 的 hidden partitioning / Alluxio 缓存 / Z-Order 等），并说出各自的"成本 vs 性能"边界。
 - 是否知道**冷热分层 ≠ 单一手段**——它通常需要"自动转储策略 + 缓存层 + 元数据索引 + 业务侧读写约定"四件事一起做。
 - 加分项：能给出具体的存储单价对比（S3 标准 vs IA vs Glacier）和查询延迟差异。
 
@@ -289,11 +289,11 @@
 - **缺点**：转储对象恢复延迟不可忽略（Glacier 取回分钟到小时级）；转储前必须保证数据已写入完成，否则可能转储的是中间态。
 - **适用场景**：合规留存的冷数据、归档历史快照。
 
-**手段 B：湖表 hidden partitioning + Z-Order 排序**（湖仓时代主流）
+**手段 B：Iceberg 的 hidden partitioning + Z-Order 排序**（湖仓时代主流）
 
 - **原理**：Iceberg 用隐藏分区（`days(ts)`、`bucket(N, col)`）让查询无需显式写分区（Hudi / Delta 用显式分区列）；Z-Order / Hilbert 把多列联合排序，让列存 min/max 索引命中率高。
 - **优点**：分区 / 排序对用户透明；查询性能可保持"分区裁剪 + 列裁剪"的最优路径；与压缩、分层兼容。
-- **缺点**：Z-Order 写入开销较大（小表不划算）；hidden partitioning 需要升级到支持版本。
+- **缺点**：Z-Order 写入开销较大（小表不划算）；Iceberg 的 hidden partitioning 需要升级到支持 hidden partitioning 的版本（Iceberg v1 spec 起）。
 - **适用场景**：OLAP 查询高频场景——按时间 + 用户 + 维度多维过滤的事实表。
 
 **手段 C：Alluxio / 节点级 SSD 缓存 + 对象存储底座**（混合架构）
@@ -313,7 +313,7 @@
 
 **第四层：实战组合策略。**
 
-- **组合 1（最常见）**：Lifecycle 自动转储（合规）+ hidden partitioning（性能）+ 选择性物化视图（高频查询）。这是 Netflix / Uber / Databricks 在公开演讲里反复提到的"标准栈"。
+- **组合 1（最常见）**：Lifecycle 自动转储（合规）+ Iceberg 的 hidden partitioning（性能）+ 选择性物化视图（高频查询）。这是 Netflix / Uber / Databricks 在公开演讲里反复提到的"标准栈"。
 - **组合 2（极致压缩）**：湖表 + Z-Order + 高压缩比算法（ZSTD）+ 小文件 Compaction。
 - **组合 3（AI 场景）**：Alluxio 缓存热数据 + 对象存储落冷数据 + Lifecycle 自动转储。
 
@@ -346,7 +346,7 @@
 - Alluxio（现名 Starburst Data Cache）官方文档与开源仓库——分布式缓存层与对象存储协同的工程范式。
 - Netflix Technology Blog 关于 Iceberg + 缓存层降本的公开演讲——头部流媒体公司冷热分层的实战经验。
 - 阿里云 OSS 官方文档关于存储类型与生命周期——国内对象存储分层的成本对照。
-- 字节跳动 DataFinder 公开技术博客——湖表 hidden partitioning 在 PB 级数据湖上的落地经验。
+- 字节跳动 DataFinder 公开技术博客——Iceberg hidden partitioning 在 PB 级数据湖上的落地经验。
 - **平安银行基于对象存储分层的金融数据治理实践** —— 银行业头部在公开演讲中提到合规留存数据自动转储到归档存储（Glacier 类）的实践，对应"金融冷数据快速取回"的工程要求。
 - **京东集团基于冷热分层的电商数据湖治理** —— 电商行业头部在公开技术博客中提到"订单历史归档 + 热点 SKU 高频访问"的存储分层方案，对应"零售历史订单长留存 + 热点访问"的成本治理。
 
@@ -470,7 +470,7 @@
 
 - 阿里云《大数据之路：阿里巴巴大数据实践》——OneData 体系下分层 + 标签 + Showback 的完整落地范式。
 - Snowflake 官方文档《Cost Management & Optimization》——Auto-Suspend + Result Cache + 资源监控的最佳实践。
-- Apache Iceberg / Apache Hudi 官方文档——湖表 hidden partitioning + Compaction 的工程实现。
+- Apache Iceberg 官方文档——hidden partitioning 的工程实现；Apache Hudi 官方文档——Compaction 的工程实现。
 - Karpenter 官方文档与 AWS 公开演讲——K8s 时代弹性伸缩的标准范式。
 - 字节跳动 DataFinder / CloudEon 公开技术博客——国内互联网公司 FinOps 平台的工业实践。
 - Flexera 2024 State of the Cloud 报告——全球云成本浪费与 FinOps 落地节奏的一手统计。
@@ -1176,7 +1176,7 @@ ROI = (800 - 360) / 360 ≈ 122%
 │  存储层（对象存储 + 湖表）                              │
 │  - S3 / OSS / ADLS（热数据）+ Glacier（冷数据）         │
 │  - Iceberg / Hudi / Delta Lake（湖表）                  │
-│  - hidden partitioning + Z-Order                        │
+│  - Iceberg 的 hidden partitioning + Z-Order             │
 ├──────────────────────────────────────────────────────────┤
 │  缓存层（性能优化）                                      │
 │  - Alluxio / 节点 SSD 缓存（热数据）                    │
