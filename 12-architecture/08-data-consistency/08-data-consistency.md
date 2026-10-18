@@ -86,7 +86,7 @@
 
 **云原生阶段（2000s-2020）**：
 
-- 2004：Spanner 论文（Google）。
+- 2012：Spanner 论文（Google）。
 - 2014：Raft 论文（Diego Ongaro）。
 - 2016：Apache Kafka Exactly-Once 语义。
 - 2017：CockroachDB 1.0。

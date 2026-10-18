@@ -15,7 +15,7 @@ LinkedIn 2014 年面临**消息 Schema 与生产消费方的强耦合**：
 
 **触发点（What）**
 
-2014 年 LinkedIn 推出 **Avro + Schema Registry**（[LinkedIn Engineering 2014-2024]），目标：
+2014 年 LinkedIn 推出 **Schema Registry 一类 schema 注册机制**（配 Avro 等格式，[LinkedIn Engineering 2014-2024]；Avro 本身属 Apache Hadoop 生态项目，并非 LinkedIn 出品），目标：
 - **Schema 向后兼容**——**加字段不破坏存量消费者**
 - **字段演进零停机**——**不等全体升级就能发布**
 - **版本可查**——**每条消息可定位到确切的 schema 版本**

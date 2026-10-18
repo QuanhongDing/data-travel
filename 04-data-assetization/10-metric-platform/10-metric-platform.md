@@ -100,7 +100,7 @@
 
 **开源工具阶段（2020-2023）**：
 
-- **2020**：Airbnb Minerva 开源（指标定义 + 查询）。
+- Airbnb Minerva 开源（指标定义 + 查询）——开源年份无可核来源，以 Airbnb 官方发布说明为准。
 - **2021**：Cube.js 流行（指标 API 平台）。
 - **2022**：dbt Semantic Layer 推出。
 - **2022**：MetricFlow（dbt 收购）开源。

@@ -103,7 +103,7 @@ Snowflake 2021 年面临**"客户要在数仓里做 AI，但基础设施不在�
 
 **触发点（What）**
 
-2021 年起 Snowflake 推出 **Cortex AI Functions**（[Snowflake 公开材料 2021-2024]），目标：
+2024 年前后 Snowflake 推出 **Cortex AI Functions**（[Snowflake 公开材料 2021-2024]），目标：
 - **AI 函数作为数仓一等公民**——像内置函数一样调用
 - **无需自建推理服务**——托管、免运维
 - **成本与治理统一**——AI 调用的成本与权限落在原有体系内

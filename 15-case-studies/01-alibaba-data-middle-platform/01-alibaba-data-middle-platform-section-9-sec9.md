@@ -32,7 +32,7 @@
 
 - **SIGMOD 2019《MaxCompute: A Cloud-Native Data Warehouse Service》**（阿里 MaxCompute 团队）——对外公开的架构总结，含存储计算分离、调度与安全设计。这是本章「MaxCompute 架构」「自研引擎取舍」类主张的首选出处，[§8](01-alibaba-data-middle-platform-section-8-sec8.md) 的引擎对比亦引它。**本书未能核到该论文的 DOI 与页码**，引用前请在 ACM Digital Library 按标题检索确认。
 - **VLDB 2020 阿里 Hologres 引擎论文**——HSAP 架构设计，是「实时 OLAP 服务大促大屏」这类主张的依据。**该论文的确切标题与作者，本书未能核到**（书内曾以《Hologres：Alibaba's Cloud-Native OLAP Engine》一名引用，该名称疑似转述），引用前请以 VLDB 官方论文目录检索「Hologres」确认。
-- **Apache Flink 1.9（2019）发布说明与 Flink 官方博客**——阿里 Blink 分支回馈社区并合入 Flink 的公开记录，是「阿里流计算自研 → 反哺开源」这条脉络的一手材料。
+- **Apache Flink 官方发布说明与 Flink 官方博客**——阿里 Blink 分支回馈社区并合入 Flink 上游的公开记录（合入的具体版本与年份以官方发布说明为准），是「阿里流计算自研 → 反哺开源」这条脉络的一手材料。
 - **通义 / Qwen 系列模型技术报告**（2023 年起，arXiv 可按标题检索）——对应 §4.1 Step 7「AI 中台化」中模型侧的时间线。**具体版本号与发布时间以 arXiv 页面为准**，本书不引用未核到的版本细节。
 
 ### 9.4 公开演讲与会议材料

@@ -88,7 +88,7 @@
 **5. 参考资料**
 
 - 阿里巴巴数据技术团队《大数据之路：阿里巴巴大数据实践》——OneData + OneService + OneMetric 方法论中指标资产化的原始范式，国内最完整的工程定义。
-- Airbnb 工程团队开源项目 Minerva（2020 年开源，此后持续演进）——Headless BI 早期开源代表，指标定义 + 查询分离的工程样本。
+- Airbnb 工程团队开源项目 Minerva（开源年份无可核来源，以 Airbnb 官方发布说明为准；此后持续演进）——Headless BI 早期开源代表，指标定义 + 查询分离的工程样本。
 - dbt Labs 官方文档中 Semantic Layer 与 MetricFlow 章节——"指标即 API"的产品化实现，2024 年发布 1.0 后被广泛作为开源语义层的标准对照。
 - Cube 官方文档关于 Headless BI 的论述——明确把"BI 与指标平台解耦"作为产品定位，是范式分层的代表性表述。
 - Snowflake 官方文档中关于 Semantic View 与 Cortex Analyst 的章节——云数仓原生语义层与自然语言查询的工业实现。
@@ -227,7 +227,7 @@
 
 - **dbt Semantic Layer（dbt Labs 2022 起推出，2024 1.0）**：把指标定义嵌入 dbt 项目里，用 YAML 描述指标，MetricFlow 引擎把指标转换为 SQL 查询，暴露为 REST / GraphQL API。**核心设计哲学**：指标是 dbt 模型的延伸，指标平台与数据转换平台统一。
 - **Cube.js（2018 开源，2020 后 Headless BI 化）**：独立 JS / TypeScript 指标 API 网关，用代码定义 schema，编译后产出 SQL 与多协议 API（REST / GraphQL / WebSocket）。**核心设计哲学**：指标是独立的应用层抽象，不绑定任何特定的数据转换工具。
-- **Looker LookML（2014 起源，2024 仍在演进）**：Looker 自研的语义建模语言，与 Looker BI 平台紧耦合，LookML 既是数据建模语言也是权限/维度/指标的统一描述。**核心设计哲学**：指标 / 维度 / 权限统一建模，避免 BI 与数据栈的双向耦合。
+- **Looker LookML（早期起源，2024 仍在演进）**：Looker 自研的语义建模语言，与 Looker BI 平台紧耦合，LookML 既是数据建模语言也是权限/维度/指标的统一描述。**核心设计哲学**：指标 / 维度 / 权限统一建模，避免 BI 与数据栈的双向耦合。
 
 **第二层：四个维度的结构化对比。**
 
@@ -248,7 +248,7 @@
 
 - **dbt Semantic Layer 的取舍**：把"指标定义"与"数据转换"绑定到同一项目，优点是**指标与表血缘天然打通**，缺点是**指标定义被锁死在 dbt 生态**——如果团队不用 dbt（例如用 Airflow + SQL 脚本的传统数仓），就很难上 dbt Semantic Layer。2024 年 1.0 之后 dbt Labs 把 MetricFlow 并入 Semantic Layer，形成了"dbt 模型 → MetricFlow 引擎 → API"的完整链路，对 dbt 重度用户是首选。
 - **Cube.js 的取舍**：把"指标"做成独立服务，优点是**可对接任何数据源、任何 BI**，缺点是**与数据转换流程脱钩**——指标 SQL 与 dbt 模型可能不同步，维护两套定义。Cube 1.x 之后通过 `cube_dbt` 集成缓解了这个痛点。
-- **LookML 的取舍**：把"指标 + 维度 + 权限 + 探索"做成 Looker 单一平台，优点是**治理闭环最完整**（BI 看到的就是数据团队定义的），缺点是**强 Looker 锁定**——一旦换 BI（如改用 Tableau / Superset），LookML 的语义层就废了。Google 在 2020 年收购 Looker 后强化了它与 BigQuery 的集成，但仍未突破 BI 锁定。
+- **LookML 的取舍**：把"指标 + 维度 + 权限 + 探索"做成 Looker 单一平台，优点是**治理闭环最完整**（BI 看到的就是数据团队定义的），缺点是**强 Looker 锁定**——一旦换 BI（如改用 Tableau / Superset），LookML 的语义层就废了。Google 于 2019 年宣布收购 Looker（交割年份以官方公告为准），此后强化了它与 BigQuery 的集成，但仍未突破 BI 锁定。
 
 **第四层：典型落地与迁移代价。**
 

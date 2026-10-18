@@ -111,7 +111,7 @@
 
 - 2017：Uber 提出 **Michelangelo Palette**——业界首个生产级 Feature Store。
 - 2017：Google 发布 **TFX**——TensorFlow Extended，含 Feature Store 模块。
-- 2017：Airbnb 开源 **Zipline**——时序特征平台。
+- Airbnb 开源 **Zipline**——时序特征平台（首次公开年份无可核来源，本节不代为断言，以 Airbnb 官方组织的仓库记录为准）。
 - 2018：LinkedIn 发布 **Feast**（早期版本）——开源 Feature Store。
 - 2019：Gojek 开源 **Feast**（重写版）——成为开源 Feature Store 事实标准。
 

@@ -51,13 +51,13 @@
 
 **后来的验证**
 
-- 三件可核验的事实：MaxCompute、Hologres 等作为对外产品持续存在并有官方文档【公开：§9.2】；它的架构被写成对外论文《MaxCompute: A Cloud-Native Data Warehouse Service》（SIGMOD 2019）【公开：§9.3，DOI 与页码请在 ACM Digital Library 按标题核对】；自研实时引擎 Blink 的成果在 Apache Flink 1.9（2019）合入上游开源主线【公开：§9.3】——第三条最有说服力，它说明自研路线没有走向封闭。
+- 三件可核验的事实：MaxCompute、Hologres 等作为对外产品持续存在并有官方文档【公开：§9.2】；它的架构被写成对外论文《MaxCompute: A Cloud-Native Data Warehouse Service》（SIGMOD 2019）【公开：§9.3，DOI 与页码请在 ACM Digital Library 按标题核对】；自研实时引擎 Blink 的成果合入 Apache Flink 上游开源主线（合入的具体版本与年份以 Apache Flink 官方发布说明为准）【公开：§9.3】——第三条最有说服力，它说明自研路线没有走向封闭。
 - 反过来，§7.3 把这个决策列为**不可迁移项**：它依赖规模与跨年投入，收益只在单套系统承压之后才出现。
 - 至于"承载集团多少比例的任务、占对外营收多少"，本章 §9.6 已把这类数字按【经验】档处理，本节不引用。
 
 **出处**
 
-【公开：《MaxCompute: A Cloud-Native Data Warehouse Service》（SIGMOD 2019）、Apache Flink 1.9（2019）发布说明、MaxCompute 与 Hologres 官方文档，索引见 [§9.2–9.3](01-alibaba-data-middle-platform-section-9-sec9.md)；《大数据之路：阿里巴巴大数据实践》（2017）记述了 OneData 体系】。规模与比例类取值【经验：本书从"集中化 + 多租户 + 公有云"这组约束反推，量级沿用本章 §4.3 与 §7.2.4】。
+【公开：《MaxCompute: A Cloud-Native Data Warehouse Service》（SIGMOD 2019）、Apache Flink 官方发布说明（Blink 合入上游的版本以发布说明为准）、MaxCompute 与 Hologres 官方文档，索引见 [§9.2–9.3](01-alibaba-data-middle-platform-section-9-sec9.md)；《大数据之路：阿里巴巴大数据实践》（2017）记述了 OneData 体系】。规模与比例类取值【经验：本书从"集中化 + 多租户 + 公有云"这组约束反推，量级沿用本章 §4.3 与 §7.2.4】。
 
 #### 5.2.2 OneID 的实体识别怎么做
 
@@ -161,11 +161,11 @@
 
 **后来的验证**
 
-被验证。硬证据是自研实时引擎 Blink 的成果在 Apache Flink 1.9（2019）合入上游【公开：§9.3】，且"实时计算 Flink 版（原 Blink）"作为产品持续存在并有官方文档【公开：§9.2】。这条决策还留下一个可以直接数出来的判据：**改一次核心口径要动几个文件**——同源时答案应为 1（§4.1 Step 4）。需要提醒的是，"流批一体在 2019 年前后大规模落地"属于【经验】量级；覆盖率与成本下降比例在本章可指的出处里只到量级，不作精确引用（§9.6）。
+被验证。硬证据是自研实时引擎 Blink 的成果合入 Apache Flink 上游（合入的具体版本与年份以 Apache Flink 官方发布说明为准）【公开：§9.3】，且"实时计算 Flink 版（原 Blink）"作为产品持续存在并有官方文档【公开：§9.2】。这条决策还留下一个可以直接数出来的判据：**改一次核心口径要动几个文件**——同源时答案应为 1（§4.1 Step 4）。需要提醒的是，"流批一体在 2019 年前后大规模落地"属于【经验】量级；覆盖率与成本下降比例在本章可指的出处里只到量级，不作精确引用（§9.6）。
 
 **出处**
 
-【公开：Apache Flink 1.9（2019）发布说明与实时计算 Flink 版官方文档，索引见 [§9 参考资料](01-alibaba-data-middle-platform-section-9-sec9.md) 的「产品与引擎的官方文档」「学术论文」两节；"Flink 与 Iceberg 均为 Apache 基金会项目"这一条，索引见 [§7.4 关键数字对比表](01-alibaba-data-middle-platform-section-7-sec7.md)「开源组件的许可」一行】。落地时点与分档量级【经验：沿用本章 §4.1 Step 4 的量级描述】。
+【公开：Apache Flink 官方发布说明（Blink 合入上游的版本以发布说明为准）与实时计算 Flink 版官方文档，索引见 [§9 参考资料](01-alibaba-data-middle-platform-section-9-sec9.md) 的「产品与引擎的官方文档」「学术论文」两节；"Flink 与 Iceberg 均为 Apache 基金会项目"这一条，索引见 [§7.4 关键数字对比表](01-alibaba-data-middle-platform-section-7-sec7.md)「开源组件的许可」一行】。落地时点与分档量级【经验：沿用本章 §4.1 Step 4 的量级描述】。
 
 #### 5.2.5 大模型时代，数据中台如何演进
 
