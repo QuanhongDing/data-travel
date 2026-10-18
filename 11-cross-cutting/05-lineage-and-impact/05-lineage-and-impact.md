@@ -139,7 +139,7 @@
 - 2016：Apache Griffin 与血缘集成。
 - 2019：Databricks 开源 Delta Lake，时间旅行 + 血缘雏形。
 - 2019：DataHub（LinkedIn）正式开源。
-- 2020：Unity Catalog（Databricks）发布。
+- Unity Catalog（Databricks）2021 年发布【公开：Data+AI Summit 2021 发布公告】。
 
 **AI 与统一规范时代（2020–2025）**：
 

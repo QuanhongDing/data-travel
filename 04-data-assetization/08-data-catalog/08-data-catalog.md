@@ -103,7 +103,7 @@
 
 - 2021：DataHub 2.0，事件驱动的元数据架构。
 - 2021：OpenMetadata（OpenMetadata 开源）——统一元数据平台。
-- 2023：Unity Catalog（Databricks）——湖仓一体目录。
+- Unity Catalog（Databricks）——湖仓一体目录，2021 年发布【公开：Data+AI Summit 2021 的 Unity Catalog 发布公告】。
 - 2023：阿里 DataWorks、HoloMeta（国内大数据目录）。
 - 2024：AI 增强数据目录（自然语言搜索 / 自动文档生成）。
 

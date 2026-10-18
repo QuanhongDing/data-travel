@@ -50,7 +50,7 @@
 
 **第二层：两条路线的核心差异。**
 
-- **Snowflake 的核心主张是「存算分离 + 数据共享」**。存储与计算可以独立弹性扩缩，按秒/按查询付费；数据共享（Secure Data Sharing）让跨组织、跨云的数据像函数一样被消费，不复制物理数据。这一架构的代价是计算层与存储层之间的网络代价——TB 级扫描时优势明显，但 PB（Petabyte，拍字节）级全量迭代时反而不如本地存储方案。Snowflake 在 2024 年发布的 Snowflake Iceberg Tables 让用户可以直接查询对象存储上的 Iceberg 表，承认了「开放表格式」是其路线必须容纳的事实。
+- **Snowflake 的核心主张是「存算分离 + 数据共享」**。存储与计算可以独立弹性扩缩，按秒/按查询付费；数据共享（Secure Data Sharing）让跨组织、跨云的数据像函数一样被消费，不复制物理数据。这一架构的代价是计算层与存储层之间的网络代价——TB 级扫描时优势明显，但 PB（Petabyte，拍字节）级全量迭代时反而不如本地存储方案。Snowflake 在 2023-2024 年发布的 Snowflake Iceberg Tables 让用户可以直接查询对象存储上的 Iceberg 表，承认了「开放表格式」是其路线必须容纳的事实。
 - **Databricks 的核心主张是「Lakehouse + AI Platform」**。Delta Lake 在对象存储之上提供 ACID、时间旅行、Schema 演进，统一了数据湖和数仓的存储；Photon 计算引擎在 Spark 之上提供接近数仓的性能；Unity Catalog 提供跨所有资产（表、模型、Notebook、Feature）的统一治理；MLflow / Feature Store 把模型生命周期和特征管理做成产品。在 2023 年以约 13 亿美元收购 MosaicML 后，Databricks 把「模型训练 + 推理」也纳入了平台。
 
 **第三层：选型依据——三个真实维度。**
@@ -125,7 +125,7 @@
 - **元数据授权**：每个数据库有一个 `SHARE` 对象，记录「哪些账号可以访问哪些对象、可以做什么操作」。授权是细粒度的——可以只授权某几张表、某些行（通过 secure view + row-level policy）。
 - **即时查询**：被授权方在自己的 Virtual Warehouse（虚拟计算集群）中查询共享数据，但**计算从自己的账户跑、存储读的是共享方的对象**。这意味着消费者付计算费、提供者付存储费，账单清晰。
 - **跨组织边界**：安全边界由 Snowflake 账户体系保证。提供者不需要为消费者开账号，消费者也不需要知道提供者底层的存储位置。
-- **跨云**：Snowflake 在 AWS / Azure / GCP 都部署了服务，并通过内部 replication / 跨云网络让数据可以跨云共享。2024 年后发布的 **Snowflake Iceberg Tables** 进一步把「共享」扩展到客户自管的对象存储上。
+- **跨云**：Snowflake 在 AWS / Azure / GCP 都部署了服务，并通过内部 replication / 跨云网络让数据可以跨云共享。2023-2024 年发布的 **Snowflake Iceberg Tables** 进一步把「共享」扩展到客户自管的对象存储上。
 
 **第三层：三个层次的差异。**
 
@@ -480,7 +480,7 @@ OpenAI 在 2023 年推出 Function Calling，把这套机制产品化；Anthropi
 **第二层：四大核心趋势。**
 
 - **趋势一：Lakehouse 接管 AI 训练数据**。Databricks 在 2023 年收购 MosaicML 后，把训练数据 + 模型 + GPU 推理都纳入 Lakehouse 平台；Netflix、Meta、Uber 都用 Iceberg / Hudi 统一训练数据与推理数据的存储。
-- **趋势二：AI Function 嵌入数仓**。Snowflake Cortex 在 2024 年发布，让用户可以直接在 SQL 中调用 LLM（`SNOWFLAKE.CORTEX.COMPLETE('llama3-70b', '...')`）；Databricks AI Functions 提供类似能力；Google BigQuery 也接入 Vertex AI。
+- **趋势二：AI Function 嵌入数仓**。Snowflake Cortex 在 2023 年公布、2024 年陆续可用，让用户可以直接在 SQL 中调用 LLM（`SNOWFLAKE.CORTEX.COMPLETE('llama3-70b', '...')`）；Databricks AI Functions 提供类似能力；Google BigQuery 也接入 Vertex AI。
 - **趋势三：Agent 平台兴起**。OpenAI 在 2025 年发布 Agent SDK + Swarm（多 Agent 协同）；Anthropic 在 2024 年发布 MCP（工具协议） + Computer Use（操作电脑）；阿里、字节、腾讯都发布了对应平台（百炼、扣子、元宝）。
 - **趋势四：多模态原生化**。GPT-4o（原生多模态）、Claude 3.5 Sonnet（视觉理解）、Gemini 1.5 Pro（百万 token 上下文 + 视频理解）让 LLM 真正成为「通用感知入口」。
 

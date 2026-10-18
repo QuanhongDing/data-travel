@@ -94,7 +94,7 @@ AI 公司（Anthropic / OpenAI）面临"模型 + 数据 + 推理"全栈挑战。
 - [§3. 架构演进（分案例）](10-overseas-cases-section-3-sec3.md)
 - [§4. 关键决策](10-overseas-cases-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](10-overseas-cases-section-5-ai-native---2024-2025.md)
-- [§6. 复用经验](10-overseas-cases-section-6-sec6.md)
+- [§6. 落地实践](10-overseas-cases-section-6-sec6.md)
 - [§7. 与同类案例对比](10-overseas-cases-section-7-sec7.md)
 - [§8. 面试真题集](10-overseas-cases-section-8-sec8.md)
 
@@ -107,7 +107,7 @@ AI 公司（Anthropic / OpenAI）面临"模型 + 数据 + 推理"全栈挑战。
 - [§3. 架构演进（分案例）](10-overseas-cases-section-3-sec3.md)
 - [§4. 关键决策](10-overseas-cases-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](10-overseas-cases-section-5-ai-native---2024-2025.md)
-- [§6. 复用经验](10-overseas-cases-section-6-sec6.md)
+- [§6. 落地实践](10-overseas-cases-section-6-sec6.md)
 - [§7. 与同类案例对比](10-overseas-cases-section-7-sec7.md)
 - [§8. 面试真题集](10-overseas-cases-section-8-sec8.md)
 

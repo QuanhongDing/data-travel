@@ -109,10 +109,10 @@
 - 1992：Kotter《Corporate Culture and Performance》。
 - 2000s：强文化（Strong Culture）成为标杆（Google、Apple）。
 - 2004：Netflix「**No Rules Rules**」开始。
+- 2009：Netflix 文化手册（Culture Deck）公开。
 
 **互联网阶段（2010-2020）**：
 
-- 2012：Netflix 文化手册公开。
 - 2015：Google「**Project Aristotle**」发现心理安全是高效团队第一要素。
 - 2017：Netflix《No Rules Rules》核心内容形成。
 - 2019：Netflix《No Rules Rules》出版。

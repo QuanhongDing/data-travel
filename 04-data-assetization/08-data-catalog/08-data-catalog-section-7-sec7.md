@@ -40,12 +40,12 @@
 | 集中式采集目录 | 单一权威源的资产登记与检索 | 从各源采集元数据抄进一个中央存储，用写入约束保证唯一与有主 | 有中心治理团队的组织 | Apache Atlas（2015 起）、DataHub（LinkedIn 2019 开源）、OpenMetadata（2021 起）、阿里 DataWorks 数据目录，Apache-2.0 / 部分商业托管 |
 | 事件驱动式目录 | 以变更事件为唯一写入口的目录 | 写路径只发事件，读路径各自消费建索引，新鲜度不再受全量扫描窗口限制 | 元数据日变更频繁的组织 | DataHub 2.0（2021 记事件驱动元数据架构），Apache-2.0 |
 | 联邦式目录 | 权威源留在各域的跨域检索层 | 中央只持有路由与身份映射、不复制明细，跨域查询 fan-out | 多业务线 / Data Mesh | Apache Gravitino（Apache 2024，federated metadata lake）、AWS Lake Formation 跨账号共享、Google Cloud Dataplex 跨项目 catalog，开源 / 云服务 |
-| 湖仓一体目录 | 把 schema 的权威源交给表格式 | 目录退化为「名字 → 当前快照」的指针，schema 随写事务提交，没有「采集延迟」这个概念 | 资产集中在同一湖仓 | Databricks Unity Catalog（2023）、Snowflake Horizon Catalog（2024）、Apache Gravitino（托管面），商业 / 开源 |
+| 湖仓一体目录 | 把 schema 的权威源交给表格式 | 目录退化为「名字 → 当前快照」的指针，schema 随写事务提交，没有「采集延迟」这个概念 | 资产集中在同一湖仓 | Databricks Unity Catalog（2021 年发布【公开：Data+AI Summit 2021 发布公告】）、Snowflake Horizon Catalog（2024）、Apache Gravitino（托管面），商业 / 开源 |
 | 图谱式目录 | 属性留关系库、关系进图存储 | 边是存储的一等公民，多跳下游的代价与访问到的节点数相关 | 血缘密集型组织 | Lyft Amundsen（2019，Neo4j + Elasticsearch）、DataHub 的图查询、自建图存储，Apache-2.0 / 自研 |
 | AI 增强目录 | 在已有元数据之上加一层派生索引 | 向量 + 倒排做召回，LLM 只在已登记资产的封闭集合里做选择与解释 | 消费方以业务方为主 | Atlan AI、Secoda AI、Alation AI（2024 年前后推出目录侧 AI 增强检索），商业 |
 | 数据契约 / 资产登记台账 | 以协议而非页面为核心的治理载体 | 契约（schema、口径、频率）是生产方与消费方的双边承诺，目录只是展示面 | 多团队 Data Mesh | 多为自建或随治理平台提供 |
 
-> 表中年份除标注来源外，均可在主文件 §1.4 演进历程与 [§ 4 工程实现](08-data-catalog-section-4-sec4.md) 的 §4.3 工具链年份条目中直接核到；Amundsen 的「Neo4j + Elasticsearch」形态见 §4.3 工具链条目【公开】（来源：主文件 §1.4 与 §4.3 的年份记录；年份锚点——Atlas 2015 年条目、Amundsen 2019 年开源、DataHub 2019 年开源与 2021 年 2.0、OpenMetadata 2021 年、Unity Catalog 2023 年、Snowflake Horizon 与 AWS Glue Data Catalog 升级 2024 年、Gravitino 记于 §4.3 的 2024 年条目、Atlan AI / Secoda AI / Alation AI 2024 年）。
+> 表中年份除标注来源外，均可在主文件 §1.4 演进历程与 [§ 4 工程实现](08-data-catalog-section-4-sec4.md) 的 §4.3 工具链年份条目中直接核到；Amundsen 的「Neo4j + Elasticsearch」形态见 §4.3 工具链条目【公开】（来源：主文件 §1.4 与 §4.3 的年份记录；年份锚点——Atlas 2015 年条目、Amundsen 2019 年开源、DataHub 2019 年开源与 2021 年 2.0、OpenMetadata 2021 年、Snowflake Horizon 与 AWS Glue Data Catalog 升级 2024 年、Gravitino 记于 §4.3 的 2024 年条目、Atlan AI / Secoda AI / Alation AI 2024 年）。
 
 这 9 个候选分成**四族**。分族的依据不是品牌、也不是开源或闭源，而是**它和「真相」之间隔了几层副本**：
 

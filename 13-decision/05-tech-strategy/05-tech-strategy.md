@@ -174,10 +174,10 @@ TRL 8-9：商业化部署
 8. **Porter's Five Forces**——竞争分析（用于技术战略）。
 9. **SWOT Analysis**——优势 / 劣势 / 机会 / 威胁。
 10. **OKR（Objectives & Key Results）**——目标对齐。
-1. **Balanced Scorecard（平衡计分卡）**——战略度量。
-2. **AI Strategy Canvas**——AI 战略画布。
-3. **Decision Intelligence Strategy**——决策智能战略。
-4. **AI Constitutional Strategy**——AI 宪法战略。
+11. **Balanced Scorecard（平衡计分卡）**——战略度量。
+12. **AI Strategy Canvas**——AI 战略画布。
+13. **Decision Intelligence Strategy**——决策智能战略。
+14. **AI Constitutional Strategy**——AI 宪法战略。
 
 ### 2.4 与相邻概念的关系
 

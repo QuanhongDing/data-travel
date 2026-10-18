@@ -12,7 +12,7 @@
 | Weekly Sync 怎么设计？ | §4.2、§6.1 |
 | Monthly / Quarterly Review 怎么做？ | §4.2、§4.5 |
 | Annual Offsite / Team Retreat 怎么设计？ | §4.2、§6.2 |
-| Standup 反模式怎么破？ | §3.3、§6.2 |
+| Standup 反模式怎么破？ | §3.5、§6.2 |
 | AI 时代的会议节奏怎么演进？ | §5.1、§5.3 |
 
 ---
@@ -291,7 +291,7 @@ MeetingTimeHealth = MeetingHours / TotalHours
 
 > 💡 **思考锚点**：把你团队的日历代进 MeetingTimeHealth = 会议小时 / 总工时——落在 <30% / 30–50% / 50–70% / >70% 哪一档？如果已过 70%，按本节形式化，你会先砍 Daily / Weekly / Monthly / Quarterly / Annual 里的哪一个节奏？
 
-- [§3. 关键问题](10-team-rhythm-section-3-sec3.md)
+- [§3. 设计模式与范式](10-team-rhythm-section-3-sec3.md)
 - [§4. 工程实现](10-team-rhythm-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](10-team-rhythm-section-5-ai.md)
 - [§6. 落地实践](10-team-rhythm-section-6-sec6.md)
@@ -304,7 +304,7 @@ MeetingTimeHealth = MeetingHours / TotalHours
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
-- [§3. 关键问题](10-team-rhythm-section-3-sec3.md)
+- [§3. 设计模式与范式](10-team-rhythm-section-3-sec3.md)
 - [§4. 工程实现](10-team-rhythm-section-4-sec4.md)
 - [§5. 前沿演进（AI 时代）](10-team-rhythm-section-5-ai.md)
 - [§6. 落地实践](10-team-rhythm-section-6-sec6.md)

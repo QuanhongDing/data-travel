@@ -253,7 +253,7 @@ WHERE status = 'paid'
 
 | 产品 | 厂商/社区 | 发布时间 | 核心特点 |
 | --- | --- | --- | --- |
-| **LookML** | Looker (Google) | 早期推出 | BI 内置语义层（最早期），维度 + 度量 + 派生 |
+| **LookML** | Looker (Google) | 推出年份以 Looker 官方发布说明为准 | BI 内置语义层（最早期），维度 + 度量 + 派生 |
 | **Cube.js** | Cube Dev (开源) | 2017 开源 | JS / TS 生态，REST API，MetricQL，BI 友好 |
 | **MetricFlow** | dbt Labs (开源) | 2022 开源 | dbt 原生语义层，与 dbt model 紧密集成，MetricFlow 引擎 |
 | **dbt Semantic Layer** | dbt Labs | 2023 GA | dbt Cloud 托管 + MetricFlow 引擎，2024 持续增强 |
@@ -294,7 +294,7 @@ WHERE status = 'paid'
 - dbt Labs 关于 Semantic Layer 的官方文档（2023 GA、2024 增强）——MetricFlow 引擎与 Semantic Model 的标准定义，开源 Semantic Layer 的事实标准。
 - Cube.js 官方文档（2017 开源、2024 v1.0）——MetricQL 查询语言与 Schema 定义，是另一种开源 Semantic Layer 实现。
 - Airbnb Engineering Blog 关于 Minerva 指标平台的系列文章（开源年份无可核来源，以 Airbnb 官方发布说明为准；2020 系列博客）——Java / Scala 实现的大规模内部指标平台，对外开源 Minerva。
-- Looker 官方文档关于 LookML 的章节（自早期版本起）——Semantic Layer 的早期商业实现。
+- Looker 官方文档关于 LookML 的章节（年份以 Looker 官方文档为准）——Semantic Layer 的早期商业实现。
 - Snowflake Cortex Analyst 与 Databricks Unity Catalog Metric View 的官方文档——云数仓把 Semantic Layer 内置为代表的新一代实现。
 - ThoughtSpot 与 AtScale 关于企业级 Semantic Layer 的白皮书——商业厂商对 Semantic Layer 的方法论沉淀。
 - **美团的指标平台 Semantic Layer 实践** —— 在外卖 / 到店 / 酒店 / 酒旅多业务共用指标上，建立"指标定义层 + BI/AI 统一 API + 引擎下推"的语义层架构，是国内大型互联网 Semantic Layer 的代表案例。

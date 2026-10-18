@@ -149,7 +149,8 @@
 
 **大数据与多系统阶段（2018–2023）**：
 
-- 2018-2020：DataHub（LinkedIn）、Unity Catalog（Databricks）。
+- 2018-2020：DataHub（LinkedIn）。
+- Unity Catalog（Databricks）——2021 年发布【公开：Data+AI Summit 2021 的 Unity Catalog 发布公告】，湖仓一体目录形态；此前的「年份无可核来源」是本书早期口径不一留下的，已按该出处统一。
 - 2020-2023：OpenLineage 1.0；跨工具血缘互通起步。
 
 **跨云联邦化阶段（2023–2025）**：

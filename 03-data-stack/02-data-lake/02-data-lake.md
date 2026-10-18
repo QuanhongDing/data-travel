@@ -11,7 +11,7 @@
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
 | 数据湖是什么？跟数据仓库的本质区别？ | §1.1 |
-| 数据湖为什么可能变成"数据沼泽"？ | §3.3 |
+| 数据湖为什么可能变成"数据沼泽"？ | §3.5 |
 | HDFS vs 对象存储（S3/OSS/COS）怎么选？ | §4.3 |
 | 开放表格式（Delta / Iceberg / Hudi / Paimon）是什么？ | §2.1 |
 | 数据湖如何与 AI / 向量化结合？ | §5 |
@@ -115,7 +115,7 @@
 - 2020：Databricks 提出 Lakehouse 概念，湖仓形态定型。
 - 2021：Iceberg 1.0、Hudi 0.10、表格式"三国杀"开始。
 - 2022：Apache Paimon（前 Flink Table Store）进入战场。
-- 2023：Snowflake 推出 Iceberg Tables，三大云厂商全部支持 Iceberg。
+- 2023-2024：Snowflake 推出 Iceberg Tables，三大云厂商全部支持 Iceberg（该年份本书内两处口径不一，记 2023 与 2024 两种，以 Snowflake 官方发布说明为准）。
 - 2024：Paimon 1.0 毕业，Lakehouse 成为事实标准。
 
 **第四阶段：AI 原生数据湖（2024-至今）**

@@ -227,7 +227,7 @@
 
 - **dbt Semantic Layer（dbt Labs 2022 起推出，2024 1.0）**：把指标定义嵌入 dbt 项目里，用 YAML 描述指标，MetricFlow 引擎把指标转换为 SQL 查询，暴露为 REST / GraphQL API。**核心设计哲学**：指标是 dbt 模型的延伸，指标平台与数据转换平台统一。
 - **Cube.js（2018 开源，2020 后 Headless BI 化）**：独立 JS / TypeScript 指标 API 网关，用代码定义 schema，编译后产出 SQL 与多协议 API（REST / GraphQL / WebSocket）。**核心设计哲学**：指标是独立的应用层抽象，不绑定任何特定的数据转换工具。
-- **Looker LookML（早期起源，2024 仍在演进）**：Looker 自研的语义建模语言，与 Looker BI 平台紧耦合，LookML 既是数据建模语言也是权限/维度/指标的统一描述。**核心设计哲学**：指标 / 维度 / 权限统一建模，避免 BI 与数据栈的双向耦合。
+- **Looker LookML（起源年份以 Looker 官方发布说明为准；2024 仍在演进）**：Looker 自研的语义建模语言，与 Looker BI 平台紧耦合，LookML 既是数据建模语言也是权限/维度/指标的统一描述。**核心设计哲学**：指标 / 维度 / 权限统一建模，避免 BI 与数据栈的双向耦合。
 
 **第二层：四个维度的结构化对比。**
 

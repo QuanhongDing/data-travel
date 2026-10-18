@@ -35,7 +35,7 @@
 | --- | --- | --- | --- | --- |
 | Apache Atlas | Hadoop 生态的集中式元数据与血缘服务 | 血缘由作业与表的登记关系推导，身份走 Atlas 自己的类型系统 | 存量 Hadoop / Hive 体系 | Apache-2.0（2015 年起随项目公开，见主文件 §1.4） |
 | DataHub（+ GraphQL Federation） | 事件驱动的元数据平台，血缘是它的一个能力面 | 统一事件模型 + 消息流写入，读路径走图与索引；对外以 GraphQL 暴露查询 | 自建元数据基础设施的团队 | Apache-2.0（LinkedIn 2019 开源；2021 年 DataHub 2.0 事件驱动架构——这两个年份锚点记在数据目录章的 [08-data-catalog.md](../../04-data-assetization/08-data-catalog/08-data-catalog.md) 2019 / 2021 年条目；本章主文件 §1.4 把 DataHub 记在 2018–2020 年条目） |
-| Unity Catalog | 湖仓一体化目录，血缘随引擎与表格式走 | 血缘由引擎在读写时自动产生，身份由 catalog 的三段命名空间统一下发 | 资产集中在同一湖仓 | 商业托管 + 开源内核（Unity Catalog 内核于 2024 年开源、以 Apache-2.0 发布并捐入 LF AI & Data，托管服务仍由 Databricks 提供；许可与治理现状请按官方仓库当前说明核验。本章主文件 §1.4 记 Unity Catalog 于 2018–2020 年条目「DataHub（LinkedIn）、Unity Catalog（Databricks）」） |
+| Unity Catalog | 湖仓一体化目录，血缘随引擎与表格式走 | 血缘由引擎在读写时自动产生，身份由 catalog 的三段命名空间统一下发 | 资产集中在同一湖仓 | 商业托管 + 开源内核（Unity Catalog 内核于 2024 年开源、以 Apache-2.0 发布并捐入 LF AI & Data，托管服务仍由 Databricks 提供；许可与治理现状请按官方仓库当前说明核验。本章主文件 §1.4 把 Unity Catalog 列于 2018–2020 年**阶段**（那是本章的分期），而它的**发布年**是 2021 年【公开：Data+AI Summit 2021 的 Unity Catalog 发布公告】——阶段归属与发布年是两件事，不要混用） |
 | 阿里云 DataWorks | 调度 + 血缘 + 治理一体的云服务 | 作业定义即血缘来源，调度面天然覆盖采集；网关侧提供自然语言与智能补全 | 已在阿里云体系内的组织 | 商业云服务（主文件 §1.4 的 2024 年条目「阿里云 DataWorks 跨云」；主文件 §1.3 未列该产品） |
 | Atlan | 商业数据目录 / 治理平台，跨云与 AI 是主打 | 以连接器接入各云与各工具的元数据，再在自有图与检索层上做跨云视图与 AI 入口 | 多朵云、多工具的组织 | 商业 SaaS（Atlan AI 见主文件 §1.4 的 2024 年条目） |
 | Collibra | 商业数据治理平台，血缘作为治理编排的一部分 | 以治理工作流与政策为中心组织血缘，血缘服务于审批与合规举证 | 强合规行业 | 商业 SaaS |
@@ -43,7 +43,7 @@
 | 自研（OpenLineage + Neo4j + GraphQL Gateway） | 开放规范 + 自建图存储 + 自建服务层 | 采集用规范、存储用图数据库、查询用自建网关，身份与对齐完全由自己掌控 | 有平台团队、且需要特殊对齐规则 | 自研（主文件 §2.3 的「自研图数据库 + 联邦」一行） |
 | 血缘 API 网关 / GraphQL Federation | 服务化形态（不是产品，是可组装的一层） | 把鉴权、限流、缓存、查询改写与结果标注收口到唯一入口 | 消费方 ≥2 的组织 | 自建或随平台提供（主文件 §2.1 的「血缘 API 网关」与「血缘即服务」两条术语） |
 
-> 上表两列的锚点都可回原文核到【公开】：年份见主文件 §1.4 演进历程——Atlas 记于 2015–2018 年条目，DataHub 与 Unity Catalog 记于 2018–2020 年条目，OpenLineage 1.0 记于 2020–2023 年条目，Atlan AI 与阿里云 DataWorks 跨云记于 2024 年条目；DataHub 的 2019 年开源与 2021 年 DataHub 2.0（事件驱动架构）记在数据目录章的 [08-data-catalog.md](../../04-data-assetization/08-data-catalog/08-data-catalog.md) 2019 / 2021 年条目（主文件 §1.4 未记这两个年份）。形态与许可见主文件 §2.1 与 §2.3 的术语 / 方法表：血缘 API 网关与血缘即服务（LaaS）见 §2.1，自研图数据库 + 联邦、DataHub + GraphQL Federation 见 §2.3。唯一的例外是 Unity Catalog 的开源状态与其当前许可——主文件未记这条，须按官方仓库当前说明核验。
+> 上表两列的锚点都可回原文核到【公开】：年份见主文件 §1.4 演进历程——Atlas 记于 2015–2018 年条目，DataHub 记于 2018–2020 年条目、Unity Catalog 记于 2021 年发布【公开：Data+AI Summit 2021 发布公告】，OpenLineage 1.0 记于 2020–2023 年条目，Atlan AI 与阿里云 DataWorks 跨云记于 2024 年条目；DataHub 的 2019 年开源与 2021 年 DataHub 2.0（事件驱动架构）记在数据目录章的 [08-data-catalog.md](../../04-data-assetization/08-data-catalog/08-data-catalog.md) 2019 / 2021 年条目（主文件 §1.4 未记这两个年份）。形态与许可见主文件 §2.1 与 §2.3 的术语 / 方法表：血缘 API 网关与血缘即服务（LaaS）见 §2.1，自研图数据库 + 联邦、DataHub + GraphQL Federation 见 §2.3。唯一的例外是 Unity Catalog 的开源状态与其当前许可——主文件未记这条，须按官方仓库当前说明核验。
 
 这 9 个候选分成**三族**。分族的依据不是品牌或开源闭源，而是**三件事由谁决定：身份（URN）由谁生成、边由谁产出、明细放在哪**。
 
