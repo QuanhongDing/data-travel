@@ -186,7 +186,7 @@ Expectations = Explicit × Implicit × Historical
 **ROI 汇报的形式化**：
 
 ```
-ROI = (Benefits - Costs) / Costs
+ROI = Benefits / Costs
   - Benefits: 业务收益（量化）
   - Costs: 投入（HC、算力、预算）
   - 门槛：ROI > 1（每一档方案都必须守住不亏本这条线；口径与敏感性判定见 §9. 预期 ROI）

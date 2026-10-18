@@ -202,7 +202,7 @@ Agent 战略的两个轴（都不能用「上线」来分期）
 
 **成熟度对照物与市场研究（必须带年份引用）**
 
-- **ThoughtWorks Technology Radar**：每半年一期、公开可查，四环为 Adopt / Trial / Assess / Hold（本主题 § 3.2.2 已列为方法之一）；**2024 年发布了第 28 期**（以 ThoughtWorks 站点当期公告为准）【公开】。它是本主题少见的「可以直接读到原文」的第三方成熟度证据——**判定方法就是去读当期原文，而不是读二手总结**。
+- **ThoughtWorks Technology Radar**：每半年一期、公开可查，四环为 Adopt / Trial / Assess / Hold（本主题 § 3.2.2 已列为方法之一）；**期号与发布年份的对应关系可在归档页逐年核验，引用某期时应以 ThoughtWorks 站点归档页为准，本节不断言具体期号**【公开】。它是本主题少见的「可以直接读到原文」的第三方成熟度证据——**判定方法就是去读当期原文，而不是读二手总结**。
 - **Gartner 的两类产出**：① 顶级战略技术趋势清单（Decision Intelligence 出现在 **2022 年那一期**）【公开，以 Gartner 当年原文为准】；② 自 2023 年起另有生成式 AI 专题 Hype Cycle【公开，版本以 Gartner 文件为准】。
   这两类是**关注度**证据，不是**成熟度**证据——它们的用途是解释「为什么大家都在谈」，不能用来判断「现在能不能上生产」。
 - **战略方法论部分（1980–2000 年代，属长期稳定项）**：Porter《Competitive Strategy》(1980)、Christensen《The Innovator's Dilemma》(1997)、McKinsey 的 Three Horizons（《The Alchemy of Growth》，1999）、Moore《Crossing the Chasm》(1991)、Wardley Map（Simon Wardley 提出）、NASA 的 TRL 1–9。

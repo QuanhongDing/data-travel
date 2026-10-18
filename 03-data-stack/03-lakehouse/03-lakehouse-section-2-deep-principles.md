@@ -130,7 +130,7 @@ Z:  1  0  0  1  1  1  1  0  0  1   →   Z-Order = 0b1001111001
 ```
 
 算法：每轮把 N 个小文件**重写**为 1 个大文件，触发条件：
-- 文件数 > `write.target-file-size-bytes` / `compaction.target-file-size-bytes` 阈值
+- 文件数 > 1000（文件数阈值）
 - 写入量 > 触发阈值（默认 1GB）
 - 时间 > `commit.interval`
 
@@ -172,7 +172,7 @@ Z:  1  0  0  1  1  1  1  0  0  1   →   Z-Order = 0b1001111001
 
 **关键实现**：Iceberg 用 **Hadoop 的 `Retryable` 异常 + Spark 的 `AnalysisException` 重试机制**。
 
-**Snapshot ID 严格递增**：每次 commit 都会得到一个**全局唯一**的 snapshot id（基于 `TableMetadata` 的 `last-sequence-number + 1`），保证**全局一致的视图序列**。
+**Snapshot ID 严格递增**：每次 commit 都会得到一个**全局唯一**的 snapshot id，保证**全局一致的视图序列**。
 
 ### 2.10 MVCC 与 Time Travel 实现
 
@@ -245,7 +245,7 @@ Hive Metastore   Nessie   AWS Glue   Polaris
 | 5. Shuffle | 1s - 30s | partition pruning、broadcast join |
 | 6. Aggregate | 100ms - 10s | partial aggregate、final aggregate |
 
-**Lakehouse 主要优化 Plan 和 Scan 阶段**（manifest 文件大小 ~MB 量级，扫描 1 亿文件只需几秒）。
+**Lakehouse 主要优化 Plan 和 Scan 阶段**（manifest 文件大小 ~MB 量级，扫描 10 万文件只需几秒）。
 
 **公式（简化）**：
 
