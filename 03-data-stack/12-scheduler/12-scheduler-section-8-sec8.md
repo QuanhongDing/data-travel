@@ -280,14 +280,14 @@
 - **代价**：① 每个 Sensor 占用一个 Worker Slot，万级 Sensor 时 Worker 压力大；② 频繁轮询对元数据服务（HMS、NameNode）造成持续压力；③ 延迟取决于轮询间隔，**最快也要一个轮询周期**。
 - **优化**：① 加 `mode='reschedule'` 释放 Worker；② 把 `poke_interval` 调到 5-15 分钟（牺牲实时性换 Worker 容量）；③ 用 `SoftMaxActiveRuns` 限制并发 Sensor 数；④ 用 `exponential_backoff` 减少后期轮询频率。
 
-**第四层：事件触发的实现路径。**
+**第三层：事件触发的实现路径。**
 
 - **消息事件**：上游写 Kafka `data_ready` 事件（含分区、表、commit_id），下游订阅触发。**优点**：低延迟（秒级）、不占 Worker Slot。**代价**：必须保证 Kafka 投递语义（at-least-once + 消费幂等）。
 - **Lake commit notification**：Iceberg / Hudi / Delta Lake 在 commit 时发 Kafka 事件（含 `snapshot_id` / `commit_time`），下游订阅 snapshot 推进消费。**Uber / Netflix 都基于此构建增量处理管道**。
 - **对象存储事件**：S3 / OSS / COS 支持 Event Notification（S3 EventBridge、OSS MNS），文件落地即触发事件。**典型场景**：Flink 实时消费对象存储的小文件落地。
 - **元数据 webhook**：Hive Metastore 提供 `MetaExceptionEvent` 事件，但生态不成熟，生产很少用。
 
-**第五层：组合策略。**
+**第四层：组合策略。**
 
 生产中很少只用一种——典型组合：
 
@@ -295,7 +295,7 @@
 - **细粒度用事件**：上游 commit notification 推送 Kafka，下游消费推进消费位点。
 - **校验用 DQ 任务**：DAG 内插入 DQC 任务（行数 / 主键 / 枚举值），不通过则阻断下游。
 
-**第六层：数据就绪 vs 数据正确。**
+**第五层：数据就绪 vs 数据正确。**
 
 "就绪"是"存在性"——"文件落地"。"正确"是"质量"——"行数波动不超过 30%、主键无重复、关键字段无 null"。
 

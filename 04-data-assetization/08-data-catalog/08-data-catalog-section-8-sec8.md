@@ -119,7 +119,7 @@
 **第二层：元数据系统必须新增的 6 项能力。**
 
 1. **直接读表格式元数据**：原生的 Iceberg / Hudi / Delta 元数据接入器，能把 Snapshot、Schema、分区演化、隐藏分区（Partitioning Evolution）等信息暴露给目录 UI。
-2. **域/产品视角**：把"数据产品"作为一等公民建模——LinkedIn DataHub v0.2 引入 Listings / Domains 概念，阿里 DataWorks 把"数据板块（Data Domain）"作为顶层组织维度。
+2. **域/产品视角**：把"数据产品"作为一等公民建模——LinkedIn DataHub 引入 Listings / Domains 概念，阿里 DataWorks 把"数据板块（Data Domain）"作为顶层组织维度。
 3. **联邦目录（Federated Catalog）**：每个域独立运维自己的目录后端，跨域查询走联邦层。Databricks Unity Catalog 用 **Catalog → Schema → Table** 的多级目录层级让一个账号/区域服务多个域，本质也是联邦思路的简化形态。
 4. **数据契约（Data Contract）**：作为生产方与消费方的接口协议，目录里要可被建模、可被签发、可被验证（Schema、口径、SLA）。这是 Data Mesh 的核心交付物。
 5. **AI/Agent 就绪的 API**：把目录的元数据暴露为高吞吐、低延迟的 API + 流式订阅，让 Agent 在决策时能"实时发现可用数据"。这是 LinkedIn DataHub 2023 年后改版的重心——把元数据变成"事件总线"。
@@ -330,7 +330,7 @@
 | **License 风险** | Apache 2.0 稳定 | Apache 2.0 稳定 | Apache 2.0 稳定（早期数据集曾用 SSPL，已切换） |
 | **社区治理** | Apache 顶级项目，节奏慢 | Linux Foundation 治理，社区维护中 | Linux Foundation（含 LF AI & Data），增长最快 |
 | **典型用户** | Hortonworks / Cloudera 客户、金融/电信强合规场景 | Lyft、Booking.com、Schibsted | LinkedIn、Snowflake、Saxo Bank、Expedia、Wix、哔哩哔哩 |
-| **2024 活跃度** | 中（Apache 大版本发行慢） | 中（路线图以 Bugfix 为主） | 高（v0.3.x 月度迭代，AI 集成频繁） |
+| **2024 活跃度** | 中（Apache 大版本发行慢） | 中（路线图以 Bugfix 为主） | 高（月度迭代，AI 集成频繁） |
 
 **第三层：选型决策框架。**
 

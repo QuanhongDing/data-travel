@@ -570,4 +570,4 @@
 
 ### 8.7 返回
 
-- 返回 [04-data-assetization 章节目录](../../README.md)
+- 返回 [04-data-assetization 章节目录](../README.md)

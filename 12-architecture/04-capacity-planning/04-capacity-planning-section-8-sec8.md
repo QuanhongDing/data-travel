@@ -547,5 +547,5 @@ behavior:
 
 #### 返回
 
-- 返回 [12-architecture 章节目录](../../README.md)
+- 返回 [12-architecture 章节目录](../README.md)
 - 返回 [项目根目录](../../README.md)

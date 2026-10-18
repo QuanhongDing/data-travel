@@ -558,4 +558,4 @@ $$\text{score}(d) = \alpha \cdot \text{vec\_norm}(d) + (1-\alpha) \cdot \text{bm
 
 ### 8.4 返回
 
-- 返回 [06-multi-model 章节目录](../../README.md)
+- 返回 [06-multi-model 章节目录](../README.md)

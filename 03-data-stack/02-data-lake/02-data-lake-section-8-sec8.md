@@ -537,7 +537,7 @@ OLAP（StarRocks / Doris / ClickHouse）+ BI / AI
 - **「Paimon 与 Hudi 怎么选？」** 答：以 Flink 为主要写入引擎选 Paimon（LSM 设计 + 流批原生），以 Spark + CDC upsert 为主选 Hudi MOR，二者都强于 Iceberg 在 CDC 写入。
 - **「MySQL → Paimon 的全量 + 增量如何衔接？」** 答：用 Flink CDC 的 `scan.incremental.snapshot.enabled` + `debezium.snapshot.mode='initial'`；从全量快照读起，再切到 binlog 流；Paimon 用主键 upsert 保证不重复。
 - **「Kafka 在实时湖仓里到底是什么角色？」** 答：流量削峰 + 跨系统解耦 + 灾备重放；不是必须的（可直接 MySQL → Flink → 湖），但生产环境几乎都有，作为缓冲与回放源。
-- **「Iceberg V3 的 row-level delete 改了 CDC 语义吗？」** 答：Iceberg V3 加了 row-level delete 与向量类型，向 CDC 场景靠拢；但与 Paimon 的 LSM 设计还有差距，写吞吐与流读仍弱于 Paimon。
+- **「Iceberg V3 的 row-level delete 改了 CDC 语义吗？」** 答：Iceberg V2 引入了 row-level delete，V3 在此基础上加向量类型并优化行级删除，向 CDC 场景靠拢；但与 Paimon 的 LSM 设计还有差距，写吞吐与流读仍弱于 Paimon。
 
 **5. 参考资料**
 

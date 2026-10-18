@@ -231,7 +231,7 @@
 - **Hudi**：Timeline + 文件级元数据；适合 upsert / CDC 场景。Uber Engineering 在其公开分享中提到，Hudi 把 HMS 的 `ALTER TABLE` 调用压到极低（方向上是接近零；【经验】档：幅度随写入模式而异，本节无法给出该分享的可核验文档名与比例数字）。
 - **取舍**：① 新组件的运维复杂度（Iceberg 需要 REST Catalog 或 Hive Catalog，Hudi 需要 Timeline 服务）；② 兼容老 Hive SQL 工具链（部分 BI 工具仍走 HMS，需要 dual-write 过渡）；③ 社区生态成熟度（Hive 仍是事实标准，新格式的 bug 修复周期更长）。
 
-**第六层：决策建议。** 新建数仓直接上 Iceberg / Hudi；存量仓库做"双写过渡"，新表用 Lakehouse、老表继续 HMS，最后逐步迁移。
+**第五层：决策建议。** 新建数仓直接上 Iceberg / Hudi；存量仓库做"双写过渡"，新表用 Lakehouse、老表继续 HMS，最后逐步迁移。
 
 **3. 常见陷阱**
 

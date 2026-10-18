@@ -277,7 +277,7 @@
 
 - **「Iceberg 与 Hudi 怎么选？」** 答：Iceberg 偏查询与批处理生态；Hudi 偏流式更新与增量处理；Delta Lake 偏 Databricks 生态。湖仓新平台建议 Iceberg（开放标准）。
 - **「REST Catalog vs Hive Metastore 怎么选？」** 答：新建湖仓直接 REST Catalog；老 Hadoop 集群继续 Hive Metastore；过渡期可用 HMS 联邦。
-- **「时间旅行怎么用？」** 答：用  /  查询历史 Snapshot；用于审计、回滚、复现、测试。
+- **「时间旅行怎么用？」** 答：用 `VERSION AS OF` / `TIMESTAMP AS OF` 查询历史 Snapshot；用于审计、回滚、复现、测试。
 - **「元数据规模在云下扩展？」** 答：用云原生 DB（RDS / Aurora / Snowflake）+ 缓存 + 跨区域复制 + 冷热分层。
 
 **5. 参考资料**

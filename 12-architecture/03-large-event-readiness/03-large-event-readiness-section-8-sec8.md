@@ -188,7 +188,6 @@
 - **顺丰双11 物流大促预测** —— 物流大促的预测核心不是 QPS 而是"运单量 × 时效"，与电商大促的预测模型完全不同，是物流行业大促的代表。
 
 ---
-- **京东零售** —— 京东零售双 11 实时特征极限压力——KV 热点、Flink 反压、Schema 演进的工程化解法。
 
 #### §8.2.1 全链路压测如何落地？影子表如何隔离压测流量？如何保证压测不影响生产？
 
@@ -266,7 +265,6 @@
 - **12306 全链路压测** —— 12306 在春运前用模拟真实用户请求顺序（登录 → 查票 → 下单 → 支付）的全链路压测验证系统容量，是票务系统大促的代表。
 
 ---
-- **京东零售** —— 京东零售双 11 实时特征极限压力——KV 热点、Flink 反压、Schema 演进的工程化解法。
 
 #### §8.3.1 限流、降级、熔断有什么区别？怎么选？令牌桶、漏桶、滑动窗口的应用场景？Sentinel 限流规则如何配置？
 
@@ -368,7 +366,7 @@ DegradeRule paymentRule = new DegradeRule("callPaymentService")
 **5. 参考资料**
 
 - Michael Nygard《Release It!》第 4 章——Circuit Breaker 模式的原始定义与最佳实践。
-- Sentinel 官方文档与《Senter 限流降级实践》——阿里 Sentinel 的设计原理与生产实践。
+- Sentinel 官方文档与《Sentinel 限流降级实践》——阿里 Sentinel 的设计原理与生产实践。
 - Resilience4j 官方文档——Java 生态现代化的容错库。
 - Istio 官方文档《Circuit Breaking》——服务网格层熔断的实现机制。
 - Netflix Tech Blog《Hystrix and Resilience4j Migration》——Netflix 从 Hystrix 迁移到 Resilience4j 的实践经验。
@@ -379,7 +377,6 @@ DegradeRule paymentRule = new DegradeRule("callPaymentService")
 - **招行支付大促限流** —— 招行在双11 期间对接支付宝 / 微信支付时的限流策略，按银行接口 QPS 上限做反向限流，保护对方链路。
 
 ---
-- **京东零售** —— 京东零售双 11 实时特征极限压力——KV 热点、Flink 反压、Schema 演进的工程化解法。
 
 #### §8.4.1 Kubernetes HPA / VPA / CA / KEDA 各自的适用场景？如何设计一个能扛住大促峰值又不浪费的弹性扩容体系？
 
@@ -651,7 +648,6 @@ class RAGRateLimiter:
 - **Shein AI 客服系统** —— Shein 在全球大促期间用 AI 客服应对多语言咨询，多模型路由（GPT-4 / Claude / 文心 / 通义）是跨境电商的代表。
 
 ---
-- **京东零售** —— 京东零售双 11 实时特征极限压力——KV 热点、Flink 反压、Schema 演进的工程化解法。
 
 #### §8.6.1 应急预案 / GameDay / 值班机制如何设计？大促后如何做故障复盘，把故障转化为组织能力？
 

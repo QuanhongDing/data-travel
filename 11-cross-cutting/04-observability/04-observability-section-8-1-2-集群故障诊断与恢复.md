@@ -26,7 +26,7 @@
 **第三层：止血阶段。** 在诊断结论出来之前，先做应急：
 - **重启 NameNode**：Standby 切换（ZKFC 自动 failover），HA 集群下可执行；非 HA 下要预约窗口。
 - **强制触发 block 汇报回收**：`hdfs dfsadmin -refreshNodes` 配合 DeadNode 处理；触发 `PendingDeletionBlocks` 的清理。
-- **关闭可能加剧泄漏的特性**：临时关闭 `dfs.namenode.enable.retry.cache`、调整 `dfs.namenode.retrycache.expirytime`；限制 `dfs.namenode.handler.count` 减少并发 RPC 压力。
+- **关闭可能加剧泄漏的特性**：临时关闭 `dfs.namenode.enable.retrycache`、调整 `dfs.namenode.retrycache.expirytime.millis`；限制 `dfs.namenode.handler.count` 减少并发 RPC 压力。
 - **扩容**：NameNode HA 难以热扩容堆（`-Xmx` 修改需重启），可临时调整为更大的 `-Xmn` 比例或启用 G1GC 改善停顿。LinkedIn 在 HDFS HA 集群中曾用 **Standby NameNode 内存大于 Active** 的非对称配置来扛住故障期（本节未附其文档名与链接，按【经验】档处理）。
 
 **第四层：根治阶段。** 止血后的"二阶动作"：

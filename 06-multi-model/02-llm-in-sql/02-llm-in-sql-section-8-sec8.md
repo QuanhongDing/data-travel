@@ -697,5 +697,5 @@
 
 ### 8.4 返回
 
-- 返回 [06-multi-model 章节目录](../../README.md)
+- 返回 [06-multi-model 章节目录](../README.md)
 - 返回 [项目根目录](../../README.md)

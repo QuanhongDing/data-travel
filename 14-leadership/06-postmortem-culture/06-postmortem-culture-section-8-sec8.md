@@ -423,5 +423,5 @@ RecurrenceRate(incident_type) = Recurrences(90 天内) / TotalIncidents(同类�
 
 ### 8.8 返回
 
-- 返回 [14-leadership 章节目录](../../README.md)
+- 返回 [14-leadership 章节目录](../README.md)
 - 返回 [项目根目录](../../README.md)

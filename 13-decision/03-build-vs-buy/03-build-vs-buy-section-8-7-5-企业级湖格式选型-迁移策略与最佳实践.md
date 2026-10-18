@@ -197,7 +197,7 @@
 
 **第一层：架构上需要做的六项调整。**
 
-1. **存储布局**——从"仓库存专有格式"到"对象存储 + 开放格式（Parquet / ORC）"；数据从"入库时 ordon 化"到"落湖时保真"。**代价**：读写路径变长，需缓存层（Alluxio / JindoFS）。
+1. **存储布局**——从"仓库存专有格式"到"对象存储 + 开放格式（Parquet / ORC）"；数据从"入库时规范化"到"落湖时保真"。**代价**：读写路径变长，需缓存层（Alluxio / JindoFS）。
 2. **元数据架构**——从 Hive Metastore 单点变为"**表格式元数据 + catalog 服务**"分层（HMS / Glue / Nessie / REST catalog），metadata 承载 schema、partition、snapshot。
 3. **计算层解耦**——从"仓库自带计算"到"存算分离 + 多引擎（Spark / Trino / Flink / StarRocks）共享一份数据"。**代价**：查询性能的一致性由表格式元数据决定，各引擎需按同一 contract 实现。
 4. **ETL 模式**——从"定时全量 / 增量"到"流批一体（Flink）+ 增量读"，减少全量重算。

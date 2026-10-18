@@ -467,7 +467,7 @@ Zhamak Dehghani 在《Data Mesh: Delivering Data-Driven Value at Scale》（2021
 
 **第三层：Netflix 的落地实践。**
 
-- **数据产品目录（Data Portal）**：Netflix 内部所有数据集注册到统一目录，包含 Owner、文档、SLA、依赖关系、血缘。类似于 Airbnb 的 DataHub 或 LinkedIn 的 DataHub。业务团队通过目录自助发现、订阅、消费数据。
+- **数据产品目录（Data Portal）**：Netflix 内部所有数据集注册到统一目录，包含 Owner、文档、SLA、依赖关系、血缘。类似于 Airbnb 的 Dataportal 或 LinkedIn 的 DataHub。业务团队通过目录自助发现、订阅、消费数据。
 - **数据 Owner 机制**：每个数据集必须有 Owner（一般是业务团队的资深工程师或 PM）。Owner 负责数据的准确性、文档、SLA；下游消费者对数据有疑问可直接找 Owner。
 - **数据 SLA**：每个数据集在目录中声明 SLA（如「T+1 早上 6 点前出数」「新鲜度 < 1 小时」）。SLA 是「**承诺**」而非「**目标**」——违反 SLA 会触发 Owner 告警。
 - **联邦治理委员会**：Netflix 内部有跨团队的数据治理委员会，制定全局规范（如 PII 数据分级、GDPR 合规标准、Iceberg 表命名规范）。委员会由各领域代表 + 平台团队代表组成，决策走共识机制。

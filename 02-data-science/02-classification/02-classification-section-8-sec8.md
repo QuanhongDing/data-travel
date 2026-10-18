@@ -66,7 +66,7 @@
 **第五层：AI 时代的新趋势。**
 
 - **LLM Embedding + 轻量分类头**：用预训练模型提 embedding（BERT / Sentence-BERT），接 LR / MLP。训练与推理成本显著低于 fine-tune 全量 LLM，效果在小数据集上接近 fine-tune。**HuggingFace 的 SetFit 框架在极少样本设置下（个位数每类标注样本）即可取得接近 fine-tune 的分类效果**——具体数值本节无法给出可核验出处，引用时请自行查证，本节不复述单一数字。
-- **TabPFN（2023, Nature）**：表格数据的 Prior-data Fitted Network，**小样本（< 10K）无需训练，直接预测**——是对传统 GBDT 的根本性挑战。
+- **TabPFN（2023, ICLR）**：表格数据的 Prior-data Fitted Network，**小样本（< 10K）无需训练，直接预测**——是对传统 GBDT 的根本性挑战。
 - **混合架构**：高频场景用专用模型（LR / FM），长尾场景用 LLM，路由分类器统一调度。**LinkedIn 的内容分类、Pinterest 的图谱分类都已采用这种混合架构**。
 
 **3. 常见陷阱**
@@ -88,12 +88,12 @@
 
 - He et al. 2014《Practical Lessons from Predicting Clicks on Ads at Facebook》——GBDT+LR 经典方案出处，含完整的工程实现细节。
 - Cheng et al. 2016《Wide & Deep Learning for Recommender Systems》（Google）——Wide & Deep 的原始论文，是 CTR 预估的必读文献。
-- Guo et al. 2017《DeepFM: A Factorization-Machine based Neural Network for CTR Prediction》（华为 + 哈工大）——DeepFM 的原始出处，AAAI 2017。
+- Guo et al. 2017《DeepFM: A Factorization-Machine based Neural Network for CTR Prediction》（华为 + 哈工大）——DeepFM 的原始出处，IJCAI 2017。
 - Naumov et al. 2019《Deep Learning Recommendation Model for Personalization and Recommendation Systems》（Meta）——DLRM 论文，工业级推荐架构标杆。
 - Chen & Guestrin 2016《XGBoost: A Scalable Tree Boosting System》——XGBoost 的原始论文。
 - Ke et al. 2017《LightGBM: A Highly Efficient Gradient Boosting Decision Tree》（微软）——LightGBM 的原始论文。
 - Prokhorenkova et al. 2018《CatBoost: Unbiased Boosting with Categorical Features》（Yandex）——CatBoost 的原始论文。
-- Hollmann et al. 2023《TabPFN: A Transformer That Solves Small Tabular Classification Problems in a Second》（Nature）——TabPFN 原始论文。
+- Hollmann et al. 2023《TabPFN: A Transformer That Solves Small Tabular Classification Problems in a Second》（ICLR 2023）——TabPFN 原始论文。
 - **阿里妈妈 DIN / DIEN** —— 阿里妈妈在 CTR 预估领域的工业级实践，深度兴趣网络解决了"用户兴趣动态演化"问题，是深度学习 CTR 的代表作。
 - **字节跳动 CTR 预估架构** —— 字节用 Wide & Deep + DeepFM + 多任务学习构成 CTR 预估体系，配合自研 BytePS 分布式训练框架。
 - **美团商家风控** —— 美团在外卖商家风险识别场景下用 XGBoost + LR 双层架构；相比单层基线，离线 AUC 与召回率均有改善，但**具体数值本节无法给出可核验出处，引用时请自行查证**。
@@ -797,7 +797,7 @@
 
 - Lundberg & Lee 2017《A Unified Approach to Interpreting Model Predictions》（NeurIPS）——SHAP 的原始论文。
 - Ribeiro et al. 2016《"Why Should I Trust You?": Explaining the Predictions of Any Classifier》（KDD）——LIME 的原始论文。
-- Lou et al. 2013《Intelligible Models for Healthcare: Predicting Pneumonia Risk and Hospital 30-day Readmission》——EBM 的前身 GAMMI。
+- Lou et al. 2013《Accurate Intelligible Models with Pairwise Interactions》——EBM 的前身 GAMMI。
 - Caruana et al. 2015《Intelligible Models for HealthCare: Predicting Pneumonia Risk and Hospital 30-day Readmission》——EBM 的奠基论文。
 - Molnar 2022《Interpretable Machine Learning》——可解释 ML 的系统教材。
 - Arrieta et al. 2020《Explainable Artificial Intelligence (XAI): Concepts, Taxonomies, Opportunities and Challenges》——XAI 综述。
@@ -830,4 +830,4 @@
 
 ### 8.10 返回
 
-- 返回 [Ch2 · 数据科学与算法章节目录](../../README.md)
+- 返回 [Ch2 · 数据科学与算法章节目录](../README.md)

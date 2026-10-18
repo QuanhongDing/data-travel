@@ -106,7 +106,7 @@ A 收到 C 的写入：(A:1, B:1, C:0) vs (A:0, B:0, C:1) → concurrent
 - Riak 官方文档「Vector Clocks」与「Conflict Resolution」——向量时钟在 Riak 中的使用与冲突解决示例。
 - **Amazon Dynamo 的向量时钟 + 应用层冲突解决** —— Dynamo 用向量时钟检测冲突 + 应用层合并（如购物车合并），是头部电商系统的 AP 实践。
 - **Riak 的向量时钟默认冲突解决** —— Riak 默认用向量时钟 + sibling 返回（让应用层决定合并），是 AP 数据库冲突解决的代表。
-- **Cassandra 的 LWW（默认）+ 应用层冲突解决** —— Cassandra 默认用 LWW，但可以配应用层冲突解决，是 B 树 NoSQL 数据库的代表。
+- **Cassandra 的 LWW（默认）+ 应用层冲突解决** —— Cassandra 默认用 LWW，但可以配应用层冲突解决，是 宽列（wide-column）NoSQL 数据库的代表。
 - **CRDT（Conflict-free Replicated Data Types）的工业实践** —— CRDT 是向量时钟的进化——数据结构本身保证可合并，无需应用层介入；Riak / Cassandra / Yjs 都支持 CRDT。
 
 > 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
@@ -345,7 +345,7 @@ LWW 只适合**业务能接受"覆盖丢失"**的场景：
 - TrueTime 原始论文《Spanner: Google's Globally Distributed Database》（OSDI 2012）——全局时钟如何让 LWW 在跨大洲可信。
 - CRDT 的工业综述《Conflict-free Replicated Data Types》（Shapiro et al., 2011）——CRDT 的理论基础。
 - **Amazon DynamoDB 的 LWW 默认 + Strongly Consistent Read 可选** —— DynamoDB 默认 LWW（用时间戳），可选 Strongly Consistent Read 配 CP 模式，是头部云厂商 LWW 的标杆。
-- **Cassandra 的 LWW 默认 + 应用层合并可选** —— Cassandra 默认 LWW，但可以配应用层冲突解决，是 B 树 NoSQL 数据库 LWW 的代表。
+- **Cassandra 的 LWW 默认 + 应用层合并可选** —— Cassandra 默认 LWW，但可以配应用层冲突解决，是 宽列（wide-column）NoSQL 数据库 LWW 的代表。
 - **Riak 的向量时钟 + sibling 返回** —— Riak 默认用向量时钟，不直接 LWW；冲突时返回 sibling 让应用层决定合并，是 AP 数据库的代表。
 - **Google Spanner 的 TrueTime + Commit Wait 避免 LWW 丢数据** —— Spanner 用 TrueTime + Commit Wait 让 LWW 在跨大洲可信，是 CP 系统的标杆。
 - **CockroachDB 的 HLC + LWW** —— CockroachDB 用 HLC 替代纯物理时钟，让 LWW 在跨 Region 可信，是分布式 SQL 数据库的代表。
@@ -456,7 +456,7 @@ LWW 只适合**业务能接受"覆盖丢失"**的场景：
 - **Netflix ChAP 的冲突注入与一致性验证** —— Netflix 用 ChAP 主动注入冲突场景，验证系统的冲突处理是否正确，是头部流媒体公司对一致性的工程验证范式。
 - **Amazon DynamoDB 的 LWW 默认冲突解决** —— DynamoDB 默认用 LWW 解决冲突，是头部云厂商冲突处理的代表。
 - **Riak 的向量时钟 + sibling 返回** —— Riak 默认用向量时钟检测冲突，sibling 返回让应用层解决，是 AP 数据库的代表。
-- **Cassandra 的 LWW + 应用层冲突解决** —— Cassandra 默认 LWW，可配应用层冲突解决，是 B 树 NoSQL 数据库的代表。
+- **Cassandra 的 LWW + 应用层冲突解决** —— Cassandra 默认 LWW，可配应用层冲突解决，是 宽列（wide-column）NoSQL 数据库的代表。
 - **Google Spanner 的 TrueTime + 强一致避免冲突** —— Spanner 用 TrueTime + Paxos 从源头避免冲突，是 CP 系统的标杆。
 - **CockroachDB 的 HLC + 强一致避免冲突** —— CockroachDB 用 HLC + Raft 从源头避免冲突，是分布式 SQL 数据库的代表。
 - **Uber 的订单系统混合冲突处理** —— Uber 订单核心用 CockroachDB 强一致避免冲突，订单轨迹用 Cassandra LWW，是出行行业混合冲突处理的代表。
@@ -607,7 +607,7 @@ LWW：所有非时钟新的写入都被认为"覆盖"，没有"冲突"概念。
 - Shapiro et al.《A Comprehensive Study of Convergent and Commutative Replicated Data Types》——CRDT 的理论基础，向量时钟的进化方向。
 - **Amazon Dynamo 的向量时钟 + LWW 混合** —— Dynamo 默认 LWW，但用向量时钟检测冲突，必要时返回 sibling 让应用层合并，是头部电商系统的代表。
 - **Riak 的向量时钟默认 + sibling 返回** —— Riak 默认用向量时钟检测冲突，返回 sibling 让应用层解决，是 AP 数据库的代表。
-- **Cassandra 的 LWW 默认 + 应用层冲突解决** —— Cassandra 默认 LWW，但可以配应用层合并，是 B 树 NoSQL 数据库的代表。
+- **Cassandra 的 LWW 默认 + 应用层冲突解决** —— Cassandra 默认 LWW，但可以配应用层合并，是 宽列（wide-column）NoSQL 数据库的代表。
 - **Google Spanner 的 TrueTime 替代向量时钟** —— Spanner 用 TrueTime + Paxos，节点数可扩展到万级而不需要向量时钟，是 CP 系统的标杆。
 - **CockroachDB 的 HLC 替代向量时钟** —— CockroachDB 用 HLC（物理 + 逻辑混合），节点数可扩展而向量维度固定为 2，是分布式 SQL 数据库的代表。
 - **Uber 的订单系统 LWW + 强一致** —— Uber 订单核心用 CockroachDB HLC + LWW，订单轨迹用 Cassandra LWW，是出行行业混合一致性时钟的代表。

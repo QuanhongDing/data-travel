@@ -730,10 +730,10 @@ InfluenceScore = Persuasion × Credibility × Coalition × Timing
 
 1. **数据脱敏**：喂给 AI 的文档必须脱敏——人员姓名匿名化、财务数据脱敏、未公开战略标记「机密」。
 2. **私有部署优先**：跨团队敏感信息优先用企业私有部署的 LLM（Microsoft Copilot 企业版、Google Workspace AI 企业版、ChatGPT Enterprise / Claude for Teams），而非公网 API。
-4. **Prompt 留痕**：所有 AI 协作的 prompt 与输出必须留痕（类似 ADR 归档），便于审计与复盘。
-5. **合规审查**：涉及跨境 / 跨监管的协作（如欧盟 GDPR、中国 PIPL、美国 HIPAA），AI 数据流必须符合「数据驻留」要求——某些场景下 LLM 必须部署在本地或合规区域。
-6. **人类确认**：AI 输出必须由人类 Owner 确认（Human-in-the-Loop），未确认的内容不得作为决策依据。
-7. **防幻觉**：AI 引用的「案例」「历史决策」必须人工核实，绝不能直接采信——尤其在 ADR / RFC 等决策文档中。
+3. **Prompt 留痕**：所有 AI 协作的 prompt 与输出必须留痕（类似 ADR 归档），便于审计与复盘。
+4. **合规审查**：涉及跨境 / 跨监管的协作（如欧盟 GDPR、中国 PIPL、美国 HIPAA），AI 数据流必须符合「数据驻留」要求——某些场景下 LLM 必须部署在本地或合规区域。
+5. **人类确认**：AI 输出必须由人类 Owner 确认（Human-in-the-Loop），未确认的内容不得作为决策依据。
+6. **防幻觉**：AI 引用的「案例」「历史决策」必须人工核实，绝不能直接采信——尤其在 ADR / RFC 等决策文档中。
 
 **第五层：AI 增强协作的整体趋势。** 2024–2025 年的工业实践：
 

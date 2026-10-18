@@ -31,7 +31,7 @@
 **第三层：批流元数据采集分别落地。**
 
 - **批侧（Spark / Hive）**：Hive Hook + Spark Listener 提取 SQL AST 与血缘；事件写 Kafka 广播到元数据平台。
-- **流侧（Flink / Kafka）**：Fink Job Listener 提取 Source / Sink 拓扑；Kafka Connect 用 SMT 提取 schema；事件同样写 Kafka。
+- **流侧（Flink / Kafka）**：Flink Job Listener 提取 Source / Sink 拓扑；Kafka Connect 用 SMT 提取 schema；事件同样写 Kafka。
 - **统一事件总线**：用 OpenLineage 开放标准（Marquez 项目），让批流都用统一的 Lineage Event 格式上报，下游元数据平台（DataHub / OpenMetadata）统一消费。
 - **Schema 演进**：用 Schema Registry（Confluent / Karapace / Hive Metastore）管理 Avro / Protobuf / Iceberg Schema 演进；元数据平台订阅 schema 变更事件并更新血缘。
 
@@ -251,7 +251,7 @@
 **4. 追问预测**
 
 - **「元数据服务脑裂怎么处理？」** 答：用 Raft / Paxos 多数派；用 lease 机制定期续约；用 fencing token 防止旧 leader 写入。
-- **冷存储怎么办？」** 答：历史版本元数据归档到对象存储（S3 / OSS）；按访问频率分层（最近 30 天热数据 / 30–180 天冷数据 / 180 天以上归档）。
+- **「冷存储怎么办？」** 答：历史版本元数据归档到对象存储（S3 / OSS）；按访问频率分层（最近 30 天热数据 / 30–180 天冷数据 / 180 天以上归档）。
 - **「Unity Catalog 与 Hive Metastore 怎么选？」** 答：新平台直接 Unity Catalog（湖仓原生）；老 Hadoop 继续 Hive Metastore；过渡期可用 HMS 联邦到 Unity Catalog。
 - **「元数据服务的可观测性怎么做？」** 答：API 成功率 / 延迟 / QPS 各打点；持久化层慢查询监控；缓存命中率；变更事件消费 lag。
 
@@ -323,7 +323,7 @@
 **4. 追问预测**
 
 - **「Raft 与 Paxos 怎么选？」** 答：Raft 实现简单且工程化成熟，是主流选择（etcd / Consul / CockroachDB）；Paxos 理论更强但实现复杂（Google Spanner 用 Paxos 变体）。
-- **冷存储怎么办？」** 答：脑裂期间对外只读副本不提供服务；写入请求排队；等主节点选举后再批量提交。
+- **「脑裂期间服务怎么降级？」** 答：脑裂期间对外只读副本不提供服务；写入请求排队；等主节点选举后再批量提交。
 - **「脑裂恢复后数据不一致怎么办？」** 答：按业务规则合并；写不下的等业务侧裁决；严重冲突回滚到快照。
 - **「如何做脑裂演练？」** 答：混沌工程（Chaos Engineering）工具注入网络分区 / 节点宕机；Netflix Chaos Monkey / ChaosBlade / Litmus 是工业代表。
 
@@ -383,9 +383,9 @@
 **4. 追问预测**
 
 - **「治理评分权重怎么定？」** 答：权重由治理委员会审定；分维度给分（如元数据完整度 25% / 血缘覆盖 25% / 质量 30% / 活跃度 20%）；权重公开透明。
-- **三者的协同靠工具还是流程？」** 答：工具为骨、流程为肉——工具发现不联通（节点自动报告）、流程分级（人工工具双轨道）。
+- **「三者的协同靠工具还是流程？」** 答：工具为骨、流程为肉——工具发现不联通（节点自动报告）、流程分级（人工工具双轨道）。
 - **「AI 时代怎么扩展协同？」** 答：加 LLM 调用质量 + 模型训练数据血缘 + 模型输出审计三个新三角。
-- **「治理评分与业务 KPI 怎么挂钩？」」 答：评分作为「可被信任程度**」的代理指标，与报表可用率 / 推荐准确率等业务指标弱关联；不直接作为绩效 KPI，避免刷分。
+- **「治理评分与业务 KPI 怎么挂钩？」** 答：评分作为「可被信任程度」的代理指标，与报表可用率 / 推荐准确率等业务指标弱关联；不直接作为绩效 KPI，避免刷分。
 
 **5. 参考资料**
 
@@ -441,8 +441,8 @@
 
 **4. 追问预测**
 
-- **「OpenLineage 怎么落地到 Flink？」** 答：用  集成；Fink Job 启动时通过 LifecycleListener 触发 Lineage Event；事件发 Kafka，Marquez / DataHub 消费。
-- **冷存储怎么办？」** 答：血缘事件存 Iceberg / Hudi，按 `event_time` 分区；老的全量归档供事故排查。
+- **「OpenLineage 怎么落地到 Flink？」** 答：用  集成；Flink Job 启动时通过 LifecycleListener 触发 Lineage Event；事件发 Kafka，Marquez / DataHub 消费。
+- **「冷存储怎么办？」** 答：血缘事件存 Iceberg / Hudi，按 `event_time` 分区；老的全量归档供事故排查。
 - **「实时血缘精度与延迟怎么权衡？」** 答：事件级精度 + 秒级延迟是常见目标；表达级别精度 + 分钟级延迟是更精细但重的选择。
 - **「AI 时代实时血缘怎么扩展？」** 答：LLM 调用作为一类 Source；Agent 决策作为一类 Transform；Langfuse / LangSmith 自动产生事件。
 

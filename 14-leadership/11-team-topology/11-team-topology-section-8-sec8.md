@@ -616,14 +616,14 @@
 
 **1. 考察点**
 
-- 是否理解 **三种主要交互模式**（Matthew Skelton 原书）+ **第四种 Sub-subscribing**（2nd Edition 新增）——四种模式分别对应不同的团队关系。
+- 是否理解 **三种主要交互模式**（Matthew Skelton 原书）+ **第四种 Sub-subscribing**（本书主文件 §2.1 记为第 4 种；公开材料引述原书时给的是三种，本章不把第 4 种归给该书）——四种模式分别对应不同的团队关系。
 - 能否从「**耦合强度**」角度区分——**Collaboration（最紧）→ Sub-subscribing → Facilitating → X-as-a-Service（最松）**。
-- 是否知道 **2nd Edition 新增 Sub-subscribing** 的关键意义——业务团队与 Complicated-Subsystem Team 的合作模式。
+- 是否知道 **第 4 种交互模式 Sub-subscribing** 的关键意义——业务团队与 Complicated-Subsystem Team 的合作模式。
 - 加分项：能讲出 **Spotify / ING / Thoughtworks / 阿里 / 字节** 在四种交互模式上的实践差异。
 
 **2. 参考答案框架**
 
-**第一层：四种交互模式的根性差异——耦合强度。** Team Topologies 原书定义三种交互模式（Collaboration / X-as-a-Service / Facilitating），2nd Edition 新增 Sub-subscribing，共四种：
+**第一层：四种交互模式的根性差异——耦合强度。** Team Topologies 原书定义三种交互模式（Collaboration / X-as-a-Service / Facilitating），本书主文件 §2.1 另记第 4 种 Sub-subscribing，共四种：
 
 | 模式 | 耦合强度 | 描述 | 典型场景 |
 | --- | --- | --- | --- |
@@ -644,7 +644,7 @@
 - **风险**：长期高耦合会导致团队互相依赖，决策速度降低。
 - **健康使用方式**：临时性，2-4 周内完成。
 
-**模式 2：Sub-subscribing（订阅服务）—— 2nd Edition 新增。**
+**模式 2：Sub-subscribing（订阅服务）—— 本书主文件 §2.1 记为第 4 种。**
 
 - **描述**：业务团队订阅 Complicated-Subsystem Team 的服务（如加密、安全、底层存储）。业务团队提供「**具体需求 + 服务级别**」，Complicated-Subsystem Team 负责「**实现 + 维护**」。
 - **耦合**：业务方与 Complicated-Subsystem Team 通过明确的「**服务订阅协议**」连接，耦合强度低于 Collaboration 但高于纯 X-as-a-Service。
@@ -706,7 +706,7 @@
 **5. 参考资料**
 
 - Matthew Skelton & Manuel Pais《Team Topologies》第 2 章 "Team Interaction Modes"——三种原始交互模式的出处。
-- Matthew Skelton & Manuel Pais《Team Topologies 2nd Edition》（2024）第 2 章——新增 Sub-subscribing 模式。
+- Matthew Skelton & Manuel Pais《Team Topologies 2nd Edition》（2024）第 2 章——Team Interaction Modes 的更新；第 4 种 Sub-subscribing 在原书中的具体出处本书未逐字核实（读者可按原书目录自行核验），本章按主文件 §2.1 口径记为 4 种（与 [§7.3.3](11-team-topology-section-7-sec7.md) 的口径说明一致）。
 - ThoughtWorks 关于 Platform Engineering 与 Team API 的公开演讲——X-as-a-Service 的现代方法论。
 - Spotify Engineering Culture 关于 Squad 之间 "Trust and Track" 的设计——各种交互模式的实际落地。
 - ING Bank 关于跨 Squad 协作 + Enabling Team 的公开分享——三种模式的代表性结合。

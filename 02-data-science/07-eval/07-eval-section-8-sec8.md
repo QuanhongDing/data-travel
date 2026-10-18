@@ -128,7 +128,7 @@
 
 - **哈希分桶原理**：把用户 ID 经过哈希函数映射到 [0, 9999] 的桶空间，再按比例分配。例如对照组 = 0-4999，实验组 A = 5000-7499，实验组 B = 7500-9999。关键约束是**哈希函数稳定 + 用户 ID 不变**——只要这两个条件满足，同一用户永远在同组。
 - **为什么必须哈希？**：基于时间 / 顺序分配会让「早上来的用户和晚上来的用户分到不同组」，引入选择偏差。哈希分桶是唯一能保证「随机性 + 稳定性」的方法。
-- **流量分层**：Google 在 2016 年的 Overlapping Experiment 框架中提出「Layer」概念。每层独立哈希，层与层之间**正交**——例如「UI 层」「算法层」「推荐层」三层可以同时跑三个实验，同一用户在三层中分别独立分组。
+- **流量分层**：Google 在 2010 年的 Overlapping Experiment 框架中提出「Layer」概念。每层独立哈希，层与层之间**正交**——例如「UI 层」「算法层」「推荐层」三层可以同时跑三个实验，同一用户在三层中分别独立分组。
 - **层数限制**：层数越多，单层流量越分散，统计功效越低。Google 一般控制在 5-10 层，字节 ABT 平台控制 3-5 层，Meta 控制 5-8 层。
 
 **第三层：SRM（Sample Ratio Mismatch）。**
@@ -177,7 +177,7 @@ $$n = \frac{(z_{\alpha/2} + z_\beta)^2 \cdot 2\sigma^2}{\delta^2}$$
 
 **5. 参考资料**
 
-- Google「Overlapping Experiment Infrastructure」论文（2016）——流量分层（Layer）的原始设计与工程实现，是分层实验的必读文献。
+- Google「Overlapping Experiment Infrastructure」论文（2010）——流量分层（Layer）的原始设计与工程实现，是分层实验的必读文献。
 - Microsoft「Controlled Experiments Using Pre-Existing Data」（CUPED, 2013）——方差缩减的工业论文，A/B 测试提速的标志性方法。
 - Kohavi / Deng / Frasca / Walker 等「Online Controlled Experiments at Large Scale」（ACM SIGKDD 2013 & 2019 系列）——A/B 测试工程实践的圣经级论文。
 - Booking.com Experimentation 平台公开分享——贝叶斯 SRM 检测与多层实验的真实案例。
@@ -422,20 +422,20 @@ $$n = \frac{(z_{\alpha/2} + z_\beta)^2 \cdot 2\sigma^2}{\delta^2}$$
    - **适用**：快速对比聊天模型的指令遵循能力。
    - **陷阱**：GPT-4 评估 GPT-4 自己的输出会有**自我偏好偏差**——用 GPT-4 评估 GPT-4 的胜率比评估 Claude 更宽容。
 
-4. **MT-Bench / Chatbot Arena（LMSYS 2023）**：
+3. **MT-Bench / Chatbot Arena（LMSYS 2023）**：
    - **MT-Bench**：80 个多轮对话任务，GPT-4 评估两个模型的对话质量。
    - **Chatbot Arena**：人类用户投票两个模型，A/B 投票 + Elo 排名。是当前 LLM 排名最权威的人类偏好基准。
    - **陷阱**：Arena 的投票人群偏技术开发者，与普通用户偏好有偏差。
 
-5. **OpenAI Evals（2023，开源）**：
+4. **OpenAI Evals（2023，开源）**：
    - **特点**：开源 LLM 评估框架，支持多种任务的标准化评估。
    - **适用**：自定义 LLM 评估、企业内部模型评估。
 
-6. **lm-evaluation-harness（EleutherAI）**：
+5. **lm-evaluation-harness（EleutherAI）**：
    - **特点**：最广泛使用的开源 LLM 评估框架，覆盖 200+ 任务。
    - **适用**：学术与开源 LLM 的标准评估。
 
-7. **AI-as-Judge（2024 普及）**：
+6. **AI-as-Judge（2024 普及）**：
    - **原理**：用 GPT-4 / Claude 等强模型评估弱模型输出。
    - **陷阱**：三大偏差——**位置偏差**（先评估的得分高）、**自我偏好偏差**（同源模型得分高）、**长度偏差**（更长的输出得分高）。
    - **校准方法**：用 Human Eval 校准 LLM Judge，计算 Judge-Human 一致性（Spearman 相关系数）。Microsoft 在 Phi-3 论文里详细讨论了 LLM Judge 校准流程。

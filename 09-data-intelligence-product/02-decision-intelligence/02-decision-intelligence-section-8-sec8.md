@@ -172,7 +172,7 @@
 
 **2. 参考答案框架**
 
-**第一层：先厘清两者的本质。 规则决策是「if-then-else 的布尔组合」——业务专家把经验沉淀为规则，决策引擎按规则匹配。代表：Drools、Easy Rules、Aviator、QLExpress、DMN 决策表。ML 决策是「参数化函数 **」——通过损失函数（分类任务用交叉熵 / 对数损失，回归任务用均方误差）从数据中学习映射。代表：XGBoost / LightGBM / DNN / 推荐模型。
+**第一层：先厘清两者的本质。 规则决策是「if-then-else 的布尔组合」——业务专家把经验沉淀为规则，决策引擎按规则匹配。代表：Drools、Easy Rules、Aviator、QLExpress、DMN 决策表。ML 决策是「参数化函数」——通过损失函数（分类任务用交叉熵 / 对数损失，回归任务用均方误差）从数据中学习映射。代表：XGBoost / LightGBM / DNN / 推荐模型。
 
 **第二层：四维结构化对比。**
 
@@ -533,4 +533,4 @@ A/B 实验是**因果推断的金标准**——随机分组让混淆变量均匀
 
 ### 8.4 返回
 
-- 返回 [09-data-intelligence-product 章节目录](../../README.md)
+- 返回 [09-data-intelligence-product 章节目录](../README.md)

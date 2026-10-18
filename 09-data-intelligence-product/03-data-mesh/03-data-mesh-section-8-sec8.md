@@ -719,4 +719,4 @@ Step 4：稳定期与冻结
 
 ### 8.4 返回
 
-- 返回 [09-data-intelligence-product 章节目录](../../README.md)
+- 返回 [09-data-intelligence-product 章节目录](../README.md)

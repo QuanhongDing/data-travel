@@ -108,7 +108,6 @@
 - 1994：GroupLens 提出**基于用户的协同过滤**（UserCF）。
 - 2003：Amazon 提出**基于物品的协同过滤**（ItemCF）并商业化。
 - 2006：Netflix Prize 推动**矩阵分解**（Matrix Factorization, MF / SVD / FM）。
-- 2007：Yahoo 提出**Slope One** 简单推荐。
 - 2009：Facebook 提出**GBDT + LR** 组合。
 
 **深度学习阶段（2015–2020）**：

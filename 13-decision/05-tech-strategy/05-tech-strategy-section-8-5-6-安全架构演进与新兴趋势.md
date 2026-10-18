@@ -234,8 +234,8 @@ LinkedIn / Uber / 阿里 / 字节 / 美团几乎全部从 Sentry 切到 Ranger�
 
 1. **数据入湖**：Flink / Spark 写入湖表（Hudi / Iceberg）→ 触发 Atlas Hook 上报元数据。
 2. **自动打标**：Atlas Classification（如 `PII.Phone`、`PII.IDCard`）通过规则引擎自动识别敏感字段；分类规则可以是正则（`^\d{11}$`）或 NLP 模型。
-4. **Ranger 订阅**：Ranger Tagsync 服务订阅 Atlas 实体变更 → 自动同步 tag 到 Ranger。
-5. **策略生效**：用户在 BI 工具查询 → Ranger 插件匹配 tag → 应用数据脱敏 / 列裁剪。
+3. **Ranger 订阅**：Ranger Tagsync 服务订阅 Atlas 实体变更 → 自动同步 tag 到 Ranger。
+4. **策略生效**：用户在 BI 工具查询 → Ranger 插件匹配 tag → 应用数据脱敏 / 列裁剪。
 
 **第四层：DataHub 的等价方案。** DataHub（LinkedIn 开源）做类似 Atlas 的元数据管理，但更轻量、面向现代数据栈。Datahub 的 `tag` 模块可以与 Ranger 联动（需要自研适配）。
 

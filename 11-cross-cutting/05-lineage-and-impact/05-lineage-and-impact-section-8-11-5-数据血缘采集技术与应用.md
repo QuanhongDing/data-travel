@@ -29,7 +29,7 @@
 **血缘定位过程**：
 
 1. 沿血缘反向遍历：`ads_daily_gmv` → `dws_order_amount_1d` → `dwd_orders` → `ods_orders`（Kafka 原始 topic）。
-2. 在每一层叠加质量分（来自 DQC 系统）：「**odws_orders 在过去 24h `row_count_score = 0.6`**」——明显偏离历史均值。
+2. 在每一层叠加质量分（来自 DQC 系统）：「**ods_orders 在过去 24h `row_count_score = 0.6`**」——明显偏离历史均值。
 3. 进一步：`ods_orders` 来自 Kafka 原始 topic `order_events_binlog`，但 Topic 在过去 24h 的消费延迟显著上升。
 4. 沿血缘继续追到 Kafka 消费者（Flink Job）的运行状态——发现 Flink Job 在过去 24h 有过两次重启（第一次 OOM、第二次部署)。
 

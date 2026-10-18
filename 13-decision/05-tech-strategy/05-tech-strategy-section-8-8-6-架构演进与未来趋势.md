@@ -413,7 +413,7 @@ LinkedIn / Netflix / Uber 公开的架构演进都遵循这条路径。
 - **服务层**：统一的查询网关 + API Gateway。
 - **监控层**：Prometheus + Grafana + 自研告警。
 
-**第六层：工业实践。**
+**第五层：工业实践。**
 
 - **Uber** 的 AthenaX / QueryGateway 提供批流统一查询接口。
 - **LinkedIn** 的 DataHub + Stream Engine 提供批流元数据 + 实时计算。

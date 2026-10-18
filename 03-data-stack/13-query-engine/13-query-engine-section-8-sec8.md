@@ -56,7 +56,7 @@
 - **Worker**：无状态，**只执行 Coordinator 分发过来的 Stage**。每个 Worker 上跑若干 Task，每个 Task 里跑若干 Driver（pipeline 执行单元），Driver 用 Page（列存块）作为基本数据单位。Worker 通过 Exchange Operator 与其他 Worker 交换数据（Hash / Gather / Merge），全部走内存 + spill 到本地磁盘。
 - **Discovery Service**（早期架构遗留）：Worker 启动时向 Discovery 注册自己的地址，Coordinator 通过它发现 Worker。Trino 新版本已弱化此组件。
 
-**第三层：一条 SQL 的完整旅程。**
+**第二层：一条 SQL 的完整旅程。**
 
 1. **解析**：`SELECT ... FROM hive.sales.orders o JOIN mysql.crm.users u ...` → ANTLR 解析为 AST（SqlNode 树）。
 2. **逻辑规划**：语义分析（解析 catalog/schema/table，访问 Metastore 拿列与统计信息）→ LogicalPlanner 把 AST 转为 Relational Operator 树（TableScan / Filter / Project / Join / Aggregate）。
@@ -66,7 +66,7 @@
 6. **执行**：Worker 上的 Driver 拉数据（Connector PageSource）、算子计算、生成 Page，通过 Exchange 传给下游 Stage。中间结果超过内存阈值就 spill 到本地磁盘（HDFS 本地盘）。
 7. **回传**：最终 Stage 的结果由 Coordinator 串流回 Client，断流式返回，不需等到全部算完。
 
-**第四层：与相邻架构的对比。**
+**第三层：与相邻架构的对比。**
 
 - **vs Spark**：Spark Driver 是任务编排的"中心"，Driver 与 Executor 是紧耦合的（DAGScheduler 跟踪所有 Stage），Driver 单点；Trino 的 Coordinator 只负责规划与调度，不持有数据，Worker 互相 Exchange 数据，因此**更适合交互式低延迟**。
 - **vs Impala**：Impala 有 Catalogd（同步 HMS 元数据缓存）+ Statestored（集群状态）+ Impalad（执行）三个组件；Trino/Presto 只有 Coordinator + Worker 两类组件，**架构更简洁、HA 模型更简单**。
@@ -149,10 +149,10 @@ Trino 把内存分为**三层 Pool**：
 生产上有五条经验性手段，按代价递增：
 
 1. **Resource Group + 排队**：把大查询分到独立的 Resource Group，配额限制并发与内存上限，**不让它和小查询抢 General Pool**。
-3. **CBO 调优**：让 CBO 选 HashPartitionedExchange 而非 BroadcastExchange（避免大表广播爆内存）。
-4. **加盐 / 分桶**：对 Join Key 做加盐（把大表按 hash 拆为 N 个子表）— 减少单 Bucket 内存占用。
-5. **Spill 目录用 SSD / 独立盘**：spill 目录不要和数据盘混用——spill 是大顺序 IO，会污染数据缓存。
-6. **Killing 大查询**：超过 `query.max-run-time` 或内存阈值时直接 kill，配合"先跑小查询 + 大查询走后批"的策略。
+2. **CBO 调优**：让 CBO 选 HashPartitionedExchange 而非 BroadcastExchange（避免大表广播爆内存）。
+3. **加盐 / 分桶**：对 Join Key 做加盐（把大表按 hash 拆为 N 个子表）— 减少单 Bucket 内存占用。
+4. **Spill 目录用 SSD / 独立盘**：spill 目录不要和数据盘混用——spill 是大顺序 IO，会污染数据缓存。
+5. **Killing 大查询**：超过 `query.max-run-time` 或内存阈值时直接 kill，配合"先跑小查询 + 大查询走后批"的策略。
 
 **第五层：与 Spark 的内存模型对比。**
 
@@ -213,19 +213,19 @@ Trino 把内存分为**三层 Pool**：
 
 核心设计原则：**Connector 向 CBO 暴露尽可能多的能力**（行数、NDV、Min/Max、是否支持下推），让 CBO 能基于真实代价而非"启发式"做决策。
 
-**第三层：谓词下推（Predicate Pushdown）的实现机制。**
+**第二层：谓词下推（Predicate Pushdown）的实现机制。**
 
 下推的链路：
 
 1. SQL：`SELECT * FROM iceberg.orders WHERE user_id = 12345 AND order_time > '2025-01-15'`
 2. LogicalPlanner 解析为 `TableScan(iceberg.orders) → Filter(user_id=12345, order_time>'2025-01-15') → Project(*)`
 3. Optimizer 调用 `ConnectorMetadata.applyFilter()`，把 Filter 下推到 TableScan 的算子。
-5. Iceberg Connector 判断 `user_id = 12345 AND order_time > '2025-01-15'` **都能下推**——`user_id` 有 min/max 索引可剪裁文件，`order_time` 是分区列可直接裁剪分区。
-6. 返回的 `TableHandle` 携带**已经过滤的数据范围**——后续 Driver 只读这部分文件。
+4. Iceberg Connector 判断 `user_id = 12345 AND order_time > '2025-01-15'` **都能下推**——`user_id` 有 min/max 索引可剪裁文件，`order_time` 是分区列可直接裁剪分区。
+5. 返回的 `TableHandle` 携带**已经过滤的数据范围**——后续 Driver 只读这部分文件。
 
 **关键约束**：谓词下推必须是**确定性的**（不能下推 `WHERE RAND() < 0.1` 或带 UDF 的谓词），否则**跨 Stage 结果不一致**。Connector 必须明确告诉 CBO："这个谓词我能下推"或"我不能下推"。
 
-**第四层：列剪裁（Column Pruning）的实现机制。**
+**第三层：列剪裁（Column Pruning）的实现机制。**
 
 1. SQL：`SELECT order_id, amount FROM iceberg.orders`
 2. Project 算子只保留 `order_id` 和 `amount` 两列。
@@ -234,16 +234,16 @@ Trino 把内存分为**三层 Pool**：
 
 **关键收益**：列剪裁在大宽表（数百列）上收益最大——一次查询可能只读数百列中的寥寥几列，省下的 IO 与解码代价相当可观（省下的比例取决于表的列宽分布与读取列数，本节无法给出可溯源的统一数字，此处按【经验】档处理）。
 
-**第五层：自定义 Connector 接入内部系统的步骤。**
+**第四层：自定义 Connector 接入内部系统的步骤。**
 
 生产上接入内部存储系统（如自研 KV / 自研图存储）的典型步骤：
 
 1. **定义 Catalog 配置**：`etc/catalog/internal.properties` 配置 `connector.name=internal-custom` + 连接参数。
 2. **实现 ConnectorMetadata**：暴露 schema/table/column 元数据 + 统计信息（哪怕给个估算值，**不要返回 0 或无穷大**——CBO 会基于错误代价做错误决策）。
 3. **实现 PageSource**：把数据源读为 Trino 的 Page——这是最大的工作量（涉及编码、PageBuilder、Block 类型映射）。
-5. **决定是否支持谓词下推**：内部系统若支持范围查询（如 KV 的 key prefix 扫描），就实现 `applyFilter`；若不支持，返回 false 让 Trino 在内存过滤。
-6. **编写测试 + 跑集成测试**：用 Trino 的 `BaseConnectorTest` 框架验证谓词下推、列剪裁、Join 顺序等行为。
-7. **性能调优**：用 `EXPLAIN (FORMAT JSON)` 看 CBO 决策是否正确，必要时调 Connector 返回的统计信息精度。
+4. **决定是否支持谓词下推**：内部系统若支持范围查询（如 KV 的 key prefix 扫描），就实现 `applyFilter`；若不支持，返回 false 让 Trino 在内存过滤。
+5. **编写测试 + 跑集成测试**：用 Trino 的 `BaseConnectorTest` 框架验证谓词下推、列剪裁、Join 顺序等行为。
+6. **性能调优**：用 `EXPLAIN (FORMAT JSON)` 看 CBO 决策是否正确，必要时调 Connector 返回的统计信息精度。
 
 **3. 常见陷阱**
 
@@ -344,7 +344,7 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 - **业务降级**：在 BI / 报表层做"超时切友好界面"——查询超过 30s 显示"查询中，请稍候"，避免用户重复点击。
 - **走替代引擎——大查询改用 Spark**：在 ETL 层直接用 Spark 跑（Spark 的 AQE 处理大查询更稳健），让 Trino 专注交互式小查询。这是**生产上最常见的"双引擎分工"模式**。
 
-**第六层：真实生产经验。**
+**第五层：真实生产经验。**
 
 - **Meta Presto** —— Meta 用 Resource Group 按业务部门 + 用户类型建树（data scientist / data analyst / ETL），配额精确到 CPU 与并发数，超时交互查询直接 kill。
 - **字节 Trino 大查询治理** —— 字节通过 Resource Group + Killing 大查询 + 限并发三项措施，把集群可用率维持在高位（该可用率数字本节无法给出可核验的具体出处，量级按【经验】档处理）。具体做法：① ETL 走独立 Group，配额较小；② Ad-hoc 走独立 Group，配额最大但不允许过夜任务；③ 24h+ 的任务迁移到 Spark/Flink 离线平台。
@@ -512,12 +512,12 @@ Trino 的 Resource Group 是**树形结构**，每个 Group 有：
 按代价递增（也是最常见的改造路径）：
 
 1. **替换 Connector**：把内部存储（KV / 图 / 时序）实现为 Trino Connector，接入联邦查询。**代价小、收益大**——这是头部企业最常见的起点。
-3. **优化 CBO 与统计信息**：替换默认统计信息收集、加更复杂的代价模型（机器学习预测）、加自适应执行（AQE）。
-4. **改造内存模型**：替换 Memory Pool 设计、加新的 Spillable 算子、加 NUMA 感知。
-5. **改造 Stage 调度**：加优先级、加队列感知、加机器学习预测的并发度调节。
-6. **改造 Stage 执行**：加向量化（Velox / DataFusion 复用）、加 GPU 加速、加 SIMD。
-7. **改造 Driver 协议**：加 RPC 协议优化、加序列化优化（如 Arrow Flight）、加网络压缩。
-8. **重写核心模块**：从 CBO 到 Executor 全部重写——这是最深度的自研，**代价最高、收益最大但风险也最大**。
+2. **优化 CBO 与统计信息**：替换默认统计信息收集、加更复杂的代价模型（机器学习预测）、加自适应执行（AQE）。
+3. **改造内存模型**：替换 Memory Pool 设计、加新的 Spillable 算子、加 NUMA 感知。
+4. **改造 Stage 调度**：加优先级、加队列感知、加机器学习预测的并发度调节。
+5. **改造 Stage 执行**：加向量化（Velox / DataFusion 复用）、加 GPU 加速、加 SIMD。
+6. **改造 Driver 协议**：加 RPC 协议优化、加序列化优化（如 Arrow Flight）、加网络压缩。
+7. **重写核心模块**：从 CBO 到 Executor 全部重写——这是最深度的自研，**代价最高、收益最大但风险也最大**。
 
 **第三层：真实案例。**
 

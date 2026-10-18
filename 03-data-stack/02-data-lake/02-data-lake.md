@@ -220,7 +220,7 @@
 - 合并策略：Bin-packing、Sort-merge、时间窗口。
 - 工具：Iceberg `rewrite_data_files`、Hudi `compaction`、Delta `OPTIMIZE`。
 
-**6. 查询优化**
+**6. 查询优化（详见 §13 章）**
 
 - **谓词下推（Predicate Pushdown）**：WHERE 条件下推到文件层 / 列层。
 - **列剪裁（Column Pruning）**：只读需要的列。

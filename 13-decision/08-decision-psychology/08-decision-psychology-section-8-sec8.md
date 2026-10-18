@@ -85,7 +85,7 @@ Kahneman 关键的洞见是：**偏误不是因为 System 1"坏"，而是因为�
 **5. 参考资料**
 
 - Daniel Kahneman《Thinking, Fast and Slow》（2011，中译本《思考，快与慢》2014）——双过程理论的原始定义与 12 种偏误的完整论述，是本题的标准出处。
-- Daniel Kahneman、Olivier Sibony、Richard Sunner 三人在《Harvard Business Review》（2021）发表的《A Skeptic's Guide to Decision Hygiene》——把双过程理论落到工程流程上，提出"checklist + pre-mortem + decision journal"三件套，是 §8.6 工程落地的直接理论基础。
+- Daniel Kahneman、Olivier Sibony、Cass R. Sunstein 三人在《Harvard Business Review》（2021）发表的《A Skeptic's Guide to Decision Hygiene》——把双过程理论落到工程流程上，提出"checklist + pre-mortem + decision journal"三件套，是 §8.6 工程落地的直接理论基础。
 - Amazon 2015 年致股东信（Bezos "two-way doors vs one-way doors" 公开原文）——可逆 / 不可逆决策分级的工业起源，也是"什么样的决策需要强制启动 System 2"的现实例子。
 - Anthropic 2022 年发布的 Constitutional AI 论文及公开博客——AI 时代如何把 System 2 的判断准则编码进 AI 推理，是 §8.7 题的伏笔。
 - Netflix 公开的企业文化 PPT（"Freedom & Responsibility"，2009 首发、多次公开迭代）——以"if it has to be done more than twice, encode it"为代表的决策卫生实践，揭示头部流媒体公司如何在文化层面把决策心理学落地。
@@ -251,7 +251,7 @@ Kahneman 关键的洞见是：**偏误不是因为 System 1"坏"，而是因为�
 **5. 参考资料**
 
 - Gary Klein《Performing a Project Premortem》（原刊于 Harvard Business Review 2007）——Pre-Mortem 的原始定义与实施步骤。
-- Daniel Kahneman / Olivier Sibony / Richard Sunner《A Skeptic's Guide to Decision Hygiene》（HBR 2021）——把 Pre-Mortem 列入决策卫生三件套。
+- Daniel Kahneman / Olivier Sibony / Cass R. Sunstein《A Skeptic's Guide to Decision Hygiene》（HBR 2021）——把 Pre-Mortem 列入决策卫生三件套。
 - Jeff Bezos 致 Amazon 股东信（2015-2016）——高判断力决策、Disagree and Commit 等与 Pre-Mortem 相关的原则性论述。
 - 阿里《大数据之路：阿里巴巴大数据实践》（2017）——战略决策与 Pre-Mortem 在国内的早期落地范式。
 - Stripe Engineering Blog 关于 Payment Intents 上线的复盘系列——Pre-Mortem 在跨产品兼容迭代中的工程模板。
@@ -830,7 +830,7 @@ Type 2（可逆）——Flink 计算可重放，数据未绑定 Flink 私有格�
 - Spotify Backstage 官方文档的 ADR 插件章节——ADR 工具化落地的标准实现。
 - GitHub / Cloudflare / Kubernetes 等开源项目的公开 ADR 目录——真实工程团队 ADR 实践样本。
 - 阿里《大数据之路》——OneData 体系中的架构决策文档与版控纪律。
-- Daniel Kahneman / Olivier Sibony / Richard Sunner《A Skeptic's Guide to Decision Hygiene》（HBR 2021）——把"决策记录"纳入决策卫生的理论支持。
+- Daniel Kahneman / Olivier Sibony / Cass R. Sunstein《A Skeptic's Guide to Decision Hygiene》（HBR 2021）——把"决策记录"纳入决策卫生的理论支持。
 
 > 注：以上参考资料均指向公开出版物或企业公开技术博客。精确链接请按条目名称自行检索核验。
 
@@ -927,7 +927,7 @@ Kahneman 在 2011 年的《Thinking, Fast and Slow》与 2021 年的 HBR 文章�
 **5. 参考资料**
 
 - Daniel Kahneman《Thinking, Fast and Slow》（2011，中译本《思考，快与慢》）——反偏误工具的系统化论述，包括对决策日志的推荐。
-- Daniel Kahneman / Olivier Sibony / Richard Sunner《A Skeptic's Guide to Decision Hygiene》（HBR 2021）——把 Decision Journal 列入决策卫生核心工具。
+- Daniel Kahneman / Olivier Sibony / Cass R. Sunstein《A Skeptic's Guide to Decision Hygiene》（HBR 2021）——把 Decision Journal 列入决策卫生核心工具。
 - Howard Marks《The Most Important Thing》（2011）——投资界"预测记录"的实践标杆。
 - Ray Dalio《Principles》（2017，中译本《原则》）——"Thought Log"（思考日志）的公开描述。
 - Annie Duke《Thinking in Bets》（2018）——"结果日志"与"结果导向偏误"对抗的经典论述。
@@ -1015,7 +1015,7 @@ Prompt 设计必须解决三个问题：**防幻觉、防漏检、防误导**。
 **第六层：业界实践与参考。**
 
 - **Anthropic Constitutional AI（2022 提出，2024 迭代）**：Anthropic 在公开论文中描述了用一套"宪法"准则约束 AI 输出——这与"用 12 种偏误约束 LLM 检测"是同一种思路的更大规模实现：把人类的判断准则显式编码进 AI 推理过程中。
-- **Daniel Kahneman / Olivier Sibony / Richard Sunner《Noise》（2021）**：书中明确主张"用规则（rule）替代部分人判断"来降低决策噪声——LLM 辅助偏误检测正是这种思路的 AI 版本。
+- **Daniel Kahneman / Olivier Sibony / Cass R. Sunstein《Noise》（2021）**：书中明确主张"用规则（rule）替代部分人判断"来降低决策噪声——LLM 辅助偏误检测正是这种思路的 AI 版本。
 - **斯坦福 HAI（Human-Centered AI）研究院公开发表的系列研究**：讨论 LLM 在决策辅助中的角色边界与人类审阅必要性，是"AI 不可当决策 Owner"这一结论的学术支持。
 
 **3. 常见陷阱**
@@ -1036,7 +1036,7 @@ Prompt 设计必须解决三个问题：**防幻觉、防漏检、防误导**。
 **5. 参考资料**
 
 - Anthropic 公开发表的 Constitutional AI 论文（2022 提出、2024 迭代）——把人类准则显式编码进 AI 推理的范式来源。
-- Daniel Kahneman / Olivier Sibony / Richard Sunner《Noise: A Flaw in Human Judgment》（2021）——"用规则替代部分人判断"降低决策噪声的理论依据。
+- Daniel Kahneman / Olivier Sibony / Cass R. Sunstein《Noise: A Flaw in Human Judgment》（2021）——"用规则替代部分人判断"降低决策噪声的理论依据。
 - 斯坦福 HAI（Human-Centered AI）研究院关于 LLM 决策辅助与人类审阅的公开研究——AI 不可作决策 Owner 的学术支撑。
 - 本书第 13 章决策心理学章节 §4.5"AI 辅助识别偏误（Python / Claude）"示例——可落地代码模板。
 - OpenAI / Google 公开的模型能力文档中关于 structured outputs 的章节——结构化输出在偏误检测系统里的工程实现。
@@ -1117,7 +1117,7 @@ Prompt 设计必须解决三个问题：**防幻觉、防漏检、防误导**。
 - Paradise / IBM Watson for Oncology 相关的公开评估报道（多家医疗机构与媒体的公开评估）——算法权威偏误在高风险场景的失败案例。
 - Zillow Offers（2021）关停事件的公开财报与媒体报道——自动化偏误在大规模业务决策中的代价。
 - 美国国家公路交通安全管理局（NHTSA）公开的自动驾驶事故调查报告——自动化偏误在安全领域的标准案例。
-- Daniel Kahneman / Olivier Sibony / Richard Sunner《Noise: A Flaw in Human Judgment》（2021）——AI 用于降低决策噪声（而非替代判断）的定位。
+- Daniel Kahneman / Olivier Sibony / Cass R. Sunstein《Noise: A Flaw in Human Judgment》（2021）——AI 用于降低决策噪声（而非替代判断）的定位。
 - Anthropic 公开发表的 Constitutional AI 论文——用"宪法"约束 AI 输出的责任设计范式。
 - 本书第 13 章决策心理学章节 §5.1"人机协同决策"与 §5.3"AI 决策可解释性"——理论到工程的映射。
 

@@ -369,7 +369,7 @@ LinkedIn 在构建数据接入管道时，强烈推荐**二进制 + Schema**（A
 - 嵌套展平：JSON 中的 `address.city → address_city`。
 - 嵌套保留：保留 struct 形态（Parquet 支持嵌套结构）。
 
-工程实现：dbt 的 `source` / `model` 配置、Sparks 的 `withColumnRenamed`、Informatica 的图形化映射都是这条思路。
+工程实现：dbt 的 `source` / `model` 配置、Spark 的 `withColumnRenamed`、Informatica 的图形化映射都是这条思路。
 
 **第四层：类型转换（Type Casting）。** 目的：保证下游消费方拿到统一类型。
 

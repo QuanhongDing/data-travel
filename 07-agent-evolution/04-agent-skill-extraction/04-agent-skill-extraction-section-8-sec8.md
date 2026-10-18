@@ -124,7 +124,7 @@
 
 - **⑤ Verification**：双轨——**离线**在保留标注集上跑命中率（hit_rate）和准确率（quality），**在线**做 A/B 实验，监控真实业务指标（CSAT / 解决率 / Token 节省率）。**关键阈值**：通常 `hit_rate ≥ 80%` 才能进入生产路径，低于阈值回炉抽象。Devin 的工程公开材料强调"verification 不是事后审核，而是流水线的一等模块"（本节无法核验该说法的公开出处，引用时请自行查证）。
 
-- **⑥ Skill Library**：入库到 **结构化的 Skill Store**（Postgres + Vector 索引 / 专用 Skill DB），含 Owner、版本号、Skill Hash、上游 Cluster Id、评估报告等元数据。Schema 应强制结构化——YAML / JSON Schema，避免 Skill 描述失控。这一层与第六章"资产化 / Asset Registry"天然联动。
+- **⑥ Skill Library**：入库到 **结构化的 Skill Store**（Postgres + Vector 索引 / 专用 Skill DB），含 Owner、版本号、Skill Hash、上游 Cluster Id、评估报告等元数据。Schema 应强制结构化——YAML / JSON Schema，避免 Skill 描述失控。这一层与“资产化 / Asset Registry”天然联动。
 
 - **⑦ Governance & Retrieval**：在线服务用**双路召回**——Embedding 近邻 + 关键词触发词匹配，再经 LLM 重排选出 Top-1 Skill。配套监控告警：命中率、调用频次、Skill 平均年龄、Owner 缺失率等。
 
@@ -626,4 +626,4 @@ ROI = (Token 节省 + 一致性提升 + 人力节省 + 冷启动加速收益)
 
 ### 8.4 返回
 
-- 返回 [07-agent-evolution 章节目录](../../README.md)
+- 返回 [07-agent-evolution 章节目录](../README.md)

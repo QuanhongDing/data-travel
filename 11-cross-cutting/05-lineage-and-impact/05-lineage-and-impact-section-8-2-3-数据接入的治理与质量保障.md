@@ -69,7 +69,7 @@ Databricks 的 **Unity Catalog** 把这一闭环做到了产品级，Collibra �
 - Uber Engineering 关于实时数据接入与 Flink CDC 集成的公开材料——CDC 抓数与 schema 变更同步到数据湖的一线实践。
 - Airbnb Engineering 关于流处理消费者影子（shadow）模式的演讲材料——不兼容变更下的影子消费对账。
 - 阿里数据技术团队《大数据之路：阿里巴巴大数据实践》——DataWorks 字段级变更管控与 Schema 评审流程的国内一手落地经验。
-- Apache Avro 与 Apache Protobuf 官方规范文档——Schema 兼容性语义与字段 ID 分配规则的权威说明。
+- Apache Avro 与 Protocol Buffers（Google）官方规范文档——Schema 兼容性语义与字段 ID 分配规则的权威说明。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
 

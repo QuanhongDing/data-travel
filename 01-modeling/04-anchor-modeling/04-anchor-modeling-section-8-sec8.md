@@ -26,7 +26,7 @@
 
 > 本主题考察对 **Anchor Modeling**（锚建模）这一 6NF 极致规范化建模方法的「数学形式化、四件套工程组件、bitemporal 时态、零中断 schema 演化、AI 时代自演化」五大支柱的系统掌握。面试官通常从四件套的定义问起，逐层下钻到 6NF 的形式化定义、bitemporal 的三时态三元组、类型演化的零中断操作、反规范化视图与 PIT 物化的性能权衡，最终延伸到 LLM/Agent 驱动的 Auto-Anchor 与 Self-Evolving Anchor。答题时需要把"为什么 6NF 优于 3NF"与"6NF 的代价是什么"两面都讲清楚。
 
-#### §4.4.1 Anchor Modeling 的核心构件只有 Anchors / Attrtributes / Ties / Knots 四类，请分别说明它们的职责、表结构特征与典型适用场景，并对比它们与 Data Vault 中 Hub / Satellite / Link 的差异。
+#### §4.4.1 Anchor Modeling 的核心构件只有 Anchors / Attributes / Ties / Knots 四类，请分别说明它们的职责、表结构特征与典型适用场景，并对比它们与 Data Vault 中 Hub / Satellite / Link 的差异。
 
 **1. 考察点**
 

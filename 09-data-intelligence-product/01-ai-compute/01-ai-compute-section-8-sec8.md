@@ -345,7 +345,7 @@
 **4. 追问预测**
 
 - **「Volcano 和 KubeRay 怎么选？」** 答：用 Ray 做分布式训练 / RL / 数据处理选 KubeRay；用 PyTorch DDP / DeepSpeed / 自研训练选 Volcano。两者也可组合（Volcano 调度 Gang，KubeRay 管理 Ray Cluster）。
-- **「调度延迟怎么压？」** 答：四个优化——(1) Gang 调度优化（minMember 准实时检查）；(2) 拓扑预计算（缓存常用拓扑组合）；(4) 调度决策异步化（plugin 并行执行）；(4) 预测性调度（提前预留资源）。阿里 PAI 调度延迟 < 30s。
+- **「调度延迟怎么压？」** 答：四个优化——(1) Gang 调度优化（minMember 准实时检查）；(2) 拓扑预计算（缓存常用拓扑组合）；(3) 调度决策异步化（plugin 并行执行）；(4) 预测性调度（提前预留资源）。阿里 PAI 调度延迟 < 30s。
 - **「Slurm 和 K8s 怎么选？」** 答：超算 / 国家级 AI 平台选 Slurm（拓扑感知最强）；互联网公司 + 云原生选 K8s + Volcano（生态成熟）；HPC + 云原生融合场景可考虑 **K8s + Volcano + Slurm bridge**。
 - **「跨集群调度怎么做？」** 答：用 **Karmada / Volcano Multi-Cluster / Cluster API** 做跨集群调度；调度器抽象 Global Queue + Local Scheduler 两级调度。CoreWeave / Lambda Labs 等 GPU 云厂商用类似架构支持多地域 GPU 池化。
 
@@ -539,4 +539,4 @@
 
 ### 8.4 返回
 
-- 返回 [01 AI 计算平台](../README.md)
+- 返回 [09-data-intelligence-product 章节目录](../README.md)

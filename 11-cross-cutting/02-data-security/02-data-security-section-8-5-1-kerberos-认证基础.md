@@ -160,7 +160,7 @@
 
 **4. 追问预测**
 
-- **「怎么监控时钟偏移？」** 答：用 Prometheus node_exporter 的 `node_timex_seconds` 指标；设偏移 > 60s 告警；跨节点对比发现异常节点。
+- **「怎么监控时钟偏移？」** 答：用 Prometheus node_exporter 的 `node_timex_offset_seconds` 指标；设偏移 > 60s 告警；跨节点对比发现异常节点。
 - **「KDC 自己也会有时钟偏差吗？」** 答：会。KDC 必须严格 NTP，否则发出的票据都会被拒。
 
 **5. 参考资料**
