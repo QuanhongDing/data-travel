@@ -137,13 +137,13 @@
 
 **多模态融合阶段（2018-2020）**：
 
-- 2018-2019：VirTex——视觉-语言对齐的早期工作。
+- 2020：VirTex（Desai & Johnson）——用文本标注学视觉表征的早期工作。
 - 2019：T5 / BERT 等统一文本架构成熟。
-- 2020：DALL-E（OpenAI）、VQGAN 推动图像生成 + 视觉-语言联合。
+- 2020：VQGAN 推动图像生成与视觉-语言联合。
 
 **多模态大模型阶段（2021-2023）**：
 
-- 2021：CLIP（OpenAI）、ALIGN（Google）、Florence（微软）等多模态预训练模型成熟。
+- 2021：CLIP（OpenAI）、ALIGN（Google）、Florence（微软）等多模态预训练模型成熟；DALL-E（OpenAI）公布文本到图像生成结果。
 - 2022：DALL-E 2、Stable Diffusion、Imagen——图像生成大爆发。
 - 2023：GPT-4（多模态预览版）——首个 GPT 多模态模型。
 - 2023：GPT-4V（视觉）、LLaVA、MiniGPT-4——开源 VLM 涌现。
