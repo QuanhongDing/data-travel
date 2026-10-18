@@ -126,11 +126,11 @@
 
 **深度学习阶段（2016+）**：
 
-- 2017：Uber 推出 **DeepETA**（ETA 预估的深度学习）。
 - 2018：**DeepAR**（Amazon）——时序预测的 RNN 自回归。
 - 2020：**N-BEATS** / **N-HiTS**（Element AI）——时序预测的深度学习基础模型。
 - 2021：**Informer**——长序列时序 Transformer。
 - 2022：**PatchTST**（ICLR 2023）——时序 Transformer 的 Patch 化。
+- 2022：Uber 推出 **DeepETA**（ETA 预估的深度学习）。
 - 2023：**TimesNet** / **iTransformer**——时序基础模型。
 
 **因果与前沿阶段（2018+）**：

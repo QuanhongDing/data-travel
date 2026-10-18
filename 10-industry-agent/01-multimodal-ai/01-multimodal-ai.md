@@ -183,7 +183,7 @@
 - **文档理解（Document Understanding）**：理解 PDF / Word / Excel / PPT 中的图表 / 公式 / 表格。代表：GPT-4V、Claude 3.5 Sonnet、Qwen-VL、DocLLM、LayoutLMv3、DocFormer。
 - **OCR（Optical Character Recognition）**：把图像中的文字识别为文本。传统：Tesseract、PaddleOCR；多模态：GPT-4V / Claude / Qwen-VL。
 - **视频理解（Video Understanding）**：理解视频内容——动作识别、视频问答、视频摘要、时序定位。代表：VideoMAE、VideoLLaMA、Video-LLAVA、Gemini 1.5。
-- **语音识别（ASR, Automatic Speech Recognition）**：把语音转文字。代表：Whisper（OpenAI）、Paraformer（阿里）、SenceVoice（阿里开源）、FunASR。
+- **语音识别（ASR, Automatic Speech Recognition）**：把语音转文字。代表：Whisper（OpenAI）、Paraformer（阿里）、SenseVoice（阿里开源）、FunASR。
 - **语音合成（TTS, Text-to-Speech）**：把文字转语音。代表：VALL-E（微软）、VALL-E 2、VITS、Suno Bark、TTS 千千万。
 - **3D 视觉（3D Vision）**：3D 点云、3D 重建、NeRF、3D Gaussian Splatting。代表：PointNet、Point Transformer、NeRF、3D Gaussian Splatting。
 - **世界模型（World Model）**：能理解 / 预测 / 生成现实世界的 AI 模型。代表：Sora、Veo、Genie 2（DeepMind）、GAIA-1（Wayve）。

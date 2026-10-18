@@ -141,7 +141,7 @@
 - **概念 / 类（Class / Concept）**：实体的抽象类型。例如「客户」「订单」「城市」。
 - **本体（Ontology）**：KG 的 schema 层（参见前文 05 本体建模）。
 - **三元组（Triple）**：KG 的基本数据单位（主体-谓词-客体），对应图中的「边」。
-- **RDF / RDFs / OWL**：W3C 标准，是 KG 的语义基础（详见 05 章）。
+- **RDF / RDFS / OWL**：W3C 标准，是 KG 的语义基础（详见 05 章）。
 - **属性图（Property Graph）**：图数据库主流模型（Neo4j 风格），节点和边都可以带任意属性。区别于纯 RDF 三元组模型。
 - **Cypher / nGQL / GQL / SPARQL**：图查询语言。Cypher（Neo4j）、nGQL（NebulaGraph）、GQL（ISO 标准，2024 发布）、SPARQL（RDF）。
 - **图嵌入（Graph Embedding）**：把节点 / 边 / 子图映射到向量空间。代表方法：TransE、TransR、RotatE、ComplEx、Node2Vec、GraphSAGE。

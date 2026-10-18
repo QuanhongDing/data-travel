@@ -68,14 +68,14 @@
 | 时间 | 事件 | 关键贡献 |
 | --- | --- | --- |
 | 2022 | LangChain Agents | 手工定义工具列表 |
-| 2023 | AutoGPT | 自动任务分解 |
-| 2023-11 | Voyager（Minecraft） | 自动技能库发现 |
 | 2022 | ReAct | 推理 + 行动 |
+| 2023 | AutoGPT | 自动任务分解 |
 | 2023 | Reflexion | 自我反思 + Skill 积累 |
+| 2023-11 | Voyager（Minecraft） | 自动技能库发现 |
+| 2024 | Self-Play RL | 自我博弈生成训练数据 |
 | 2024-06 | Auto-Skill（学界） | LLM 自动生成 Skill |
 | 2024-08 | Cursor Composer | IDE 中的 Skill 编排 |
 | 2024-10 | Devin（Cognition） | 端到端 Coding Agent |
-| 2024 | Self-Play RL | 自我博弈生成训练数据 |
 | 2025-06 | Procedural Memory 论文 | 程序性记忆建模 |
 
 ### 1.4 在 AI 时代数据架构中的位置

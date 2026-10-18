@@ -120,7 +120,7 @@
 - **向量化执行（Vectorized Execution）**：查询优化器向量化执行算子。
 - **HNSW Index（pgvector 0.5+）**：pgvector 支持 HNSW 索引。
 - **IVFFlat Index**：pgvector 的 IVF 索引。
-- **Half-Precision Vector（pgvector 0.6+）**：半精度向量（float16），省内存。
+- **Half-Precision Vector（pgvector 0.7+）**：半精度向量（float16），省内存。
 - **Binary Quantization（pgvector 0.7+）**：二进制量化，压缩 32 倍。
 - **DiskANN in PostgreSQL**：PostgreSQL + pgvectorscale（TimescaleDB）。
 - **Oracle 23ai AI Vector Search**：Oracle 内置向量搜索。

@@ -146,7 +146,7 @@
 | **DPO** | 直接优化偏好 | 替代 RLHF，更稳定 |
 | **GRPO** | 组内相对优化 | DeepSeek-R1 |
 | **KTO** | Kahneman-Tversky Optimization | 不需要成对偏好 |
-| **IPO** | Identical Preference Optimization | 防过拟合 |
+| **IPO** | Identified Preference Optimization | 防过拟合 |
 | **Online Learning** | 流式更新 | 推荐、风控 |
 | **Contextual Bandit** | 上下文老虎机 | 个性化推荐 |
 | **Self-Play** | 自我博弈 | 游戏 / 推理 |

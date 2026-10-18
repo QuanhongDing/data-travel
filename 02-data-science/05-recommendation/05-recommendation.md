@@ -267,7 +267,7 @@ $$P(\text{next\_id} \mid \text{history\_ids}) = \text{Transformer}(\text{history
 
 1. **UserCF**（1994）——基于用户相似度。
 2. **ItemCF**（2003）——基于物品相似度，工业主流。
-3. **Slope One**（2005）——简单加权平均。
+3. **Slope One**——简单加权平均。
 4. **矩阵分解（MF / SVD / SVD++）**（2006）——隐向量分解。
 5. **PMF / BPMF**——概率矩阵分解。
 

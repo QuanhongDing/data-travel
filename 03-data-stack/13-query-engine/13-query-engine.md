@@ -100,7 +100,7 @@
 - 2020：Trino + Iceberg 深度集成。
 - 2021：Trino 400+、Iceberg V2 支持。
 - 2023：Trino 420+。
-- 2024：DataFusion 30+、Arrow 集成；Iceberg V3 规范发布（在 v2 已有的行级删除之上加入删除向量、增量读取与向量类型，见 [03-lakehouse](../03-lakehouse/03-lakehouse.md) 的时间线）。
+- 2024：DataFusion 30+、Arrow 集成；Iceberg V3 规范发布（在 v2 已有的行级删除之上加入删除向量、增量读取与 Variant 类型，见 [03-lakehouse](../03-lakehouse/03-lakehouse.md) 的时间线）。
 
 **第五阶段：AI 原生（2024-至今）**
 

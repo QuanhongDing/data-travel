@@ -13,7 +13,7 @@
 | 数据可观测性平台怎么架构？Metrics / Logs / Traces 怎么设计？ | §3.1、§4.1 |
 | 告警分级怎么做？P0/P1/P2/P3 怎么定？ | §4.2、§4.3 |
 | AIOps 在数据可观测里怎么用？异常检测 / 根因分析怎么做？ | §3.3、§5.1 |
-| 怎么从 0 到 1 建设数据可观测性？ | §6 落地实践「4.5 真实落地路径」 |
+| 怎么从 0 到 1 建设数据可观测性？ | §6.5 真实落地路径 |
 | OpenLineage / DataHub / Monte Carlo / Bigeye / Soda 怎么选型？ | §4.3、§7.1 |
 | 数据可观测性与数据血缘、可观测性的关系？ | §1.3、§5.2 |
 | AI 时代的 LLM/Agent 与可观测性结合？ | §5.1、§5.2 |
@@ -165,7 +165,7 @@
 
 **大数据与系统可观测性时代（2010–2020）**：
 
-- 2012：Prometheus 1.0 发布（时序数据库 + PromQL）。
+- 2012：Prometheus 项目立项（SoundCloud，时序数据库 + PromQL；立项年份与首次发布年份不同，见 §3.2.1）。
 - 2015：OpenTracing 规范发布（链路追踪）。
 - 2018：OpenTelemetry 统一 metrics / logs / traces。
 - 2019：Monte Carlo Data 成立（「Data Observability」一词于 2020 年提出）。

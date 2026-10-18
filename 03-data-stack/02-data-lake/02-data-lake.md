@@ -98,7 +98,7 @@
 **第一阶段：Hadoop 数据湖（2010-2018）**
 
 - 2010：Hadoop 1.0 成熟，HDFS + MapReduce 成为数据湖雏形。
-- 2013：Hive 出现，SQL-on-Hadoop 让分析师可用。
+- 2013：Hive 让 SQL-on-Hadoop 对分析师可用。
 - 2015：Spark 取代 MapReduce 成为主流计算引擎。
 - 2016：AWS S3 + Athena 让"无 Hadoop"的数据湖成为可能。
 - **问题**：缺乏 ACID、元数据管理弱、易变成数据沼泽。
@@ -220,7 +220,7 @@
 - 合并策略：Bin-packing、Sort-merge、时间窗口。
 - 工具：Iceberg `rewrite_data_files`、Hudi `compaction`、Delta `OPTIMIZE`。
 
-**6. 查询优化（详见 §13 章）**
+**6. 查询优化**
 
 - **谓词下推（Predicate Pushdown）**：WHERE 条件下推到文件层 / 列层。
 - **列剪裁（Column Pruning）**：只读需要的列。

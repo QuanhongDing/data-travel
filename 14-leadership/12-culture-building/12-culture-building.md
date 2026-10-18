@@ -10,9 +10,9 @@
 | --- | --- |
 | 强文化 vs 弱文化的区别？ | §2.1、§2.2 |
 | 心理安全怎么建立？ | §2.3、§3.2.1 |
-| Netflix 文化怎么学？ | §3.2、§12.1 |
-| Bias for Action 怎么落地？ | §3.2.6、§12.1 |
-| 文化怎么衡量？ | §4.2、§12.3 |
+| Netflix 文化怎么学？ | §3.2、§6.1 |
+| Bias for Action 怎么落地？ | §3.2.6、§6.1 |
+| 文化怎么衡量？ | §4.2、§6.3 |
 | AI 时代的文化怎么演进？ | §5.1、§5.3 |
 
 ---
@@ -21,7 +21,7 @@
 
 ### 1.1 是什么
 
-**学术定义**：文化建设（Culture Building）是组织为塑造「**共享价值观、行为准则、决策习惯**」而进行的系统性实践。理论基础源于 **Edgar Schein《Organizational Culture and Leadership》（1985）**、**John Kotter《Corporate Culture and Performance》（1992）**、**Netflix《No Rules Rules》（Reed Hastings, Patty McCord, 2019）**、**Patty McCord《Powerful》（2022）**、**Project Aristotle（Google 2015）》**。
+**学术定义**：文化建设（Culture Building）是组织为塑造「**共享价值观、行为准则、决策习惯**」而进行的系统性实践。理论基础源于 **Edgar Schein《Organizational Culture and Leadership》（1985）**、**John Kotter《Corporate Culture and Performance》（1992）**、**Netflix《No Rules Rules》（Reed Hastings, Patty McCord, 2019）**、**Patty McCord《Powerful》（2022）**、**Project Aristotle（Google 2015）**。
 
 **工程定义**：在数据架构师语境下，**文化建设 = 心理安全 × Trust × Ownership × Customer Focus × Speed × Excellence × Bias for Action** 的体系。它解决的核心问题是：
 

@@ -347,9 +347,9 @@ def nl_to_metric(lang):
 
 输出 JSON：
 {{
-  "intent": "查询派生指标",
-  "atomic_metric": "客单价",
-  "atomic_metric_id": "avg_order_amount_per_user",
+  "intent": "查询复合指标",
+  "metric": "客单价",
+  "metric_id": "avg_order_amount_per_user",
   "modifiers": [{{"type": "用户类型", "value": "新用户"}}],
   "period": {{"type": "rolling", "value": 7, "unit": "day"}},
   "formula": "SUM(订单金额) / DISTINCT_COUNT(用户ID)",

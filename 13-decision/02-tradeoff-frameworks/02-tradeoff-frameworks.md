@@ -91,8 +91,8 @@
 ### 2.1 关键概念定义
 
 - **Trade-off（权衡）**：在多个相互冲突的目标间做取舍（如性能 vs 成本）。
-- **CAP Theorem（CAP 定理）**：Brewer 定理——分布式系统不能同时满足 Consistency / Availability / Partition tolerance，只能满足 2/3。
-- **PACELC**：CAP 的扩展——若无分区，P 和 C 必须 ACELC（Availability vs Consistency 选择）。
+- **CAP Theorem（CAP 定理）**：Brewer 定理——网络分区（P）发生时，在 Consistency 与 Availability 之间二选一（不是「三选二」）。
+- **PACELC**：CAP 的扩展——分区时（P）选 A 或 C；无分区时（E）仍要在延迟（L）与一致性（C）之间选。
 - **Multi-Criteria Decision Analysis（MCDA）**：多准则决策分析。
 - **Weighted Scoring Model（加权打分）**：每个维度按权重打分求总分。
 - **Decision Matrix（决策矩阵）**：表格化的多准则对比。
@@ -118,7 +118,7 @@
 **CAP 定理**：
 
 ```
-分布式系统最多满足 C（Consistency）/ A（Availability）/ P（Partition tolerance）中的 2 个。
+网络分区（P）发生时，C（Consistency）与 A（Availability）只能二选一。
 ```
 
 - CA：传统单机数据库（MySQL 主从）。
@@ -128,11 +128,11 @@
 **PACELC 扩展**：
 
 ```
-若无分区（P）：P 与 A、C 无关，需在 A 与 C 间选（ELC）。
-若有分区（P）：在 A 与 C 间选（PAC）。
+若有分区（P）：在 A 与 C 间选。
+若无分区（E）：在延迟（L）与一致性（C）间选。
 ```
 
-→ 即使无分区也要在 A vs C 间选（如 Google Spanner 选 C）。
+→ 即使无分区也要在延迟 vs 一致性间选（如 Google Spanner 选 C）。
 
 **加权打分（Weighted Scoring）**：
 

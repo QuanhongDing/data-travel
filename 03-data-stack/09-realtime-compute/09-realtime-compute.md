@@ -12,7 +12,7 @@
 | --- | --- |
 | 实时计算 vs 离线计算的本质区别？ | §1.1 |
 | Flink / Spark Streaming / Kafka Streams 怎么选？ | §7.1 |
-| Flink 1.19+ / 2.0 有哪些 2024-2025 新特性？ | §5.3 |
+| Flink 1.19+ / 2.0 有哪些 2024-2025 新特性？ | §5.1 表、§5.4 |
 | Exactly-Once 怎么实现？ | §2.3 |
 | Flink CDC 怎么落地？ | §4.2 |
 
@@ -174,7 +174,7 @@
 **Watermark 的数学定义**：
 
 ```
-Watermark(t) = max(arrival_time) - max_out_of_orderness
+Watermark(t) = max(event_time) - max_out_of_orderness
 ```
 
 Watermark 表示「t 时刻之前的事件基本都到了」。

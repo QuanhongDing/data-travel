@@ -152,7 +152,7 @@
 - 2017：BigQuery ML 发布，SQL 内调机器学习。
 - 2018：Microsoft SQL Server 集成 R / Python。
 - 2019：Databricks SQL Analytics。
-- 2020-2022：MADlib、Apache MADlib（Greenplum）、Snowflake UDFs（用户自定义函数）。
+- 2020-2022：Apache MADlib（Greenplum）、Snowflake UDFs（用户自定义函数）。
 
 **In-Database AI / LLM 阶段（2023+）**：
 
@@ -284,7 +284,7 @@ $$\text{TopK}(q, T) = \arg\min_{v_i \in T} \text{Distance}(q, v_i)$$
 - **Self-Correction**：执行失败 / 结果异常自动反思。
 - **指标语义层集成**：dbt Semantic Layer / Cube.js / MetricFlow 嵌入查询。
 
-**8. 安全与权限**
+**7. 安全与权限**
 
 - **行级权限**：用户只能查自己有权限的数据。
 - **敏感列脱敏**：身份证、手机号自动 mask。

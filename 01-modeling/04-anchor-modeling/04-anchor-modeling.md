@@ -1,6 +1,6 @@
 # Anchor Modeling
 
-> **一句话定位**：以 Anchors / Attrtributes / Ties / Knots 四件套，实现第 6 范式 + bitemporal 时态建模的高度可演化数据仓库。
+> **一句话定位**：以 Anchors / Attributes / Ties / Knots 四件套，实现第 6 范式 + bitemporal 时态建模的高度可演化数据仓库。
 
 > 本文是 data-travel 项目 [Ch1 · 建模方法论](../../README.md) 的子章节（04-anchor-modeling）。覆盖 R3 数据建模相关的"6NF 极致规范化、bitemporal 时态建模、零中断 schema 演化、AI 时代的自演化数据底座"核心能力。
 
@@ -11,7 +11,7 @@
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
 | Anchor Modeling 是什么、解决什么问题 | §1.1、§1.2 |
-| Anchors / Attrtributes / Ties / Knots 怎么设计 | §2.1、§3.2 |
+| Anchors / Attributes / Ties / Knots 怎么设计 | §2.1、§3.2 |
 | 如何把 3NF / Kimball 迁移到 Anchor Modeling | §4.1、§4.4 存量迁移 |
 | bitemporal 时态建模如何落地 | §2.2、§4.2「Attribute DDL 规范（bitemporal）」/「Bitemporal CDC」 |
 | Anchor Modeling 在 AI 时代的新角色 | §5.1—§5.4 |
@@ -26,7 +26,7 @@
 **学术定义**：Anchor Modeling 是由瑞典 OLTP 专家 Olle Regardt 于 2007 年提出、并在 2010 年代逐步成熟的一种**第 6 范式（6NF）**建模方法。它把每个业务实体拆解为 4 类原子构件：
 
 - **Anchor**：业务实体的唯一标识（如客户 ID）
-- **Attrtribute**：实体的一个描述性属性（如客户的姓名、生日）
+- **Attribute**：实体的一个描述性属性（如客户的姓名、生日）
 - **Tie**：实体之间的关系（如客户-订单）
 - **Knot**：可被多实体共享的查找表（如国家码、币种、状态码）
 
@@ -135,7 +135,7 @@ Anchor Modeling 在数据架构栈中的位置：
 - 2020：Anchor Modeling + Lakehouse（Delta Lake / Iceberg）开始融合
 - 2022：anchor_modeling 2.0 发布，支持多语言 / 云原生
 - 2024：LLM 出现，Anchor Modeling 的"每个属性一张表"特性被用于"自动元数据发现 + 自动字段级 RAG"
-- 2025：Agent 平台开始把 Anchor Modeling 作为"自演化数据底座"——Agent 自动感知 schema drift、自动加 Attribute 表
+- 方向（尚无产品发布说明支撑，见 §5）：Agent 平台开始把 Anchor Modeling 作为"自演化数据底座"——Agent 自动感知 schema drift、自动加 Attribute 表；§5 对「自动改 schema」判 L3，记录并做技术预研，不写进架构假设
 - 核心矛盾：**人工建模→AI 辅助建模；固定 schema→持续演化 schema；批量→实时**
 
 **一句话总结**：每阶段的核心矛盾都是"**业务字段变化速度 vs 模型结构变化成本**"——Anchor Modeling 通过"加 Attribute 表 + 旧表标记失效"从根本上解决了这个矛盾。
@@ -151,7 +151,7 @@ Anchor Modeling 的核心构件只有四类，但比 Data Vault 更极致：
 | 概念 | 英文 | 一句话定义 | 工程对应 |
 | --- | --- | --- | --- |
 | 锚 | Anchor | 一个业务实体的唯一标识 | 1 张物理表 / 实体 |
-| 属性 | Attrtribute | 实体的一个描述性属性 | 1 张物理表 / 属性 |
+| 属性 | Attribute | 实体的一个描述性属性 | 1 张物理表 / 属性 |
 | 关系 | Tie | 两个或多个 Anchor 之间的关系 | 1 张物理表 / 关系 |
 | 节点 | Knot | 可被多 Anchor / Tie 共享的查找表 | 1 张物理表 / 共享查找 |
 
@@ -166,9 +166,9 @@ Anchor Modeling 的核心构件只有四类，但比 Data Vault 更极致：
 
 ```
 Anchor: customer (id)
-Attrtribute: customer_name (customer_id, name, valid_from, valid_to, loaded_at)
-Attrtribute: customer_birthday (customer_id, birthday, valid_from, valid_to, loaded_at)
-Attrtribute: customer_phone (customer_id, phone, phone_type_knot_id, valid_from, valid_to, loaded_at)
+Attribute: customer_name (customer_id, name, valid_from, valid_to, loaded_at)
+Attribute: customer_birthday (customer_id, birthday, valid_from, valid_to, loaded_at)
+Attribute: customer_phone (customer_id, phone, phone_type_knot_id, valid_from, valid_to, loaded_at)
 Tie: customer_order (customer_id, order_id, valid_from, valid_to, loaded_at)
 Knot: phone_type (id, value)  -- 'MOBILE', 'LANDLINE', 'WORK'
 ```
@@ -178,10 +178,10 @@ Knot: phone_type (id, value)  -- 'MOBILE', 'LANDLINE', 'WORK'
 | 构件 | Data Vault | Anchor Modeling |
 |---|---|---|
 | 业务实体 | Hub（包含 ID + 少量元数据） | Anchor（仅 ID） |
-| 属性 | Satellite（多属性一张表） | Attrtribute（每属性一张表） |
+| 属性 | Satellite（多属性一张表） | Attribute（每属性一张表） |
 | 关系 | Link | Tie |
 | 共享查找 | 嵌入 Link 或独立表 | Knot（强制独立） |
-| 时态 | 全靠 Satellite | 原生（每个 Attrtribute 自带 valid_from / valid_to） |
+| 时态 | 全靠 Satellite | 原生（每个 Attribute 自带 valid_from / valid_to） |
 
 ### 2.2 数学/形式化基础
 
@@ -222,7 +222,7 @@ Knot 是"被多 Anchor / Tie / Attribute 共享的查找表"。通过引用 Knot
 
 ```
 Anchor: order
-Attrtribute: order_currency (order_id, currency_knot_id, ...)
+Attribute: order_currency (order_id, currency_knot_id, ...)
 Knot: currency (id, code, name)  -- 'CNY', 'USD', 'EUR', ...
 ```
 

@@ -14,7 +14,7 @@
 | 技术债怎么识别和分类？ | §2.1 / §3 |
 | 技术债如何量化？ | §2.2 |
 | 还债节奏怎么定？ | §4.1 |
-| 怎么向业务方解释技术债？ | §6.2 |
+| 怎么向业务方解释技术债？ | §4.1（Step 7 业务沟通） |
 
 ---
 
@@ -179,7 +179,7 @@ ROI = (Annual Interest Saving - Annual Payback Cost) / Annual Payback Cost
 - **技术债 vs 架构腐化**：架构腐化是技术债在架构层的体现。
 - **技术债 vs AI 债**：AI 债是技术债在 AI 层的特例。
 
-> 💡 **思考锚点**：用 2.2 的两个公式给你手上的一块债算一次——`Tech Debt / Development Cost` 落在 <5% 还是 >20% 那一档？若已过 20%，按 `Payback = Debt Principal / Annual Interest Saving`（Interest Rate ≈ 25%）算还款期，它折成你的迭代节奏是几个 Sprint——值得还，还是直接重写？
+> 💡 **思考锚点**：用 §2.2 的两个公式给你手上的一块债算一次——`Tech Debt / Development Cost` 落在 <5% 还是 >20% 那一档？若已过 20%，按 `Payback = Debt Principal / Annual Interest Saving`（Interest Rate ≈ 25%）算还款期，它折成你的迭代节奏是几个 Sprint——值得还，还是直接重写？
 
 ---
 

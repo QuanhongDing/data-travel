@@ -72,7 +72,7 @@
 - **为什么这样设计有效**：因为它把取舍点提前到架构定稿之前，所以选型的争论从「哪个产品更好」变成「分区时我们要不要接受拒写」——后者是业务方能够回答的问题，前者不是。
 - **代价**：CAP 描述的是**分区期间的二选一**，不描述正常运行时的延迟-一致性权衡（那一半归 PACELC）；把它当作产品比较表会丢掉大多数时间里的取舍。此外，一致性与可用性的边界往往由配置决定，而不是产品固有属性。
 - **失效点**：当团队把 CP / AP 当成产品的**固有标签**去选型时，这个框架的优点反转为错误结论 —— 因为多数系统的一致性档位是可配置的（同一产品既有强一致读也有最终一致读），一旦贴上标签，团队就会放弃那些本来可以调的旋钮。Brewer 本人在 2012 年撰文澄清「三选二」是被过度简化的说法（【公开：Brewer, "CAP Twelve Years Later: How the 'Rules' Have Changed", IEEE Computer, 2012】）。
-- **真实使用**：ZooKeeper（Zab 协议）与 etcd（Raft 协议）以一致性优先，通常被归为 CP 侧；Cassandra 与 DynamoDB 默认提供最终一致读（DynamoDB 另可选强一致读），通常被归为 AP 侧，典型场景是电商购物车（【公开：各产品官方文档对一致性模型的描述，以官方文档当前版本为准】）。Redis Cluster 的默认复制是异步的，主从切换可能丢写，因此在实时推荐这类「读到旧值可接受」的场景里被当作 AP（最终一致）使用，代价是必须配合结果过期与特征回流兜底（【公开：Redis 官方文档关于复制与一致性的说明，以官方文档当前版本为准】）。PACELC 由 Daniel Abadi 于 2012 年提出（【公开：Abadi, "Consistency Tradeoffs in Modern Distributed Database System Design", IEEE Computer, 2012】）；本章 §2.2 已用它解释「即使无分区也要在 A 与 C 间选」。
+- **真实使用**：ZooKeeper（Zab 协议）与 etcd（Raft 协议）以一致性优先，通常被归为 CP 侧；Cassandra 与 DynamoDB 默认提供最终一致读（DynamoDB 另可选强一致读），通常被归为 AP 侧，典型场景是电商购物车（【公开：各产品官方文档对一致性模型的描述，以官方文档当前版本为准】）。Redis Cluster 的默认复制是异步的，主从切换可能丢写，因此在实时推荐这类「读到旧值可接受」的场景里被当作 AP（最终一致）使用，代价是必须配合结果过期与特征回流兜底（【公开：Redis 官方文档关于复制与一致性的说明，以官方文档当前版本为准】）。PACELC 由 Daniel Abadi 于 2012 年提出（【公开：Abadi, "Consistency Tradeoffs in Modern Distributed Database System Design", IEEE Computer, 2012】）；本章 §2.2 已用它解释「即使无分区也要在延迟（L）与一致性（C）间选」。
 
 #### 3.2.3 TCO 3 年 / 5 年计算
 

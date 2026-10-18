@@ -312,4 +312,4 @@
 >
 > 💡 **思考锚点**：按 Step 1 的判据翻你自己的「过去 12 个月最有价值的决策」复盘——里面写下了被否决的那个选项和它的代价吗？没有，它就只是结论、不是资产；再往前一步：Step 4 的答辩材料四段（问题 → 约束 → 决策 → 结果），你现在能逐段写出的是哪几段？
 >
-> 配合 [§ 2 核心原理](01-future-plans.md)、[§ 3 实战建议](01-future-plans-section-3-sec3.md) 与 [§ 6 终极思考](01-future-plans-section-6-sec6.md) 阅读。
+> 配合 [§ 2 核心洞察](01-future-plans.md)、[§ 3 实战建议](01-future-plans-section-3-sec3.md) 与 [§ 6 落地实践](01-future-plans-section-6-sec6.md) 阅读。

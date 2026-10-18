@@ -79,7 +79,7 @@
 
 ### 1.4 演进历程
 
-- **2011**：Michael Nygard 提出 ADR 概念与 MADR-like 模板。
+- **2011**：Michael Nygard 提出 ADR 概念与四段式模板。
 - **2014**：ThoughtWorks 技术雷达收录 ADR 实践（"Trial"）。
 - **2017**：MADR（Markdown Any Decision Records）模板发布，强调 Markdown-first。
 - **2018**：Y-statements（"In the context of ... facing ... we decided for ... to achieve ... accepting ..."）结构化模板流行。

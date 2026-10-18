@@ -182,7 +182,7 @@ h_v^{(k+1)} = UPDATE(h_v^{(k)}, m_v^{(k+1)})        # 更新自身状态
 y_v = READOUT({ h_v^{(K)} : v ∈ V })               # 读出最终预测
 ```
 
-- **GCN**：AGGREGATE = mean（邻居特征求平均，按度归一化），UPDATE = W · concat。
+- **GCN**：AGGREGATE = mean（邻居特征求平均，按度归一化），UPDATE = W · 聚合后的邻居均值（不与自身特征拼接）。
 - **GraphSAGE**：AGGREGATE = mean/max/LSTM，UPDATE = concat + W，**支持归纳式**（可以处理训练时没见过的节点）。
 - **GAT**：AGGREGATE = 注意力加权求和，α_uv = softmax(LeakyReLU(aᵀ [Wh_u || Wh_v]))。
 - **R-GCN**：关系型图，AGGREGATE 按关系 r 分别做权重矩阵 W_r。

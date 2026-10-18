@@ -186,7 +186,7 @@
 - **数据合约（Data Contract）**：数据生产者与消费者之间的协议，规定数据 schema、SLA、版本、所有者、访问控制。代表：Bitol（Data Contract Specification）、Open Data Contract Standard（ODCS）。
 - **数据契约（Data Contract）**：与数据合约同义，更强调生产-消费双方的契约关系。
 - **联邦身份（Federated Identity）**：跨域统一身份认证。代表：OAuth 2.0、SAML、OpenID Connect、企业 IdP（Okta、Azure AD、Keycloak）。
-- **联邦目录（Federated Catalog）**：跨域数据资产目录。代表：Apache Atlas + 自研、DataHub（LinkedIn 开源）、Amundsen（Lyft 开源）、DataHub（OSS）、Unity Catalog（Databricks）、Gravitino（Apache 2024 开源）、OpenMetadata、DataHub、Apache Polaris（incubating）。
+- **联邦目录（Federated Catalog）**：跨域数据资产目录。代表：Apache Atlas + 自研、DataHub（LinkedIn 开源）、Amundsen（Lyft 开源）、Unity Catalog（Databricks）、Gravitino（Apache 2024 开源）、OpenMetadata、Apache Polaris（incubating）。
 - **联邦访问控制（Federated Access Control）**：跨域统一访问控制。代表：OPA（Open Policy Agent）+ Rego、Apache Ranger、IAM、AWS Lake Formation、IAM + ABAC / RBAC。
 - **联邦血缘（Federated Lineage）**：跨域数据血缘追踪。代表：Apache Atlas、DataHub、OpenLineage、Manta、Marquez。
 - **联邦元数据（Federated Metadata）**：跨域元数据管理。代表：Apache Atlas、DataHub、OpenMetadata、Gravitino。
@@ -332,7 +332,7 @@ Trino (PrestoSQL) 用**分布式查询优化器**实现联邦查询。
 - **Data Mesh vs 数据湖（Data Lake）**：数据湖是「原始数据集中存储」，Data Mesh 是「数据所有权联邦化」。Data Mesh 推荐把数据湖「按域拆分」。
 - **Data Mesh vs 知识图谱（KG）**：知识图谱提供「跨域语义对齐」，Data Mesh 是「跨域数据互联架构」。两者结合是「Data Mesh + KG = 跨域联邦化数据互联」。
 
-> 💡 **思考锚点**：按 1.2 的「50+ 业务域、PB+ 数据」对标你自己的组织：你现在有几个域能真正独立发布并治理数据产品？挑其中一个域填进 2.3 的 Data Product Canvas——它有具体 Owner、SLA 和明确的消费者吗，还是连契约（ODCS / Bitol）也还没签？缺了这些，它只是「分了自己的数据」，还不是一个能被跨域消费的数据产品。
+> 💡 **思考锚点**：按 §1.2 的「50+ 业务域、PB+ 数据」对标你自己的组织：你现在有几个域能真正独立发布并治理数据产品？挑其中一个域填进 §2.3 的 Data Product Canvas——它有具体 Owner、SLA 和明确的消费者吗，还是连契约（ODCS / Bitol）也还没签？缺了这些，它只是「分了自己的数据」，还不是一个能被跨域消费的数据产品。
 
 ---
 

@@ -130,7 +130,7 @@
 - 2020：GPT-3（OpenAI）展示零样本 / 少样本分类能力。
 - 2021：CLIP（OpenAI）开启多模态零样本分类新时代。
 - 2022：ChatGPT 让"LLM 当分类器"成为工程现实。
-- 2023：**TabPFN**（Hollmann et al., Nature）——表格数据的小样本分类器，无需训练，直接预测。
+- 2023：**TabPFN**（Hollmann et al., ICLR 2023）——表格数据的小样本分类器，无需训练，直接预测。
 - 2024：**SAINT / TabNet / FT-Transformer** 等专用表格深度学习模型持续迭代。
 - 2024：**LLM-as-Classifier** 模式成熟，用 Prompt + 结构化输出做分类任务。
 - 2025：**多模态分类 + LLM Embedding** 成为工业标准，专用分类器与 LLM 协同的混合架构普及。
@@ -248,7 +248,7 @@ $$\mathcal{L}^{(m)} = \sum_{i=1}^N \ell(y_i, \hat{y}_i^{(m-1)} + f_m(x_i)) + \Om
 14. **TabNet**（2019）——Google 提出的表格数据深度学习架构。
 15. **SAINT**（2021）——Self-Attention + Intersample Attention，表格数据新 SOTA。
 16. **FT-Transformer**（2021）——Feature Tokenizer + Transformer。
-17. **TabPFN**（2023，Nature）——Prior-data Fitted Network，小样本表格分类无需训练。
+17. **TabPFN**（2023，ICLR）——Prior-data Fitted Network，小样本表格分类无需训练。
 18. **CLIP**（2021）——多模态零样本分类（图像 + 文本对齐）。
 
 **LLM 时代家族**：

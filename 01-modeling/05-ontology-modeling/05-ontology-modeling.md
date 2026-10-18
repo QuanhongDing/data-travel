@@ -159,7 +159,7 @@
 3. **本体推理（Reasoner）**：
    - Tableau 算法（HermiT、Pellet）。
    - Consequence-based（ELK，专为 EL 优化）。
-   - Rewriting-based（Quonto，针对 Quill）。
+   - Rewriting-based（Quonto，针对 QL）。
 4. **SHACL 校验**：自底向上验证每个节点是否满足所有形状约束，违反即报告。
 5. **本体演化（Ontology Evolution）**：通过 `owl:versionInfo`、`owl:priorVersion`、PROV-O 记录变更；支持增量 commit 与回滚。
 6. **本体嵌入（Ontology Embedding）**：用机器学习把本体概念嵌入向量空间。代表方法：Owl2Vec*、EL Embeddings、BoxE、Query2Box。

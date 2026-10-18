@@ -104,7 +104,6 @@
 **传统阶段（1960s-2010）**：
 
 - 1960s：NASA Mishap Investigation。
-- 1995：Allspaw 等人在 NASA 提出「**Mishap Investigation**」方法。
 - 2000s：航空、医疗引入「**Just Culture**」。
 - 2004：亚马逊「**CBR（Correction of Errors）**」。
 

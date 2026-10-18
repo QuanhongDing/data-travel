@@ -190,7 +190,8 @@ RACI(activity) = (Responsible, Accountable, Consulted, Informed)
   保持告知    |   最少努力
   (Inform)    |   (Monitor)
                   ↓
-              低权力 ←──── 高利益
+              低权力
+   高利益 ←──────── 低利益
 ```
 
 **IWA 的影响力公式**：

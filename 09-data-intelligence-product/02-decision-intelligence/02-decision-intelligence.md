@@ -143,7 +143,7 @@
 **AI 原生阶段（2021+，LLM + Agent 驱动）**：
 
 - 2021-2022：决策智能（Decision Intelligence）概念成熟，Gartner 把 DI 列为战略科技趋势。
-- 2022-2023：因果 AI（Casual AI）、可解释 AI（XAI）、强化学习决策（Multi-Armed Bandit）广泛落地。
+- 2022-2023：因果 AI（Causal AI）、可解释 AI（XAI）、强化学习决策（Multi-Armed Bandit）广泛落地。
 - 2023-2024：LLM for Decision 兴起——LLM 解释决策、LLM 推理决策、LLM 生成决策规则。
 - 2024-2025：Agent for Decision（智能体决策）成为前沿——Multi-Agent 框架（AutoGen、CrewAI、LangGraph）让决策从「单点智能」走向「协同智能」。
 - 2025：决策智能平台（Decision Intelligence Platform, DIP）兴起——Diwo、Zeta、Aera、Tellius、Quantiphi、阿里决策引擎、字节智能决策、蚂蚁决策大脑、平安智慧决策。
