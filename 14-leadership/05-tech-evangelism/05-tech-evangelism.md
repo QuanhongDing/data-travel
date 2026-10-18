@@ -10,7 +10,7 @@
 | --- | --- |
 | 技术布道 vs 营销的区别？ | §1.1、§3.1 |
 | 内部分享怎么运营？ | §4.1、§4.2 |
-| Conference 演讲怎么准备？ | §4.5、§6.1 |
+| Conference 演讲怎么准备？ | §3.2.2、§4.5 |
 | 技术博客怎么写才有传播力？ | §4.5、§5.1 |
 | 开源项目怎么运营？ | §3.1、§6.2 |
 | AI 时代的技术布道怎么演进？ | §5.1、§5.3 |
@@ -287,7 +287,7 @@ RecruitingROI = (Influencer_Hire × Years) / Investment
 - [§3. 技术方案（20 分钟）](05-tech-evangelism-section-3-sec3.md)
 - [§4. 工程实现](05-tech-evangelism-section-4-sec4.md)
 - [§9. 总结 + 升华（2 分钟）](05-tech-evangelism-section-9-sec9.md)
-- [§9. 前沿演进（AI 时代）](05-tech-evangelism-section-5-ai.md)
+- [§5. 前沿演进（AI 时代）](05-tech-evangelism-section-5-ai.md)
 - [§6. 落地实践](05-tech-evangelism-section-6-sec6.md)
 - [§7. 与其他方法对比](05-tech-evangelism-section-7-sec7.md)
 - [§8. 面试真题集](05-tech-evangelism-section-8-sec8.md)
@@ -305,7 +305,7 @@ RecruitingROI = (Influencer_Hire × Years) / Investment
 - [§3. 技术方案（20 分钟）](05-tech-evangelism-section-3-sec3.md)
 - [§4. 工程实现](05-tech-evangelism-section-4-sec4.md)
 - [§9. 总结 + 升华（2 分钟）](05-tech-evangelism-section-9-sec9.md)
-- [§9. 前沿演进（AI 时代）](05-tech-evangelism-section-5-ai.md)
+- [§5. 前沿演进（AI 时代）](05-tech-evangelism-section-5-ai.md)
 - [§6. 落地实践](05-tech-evangelism-section-6-sec6.md)
 - [§7. 与其他方法对比](05-tech-evangelism-section-7-sec7.md)
 - [§8. 面试真题集](05-tech-evangelism-section-8-sec8.md)

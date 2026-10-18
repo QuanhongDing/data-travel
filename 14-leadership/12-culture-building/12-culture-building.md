@@ -8,11 +8,11 @@
 
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
-| 强文化 vs 弱文化的区别？ | §1.1、§3.1 |
-| 心理安全怎么建立？ | §2.1、§4.1 |
-| Netflix 文化怎么学？ | §3.2、§6.1 |
-| Bias for Action 怎么落地？ | §3.1、§6.1 |
-| 文化怎么衡量？ | §4.2、§6.3 |
+| 强文化 vs 弱文化的区别？ | §2.1、§2.2 |
+| 心理安全怎么建立？ | §2.3、§3.2.1 |
+| Netflix 文化怎么学？ | §3.2、§12.1 |
+| Bias for Action 怎么落地？ | §3.2.6、§12.1 |
+| 文化怎么衡量？ | §4.2、§12.3 |
 | AI 时代的文化怎么演进？ | §5.1、§5.3 |
 
 ---
@@ -288,7 +288,7 @@ Layer3: Basic Assumptions（深层假设）：潜意识、信仰
 - 输出：决策的客户价值论证
 
 - [§3. 行为 3：客户反馈闭环](12-culture-building-section-3-sec3.md)
-- [§9. 前沿演进（AI 时代）](12-culture-building-section-5-ai.md)
+- [§5. 前沿演进（AI 时代）](12-culture-building-section-5-ai.md)
 - [§6. 落地实践](12-culture-building-section-6-sec6.md)
 - [§7. 与其他方法对比](12-culture-building-section-7-sec7.md)
 - [§8. 面试真题集](12-culture-building-section-8-sec8.md)
@@ -304,7 +304,7 @@ Layer3: Basic Assumptions（深层假设）：潜意识、信仰
 - [§3. 多样性](12-culture-building-section-3-sec3.md)
 - [§9. 改进措施](12-culture-building-section-9-sec9.md)
 - [§3. 行为 3：客户反馈闭环](12-culture-building-section-3-sec3.md)
-- [§9. 前沿演进（AI 时代）](12-culture-building-section-5-ai.md)
+- [§5. 前沿演进（AI 时代）](12-culture-building-section-5-ai.md)
 - [§6. 落地实践](12-culture-building-section-6-sec6.md)
 - [§7. 与其他方法对比](12-culture-building-section-7-sec7.md)
 - [§8. 面试真题集](12-culture-building-section-8-sec8.md)

@@ -1,216 +1,277 @@
-> 本文件是 **05-rag-architecture.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](05-rag-architecture.md)。
+> 本文件是 **05-rag-architecture.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](05-rag-architecture-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](05-rag-architecture.md)。
 
 ## 4. 工程实现
 
+[§3](05-rag-architecture-section-3-sec3.md) 回答的是模式层面的问题：约束是什么、每个模式换来了什么性质、这个性质在什么条件下反转。本节不重复那些机制，只回答选完之后的问题：**这条从数据源到答案的链路怎么按顺序装起来；每一段做完用什么东西验收；这个做法在你已经建好的索引、已经上线的问答入口上怎么落地。**
+
+本文件面向两类读者。**从零搭一条 RAG 链路的人**按 §4.1 的 Step 1–8 走，§4.2 是每一步背后可独立的机制与失效条件，§4.3 给工具选型判据，§4.5 给可直接套用的模板。**在存量系统上改造的人**（已有索引、已有入口、只是效果不够）先读 §4.4，再回头挑 §4.1 里能立刻见效且可回退的那几件——通常是 Step 4 的过滤下推与 Step 7 的固定问题集。**§4.6 的自检清单与 §4.7 的小结对两类读者通用**；存量改造者不必等 §4.1 走完，按 §4.4 的迁移阶段挑用其中的条目即可。
+
+有一条约束贯穿全节：**检索质量下降不会报错，只会表现为「答得不太对」。** 因为召回是从一个固定大小的候选集里取前 K 条、生成总是会给出一个答案，链路里没有任何一步会因为「证据不对」而失败。代价是：这个系统里所有「改好了没有」的问题，都必须先有一份带标注的问题集才能回答。本节每一步的判据都建立在这件事上，没有它，后面所有投入都是在错的方向上加钱。
+
 ### 4.1 落地步骤
 
-**Step 1：需求与边界**
+**Step 1：需求与边界（1–2 周，随数据源数量与合规要求而变【经验】）**
 
-- 明确「RAG 要回答什么问题、不回答什么问题」。
-- 识别数据源（文档 / DB / API）。
-- 评估数据规模（千级 / 百万级 / 亿级）。
-- 评估准确性 / 延迟 / 成本 SLA。
-- 输出：**RAG 需求说明书**。
+- 明确「RAG 要回答什么问题、不回答什么问题」；识别数据源（文档 / DB / API）；评估数据规模（千级 / 百万级 / 亿级）；按业务定准确性 / 延迟 / 成本 SLA。
+- 「不回答什么」要写成可执行的降级动作（拒答 / 转人工 / 转 SQL），不是一句原则。
+- **产物**：RAG 需求说明书，含「不回答什么」与对应的降级动作。
+- **判据**：拿 3 个真实问题，能当场说出「该走 RAG / 该走 SQL / 该拒答」并给出依据；写不出「不回答什么」的，说明边界还没定。
+- **为什么必须这一步 / 为什么在这个位置**：它决定后面全部参数的上界——问题集怎么建、权限要不要下推、能不能拒答，这些正是 [§3.1](05-rag-architecture-section-3-sec3.md) 六条约束的取值。取值定错了，后面每一步都对不上。
 
-**Step 2：数据预处理**
+**Step 2：数据预处理（2–4 周，随语料格式的种类与解析难度而变【经验】）**
 
-- 文档解析：PDF（PyMuPDF / pdfplumber）、Word（python-docx）、HTML（BeautifulSoup）、Markdown、代码（tree-sitter）。
-- 文本清洗：去噪、去格式、归一化。
-- 结构提取：标题层级、章节、表格、图片、公式。
-- 元数据补充：作者、时间、来源、权限。
-- 输出：**结构化文档语料**。
+- 文档解析：PDF（PyMuPDF / pdfplumber）、Word（python-docx）、HTML（BeautifulSoup）、Markdown、代码（tree-sitter）。文本清洗（去噪、去格式、归一化）；结构提取（标题层级、章节、表格、图片、公式）；元数据补充（作者、时间、来源、权限）。
+- **产物**：结构化文档语料 + 一份「哪些源解析后信息有损」的记录。
+- **判据**：抽 5 份含表格或公式的文档，看解析结果里表格是否还成表、公式是否保留。这类内容丢失之后永远检索不到，且不会以任何形式报错。
+- **为什么必须这一步 / 为什么在这个位置**：解析决定检索单元的上限，而分块策略要消费解析出的结构（标题层级正是结构感知切分的输入）。放在分块之前，是因为你无法在切分阶段补回解析阶段丢掉的版面。
 
-**Step 3：Chunking 设计**
+**Step 3：Chunking 设计（1–2 周，随语料结构与是否已有标注问题集而变【经验】）**
 
-- 选策略：固定窗口 / 滑动窗口 / 语义切分 / 结构感知。
-- 设参数：chunk 大小（512 token）、overlap（10-20%）。
-- 加 metadata：来源、章节、页码、时间戳。
-- 输出：**Chunk 集合**。
+- 选策略（固定窗口 / 滑动窗口 / 语义切分 / 结构感知）；设参数（起点常见 chunk 大小 512 token、overlap 10–20%，随语料与嵌入模型变【经验】）；加 metadata（来源、章节、页码、时间戳）。
+- 把分块策略记成一条带版本号的记录：策略 + 参数 + 生效日期。
+- **产物**：Chunk 集合 + 分块策略记录。
+- **判据**：抽 20 个已标注答案，检查**答案是否落在单个 chunk 内**。落在两个 chunk 之间的比例高，说明切分粒度与证据单元不一致——这是切分问题，不是模型问题。
+- **为什么必须这一步 / 为什么在这个位置**：它是「检索单元 = 证据单元」能否成立的地方；这条不成立时，后面所有环节都在错误的前提下优化（[§3.2.2](05-rag-architecture-section-3-sec3.md) 的失效点）。分块策略必须打版本号，因为换一次策略，历史评测数据就全部作废（[§3.6](05-rag-architecture-section-3-sec3.md)）。
 
-**Step 4：Embedding 与索引**
+**Step 4：Embedding 与索引（1–2 周，随语料规模与是否已有可用向量库而变【经验】）**
 
-- 选 embedding 模型：BGE-M3 / OpenAI text-embedding-3 / M3E。
-- 选向量库：Milvus / Qdrant / Weaviate / Pinecone / pgvector。
-- 选索引算法：HNSW（默认）/ IVF（大数据）/ DiskANN（超大规模）。
-- 写入元数据索引（ES / Meilisearch）。
-- 输出：**可检索的向量索引**。
+- 选 embedding 模型（BGE-M3 / OpenAI text-embedding-3 / M3E，多模态另算）；选向量库（Milvus / Qdrant / Weaviate / Pinecone / pgvector）；选索引算法（HNSW 默认 / IVF 大数据 / DiskANN 超大规模）；写入元数据索引（ES / Meilisearch）。
+- **产物**：向量索引 + 元数据索引 + 一条「语料快照 / 分块版本 / 嵌入模型版本」的登记条目。
+- **判据**：把权限、时效、租户三类过滤条件各写一条查询，看执行计划确认过滤发生在**近邻搜索之前**；再做一次「删除文档 → 立刻检索」的验证，确认检索侧不再返回它。
+- **为什么必须这一步 / 为什么在这个位置**：因为过滤如果放在生成后再裁剪，被裁掉的证据已经进过模型上下文（[§3.5](05-rag-architecture-section-3-sec3.md) 的「忽视元数据过滤」）——那是事故而不是效果问题，所以它必须在这一步解决，不能留到上线前补。
 
-**Step 5：检索 Pipeline**
+**Step 5：检索 Pipeline（2–4 周，随召回路数与标注集规模而变【经验】）**
 
-- Query 理解：意图识别、Query Rewrite、HyDE。
-- 多路召回：向量 + BM25 + KG。
-- 融合：RRF / 加权融合。
-- 精排：Cross-Encoder / Cohere Rerank / BGE-reranker。
-- 输出：**Top-K 候选文档**。
+- Query 理解（意图识别 / Query Rewrite / HyDE）；多路召回（向量 + BM25 + KG）；融合（RRF / 加权融合）；精排（Cross-Encoder / Cohere Rerank / BGE-reranker）。
+- 从第一天起就记录「正确片段在哪一路、排第几位」，而不是只记端到端对不对。
+- **产物**：Top-K 候选 + 一条能把失败分段的诊断记录。
+- **判据**：由检索侧（不是应用侧）在一份固定问题集上跑一次单路与多路的对照，把「单路基线 Recall@K」与「加路后的提升幅度」两列写进评估报告并归档，用的问题集与 Step 7 是同一份。判别两路是否同源的口径与噪声量级见 [§3.2.4](05-rag-architecture-section-3-sec3.md)；本节只要求这件事在任何一条新路合入之前跑过一次，结论能追溯到问题集的版本号，此后每次改检索参数重跑一次。
+- **为什么必须这一步 / 为什么在这个位置**：它是投入顺序的分水岭。召回没达标时，精排只能把缺失掩盖得更深（[§3.2.2](05-rag-architecture-section-3-sec3.md) 失效点），所以排序与融合必须排在召回之后，并以召回指标达标为前提。
 
-**Step 6：上下文组装与生成**
+**Step 6：上下文组装与生成（1–2 周，随引用要求的严格程度与模板迭代轮数而变【经验】）**
 
-- Prompt 模板：System + Context + Question。
-- 上下文压缩：剔除冗余、保留关键。
-- 引用标注：每条结论附原文出处。
-- 输出：**自然语言答案 + 引用**。
+- Prompt 模板（System + Context + Question）；上下文压缩（剔除冗余、保留关键）；引用标注（每条结论附原文出处）。
+- **产物**：带版本号的 prompt 模板 + 带引用的答案。
+- **判据**：随机抽 20 条答案，逐条核对引用是否真的支持该结论。引用对不上的比例高，说明压缩丢了证据，或者模型在补写——两种情况修法不同，先分开看。
+- **为什么必须这一步 / 为什么在这个位置**：引用是「可溯源」这条业务承诺的唯一交付物，也是排障时唯一能分清「检索错了」与「生成写偏了」的东西。放在精排之后，因为压哪些片段取决于精排给回来的顺序。
 
-**Step 7：评估与监控**
+**Step 7：评估与监控（1–2 周建、之后持续；建期随问题集条数与标注方式而变【经验】）**
 
-- 离线评估：RAGAS / TruLens / ARES。
-- 在线监控：召回率 / 准确率 / 延迟 / 成本 / 用户反馈。
-- A/B 测试：不同 prompt / 模型 / 召回策略对比。
-- 输出：**评估报告 + 监控大盘**。
+- 离线评估（RAGAS / TruLens / ARES）；在线监控（召回率 / 准确率 / 延迟 / 成本 / 用户反馈）；A/B 测试（不同 prompt / 模型 / 召回策略）。
+- **产物**：固定问题集（查询 + 正确片段标注）+ 评估报告 + 监控大盘。
+- **判据**：能否回答「这次改动有没有让效果变差」——只改一个变量重跑一次，两组分数必须来自**同一份问题集与同一份语料快照**。做不到这一点时，两个数不可比，报告等于没写。
+- **为什么必须这一步 / 为什么在这个位置**：它是灰度之前的最后一道保险，也是后面所有迭代的唯一依据。跳过它并不是「先上线再补」，而是把之后每一次调参都变成不可验证的动作。
 
-**Step 8：上线与迭代**
+**Step 8：上线与迭代（持续）**
 
-- 灰度发布：10% → 50% → 100%。
-- 反馈闭环：用户「赞 / 踩」回流到评测集。
-- 持续优化：每周评估 → 调参 → 上线。
-- 输出：**生产级 RAG 服务**。
+- 灰度发布（起点按经验取 10% → 50% → 100%，随流量、风险与拒答容忍度调整【经验】）；反馈闭环（用户赞 / 踩回流到评测集）；持续优化（每周评估 → 调参 → 上线）。
+- **产物**：生产级 RAG 服务 + 一条反馈回流的通路。
+- **判据**：灰度期间新旧两版跑在**同一批真实问题**上，且能给出分解到「召回 / 排序 / 生成」的对比；只有总分的对比会掩盖过拟合。
+- **为什么必须这一步 / 为什么在这个位置**：它是唯一能把离线结论与线上行为对齐的环节。排在最后不是因为它最不重要，而是它需要前七步的产物才能成立。
+
+最常被跳过的是 **Step 3 里的「分块策略版本号」与 Step 7 的「固定问题集」**——两者的共同点是跳过之后一切正常。症状出现在第一次想改进的时候：说不出「这次改动让哪一类问题的指标动了多少」，于是后续优化退化成反复换模型。第一个真正出问题的时点通常不是上线当天，而是上线后被问「为什么同一个问题昨天答对了今天答错了」的那一刻，而此时你已经没有可比的基线。
 
 ### 4.2 关键技术点
 
-1. **Chunking 优化**：语义切分 + 结构感知 + overlap。LangChain `RecursiveCharacterTextSplitter` 是默认起点。
-2. **Embedding 选型**：中文选 BGE-M3，英文选 OpenAI text-embedding-3，多模态选 CLIP / Qwen-VL。
-3. **向量库选型**：千万级选 Milvus / Qdrant / Weaviate，亿级选 Pinecone / Vespa Serverless，PostgreSQL 用户选 pgvector。
-4. **Hybrid Search**：向量 + BM25 + RRF 融合（详见 04-hybrid-search）。
-5. **Reranker**：用 Cohere Rerank 3 或 BGE-reranker，效果提升 30%。
-6. **Query Rewrite**：用 LLM 把口语化问题改写成检索友好查询。
-7. **HyDE**：让 LLM 先写个假答案，再做检索。
-8. **Contextual Compression**：剔除不相关内容，只保留关键段落。
-9. **Prompt 模板**：简洁、清晰、Few-shot、引用标注。
-10. **缓存**：相同 query 缓存检索结果，降低成本 50%+。
-11. **路由**：简单问题用小模型，复杂问题用大模型。
-12. **流式输出**：SSE 流式返回，首 token 延迟 < 500ms。
-13. **评估体系**：RAGAS（自动化）+ 人工抽检（每周 50 条）+ 在线反馈。
+**Chunking 优化**
+
+- **做法**：语义切分 + 结构感知 + overlap；LangChain 的 `RecursiveCharacterTextSplitter` 是默认起点。
+- **机制**：因为切分粒度同时决定「检索单元」与「证据单元」，所以粒度与答案的跨度匹配时召回才有意义——**代价是切分与嵌入模型绑在一起**，换任一项都要全量重建。
+- **失效条件**：**当答案本身跨两个 chunk（一份合同的条款与它的例外、一张表与它的注释）时**，这条会失效，且症状出现在生成侧：模型把半截证据讲得很流畅。判据是 Step 3 那条「答案是否落在单个 chunk 内」的抽样。
+- **档位**：起点参数【经验】，随语料形态与模型窗口变。
+
+**Embedding 选型**
+
+- **做法**：中文为主选 BGE-M3，英文为主选 OpenAI text-embedding-3，多模态另用 CLIP / Qwen-VL 一类图文嵌入；中文轻量场景可考虑 M3E。
+- **机制**：因为嵌入决定的是「候选集里有没有」，不是「候选集里的顺序」，所以换模型只改变召回上限，不改变排序质量。**代价是换模型等于重建全库索引**，而这件事没有一次是免费的。
+- **失效条件**：**当失败样本里「正确片段已在召回集内、只是排位靠后」占多数时**，换更大的嵌入模型不会带来任何改善——指标几乎不动。症状：升级模型后 Recall 微涨而端到端分数不变。
+- **档位**：本段不含数字。模型名与能力以各模型方公布的模型卡与文档为准（可按模型名与「模型卡 / model card」自行检索核对）；改善幅度随语料分布变，不给具体数字。
+
+**向量库与索引算法选型**
+
+- **做法**：千万级可选 Milvus / Qdrant / Weaviate，亿级考虑 Pinecone / DiskANN 一类磁盘索引，已有 PostgreSQL 时用 pgvector 一体化；算法上 HNSW 是默认，IVF 适合大数据、DiskANN 面向超大规模。
+- **机制**：因为近似索引用少量精度换延迟，所以参数（`ef`、`nprobe` 一类）直接决定召回上限。**代价藏在过滤上**：过滤若发生在近邻搜索之后，返回条数会被静默截断到不足 K 条，而调用方看到的只是「召回变少了」。
+- **失效条件**：**当过滤条件的选择性变高（例如只查某个租户、最近 7 天）时**，这条最容易被触发——带过滤的查询召回被截断，召回率在无过滤的评测集上看不出来。症状：单租户查询答得差，全库评测分数却正常。判据是拿同一条查询跑「带过滤」与「不带过滤」两版，比返回条数。
+- **档位**：能力项与是否支持过滤下推，以各向量库官方文档当前版本为准；不要按功能清单页假设。
+
+**Hybrid Search（向量 + BM25 + RRF 融合）**
+
+- **做法**：向量路与 BM25 路并行召回，用 RRF 融合；每一路的取数数量按路单独调（本主题的展开见 [04-hybrid-search §3](../04-hybrid-search/04-hybrid-search-section-3-sec3.md)）。
+- **机制**：因为融合层只向下传递名次、不向下传递分数，所以装完之后所有依赖「分数够不够」的下游判定——拒答阈值、抽样开精排、缓存命中——都要改成读名次或另取一路内的分数。**代价是同一个决定被写进三处配置**（融合、判定、缓存）：改一处而不动另两处时，线上会出现「拒答按旧分数、缓存键按新名次」这类不自洽，而它不报错。
+- **失效条件**：**当两路由不同的作业重建、且重建周期不一致时**（一路按天、一路按周），两侧的证据会来自不同日期。症状不体现在任何一路自己的召回指标上，而是出现在抽检与用户反馈里——答案引用了已经被改写或删除的段落；值班要把两侧的索引构建时间戳并排看才排得动，这条信号落在语料新鲜度那张看板上，不在检索指标上。
+- **档位**：【公开】RRF 用名次融合的机制与其常数 k 见原始论文（Cormack、Clarke、Buettcher，SIGIR 2009）；k 的取值与提升幅度随语料与标注集变化【经验】。
+
+**Reranker（精排）**
+
+- **做法**：只对 Top-50~100 的候选开交叉编码器精排【经验】，模型可选 Cohere Rerank 3 / BGE-reranker / 自托管 Cross-Encoder。
+- **机制**：因为精排把「候选数 K」直接换算成每次请求的前向次数，所以它是链路上唯一一个改一个参数就立刻反映到 GPU 占用与账单上的环节。**代价是这个 K 同时被三处配置约束**——检索侧的候选数、部署侧的实例与并发规格、网关侧的超时；三者分散在三处维护，只调大 K 而不动另外两个，线上表现为尾延迟破线而不是报错。
+- **失效条件**：**当精排与生成共用同一份算力配额时**，生成侧的流量高峰会把精排推进排队，最先召回、本该最先排完的候选反而最晚回来。症状是 P50 不变而 P99 上涨、超时率上升——值班要先看精排队列与配额占比，不要先去怀疑模型。
+- **档位**：收益随正确片段的原始位次分布变【经验】：位次越靠后、收益越明显；在召回缺失的样本上收益为零。不要引用未标注语料上的提升数字。
+
+**Query Rewrite 与 HyDE**
+
+- **做法**：用 LLM 把口语化问题改写成检索友好的查询（Query Rewrite）；或让它先写一段假答案再做检索（HyDE）。改写前后的文本必须落盘。
+- **机制**：因为改写是链路上唯一一个「先产出新查询、再拿新查询去检索」的步骤，一次失败要能重放，就必须同时拿到原问题、改写后文本与当时的检索参数。**代价是这三样必须在上线前就接进日志与抽样**，事后补不上：改写文本一旦没落盘，此前所有失败样本都变成不可分析的。
+- **失效条件**：**当落盘只接在主链路上、没接缓存命中与灰度分支时**，被质疑的那批请求恰好没有记录。症状不体现在任何指标上，而是「无法解释的差评」这类工单占比上升、值班复现不出来；判据是抽检时能捞到的记录条数少于实际请求数。
+- **档位**：机制见 [§5.2.1](05-rag-architecture-section-5-ai.md)。【公开】HyDE 的原始论文为 Gao 等《Precise Zero-Shot Dense Retrieval without Relevance Labels》（arXiv 预印本，2022 年；正式发表信息以论文库记录为准），可按篇名自行检索核验；该方法带来的收益幅度随语料与问题分布变【经验】。
+
+**Contextual Compression**
+
+- **做法**：检索之后剔掉与问题无关的段落，只保留关键句，并把证据置于上下文的头尾。
+- **机制**：因为压缩是链路上唯一一个主动删除已检到内容的步骤，它把「检索成功」与「生成成功」之间的对应关系打断。**代价是 Recall@K 达标而答案缺证据时，你要先分清是压缩删的还是生成漏的**，否则会去重修一段已经达标的检索。
+- **失效条件**：**当压缩层与生成层由不同的人按各自的节奏发布时**，一次单侧的小改就会改变答案质量，而两侧各自只盯自己那一半的指标。症状是「检索参数一行没动、端到端分数却漂了」——它只能靠发布记录加逐条引用核对定位，在召回指标上查不到。
+- **档位**：【公开】位置效应见 Liu 等的论文《Lost in the Middle》（2023），机制见 [§3.2.2](05-rag-architecture-section-3-sec3.md)；压缩比例随语料变【经验】。
+
+**Prompt 模板与引用标注**
+
+- **做法**：模板只放角色与输出格式（System + Context + Question），每条结论附原文出处，用 Few-shot 固定输出形态。
+- **机制**：因为提示词是请求而不是控制流，硬约束（无检索不生成、必须带引用）写进流程才有效——**代价是流程约束会带来拒答**，而这需要业务侧接受。
+- **失效条件**：**当提示词里堆的规则变多时**，这条开始反向工作：规则越多越难验证哪条在起作用，模型仍不遵守。症状：改了一版 prompt 后指标波动无法归因。
+- **档位**：无数字；「提示词是请求不是控制流」的机制见 [§3.5](05-rag-architecture-section-3-sec3.md)。
+
+**缓存与路由**
+
+- **做法**：相同（或语义近似）的 query 复用检索结果；简单问题走小模型、复杂问题走大模型，按问题类型分流。
+- **机制**：因为检索侧的开销集中在嵌入与精排，同一 query 的重复请求是纯粹的浪费——缓存把它消掉。**代价是缓存会掩盖语料更新**：文档改了而缓存没失效时，系统继续返回旧证据。
+- **失效条件**：**当语料更新频繁、而缓存失效策略按时间而非按文档变更触发时**，这条从省钱变成事故来源。命中率的差别极大——重复度高的客服类场景可达可观比例，开放域问答几乎为零【经验】，所以它值不值得做取决于问题分布的重复度，不要照抄别人案例里的收益。
+- **档位**：【经验】，命中率与收益随问题分布变，不给具体数值。
+
+**流式输出**
+
+- **做法**：用 SSE 流式返回首 token 与后续内容。
+- **机制**：因为用户感知的等待是「首 token 到达时间」而不是总时长，流式把体验问题从生成总耗时上拆下来——**代价是错误出现得更晚**：引用与引用校验通常只能在完整答案之后做。
+- **失效条件**：**当答案需要严格前置校验（合规拦截、引用校验失败即不许输出）时**，流式与「先校验再输出」直接冲突。症状：拦截规则上线后，用户已经看到了被拦截内容的开头。
+- **档位**：首 token 延迟随模型、部署方式与网络变化，量级从百毫秒到秒级不等【经验】，应由自己的监控给出，不要引用别处的数字。
+
+**评估体系**
+
+- **做法**：自动指标用 RAGAS 一类框架，人工抽检每周一批量（起点可定在 50 条【经验】），在线侧收用户反馈；三者并存。
+- **机制**：因为端到端分数会把召回失败、排序失败与生成问题混在一起，所以评估必须能分层——这决定了你的改动能不能被归因。**代价是标注是人工成本，外包不掉**。
+- **失效条件**：**当 ground truth 与被测链路同源时**（用同一个模型既生成又裁判），评估失效：系统会收敛到自洽而不是正确，指标稳定而效果在退化。症状：分数一直很好看，用户投诉一直在涨。
+- **档位**：【公开】RAGAS 评测框架 2023 年发布（见主文件 [§1.4](05-rag-architecture.md)），TruLens / ARES 一类框架的指标定义以各自文档当前版本为准；不同框架对「忠实性」的定义不同，跨框架分数不可比。
 
 ### 4.3 工具链与平台
 
-**LLM 框架**：
+选型的第一个动作不是比产品，是把约束写下来：规模、能否出网、要不要自托管、有没有现成的检索与标注能力。下表按类别给候选与判据。
 
-- **LangChain**（Python / JS）——主流 LLM 编排框架，2024 仍是事实标准。
-- **LlamaIndex**（Python）——专注 RAG 场景，索引 / 检索器抽象最完善。
-- **Haystack**（deepset）——生产级 NLP 流水线框架。
-- **DSPy**（Stanford 2023-2024）——「自动 Prompt / 自动微调」RAG 框架。
-- **Semantic Kernel**（Microsoft）——.NET 生态 LLM 框架。
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| LLM 编排框架 | LangChain / LlamaIndex / Haystack / DSPy / Semantic Kernel | 单一链路、快速验证 → LangChain 一类通用编排；最看重检索抽象 → LlamaIndex；生产流水线与 NLP 组件齐备 → Haystack；想自动搜 prompt / 权重 → DSPy；.NET 栈 → Semantic Kernel | 用通用编排硬写检索：分块与检索器的默认值不透明，换一次模型的回归范围说不清 |
+| 向量数据库 | Milvus / Qdrant / Weaviate / Pinecone / Vespa / pgvector / Chroma / LanceDB | 三条判据：规模（千万级 / 亿级）、过滤能否下推到索引扫描、运维能力。已有 PostgreSQL → pgvector；PoC → Chroma；要托管省运维 → Pinecone；要自建分布式 → Milvus / Qdrant；要向量 + 标量 + 表达式混合 → Vespa | 只按规模选：过滤不能下推时召回被静默截断（见 §4.2「向量库与索引算法选型」），而这在无过滤的评测集上看不出来 |
+| 全文 / 混合检索引擎 | Elasticsearch / Meilisearch | 需要多路召回与融合 → 支持 RRF 一类融合的检索引擎；只要轻量关键词检索与小体量部署 → Meilisearch | 只上向量库：单号、型号、错误码这类精确 token 查询召回缺失，而这类失败不会被向量指标发现 |
+| Rerank 服务 | Cohere Rerank 3 / BGE-reranker / Jina Rerank / ColBERT、ColBERTv2 / Self-hosted Cross-Encoder | 中文为主 → BGE-reranker；多语言商业服务 → Cohere Rerank 3 / Jina Rerank；不能出网 → 自托管 Cross-Encoder；要晚交互的高精度检索 → ColBERT 一类 | 不做精排：召回集里的顺序直接决定证据质量，而症状是「答得不太对」而不是报错，最难被发现 |
+| RAG 评估框架 | RAGAS / TruLens / DeepEval / ARES / LangSmith / LangFuse | 要现成指标 → RAGAS 一类；要端到端调用链调试与实验跟踪 → LangSmith / LangFuse；要批量评测 LLM 应用 → DeepEval；要自动化评测（少人工标注）→ ARES | 不建评估：无法回答「这次改动有没有变差」，调参会把噪声当收益 |
+| GraphRAG 工具 | Microsoft GraphRAG / Neo4j LLM Knowledge Graph Builder / LightRAG / HippoRAG | 先数两个比例：需要跨文档汇总 / 多跳的问题占比，以及语料日变更比例。占比低或语料日更频繁 → 不建图；要轻量建图 → LightRAG 一类 | 盲目建图：建图是重跑形态的作业，成本随语料变更线性叠加，而收益只落在少数问题上 |
+| 生产级 RAG 平台 | Vectara / Glean / Hebbia / Quivr | 判据是「被平台收走的那部分你能否接受」：切分与检索参数不可调换来运维最省；金融等垂直场景看是否已有行业语料与合规模板 | 自建全套：参数可调，但索引构建流水线要自己养（版本、重试、回填、失败重跑） |
 
-**向量数据库**：
+这一类里最容易被误选的是**把向量数据库当成整套 RAG 的选型**。向量库只决定候选集怎么取，既不决定候选集里的顺序，也不决定过滤能不能下推。误选的后果不是系统不工作，而是**升级完嵌入模型指标几乎不动**（[§3.5](05-rag-architecture-section-3-sec3.md) 的「Embedding 万能」），而真正缺的精排与过滤下推一直没人补——它把问题伪装成了一次「模型还不够好」。
 
-- **Milvus**（国产开源）——分布式向量数据库，大规模首选。
-- **Qdrant**（开源）——Rust 实现，高性能向量库。
-- **Weaviate**（开源）——模块化向量库，内置 Hybrid Search。
-- **Pinecone**（SaaS）——Serverless 向量库，运维成本最低。
-- **Vespa**（Yahoo 开源）——支持向量 + 标量 + 表达式，Hybrid 强。
-- **pgvector**（PostgreSQL 扩展）——PostgreSQL 一体化方案。
-- **Chroma**（开源）——轻量级向量库，适合 PoC。
-- **LanceDB**（2024）——列式向量库 + DuckDB 集成。
+产品命名与能力以各自官方文档当前版本为准：本表只给类别与判据，某个具体版本是否支持某条能力，请按能力名回官方文档核对，不要按功能清单页选型。
 
-**Rerank 服务**：
+### 4.4 存量迁移
 
-- **Cohere Rerank 3**（商业）——多语言 SOTA。
-- **BGE-reranker**（BAAI 开源）——中文首选。
-- **Jina Rerank**（商业）——多语言。
-- **ColBERT / ColBERTv2**（学术）——晚交互。
-- **Self-hosted Cross-Encoder**——完全自托管。
+**① 先做什么：立刻见效、可回退的三件**
 
-**RAG 评估框架**：
+第一件是把**过滤下推到检索侧**（一条查询改写 + 一次「删除文档后立刻检索」的验证），不动索引结构。第二件是把「语料快照 / 分块版本 / 嵌入模型版本」登记成资产条目。第三件是建一份固定问题集（起点可定在 100 条量级【经验】）。
 
-- **RAGAS**（开源）——RAG 专用评估框架。
-- **TruLens**（开源）——LLM 应用评估。
-- **DeepEval**（开源）——LLM 评估。
-- **ARES**（Stanford 2024）——自动化 RAG 评估。
-- **LangSmith**（LangChain）——端到端调试 + 评估。
-- **LangFuse**（开源）——LLM 工程化平台。
+三件的可回退性并不相同，这一点必须先说清：过滤下推是配置改动，可以回退，但**回退期间越权内容会重新进入模型上下文**，所以它只能在前向修复失败时作为短期手段；版本登记是纯加字段，回退没有意义；问题集是纯增资产，不需要回退。
 
-**GraphRAG 工具**：
+不要先做的一件事是「重建索引换更大的嵌入模型」。机制上很清楚：它只改变候选集的分布，不改变「候选集里有没有正确片段」，而存量系统里真正缺的通常是精排与过滤（[§3.5](05-rag-architecture-section-3-sec3.md)）。做它的代价是全量重编码与一轮回归，收益却未必出现。
 
-- **Microsoft GraphRAG**（2024 开源）——KG + RAG 工业级。
-- **Neo4j LLM Knowledge Graph Builder**（2024）——自然语言建 KG。
-- **LightRAG**（2024-2025）——轻量 GraphRAG。
-- **HippoRAG**（2024）——类脑 KG + RAG。
+**② 历史资产怎么分类处理（三档，不要一刀切）**
 
-**生产级 RAG 平台**：
+| 档 | 判据（怎么分） | 处理 |
+| --- | --- | --- |
+| 立刻返工 | 含个人信息 / 客户数据（一律第一档，不看频率） | 重建索引，把权限与时效字段写进索引结构，逐条做「删除后立刻检索」验证 |
+| 只改动的部分 | 不含个人信息 / 客户数据，且近 90 天仍在更新，或近 90 天被高频检索 | 新入库的 chunk 带齐元数据；历史分片不重建，只登记版本；检索时用过滤条件兜 |
+| 打标挂账 | 不含个人信息 / 客户数据，且只读、近 90 天检索频次低，或已排入下线计划 | 登记进清单并标注「无版本信息 / 无权限字段」，设一个复核日期 |
 
-- **Vectara**（商业）——企业级 RAG 平台。
-- **Glean**（商业）——企业搜索 + RAG。
-- **Hebbia**（商业）——金融 RAG。
-- **Quivr**（开源）——个人 RAG。
+判据的执行动作：对每个语料源查三件事——是否含个人信息 / 客户数据、近 90 天更新频率、近 90 天被检索次数，并按上表的顺序落档：**含个人信息 / 客户数据的一律第一档，不看频率**（这一档的失败是事故而不是效果）；已排入下线计划的进第三档；其余的按「是否仍在更新、近 90 天被检索频次」落进第二或第三档。
 
-### 4.4 代码 / 示例
+**③ 迁移期的双轨怎么维持、维持多久**
 
-**示例 1：Naive RAG（LangChain + Milvus）**
+双轨的形态是：旧索引（无权限字段、无版本登记）与新索引（字段齐全）并行，检索层按语料源路由。维持多久由一件可数的事决定：**带权限字段的语料占比**。只要这个比例不是 100%，双轨就不能撤；而只要还有一段在旧轨上，就必须保留一条硬规则——**过滤不放在生成后裁剪**，因为它防的是越权，不是效果。
+
+双轨期唯一必须做的跨轨动作是维护一张路由表：哪个语料源在哪条轨、谁负责迁完、预计什么时候迁完。没有这张表会出现一种很难查的故障——同一份文档在两条轨上各有一份，更新只更了一条，症状是答案偶尔引用过时版本。
+
+**④ 什么信号说明可以退出双轨**
+
+三个信号同时出现才算：
+
+- 路由表上所有语料源都指向新轨，且旧索引不再写入；
+- 抽 20 条带权限的查询，「删除 / 权限回收后立刻检索」验证全部通过；
+- 新旧两版在**同一份语料快照与同一份问题集**上双跑过一次，差距可以被解释（能说清是哪一类问题上的差异，而不是「新版本更好」）。
+
+只满足前两条就退出，风险在于长尾语料：它们检索量小，但恰恰可能是合规上最敏感的那部分。
+
+**⑤ 迁移顺序与代价**：先动检索层，再动索引层，最后动控制流——三者的回滚成本依次上升，逐项的工作量量级与代价见 [§7.7](05-rag-architecture-section-7-sec7.md) 的迁移成本表与 [§3.6](05-rag-architecture-section-3-sec3.md) 的规模跃迁表，本节不重复。
+
+### 4.5 模板 / 示例
+
+五个模板按顺序构成一条链：模板 2 复用模板 1 定义的 `store` / `chunks` / `llm`，模板 3 复用模板 2 定义的 `retriever` 与模板 1 的 `llm`，单独复制某一段时要自行补上这些名字。
+
+下面各模板的 import 路径沿用 LangChain 0.2 之前的包结构，官方其后已把这些部件拆到独立包。直接复制若报 `ImportError`，请按官方迁移说明替换 import 路径——模板里的类名与参数名不变。
+
+**模板 1：Naive RAG（LangChain + Milvus）**
 
 ```python
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.document_loaders import PyPDFLoader
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Milvus
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import PyPDFLoader
 
-# 1. 加载文档
-loader = PyPDFLoader("company_handbook.pdf")
-docs = loader.load()
-
-# 2. Chunking
-splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=64)
-chunks = splitter.split_documents(docs)
-
-# 3. Embedding & 入库
-embedding = OpenAIEmbeddings(model="text-embedding-3-large")
-vectorstore = Milvus.from_documents(chunks, embedding, connection_args={"host": "milvus", "port": 19530})
-
-# 4. RAG 问答
-llm = ChatOpenAI(model="gpt-4o", temperature=0)
-qa = RetrievalQA.from_chain_type(llm, retriever=vectorstore.as_retriever(search_kwargs={"k": 5}))
-result = qa.invoke("公司年假政策是什么？")
-print(result["result"])
+docs   = PyPDFLoader("company_handbook.pdf").load()
+chunks = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=64).split_documents(docs)
+store  = Milvus.from_documents(chunks, OpenAIEmbeddings(model="text-embedding-3-large"),
+                               connection_args={"host": "milvus", "port": 19530})
+llm    = ChatOpenAI(model="gpt-4o", temperature=0)
+qa     = RetrievalQA.from_chain_type(llm, retriever=store.as_retriever(search_kwargs={"k": 5}))
 ```
 
-**示例 2：Advanced RAG（Query Rewrite + Rerank + Hybrid）**
+**怎么用**：填向量库连接与模型名。这份代码的价值是**基线**——先跑通它，用固定问题集记下 Recall@k，再谈优化。`chunk_size=512 / chunk_overlap=64` 是起点【经验】，改它之前必须先把问题集建好，否则改完无法判断是变好还是变坏。
+
+**模板 2：Advanced RAG（Hybrid + Rerank + Query Rewrite）**
 
 ```python
-from langchain.retrievers import BM25Retriever, EnsembleRetriever
+from langchain.retrievers import BM25Retriever, EnsembleRetriever, ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import CohereRerank
-from langchain.retrievers import ContextualCompressionRetriever
-
-# 1. 双路召回（向量 + BM25）
-vector_retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
-bm25_retriever = BM25Retriever.from_documents(chunks)
-bm25_retriever.k = 10
-ensemble_retriever = EnsembleRetriever(retrievers=[vector_retriever, bm25_retriever], weights=[0.6, 0.4])
-
-# 2. Rerank
-compressor = CohereRerank(model="rerank-english-v3.0", top_n=5)
-compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
-
-# 3. Query Rewrite
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 
-rewrite_prompt = PromptTemplate.from_template("""
-请把以下问题改写成更适合检索的形式，保持语义不变：
-原问题：{question}
-改写：
-""")
+vector_retriever = store.as_retriever(search_kwargs={"k": 10})
+bm25_retriever   = BM25Retriever.from_documents(chunks); bm25_retriever.k = 10
+ensemble = EnsembleRetriever(retrievers=[vector_retriever, bm25_retriever], weights=[0.6, 0.4])
+
+compressor = CohereRerank(model="rerank-english-v3.0", top_n=5)
+retriever  = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble)
+
+rewrite_prompt = PromptTemplate.from_template(
+    "请把以下问题改写成更适合检索的形式，保持语义不变：\n原问题：{question}\n改写：")
 rewrite_chain = LLMChain(llm=llm, prompt=rewrite_prompt)
-rewritten = rewrite_chain.invoke({"question": "年假"})["text"]
-results = compression_retriever.get_relevant_documents(rewritten)
+rewritten = rewrite_chain.invoke({"question": "年假"})["text"]   # 改写前后的文本都要落盘
+results   = retriever.get_relevant_documents(rewritten)
 ```
 
-**示例 3：Agentic RAG（LangGraph）**
+**怎么用**：`weights=[0.6, 0.4]` 这一格不要照抄——RRF 一类融合只用名次，加权是另一套机制，混用时必须能说清权重的来源。精排候选数取 50–100【经验】，其上限由延迟预算反推；`top_n=5` 是给生成用的条数，与召回条数是两件事，不要混成一个参数。
+
+**模板 3：Agentic RAG（LangGraph）**
 
 ```python
-from langgraph.graph import StateGraph, END
 from langchain.tools import tool
+from langgraph.graph import StateGraph, END
+from langgraph.prebuilt import create_react_agent
 
 @tool
 def search_knowledge_base(query: str) -> str:
     """从企业知识库检索信息"""
-    results = compression_retriever.get_relevant_documents(query)
-    return "\n\n".join([doc.page_content for doc in results])
+    return "\n\n".join(d.page_content for d in retriever.get_relevant_documents(query))
 
 @tool
 def query_database(sql: str) -> str:
     """查询企业数据库"""
-    # 执行 SQL
-    return "数据库查询结果"
+    ...
 
 @tool
 def search_web(query: str) -> str:
@@ -218,31 +279,61 @@ def search_web(query: str) -> str:
     # 调用 Web 搜索
     return "Web 搜索结果"
 
-# 构建 Agentic RAG
-from langgraph.prebuilt import create_react_agent
-agent = create_react_agent(llm, tools=[search_knowledge_base, query_database, search_web])
+agent  = create_react_agent(llm, tools=[search_knowledge_base, query_database, search_web])
 result = agent.invoke({"messages": [{"role": "user", "content": "Q3 营收是多少？"}]})
 ```
 
-**示例 4：RAGAS 评估**
+**怎么用**：工具描述决定模型会不会调它，所以要写清「什么时候该用」，而不是只写它做什么。上线前必须补三样：轮数上界、单次预算上界、逐轮落盘——缺任何一样，事后都说不清这个答案是几轮检索出来的（[§3.2.8](05-rag-architecture-section-3-sec3.md) 的失效点）。
+
+**模板 4：RAGAS 评估**
 
 ```python
 from ragas import evaluate
 from ragas.metrics import context_relevance, faithfulness, answer_relevancy
 from datasets import Dataset
 
-# 准备评估数据
-eval_data = {
-    "question": ["年假政策是什么？", "试用期多久？"],
-    "contexts": [["年假 10-15 天..."], ["试用期 3-6 个月..."]],
-    "answer": ["根据公司手册，年假为 10-15 天...", "试用期为 3-6 个月..."],
-    "ground_truth": ["10-15 天", "3-6 个月"]
-}
-dataset = Dataset.from_dict(eval_data)
-
-# 评估
-result = evaluate(dataset, metrics=[context_relevance, faithfulness, answer_relevancy])
-print(result)
+dataset = Dataset.from_dict({
+    "question":     ["年假政策是什么？"],
+    "contexts":     [["年假 10-15 天..."]],
+    "answer":       ["根据公司手册，年假为 10-15 天..."],
+    "ground_truth": ["10-15 天"],
+})
+print(evaluate(dataset, metrics=[context_relevance, faithfulness, answer_relevancy]))
 ```
 
----
+**怎么用**：`ground_truth` 必须独立于被测链路（人工标注 / 业务规则）；用被测模型当裁判时，测的是自洽而不是正确。跨框架比较前先核对「忠实性」的定义是否一致，否则两个数不可比。
+
+**模板 5：固定问题集与失败分类**
+
+```text
+question_id | question              | 正确片段 id | 命中路 | 排名 | 失败类型
+q-001       | 年假政策是什么         | doc-12#c3   | 向量   | 2    | —
+q-002       | 工单 WO-2024-117 状态  | doc-77#c1   | BM25   | 1    | —
+q-003       | 三份合同的责任划分      | —           | —      | —    | 结构不可解
+q-004       | 退款到账要几天         | doc-31#c5   | 无     | —    | 召回缺失
+```
+
+**怎么用**：失败类型只允许三档——**召回缺失 / 排序靠后 / 结构不可解**。第一档修召回与索引，第二档修精排，第三档才考虑改结构（GraphRAG / Agentic）。三档混在一列里统计，等于什么都没测（[§3.5](05-rag-architecture-section-3-sec3.md) 的「不评估」一条，其修法就是「把召回失败与排序失败分开统计」；[§3.7](05-rag-architecture-section-3-sec3.md) 第 1 条按同一口径查）。这张表就是 Step 7 的产物，也是每一条判据的输入。
+
+### 4.6 自检清单
+
+- [ ] 固定问题集里有多少条带「正确片段」标注？失败样本能否逐条落进三档之一？
+- [ ] 分块策略记录里有版本号与生效日期吗？换过一次策略之后，问题标注是否整组重做过？
+- [ ] 随机抽 100 条索引记录，有多少条缺租户 / 密级 / 更新时间字段？
+- [ ] 删掉一份有权限要求的文档，立刻检索一次——检索侧返回条数是 0，还是仍有？
+- [ ] 拿一条带过滤的查询看执行计划：过滤在近邻搜索之前还是之后？带与不带过滤的返回条数差多少？
+- [ ] 随机抽 20 条改写记录，逐条核对实体与时间条件有没有被改掉？
+- [ ] 关掉精排与多路召回，单路向量召回的 Recall@k 是多少？这个数单独记过吗？
+- [ ] 灰度期新旧两版是否在同一批真实问题上跑过，且指标分解到召回 / 排序 / 生成三层？
+- [ ] 控制流（若有）的轮数上界与单次预算上界是谁定的、写在哪份配置里？上界的取值进了监控大盘，还是只写在文档里？
+- [ ] 建图（若有）的一次全量重建耗时与输入规模是多少？有失败重试与版本管理吗？
+- [ ] ground truth 是人工标注还是被测模型生成的？抽 20 条人工核过吗？
+- [ ] 「问题集 + 分块版本 + 嵌入模型版本 + 检索参数」这一组是否出现在发布记录与回滚预案里——回退时能按整组退，还是只能退其中一项？
+
+这 12 条查的都是**已经建成的东西**，不是设计原则（设计层面的自检见 [§3.7](05-rag-architecture-section-3-sec3.md)，本节不重复）。第 1–4 条查产物在不在（问题集、分块版本、索引字段、删除验证），第 5–7 条查结构对不对（过滤位置、改写落盘、召回基线），第 8–12 条查运维能不能撑住（灰度分解、控制流上界、建图代价、标注独立性、版本整组）。最常被跳过的是第 1 条与第 4 条——它们各自只需要一两天，却分别决定后面所有投入的方向和安全边界。
+
+### 4.7 小结
+
+> 本节小结：这八步里唯一决定成败的是 **Step 3 与 Step 7 这一对**——把「检索单元 = 证据单元」这件事在切分阶段定下来，并让每一次改动都能在一份固定问题集上被验收。因为本主题的链路不会因为证据不对而报错（候选集永远填满、生成永远给出答案），所以**唯一的防线不是把参数调好，而是让「变差」这件事有一个能被看见的地方**；精排、融合、改写、GraphRAG 都是在为这个验收口径提供可以改的变量。
+>
+> 配合 [§ 2 核心原理](05-rag-architecture.md)、[§ 3 设计模式与范式](05-rag-architecture-section-3-sec3.md) 与 [§ 6 落地实践](05-rag-architecture-section-6-sec6.md) 阅读。

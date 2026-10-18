@@ -9,7 +9,7 @@
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
 | P5 / P6 / P7 / P8 / 资深架构师的能力模型？ | §1.1、§2.1 |
-| 阿里巴巴 / Google / 字节的职级体系怎么映射？ | §1.4、§2.4 |
+| 阿里巴巴 / Google / 字节的职级体系怎么映射？ | §1.4、§2.1 |
 | 怎么设计双通道（技术 / 管理）？ | §3.1、§4.1 |
 | 晋升答辩怎么辅导？怎么避免「答辩翻车」？ | §2.3、§3.2.3 |
 | IDP（个人发展计划）怎么写？ | §3.2.5、§4.1 |
@@ -293,7 +293,7 @@ TeamOutput = TalentDensity × RetentionRate × PerCapitaProductivity
 ---
 
 - [§3. 设计模式与范式](02-talent-ladder-section-3-sec3.md)
-- [§9. 工程实现](02-talent-ladder-section-4-sec4.md)
+- [§4. 工程实现](02-talent-ladder-section-4-sec4.md)
 ## 1. 当前职级与目标职级
 - 当前：P6（高级数据工程师）
 - 目标：P7（数据架构师）- 12 个月
@@ -339,7 +339,7 @@ TeamOutput = TalentDensity × RetentionRate × PerCapitaProductivity
 
 - [§3. 技术深度与广度（5 分钟）](02-talent-ladder-section-3-sec3.md)
 - [§9. Q&A（30 分钟）](02-talent-ladder-section-9-sec9.md)
-- [§10. 前沿演进（AI 时代）](02-talent-ladder-section-5-ai.md)
+- [§5. 前沿演进（AI 时代）](02-talent-ladder-section-5-ai.md)
 - [§6. 落地实践](02-talent-ladder-section-6-sec6.md)
 - [§7. 与其他方法对比](02-talent-ladder-section-7-sec7.md)
 - [§8. 面试真题集](02-talent-ladder-section-8-sec8.md)
@@ -351,12 +351,12 @@ TeamOutput = TalentDensity × RetentionRate × PerCapitaProductivity
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
 - [§3. 设计模式与范式](02-talent-ladder-section-3-sec3.md)
-- [§9. 工程实现](02-talent-ladder-section-4-sec4.md)
+- [§4. 工程实现](02-talent-ladder-section-4-sec4.md)
 - [§3. 关键差距](02-talent-ladder-section-3-sec3.md)
 - [§10. 资源](02-talent-ladder-section-10-sec10.md)
 - [§3. 技术深度与广度（5 分钟）](02-talent-ladder-section-3-sec3.md)
 - [§9. Q&A（30 分钟）](02-talent-ladder-section-9-sec9.md)
-- [§10. 前沿演进（AI 时代）](02-talent-ladder-section-5-ai.md)
+- [§5. 前沿演进（AI 时代）](02-talent-ladder-section-5-ai.md)
 - [§6. 落地实践](02-talent-ladder-section-6-sec6.md)
 - [§7. 与其他方法对比](02-talent-ladder-section-7-sec7.md)
 - [§8. 面试真题集](02-talent-ladder-section-8-sec8.md)
