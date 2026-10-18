@@ -1,360 +1,289 @@
-> 本文件是 **08-privacy-computing.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](08-privacy-computing.md)。
+> 本文件是 **08-privacy-computing.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](08-privacy-computing-section-3-sec3.md) 里的五条路线装进一个真实组织：顺序、判据、产物、存量链路的改造与多久见效。完整章节请回到 [index](08-privacy-computing.md)。
 
 ## 4. 工程实现
 
+本节按「落地步骤 → 关键技术点 → 工具链 → 存量迁移 → 模板 → 自检」组织。术语与主文件 [§ 2 核心原理](08-privacy-computing.md) 逐字一致：**联邦学习（FL）/ 横向联邦 / 纵向联邦 / 安全多方计算（MPC）/ 秘密分享 / 不经意传输（OT）/ 可信执行环境（TEE）/ Enclave / 远程证明（Attestation）/ 差分隐私（DP）/ 隐私预算（ε）/ 同态加密（HE）**（**隐私集合求交（PSI）** 见 [§3.2.2](08-privacy-computing-section-3-sec3.md)）——本节用这几个词时，指的就是 §2.1 与 §3 里那几件事。每条路线被什么约束逼出来、代价落在哪里、失效点是什么，见 [§3 设计模式与范式](08-privacy-computing-section-3-sec3.md)，本节不复述。
+
+读者分两类。**从零搭建**（还没有跨域协作链路，要新建一条）按 §4.1 的 Step 1–5 顺读，模型骨架直接取 §4.5；**在存量上改造**（已经有数据在往对方传、已经有了口头约定的「数据不外传」）是多数，请把 **§4.4 当主路径**：先做一次明文位置盘点，再回到 §4.1 补流程。判别自己属于哪一类只用一个问题：现在有没有一条链路，能把数据（哪怕是加密后的）送到对方的机器上算——有，就先做 §4.4 的①。
+
 ### 4.1 落地步骤
 
-**Step 1：场景评估（4-8 周）**
+**Step 1：场景评估（4–8 周【经验】，随参与方数量与合规审查周期而变）**
 
-1. 识别跨域协作场景。
-2. 评估隐私 / 性能需求。
-3. 选型（FL / MPC / TEE / HE / DP）。
-4. PoC 验证。
+- 识别跨域协作场景：谁与谁、要算什么（求交 / 联合统计 / 联合训练 / 推理）、结果给谁。
+- 评估隐私需求与性能需求：保护对象是原始记录、模型、查询出口还是统计发布；延迟与带宽的上限是多少。
+- 选型（FL / MPC / TEE / HE / DP）与 PoC 验证，PoC 必须带**明文基线**。
 
-**Step 2：平台搭建（4-8 周）**
+- **产物**：一页场景卡（参与方 / 明文允许出现的机器 / 保护对象 / 可陈述参数）+ 一份 PoC 报告。
+- **判据**：拿 PoC 报告问三个问题——明文会不会出现在第三方机器上？信任锚是谁（数学假设 / 协议与参与方 / 芯片与证明）？达标线是哪个数（相对明文基线的效果差、端到端延迟、ε）？任一个答不出，PoC 不算完成。
+- **为什么必须第一步**：选型的根约束是「明文允许在哪台机器上出现过」（[§3.1](08-privacy-computing-section-3-sec3.md)），而它只在具体场景里有答案。先搭平台再想场景，会得到一个能跑、但说不清保护了什么的系统。
 
-1. 部署 FATE / SecretFlow / 自研。
-2. 配置参与方身份（PKI）。
-3. 数据对齐（PSI 隐私求交）。
-4. 训练 / 推理 pipeline。
+**Step 2：平台搭建（4–8 周【经验】，随参与方数量与既有身份体系而变）**
 
-**Step 3：试点（4-8 周）**
+- 部署框架或自研：FATE、SecretFlow，或按场景卡自研（三者可以混用，见 §4.3）。
+- 配置参与方身份（PKI）：证书、密钥、角色（发起方 / 参与方 / 协调方）落在谁手里，写进台账。
+- 数据对齐用隐私集合求交（PSI）；搭起训练 / 推理 pipeline 并跑通一次最小作业。
 
-1. 选 1-2 个场景试点。
-2. 性能测试（vs 明文 baseline）。
-3. 效果评估（vs 明文模型）。
-4. 安全审计。
+- **产物**：可提交的最小作业链路 + 参与方身份与密钥台账 + PSI 的协议出处与安全假设记录。
+- **判据**：用同一份作业配置在两个参与方各跑一次，看是否都产出中间量；再问一句「交集是怎么算出来的」——能给出协议出处的才算过关，直接用明文比对取交集等于已经泄露了双方各自的独有名单。
+- **为什么必须排在场景评估之后**：身份模型、求交方式、pipeline 的形态都由场景卡的三个答案决定。顺序反了，搭出来的平台会缺掉场景真正要的那一环（例如需要纵向拆分却没有求交组件）。
 
-**Step 4：扩展（4-8 周）**
+**Step 3：试点（4–8 周【经验】，随场景复杂度与审计要求而变）**
 
-1. 推广到更多场景。
-2. 多参与方支持。
-3. 性能优化。
-4. 合规审核。
+- 选 1–2 个场景试点【经验：随候选场景数量与团队带宽变】，不要一次铺开。
+- 性能测试（vs 明文 baseline）、效果评估（vs 明文模型）、安全审计三件事同时做。
+- 安全审计要回答的是：全流程中谁在什么时点看到了什么。
 
-**Step 5：AI 时代扩展（持续）**
+- **产物**：三组对照数（效果差、端到端延迟、资源开销）+ 一份安全审计记录。
+- **判据**：三组数是否在同一套口径下测的——数据量 / 参与方数 / 硬件 / 网络条件四项要写全；缺任一项，数字之间不可比，也无法向审查方解释。再看效果评估是否用了**自己的明文基线**，而不是照搬集中式训练的预期指标。
+- **为什么必须排在平台之后**：效果差与延迟是选型能否落地的唯一依据，而它们只能在真实参与方与真实网络上测出来。用函数级 benchmark 代替端到端压测，是这一步最常见的偷懒。
 
-1. LLM 联邦学习。
-2. 机密 LLM 推理。
-3. RAG 隐私保护。
-4. AI Agent 隐私计算。
+**Step 4：扩展（4–8 周【经验】，随新增参与方数量与合规审核周期而变）**
+
+- 推广到更多场景；支持更多参与方；性能优化；合规审核。
+- 每新增一个参与方，走一遍准入：身份、密钥、安全模型（半诚实 / 恶意）、退出与追责条款。
+
+- **产物**：参与方准入清单 + 性能基线与回归结果 + 合规材料（协议出处、证明报告、ε 记账）。
+- **判据**：新增一个参与方要改多少配置？如果每加一方都要重写编排与聚合逻辑，说明扩展成本没有随规模摊薄——这时该换的是组织方式（例如从两三方协议改成联邦组织），而不是继续加机器。
+- **为什么排在试点之后**：扩展是把试点里跑通的那条链路复制到新约束下；试点没有对照数，扩展时就没有判断「变好还是变坏」的基准。
+
+**Step 5：AI 时代扩展（持续进行，随模型与链路形态演进）**
+
+- LLM 联邦学习、机密 LLM 推理、RAG 隐私保护、AI Agent 隐私计算四条方向按需接入。
+- 接之前先画一遍 AI 链路的明文位置：检索库、向量索引、日志、计费链路、prompt 缓存分别是明文还是密文，各由谁运营。
+
+- **产物**：一份「AI 链路各环节明文位置表」+ 各环节的可陈述参数（ε / 协议出处 / 证明覆盖范围）。
+- **判据**：拿一条完整链路（训练 → 检索 → 推理 → 结果发布）逐环节标注明文位置与信任锚，并把「只能出示合同或承诺书」的环节单列出来，为每一环写一条技术措施与责任人；哪一环写不出，本步就不算完成（合同约束为什么会成为短板，见 [§3.2.5](08-privacy-computing-section-3-sec3.md)）。
+- **为什么放在最后**：AI 链路是前面四步的叠加场景，不是新的一套技术。前面没做实，第 5 步只会把没做实的地方复制到更多环节上。
+
+五步里最常被跳过的是 **Step 1 与 Step 3 的对照数**。跳过 Step 1 的症状不会立刻出现：平台能跑、作业能提交，直到第一次合规评审问「你们的隐私预算是多少、明文出现在哪台机器上」，才发现这两件事从没被回答过。跳过 Step 3 对照数的症状出现在上线之后——效果差与延迟都超预期，而此时已经没有可回退的明文基线方案。
 
 ### 4.2 关键技术点
 
-**1. 联邦学习（FATE / PySyft）**：
+**联邦学习（FATE / PySyft）**
+
+- **做法**：把训练拆成「各方本地多步 + 周期性交换更新量」，用框架的作业配置编排角色（发起方 / 参与方）；横向用样本分拆，纵向先 PSI 对齐再按特征拆分。骨架见 §4.5 模板一。
+- **机制**：因为框架把「本地步数」与「交换轮次」拆成作业配置里两个可独立调的参数，所以带宽不够时先动的是本地步数、延迟敏感时先动的是轮次，而不必去改模型结构；代价是这两个数一动，收敛轨迹与通信量同时变，同一份配置在参与方数量变化后必须重新标定（通信量为什么由参数量而非样本量决定、代价为什么落在轮次与掉线上，见 [§3.2.1](08-privacy-computing-section-3-sec3.md) 的机制与代价，本节不复述）。
+- **失效条件**：**当作业配置里的参与方角色与集合被写死时**，这条会失效——新增一方要改配置、重发密钥、重跑一轮联调，扩展成本变成每方一次的固定开销。症状：接入第二、三个参与方的周期与接入第一个一样长。
+- **档位**：FedAvg 由 Google 于 2016 年提出【公开：McMahan 等，可按标题 "Communication-Efficient Learning of Deep Networks from Decentralized Data" 检索核验】；FATE 与 SecretFlow 的正式版本条目以各自官方发布页为准。
+
+**安全多方计算（SecretFlow）**
+
+- **做法**：用 PYU 把计算切分到各参与方，密文算子交给框架的协议后端；联合统计走 MPC，涉及训练的中间量交换走 FL。骨架见 §4.5 模板二。
+- **机制**：因为各方的明文数据始终留在本方、计算只在份额上进行，所以安全性来自协议与数学假设而不是运营方的自觉；代价是每个任务要先被翻译成对密文友好的电路，比较、除法与非线性算子代价显著高于加法与乘法。
+- **失效条件**：**当参与方集合或输入规模变化而协议配置没有同步更新时**，作业会以与预期不符的安全模型运行——配置还是上一版，而这一版协议的前提（参与方会不会作恶、允不允许中途退出）没有任何人重新确认过（前提为什么会在运行期被跳过，见 [§3.2.3](08-privacy-computing-section-3-sec3.md) 的失效点，本节不复述）。症状：作业正常完成，但要不到协议出处与安全模型。
+- **档位**：门限秘密分享【公开：Shamir, "How to Share a Secret", CACM 1979，可按标题检索核验】；SPDZ / ABY / ABY3 / Yao GC 协议族的差异见 [§3.2.3](08-privacy-computing-section-3-sec3.md) 与主文件 [§2.3](08-privacy-computing.md)。
+
+**TEE 推理（Intel SGX + Occlum）**
+
+- **做法**：数据加密上传，隔离区内解密并计算，结果加密返回；远程证明把「运行的是什么镜像、是否 debug 模式」交给远端校验。链路见 §4.5 模板三。
+- **机制**：因为证明是运行期由硬件产出、由客户端在校验通过之后才解密结果，所以「运营方可不可信」被换成了一个可自动化的判断——「这一次的镜像哈希是不是我认可的那一个」；代价是这次校验必须在你们的调用链里真的被执行一次，校验被省略时信任锚仍旧落在运营方身上（信任锚为什么从承诺换成可远端验证的硬件声明，见 [§3.2.4](08-privacy-computing-section-3-sec3.md)，本节不复述）。
+- **失效条件**：**当证明覆盖不到的那一层出问题时**（宿主 OS、编排、外挂加速器——哪几层不在证明范围内、为什么它就是信任缺口，见 [§3.2.4](08-privacy-computing-section-3-sec3.md) 的失效点，本节不复述），这条会失效：验收按「证明跑通了」打勾，而暴露明文的那个位置本来就在证明范围之外——证明本身没问题，问题出在它覆盖不到的地方。症状：证明能跑通却读不出镜像哈希，或流水线里根本没有校验证明这一步（证明里显示 debug 模式也没人看）。
+- **档位**：Intel SGX 与 AMD SEV 的发布时间按主文件 [§1.1](08-privacy-computing.md) 的记法（SGX 2015、SEV 2017）【公开，以厂商官方文档当前版本为准】；NVIDIA GPU 侧机密计算在 [§1.4](08-privacy-computing.md) 记为 2024 年商用【公开】。
+
+**差分隐私训练（PyTorch + Opacus）**
+
+- **做法**：DP-SGD——梯度裁剪 + 噪声注入，用隐私引擎包住 model / optimizer / data_loader，训练结束后读取本次消耗的 ε。骨架见 §4.5 模板四。
+- **机制**：因为噪声按训练步注入、隐私预算按步累计，所以这套方案能给出一个**可陈述的 ε**，而不是一句「我们加了噪声」；代价是 ε 越小效果损失越大，且这个损失要在效果评估里单独量一次。
+- **失效条件**：**当把 ε 当成一次性参数、不做跨环节记账时**，这条会失效——每个环节各自设一个 ε，谁都没有算过全链路累计值，于是对外声明的那个数比实际消耗低了一截（为什么累计值必然大于任一环节声明的值，见 [§3.2.5](08-privacy-computing-section-3-sec3.md) 的统一记账，本节不复述）。症状：验收材料给的是「每环节一个 ε」，而不是「全链路一个累计 ε」。
+- **档位**：DP-SGD 见 Abadi 等，"Deep Learning with Differential Privacy", CCS 2016【公开，可按标题检索核验】；ε 与 δ 的形式化定义见主文件 [§2.2](08-privacy-computing.md)。
+
+### 4.3 工具链与平台
+
+工具在这一节只解决一件事：**在你已经选定路线之后，把那条路线跑起来**。选型判据统一落在三个问题上——它在你场景里承担哪一环、那一环的明文位置与信任假设是什么、它能不能给出可陈述的参数（协议出处 / 证明报告 / ε）。下表按类别给候选与判据；**具体版本、能力与参数名以各项目官方文档当前版本为准**。
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 联邦学习框架 | FATE（微众银行）、SecretFlow（蚂蚁）、PySyft（OpenMined）、FedML、TensorFlow Federated、NVIDIA FLARE、PrimiHub | 要纵向拆分与联合统计 → 带 MPC 能力的框架；纯横向训练 → PySyft / FedML / TensorFlow Federated 一类；要在既有 GPU 集群上训练 → 看框架对加速器的支持清单；要中文社区与本地支持 → PrimiHub 一类 | 用只支持横向的框架做纵向场景，求交与特征分拆要自己实现，而这两步恰好是最先泄露名单的地方 |
+| MPC 工具 | Shamir SS（门限秘密分享）、Cape Privacy、Sharemind、Privitar、MPC-Scale（字节自研，以团队公开材料为准） | 只要基础秘密分享 → Shamir SS 一类基础协议；要托管式服务、不想自己运维参与方 → Cape Privacy 一类 SaaS；要商业支持与合规打包 → Sharemind / Privitar 一类商业平台 | 选托管式平台会把「谁运维参与方」这一环交给第三方，信任锚随之改变——不改合规论证就用，等于换了个对象来信任 |
+| TEE 平台 | Intel SGX + Occlum、AMD SEV、NVIDIA H100 CC、Azure Confidential VM、Google Confidential VM、阿里云 enclave、蚂蚁摩斯 | 保护面最窄、可改造代码 → SGX 一类进程级隔离；迁移成本低、能整机上云 → SEV 一类虚拟机级加密；模型推理 → GPU 侧机密计算；不想自建 → 云厂商托管 TEE | 判据是「你的负载能不能被搬进隔离区」而不是哪种更安全；搬不进去的方案，安全性无从谈起 |
+| DP / HE 工具 | Opacus（PyTorch）、TensorFlow Privacy、OpenMined PyDP、TenSEAL、Microsoft SEAL、OpenFHE | 训练在 PyTorch → Opacus；在 TensorFlow → TensorFlow Privacy；只要纯 Python 的统计机制 → PyDP；密文上做特定计算 → 三个 HE 库按支持的计算类型与语言绑定挑 | 不做跨环节记账的 DP 等于没有 DP：它能算出单个环节的 ε，但答不出全链路累计值 |
+| AI 时代新工具 | FATE-LLM、SecretFlow-LLM、NVIDIA NeMo Guardrails + TEE、Azure Confidential AI、阿里通义 + enclave | 判据不是功能清单，而是它有没有写清「哪一环的明文在哪里、证明覆盖到哪一层、哪些数据仍会出域」（例如检索库、日志、计费链路） | 把 LLM 直接接到第三方接口，prompt 与检索内容全部出域，而方案里仍然写着「已采用隐私计算」——这是 AI 时代最常见的误判 |
+
+这一类里**最容易被误选的是「AI 时代的机密推理」**：因为它名带「机密」，很容易被读成整条链路都受保护。实际受保护的只有隔离区内的那一环，检索库、日志、计费与缓存往往仍是明文，且各有运营方。误选的后果不是性能问题而是**合规结论与事实不符**——判定要的是「明文出现在哪台机器、由谁运营、证明覆盖到哪一层」，而不是「用了机密计算」。
+
+### 4.4 存量迁移
+
+存量组织的问题通常不是「没有技术」，而是**已经有一条链路在把数据往对方机器上传，却说不清哪些环节是明文**。改造顺序与从零搭建不同：起点不是选型，而是盘点。
+
+**① 先做一件零成本、可回退的事：明文位置盘点（1–2 周【经验】，随链路条数与环节数而变）**
+
+把现有跨域链路逐环节列出来，每一环只填三格：**数据形态**（明文 / 密文 / 哈希）、**处理位置**（哪台机器、谁的机房）、**责任主体**（谁运营、谁能看到）。不填风险、不填整改方案，只有这三格。
+
+判据：让一个不在该项目组的人照着表复述一遍链路；他复述不出来，说明表里混进了「大概是这样」的推测。盘点的产出必须是可核对的（能指到具体的作业名或接口名），而不是一张架构示意图。
+
+**② 历史链路怎么分类处理**
+
+按三类分，而不是一律改造（下表的判定档位是常见取法【经验】，按你们的监管强度与业务节奏调整）：
+
+| 类别 | 判据 | 处理方式 |
+| --- | --- | --- |
+| 仍在跑、且监管或合同有硬要求 | 有明确的数据不出域条款或审查时限 | 优先改造：补求交 / 补隔离收口 / 补可陈述参数 |
+| 仍在跑、无硬要求但有敏感字段 | 链路含 PII 或可用于识别个体 | 先做最小动作：脱敏 + 去向登记，再评估是否上隐私计算 |
+| 已在跑但可以停 | 业务已下线、或没有下游消费 | **不改造**，登记后按计划下线——改造一条要下线的链路是纯浪费 |
+
+判据：三类的比例用抽样估（每类抽 5 条链路看三格是否填得全）【经验，比例随行业监管强度而变】。如果「有硬要求」这一类占比很高，说明要做的不是技术改造而是**先统一口径**：不同业务对「出域」的定义往往不一致，口径不统一时改造会做在错的地方。
+
+**③ 迁移期的双轨怎么维持、维持多久**
+
+双轨的内容是：**新链路走隐私计算，旧链路挂着「未评估」标签继续跑**，同时对同一批数据跑一次新旧对照。双轨期需要三样东西——
+
+- 一份**未评估链路清单**：每条带责任人与登记日期；
+- 一组**对照数**：新旧链路的效果差、端到端延迟、资源开销，三者按同一口径记录（数据量 / 参与方数 / 硬件 / 网络条件）；
+- 一条**切换规则**：什么条件下切、切了之后旧链路保留多久做回退。
+
+维持多久由两个量决定：对照数是否已经稳定（多次运行差异收敛），以及旧链路的合规风险是否已到不可接受。二者取较长者。
+
+**④ 什么信号说明可以退出双轨**
+
+三个信号同时出现才可退出：**（a）** 新链路在效果差与延迟上都达到验收线，且对照数已被重复测过；**（b）** 未评估清单里带硬要求的那一类清零；**（c）** 能给出一份可被第三方复核的材料——全链路累计 ε、协议出处与安全模型、证明覆盖范围。缺任何一项，退出双轨只是把「没验证过的方案」转成了「上线中的方案」。
+
+**迁移期最常见的两个误判**：一是**先把技术选型定死再盘点**——盘点的结果经常推翻选型（例如链路里真正的泄露点是求交那一环，而不是训练那一环），顺序反了会先付一笔平台成本再重新选；二是**把双轨当长期状态**——「旧链路一直保留」一旦成为惯例，就不会有人去处理第②类里的敏感链路，因为没有任何时点要求它必须被处理。
+
+### 4.5 模板 / 示例
+
+**模板一：横向联邦作业骨架（FATE）**
 
 ```python
-# fate_federated_learning.py
-"""
-FATE 联邦学习示例
-"""
-import torch
-from torch import nn
-from federatedml.nn.backend.pytoch import PytorchFederatedTrainer
-from federatedml.util.param_util import InitParam
-
-
-class SimpleNet(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.fc1 = nn.Linear(10, 5)
-        self.fc2 = nn.Linear(5, 1)
-    
-    def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        return torch.sigmoid(self.fc2(x))
-
-
-# 启动 FATE 联邦学习任务
+# 横向联邦作业骨架：角色 + 算法 + 训练配置 + 加固项
+# 具体 API 名称、字段名与取值以项目官方文档当前版本为准
 job_config = {
-    "job_type": "联邦学习",
+    "job_type": "federated_learning",
     "algorithm": "FedAvg",
     "participants": ["guest", "host_1", "host_2"],
-    "model": SimpleNet,
-    "training_config": {
-        "epochs": 10,
-        "batch_size": 64,
-        "learning_rate": 0.01,
-    },
+    "training_config": {"epochs": 10, "batch_size": 64, "learning_rate": 0.01},  # 示例值【经验】
+    "secure_aggregation": True,   # 协调方只看到总和，看不到任何单方更新量
+    "dp": {"enabled": True, "epsilon": "{预算}", "delta": "{松弛项}"},
 }
-
-trainer = PytorchFederatedTrainer(job_config)
-trainer.fit()
+# 执行顺序：① 各方本地多步训练（明文不出域）
+#           ② 只交换更新量与参数，按样本量加权聚合
+#           ③ 重复若干轮；每轮记录参与方是否掉线、掉线几方
 ```
 
-```python
-# pysyft_federated.py
-"""
-PySyft 联邦学习（OpenMined）
-"""
-import syft as sy
-import torch
+**怎么用**：`participants` 按你们的角色命名改，`training_config` 里的三个值是示例【经验】，要按数据规模与网络条件重跑一轮再定。`secure_aggregation` 不要设成 False——缺了这一项，协调方能看到每一方的更新量，隐私边界就退回「靠运营规范兜底」。`dp` 那三个键先留空位，等 Step 3 的对照数出来再填，填的时候要同时确定记账方式（见 §4.2 差分隐私那一节）。PySyft 一侧的写法与本骨架不同（它的 API 在 2.x 与早期版本之间有明显变化，以官方文档当前版本为准），选它时按同一组要素检查：本地多步、只交换更新量、有没有默认叠加 DP。
 
-# 创建虚拟参与方
-hook = sy.TorchHook(torch)
-alice = sy.VirtualWorker(hook, id="alice")
-bob = sy.VirtualWorker(hook, id="bob")
-
-# 各参与方数据
-alice_data = torch.tensor([[1., 2.], [3., 4.]]).send(alice)
-bob_data = torch.tensor([[5., 6.], [7., 8.]]).send(bob)
-
-# 联邦平均
-federated_data = sy.FederatedData({
-    alice: alice_data,
-    bob: bob_data,
-})
-
-# 训练模型（不在原始数据上直接计算）
-model = nn.Linear(2, 1)
-optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-
-for epoch in range(10):
-    for data, target in federated_data:
-        optimizer.zero_grad()
-        output = model(data)
-        loss = ((output - target) ** 2).mean()
-        loss.backward()
-        optimizer.step()
-```
-
-**2. 安全多方计算（SecretFlow）**：
+**模板二：MPC 联合统计骨架（SecretFlow）**
 
 ```python
-# secretflow_mpc.py
-"""
-SecretFlow（蚂蚁）MPC 联合统计
-"""
-import secretflow as sf
-
-# 初始化三参与方
-sf.init(
-    parties=["bank_a", "bank_b", "insurer"],
-    addresses={
-        "bank_a": "192.168.1.1:8080",
-        "bank_b": "192.168.1.2:8080",
-        "insurer": "192.168.1.3:8080",
-    },
-)
-
+# 三方密文联合统计骨架
+# 具体 API 名称与算子名以项目官方文档当前版本为准
+sf.init(parties=["bank_a", "bank_b", "insurer"])
 bank_a, bank_b, insurer = sf.PYU("bank_a"), sf.PYU("bank_b"), sf.PYU("insurer")
 
-# 三方密文联合统计
-a_data = bank_a(lambda: pd.read_csv("a_data.csv"))()
-b_data = bank_b(lambda: pd.read_csv("b_data.csv"))()
-c_data = insurer(lambda: pd.read_csv("c_data.csv"))()
+# 各参与方数据留在本地；只有密文中间量跨域
+a = bank_a(lambda: pd.read_csv("a.csv"))()
+b = bank_b(lambda: pd.read_csv("b.csv"))()
 
-# MPC 联合统计：总欺诈率
-fraud_rate = sf.stat.mean(
-    bank_a(lambda x: x.fraud_label)(a_data) +
-    bank_b(lambda x: x.fraud_label)(b_data) +
-    insurer(lambda x: x.fraud_label)(c_data)
-)
+# 联合统计：能用加法与比较表达的任务最便宜，反复相乘或非线性算子最贵
+fraud_rate = sf.stat.mean(bank_a(lambda x: x.fraud_label)(a) + bank_b(lambda x: x.fraud_label)(b))
+# 输出只回结果，不回各方明细；参与方能观察到交集的规模与查询次数，这一点要单独评估
 ```
 
-**3. TEE 推理（Intel SGX + Occlum）**：
+**怎么用**：把 `parties` 换成你们的参与方名，把统计式换成你们的任务——**先检查这个任务里有没有反复相乘或非线性函数**，有就先考虑换路线。三处不要照抄：参与方数量（越多组织成本越高）、示例里的单机文件读取（生产要走各自的数据源适配）、`sf.stat` 这类算子名（以官方文档为准）。
 
-```python
-# sgx_inference.py
-"""
-Intel SGX + Occlum 机密推理
-"""
-from occlum.api import occlum_runtime
-import numpy as np
+**模板三：TEE 机密推理链路（Intel SGX + Occlum）**
 
-
-# 在 enclave 中执行推理
-def inference_in_enclave(model_data, input_data):
-    """在 SGX enclave 中执行模型推理"""
-    
-    # 1. 加载模型到 enclave
-    model = occlum_runtime.load_model(model_data)
-    
-    # 2. 在 enclave 中执行推理
-    output = occlum_runtime.predict(model, input_data)
-    
-    # 3. 返回加密结果
-    return occlum_runtime.encrypt(output)
-
-
-# 客户端
-input_data = np.array([1, 2, 3, 4, 5], dtype=np.float32)
-encrypted_output = inference_in_enclave(model_data, input_data)
-
-# 4. 客户端解密
-plaintext_output = occlum_runtime.decrypt(
-    encrypted_output,
-    client_key=os.environ["CLIENT_KEY"],
-)
+```text
+客户端 ──加密上传──► 宿主（云 / 运营方：看不到明文）
+                        │
+                  ┌─────▼──────────────────────────┐
+                  │ Enclave（隔离区内运行的推理服务）  │
+                  │  · 解密输入 → 前向计算 → 加密输出  │
+                  └─────┬──────────────────────────┘
+                        │ 加密结果 + 证明报告
+客户端 ──校验证明（镜像哈希 / 是否 debug 模式）──► 解密使用
+──────────────────────────────────────────────────────────
+验收要问的三件事：① 模型与算子是不是都在隔离区内（加速器覆盖到哪一层）
+                  ② 证明覆盖到哪一层（镜像 / 启动配置 / 整机 / 加速器）
+                  ③ 明文进入隔离区，在这一行业是否已构成数据出域
 ```
 
-**4. 差分隐私训练（PyTorch + Opacus）**：
+**怎么用**：这三条验收问题比代码更重要——把它抄进验收条款，每条要求一个可出示的证据（算子清单、证明报告、合规论证）。不要照抄「数据在可信执行环境中处理，故不构成数据出境」这类结论：合规要问的是明文在哪台机器上出现、由谁运营，而隔离区的运营方仍然是另一个主体。
+
+**模板四：差分隐私训练骨架（PyTorch + Opacus）**
 
 ```python
-# dp_training.py
-"""
-差分隐私训练（Opacus）
-"""
-import torch
-from torch import nn
+# DP-SGD 骨架：梯度裁剪 + 噪声注入
 from opacus import PrivacyEngine
 
-
-# 模型
-model = nn.Linear(10, 1)
-optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-data_loader = torch.utils.data.DataLoader(dataset, batch_size=64)
-
-# 差分隐私引擎
 privacy_engine = PrivacyEngine()
 model, optimizer, data_loader = privacy_engine.make_private(
     module=model,
     optimizer=optimizer,
     data_loader=data_loader,
-    noise_multiplier=1.0,  # 噪声倍率
-    max_grad_norm=1.0,     # 梯度裁剪
+    noise_multiplier=1.0,   # 噪声倍率：越大越私密，效果损失越大；示例值【经验】
+    max_grad_norm=1.0,      # 梯度裁剪阈值；示例值【经验】
 )
-
-# 训练
-for epoch in range(10):
-    for data, target in data_loader:
-        optimizer.zero_grad()
-        output = model(data)
-        loss = ((output - target) ** 2).mean()
-        loss.backward()
-        optimizer.step()
-
-# 查看隐私预算消耗
-epsilon = privacy_engine.get_epsilon(delta=1e-5)
-print(f"隐私预算 ε = {epsilon:.2f}")
+# …训练循环本身不变…
+epsilon = privacy_engine.get_epsilon(delta=1e-5)   # delta 为示例值【经验】，取值以官方文档为准
+print(f"本环节消耗 ε = {epsilon:.2f}")
+# 验收要的是「全链路累计 ε」，不是每个环节各报一个值
 ```
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+**怎么用**：`noise_multiplier` 与 `max_grad_norm` 是示例值【经验】，它们带来的效果损失要在试点里单独测一次并与明文基线对照；`delta` 的取值与记账方式以官方文档与原始论文当前版本为准。三处不要照抄：把单个 ε 打印出来当作「已实现隐私保护」的证明、把单环节 ε 当作全链路 ε、以及在没有效用损失数据的情况下就对外声明 ε 的取值。
 
-**联邦学习框架**：
-
-| 工具 | 定位 | 优势 |
-| --- | --- | --- |
-| **FATE** | 微众银行开源 | 工业级、生态丰富 |
-| **SecretFlow** | 蚂蚁开源 | FL + TEE 混合 |
-| **PySyft** | OpenMined | Python 友好 |
-| **FedML** | USC 开源 | 学术友好 |
-| **TensorFlow Federated** | Google | TF 集成 |
-| **NVIDIA FLARE** | NVIDIA | GPU 友好 |
-| **PrimiHub** | 开源 | 中文社区 |
-
-**MPC 工具**：
-
-| 工具 | 定位 |
-| --- | --- |
-| **Shamir SS** | 基础秘密分享 |
-| **Cape Privacy** | MPC SaaS |
-| **Sharemind** | 商业 MPC 平台 |
-| **Privitar** | 商业隐私平台 |
-| **MPC-Scale** | 字节自研 |
-
-**TEE 平台**：
-
-| 平台 | 定位 |
-| --- | --- |
-| **Intel SGX + Occlum** | Intel 机密计算 |
-| **AMD SEV** | AMD 机密 VM |
-| **NVIDIA H100 CC** | NVIDIA GPU TEE |
-| **Azure Confidential VM** | Azure TEE 云服务 |
-| **Google Confidential VM** | GCP TEE 云服务 |
-| **阿里云 enclave** | 阿里云 TEE |
-| **蚂蚁摩斯** | 蚂蚁自研 |
-
-**DP / HE 工具**：
-
-| 工具 | 定位 |
-| --- | --- |
-| **Opacus** | PyTorch DP |
-| **TensorFlow Privacy** | TF DP |
-| **OpenMined PyDP** | Python DP |
-| **TenSEAL** | 同态加密库 |
-| **Microsoft SEAL** | 同态加密库 |
-| **OpenFHE** | 同态加密库 |
-
-**AI 时代新工具（2024-2025）**：
-
-- **FATE-LLM**：FATE 联邦 LLM。
-- **SecretFlow-LLM**：SecretFlow 联邦 LLM。
-- **NVIDIA NeMo Guardrails + TEE**：机密 LLM。
-- **Azure Confidential AI**：Azure 机密 OpenAI。
-- **阿里通义 + enclave**：机密通义。
-
-### 4.4 代码 / 示例
-
-**示例 1：完整隐私计算平台（SecretFlow）**
+**模板五：完整链路骨架（PSI → 纵向训练 → 发布）**
 
 ```python
-# privacy_platform.py
-"""
-完整隐私计算平台
-基于 SecretFlow 实现 FL + TEE + MPC 混合方案
-"""
-import secretflow as sf
-
-# 初始化三方
-sf.init(
-    parties=["hospital_a", "hospital_b", "research_center"],
-)
-
+# 链路上各环节的顺序是硬约束：求交必须最先，加噪必须最后，隔离收口在聚合那一步
+sf.init(parties=["hospital_a", "hospital_b", "research_center"])
 ha, hb, rc = sf.PYU("hospital_a"), sf.PYU("hospital_b"), sf.PYU("research_center")
 
-# 隐私求交（PSI）：找到共同的病人 ID
-common_ids = sf.psi(
-    hospital_a.ids,
-    hospital_b.ids,
-)
+# ① 隐私求交：只输出交集，不输出各方独有样本
+common_ids = sf.psi(ha.ids, hb.ids)
 
-# 联合训练（联邦 XGBoost）
+# ② 纵向拆分训练：中间量以密文 / 份额形式交换
 from secretflow.ml.boost import SFXgboost
-params = {
-    "tree_num": 10,
-    "max_depth": 5,
-}
-
-sf_xgb = SFXgboost(params=params)
-sf_xgb.fit(
-    {ha: hospital_a_data, hb: hospital_b_data},
-    {ha: y_train_a, hb: y_train_b},
-)
-
-# 联合预测
+sf_xgb = SFXgboost(params={"tree_num": 10, "max_depth": 5})   # 示例值【经验】
+sf_xgb.fit({ha: x_a, hb: x_b}, {ha: y_a, hb: y_b})
 predictions = sf_xgb.predict({ha: x_test_a, hb: x_test_b})
+
+# ③ 结果发布：对输出加噪（DP），并记录全链路累计 ε
 ```
 
-**示例 2：机密 LLM 推理**
+**怎么用**：顺序照抄、算子名不要照抄（每条顺序约束的理由与失效形态见 [§3.2.5](08-privacy-computing-section-3-sec3.md)，本节不复述）。工程上真正会遇到的是它**不在运行期暴露**：把求交换成明文比对，作业照样跑通、指标往往还更好（省掉一次密文转换），第一个发现它的时点是安全评审问「交集是怎么算出来的」——此时交集已经在明文侧落过盘。`tree_num` / `max_depth` 是示例值【经验】；交集规模与特征增量要先与明文基线比过——交集小的时候，交集 + 通信 + 加密三项成本之和经常超过增益。
+
+**模板六：机密 LLM 推理骨架**
 
 ```python
-# confidential_llm.py
-"""
-机密 LLM 推理（基于 TEE）
-"""
-import openai
-import os
-
-# 机密 OpenAI（基于 Azure Confidential VM）
-client = openai.AzureOpenAI(
-    api_key=os.environ["AZURE_OPENAI_KEY"],
-    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
-    api_version="2024-08-01-preview",
+# 机密 LLM 推理骨架：客户端 → 机密部署 → 加密返回
+# 客户端类名、端点与参数名以该云厂商官方文档当前版本为准
+client = 机密端点客户端(
+    endpoint=os.environ["CONFIDENTIAL_ENDPOINT"],   # 指向机密部署，不是普通端点
+    api_key=os.environ["CLIENT_KEY"],               # 密钥由客户端持有，进了隔离区才解开
 )
-
-# 机密推理（基于 SGX/SEV）
-response = client.chat.completions.create(
-    model="gpt-4-confidential",
-    messages=[
-        {"role": "user", "content": "我的病历：糖尿病史 5 年..."},
-    ],
+resp = client.chat.completions.create(
+    model="{机密部署名}",
+    messages=[{"role": "user", "content": "{业务输入，且不得写入任何日志}"}],
 )
-
-# 推理在 enclave 中：
-# - 用户 prompt 不能被 OpenAI 看到
-# - 模型权重不能被用户拿走
-# - 推理结果加密返回
+# 隔离区内保证的三件事（要写进验收条款）：
+#   ① 用户输入不对运营方可见  ② 模型权重不被调用方取走  ③ 结果加密返回
+# 不进隔离区的部分必须单独列清：检索库、向量索引、日志、计费链路
 ```
 
----
+**怎么用**：`{机密部署名}` 与 `{业务输入}` 两处按你们的部署与场景填，客户端与端点参数名以厂商官方文档为准。三处不要照抄：把普通端点当成机密端点、把「用了机密推理」写成整条链路都受保护、以及把日志与计费链路留在盘点之外——合规结论看的是明文出现在哪台机器、由谁运营，而不是用了哪个产品名。
+
+### 4.6 自检清单
+
+4.1 的五步与 4.4 的四段各留下一份产物，这一节逐件验收。**模式与设计层面的问题**——明文允许出现在哪台机器上、保护对象是哪一种、有没有明文基线、MPC 的协议族与安全模型选得对不对、TEE 的证明该覆盖到哪一层、DP 给的是不是一个全链路累计 ε、求交有没有用 PSI、混合方案里哪一环只写了「靠合同」——在 [§ 3.7 自检清单](08-privacy-computing-section-3-sec3.md) 已逐条给过（那一节共 12 条），本节一律不复述。下面每一条要么是「去翻一份产物，翻得到还是翻不到」，要么必须动了系统（抽样、对账、演练、切换、下线）才有答案。
+
+- [ ] 场景卡在不在？参与方 / 明文允许出现的机器 / 保护对象 / 可陈述参数四格是否都写成了具体名字，而不是「相关方」「内部系统」这类词？
+- [ ] PoC 报告里有没有**明文基线**那一组数？把它与隐私计算侧的效果差、延迟并到同一张表里，两张表的测试条件对得上吗？
+- [ ] 参与方身份与密钥台账里，证书、密钥与三个角色（发起方 / 参与方 / 协调方）是否各自指到了具体的人或系统？抽一条链路，按台账找出「当前能解开该方数据的那把钥匙在谁手里」——找得到吗？
+- [ ] 抽一条已上线的链路，把它一次真实作业的配置与日志打开：求交那一步走的是 PSI 还是直接比对？只有翻到运行记录才答得出，答不出就按「已经泄露」处理。
+- [ ] 三组对照数（效果差 / 端到端延迟 / 资源开销）是否在同一套口径下测的——数据量 / 参与方数 / 硬件 / 网络条件四项写全了吗？拿两份不同场景的报告互相对一遍，条件不同的那几项有没有被标出来？
+- [ ] 迭代一次：按 §4.1 Step 4 的准入清单把一个新参与方加进作业配置，记录改了哪几处、花了多久。改动处数与接入第一个参与方时相同，说明扩展成本没有摊薄。
+- [ ] 明文位置盘点表：找一个不在该项目组的人照着表复述一遍链路。他复述不出来，或某个环节对应不到具体的作业名 / 接口名，说明表里混进了「大概是这样」的推测。
+- [ ] 未评估链路清单里每条是否带责任人与登记日期？并且第②类里「已在跑但可以停」的那一类，有没有真的下线过一条——「没有下游消费」这个判据是查血缘 / 问业务方核到的，还是只看名字猜的？
+- [ ] 双轨期的新旧对照数重复测过几次、多次运行的差异收敛了吗？只测过一次的对照数不构成退出双轨的依据。
+- [ ] 切换规则写了吗——什么条件下切、切了之后旧链路保留多久做回退？并且按它真的演练过一次（切过去，或者从新链路回退一次），用的是文档里的步骤。
+- [ ] AI 链路明文位置表里，检索库、向量索引、日志、计费链路、prompt 缓存五处是否各标了明文 / 密文与运营方？标成「只能出示合同或承诺书」的那几环，是否各写了一条技术措施与一个责任人？
+- [ ] 退出双轨的三个信号逐条打勾了吗——效果差与延迟达线且对照数已重复测过 / 未评估清单里带硬要求的那一类清零 / 能交出全链路累计 ε + 协议出处与安全模型 + 证明覆盖范围？有没有哪一条是用「新链路已经跑得挺稳」这类观察代替的？
+
+这 12 条查的都是**已经建成的东西**：其中 7 条对应 4.1 五步的产物（第 11 条是 Step 5 的「AI 链路明文位置表」），5 条对应 4.4 的四个小节。最常被跳过的是「按切换规则真演练一次」与「下线一条」两项——前者被当成上线之后自然会做的事，后者不产出任何可展示的东西；它们各自只需要一次操作，却分别决定双轨是可退出还是长期挂着、以及未评估清单到底会不会缩短。
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一决定成败的环节是 **Step 1 把「明文允许出现在哪台机器上」写成一句话**——盘点、选型、验收条款都在为它服务。因为它同时定下信任锚、代价落点与合规定性；而其余环节（框架、算子、性能优化）只决定这套方案跑得好不好：一句写清的明文位置可以把一个跑得慢但成立的方案送过审查，一张画得再漂亮的架构图也救不回一个答不出明文位置的方案。所以最值得投入的不是把工具链铺全，而是把「明文位置 + 可陈述参数」这两件事先钉死。
+>
+> 配合 [§ 2 核心原理](08-privacy-computing.md)、[§ 3 设计模式与范式](08-privacy-computing-section-3-sec3.md) 与 [§ 6 落地实践](08-privacy-computing-section-6-sec6.md) 阅读。
