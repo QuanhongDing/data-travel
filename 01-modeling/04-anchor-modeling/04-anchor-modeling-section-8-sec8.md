@@ -41,7 +41,7 @@
 
 **第二层：四件套逐一拆解。**
 
-- **Anchor（锚）**：表结构只有 1 个 ID 列 + 元数据列（`metadata JSONB`、`created_at`、可选 `source_system`），**严禁出现任何业务属性**。它的唯一职责是给"业务实体"一个稳定的、可在所有 Attribute/Tie 中被外键引用的标识。常见做法是 `BIGSERIAL PRIMARY KEY`，并在 `metadata` 里塞入源系统自然键（`metadata->>'natural_key' = 'CRM:CUST:123456'`）。典型适用：客户、产品、账户、合同、保单等核心主数据。
+- **Anchor（锚）**：表结构只有 1 个 ID 列 + 元数据列（`metadata JSONB`、`created_at`），**严禁出现任何业务属性**。它的唯一职责是给"业务实体"一个稳定的、可在所有 Attribute/Tie 中被外键引用的标识。常见做法是 `BIGSERIAL PRIMARY KEY`，并在 `metadata` 里塞入源系统自然键（`metadata->>'natural_key' = 'CRM:CUST:123456'`）。典型适用：客户、产品、账户、合同、保单等核心主数据。
 - **Attribute（属性）**：每张 Attribute 表只装**一个**业务属性 + 外键指向所属 Anchor + 时态三元组 `valid_from / valid_to / loaded_at`。物理上一般建复合主键 `(anchor_id, valid_from, loaded_at)`，因为同一条业务事实可能有多次加载版本。典型适用：客户姓名、客户生日、客户手机号、客户 VIP 等级——**高频变更**的字段优先独立成 Attribute。
 - **Tie（关系）**：承载两个或多个 Anchor 之间的关系，本身**不带任何业务属性**。例如 `customer_order_tie(customer_id, order_id, valid_from, valid_to, loaded_at)`。当关系本身有属性（如"客户与门店最近到店的时间、次数"），应当新建一个 Anchor（`store_visit`）并让 Tie 关联它，而不是把属性塞进 Tie。典型适用：客户-订单、订单-商品、用户-角色等。
 - **Knot（共享查找）**：被多个 Anchor / Tie / Attribute **跨实体共享**的查找表，如 `knot_currency(id, code, name, symbol)`、`knot_country(id, iso_code, name)`。所有引用方通过 `*_knot_id` 外键指向 Knot。**只对真正"被多 Anchor 共享"的查找做 Knot**——这是常见反模式（"把性别也做成 Knot"）的边界。

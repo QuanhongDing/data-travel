@@ -248,17 +248,17 @@ trainer.train()
 **示例 5：GRPO（DeepSeek-R1 风格）**
 
 ```python
-def grpo_loss(new_logp, ref_logp, rewards, group_size=4, clip=0.2, kl_coef=0.04):
+def grpo_loss(new_logp, old_logp, ref_logp, rewards, group_size=4, clip=0.2, kl_coef=0.04):
     r = rewards.view(-1, group_size)
     adv = ((r - r.mean(1, keepdim=True)) / (r.std(1, keepdim=True) + 1e-8)).view(-1)
-    ratio = torch.exp(new_logp - ref_logp)
+    ratio = torch.exp(new_logp - old_logp)     # 比值对采样时的策略（与示例 3 的 PPO 同一条要求）
     policy_loss = -torch.min(ratio * adv,
                              torch.clamp(ratio, 1 - clip, 1 + clip) * adv).mean()
     kl = (new_logp - ref_logp).mean()      # KL 必须留：它是"别跑太远"的唯一约束（new-ref：按当前策略采样时其期望即 KL 散度、非负；写成 ref-new 会把符号反过来，梯度反而奖励策略远离 reference）
     return policy_loss + kl_coef * kl
 ```
 
-**怎么用**：`group_size` 要能和你的采样吞吐匹配——组内比较要求同一 prompt 采多个回答，采样开销直接乘上这个数【经验：随推理吞吐与显存余量变，常见取 4–16】。`ref_logp` 必须来自冻结的 reference，与示例 4 是同一条要求；`kl_coef` 调小看起来能让奖励涨得更快，代价是策略更快离开有数据支撑的区域。
+**怎么用**：`group_size` 要能和你的采样吞吐匹配——组内比较要求同一 prompt 采多个回答，采样开销直接乘上这个数【经验：随推理吞吐与显存余量变，常见取 4–16】。`old_logp` 来自采样时的策略（与示例 3 的 `ratio` 同一条要求），`ref_logp` 必须来自冻结的 reference（与示例 4 同一条要求）——**两项两个分母，不要合并到一个**；`kl_coef` 调小看起来能让奖励涨得更快，代价是策略更快离开有数据支撑的区域。
 
 **示例 6：Agent RL（Tool Use）**
 
