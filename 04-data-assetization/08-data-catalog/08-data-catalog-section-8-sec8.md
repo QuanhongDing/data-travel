@@ -402,7 +402,7 @@
 **第二层：批流一体的三个流派（不要混为一谈）。**
 
 - **流派 A：流计算框架向批延伸**。Flink 的 DataStream / Table API 把批视为有界流（bounded stream），**底层 Runtime 不区分批流**，统一调度、统一状态后端。批 = 历史回放 = 同一套 API。代表——Flink、阿里 Realtime Compute for Apache Flink（基于 Flink 的 VVR/Blink 演进）。
-- **流派 B：批计算框架向流延伸**。Spark Structured Streaming 把流视为"连续的批（micro-batch）"或"持续的 query（continuous processing）"，**同一份 DataFrame 语义批流一致**。代表——Spark 3.x 的 Continuous Processing、字节内部的流批一体引擎演进也走类似路线。
+- **流派 B：批计算框架向流延伸**。Spark Structured Streaming 把流视为"连续的批（micro-batch）"或"持续的 query（continuous processing）"，**同一份 DataFrame 语义批流一致**。代表——Spark 2.3（2018）引入的 Continuous Processing、字节内部的流批一体引擎演进也走类似路线。
 - **流派 C：存储层消灭批流差异（湖仓路线）**。Iceberg / Hudi / Delta Lake 在存储层提供 ACID + 时间旅行 + 增量读，**计算层按需选择批或流**。代表——Databricks 的 Photon + Delta、Uber 的 Hudi 大规模增量读。**这条路线让"批流一体"变成"批或流消费同一份存储"**。
 
 **第三层：核心优势——一份逻辑 + 一份状态 + 一份口径。**
@@ -732,7 +732,7 @@
 **第一层：先说清三种引擎的设计哲学。**
 
 - **Apache Flink**——**真流式 + 流批一体 Runtime**。把"批 = 有界流"，所有数据视为 stream。状态后端用 RocksDB，exactly-once 走两阶段提交 + 检查点。延迟下界可到毫秒级。SQL 走 Apache Calcite 兼容层，与 Hive/Spark SQL 略有差异需要适配。
-- **Spark Structured Streaming**——**微批 + 连续处理双模**。默认 micro-batch（100ms-几秒），3.x 后引入 Continuous Processing（毫秒级但牺牲部分容错）。核心数据结构是 DataFrame / Dataset，批流共用一套 API。SQL 与 Spark SQL 完全一致，学习成本最低。
+- **Spark Structured Streaming**——**微批 + 连续处理双模**。默认 micro-batch（100ms-几秒），2.3（2018）起提供 Continuous Processing（实验性，毫秒级但牺牲部分容错）。核心数据结构是 DataFrame / Dataset，批流共用一套 API。SQL 与 Spark SQL 完全一致，学习成本最低。
 - **Kafka Streams + ksqlDB**——**嵌入式流处理 + 协议绑定 Kafka**。库（不是集群），状态用 RocksDB local，没有独立的 ResourceManager，整个处理就在 Kafka consumer 上跑。**极度轻量、强 Exactly-once，但只能处理 Kafka 进 Kafka 出**。
 
 **第二层：四维结构化对比表。**
