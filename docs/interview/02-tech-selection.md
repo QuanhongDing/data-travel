@@ -63,7 +63,7 @@
 
 ## 参考资料
 
-- 《Software Engineering at Google》第 16-20 章 —— 大厂工程选型方法
+- 《Software Engineering at Google》—— 大厂工程选型方法
 - 《Fundamentals of Data Engineering》第 3-4 章 —— 数据工程选型
 - [Ch13 决策与权衡](../../13-decision/) —— ADR / 选型框架 / 风险评估
 - [Ch13 架构评审](../../13-decision/07-architecture-review/07-architecture-review.md) —— 选型落地方法

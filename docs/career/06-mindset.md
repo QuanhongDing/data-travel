@@ -36,7 +36,7 @@
 
 ### 5 个延迟满足的实践
 
-- **每天 1 小时深度学习**：5 年 = 1825 小时 = 1.5 个大学学位
+- **每天 1 小时深度学习**：5 年 = 1825 小时 = 一个领域的深度积累
 - **每周 1 篇技术博客**：5 年 = 260 篇 = 行业话语权
 - **每月 1 次深度复盘**：1 年 = 12 次 = 显著成长
 - **每季度 1 次职业评估**：5 年 = 20 次 = 清晰路径
@@ -96,7 +96,7 @@
 
 - **大厂技术博客**：Netflix Tech / Uber Engineering / Airbnb Engineering / LinkedIn Engineering / AWS Architecture
 - **会议**：KubeCon / QCon / ArchSummit / Strata / OSC / Data + AI Summit
-- **论文**：SIGMOD / VLDB / OSDI / ICDE / NSDI / OSDI
+- **论文**：SIGMOD / VLDB / OSDI / ICDE / NSDI
 - **开源项目**：Apache / CNCF / Linux Foundation
 - **行业报告**：Gartner / Forrester / 信通院 / DAMA
 
@@ -122,9 +122,8 @@
 
 ## 参考资料
 
-- 《Mindset》—— Carol Dweck 成长型思维
+- 《Mindset: The New Psychology of Success》—— Carol Dweck 成长型思维
 - 《The Road to Character》—— David Brooks
 - 《Antifragile》—— Nassim Taleb 反脆弱
 - 《Peak》—— Anders Ericsson 刻意练习
-- 《Mindset: The New Psychology of Success》—— Carol Dweck
 - [Ch99 成长建议](../../99-outro/02-growth-advice/02-growth-advice.md) —— 资深成长路径

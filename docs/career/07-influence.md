@@ -70,7 +70,7 @@
 
 **去哪讲**：
 - **国内**：QCon / ArchSummit / OSC / 阿里云栖 / GMTC / DataFun
-- **国外**：KubeCon / Strata / Spark + AI Summit / Re:Invent
+- **国外**：KubeCon / Strata / Data + AI Summit / Re:Invent
 - **行业**：DAMA 中国 / 信通院 / 各地技术沙龙
 
 **讲什么**：
@@ -100,7 +100,7 @@
 - **第 6 步**：成为 Maintainer（1-3 年）
 
 **国内大厂的开源**：
-- 阿里：Apache Dubbo / RocketMQ / Druid / Iceberg (Paimon) / 各种
+- 阿里：Apache Dubbo / RocketMQ / Druid / Paimon / 各种
 - 字节：Apache KubeRay / DOP 各种
 - 美团 / 京东：各种
 - 华为：openEuler / MindSpore / 各种
@@ -165,15 +165,14 @@
 
 ### Year 3：深入（每周 3-5 小时）
 
-- 每月 1-2 次公开技术大会
+- 参加 1-2 次公开技术大会
 - 1 个开源项目 Committer / Maintainer
 - 1-2 份专利 / 1 篇论文
 - 行业标准 / 白皮书参与
 
 ## 参考资料
 
-- 《Show Your Work》—— Austin Kleon 创意分享
-- 《Show Your Work》—— 个人品牌建设
+- 《Show Your Work》—— Austin Kleon 创意分享 / 个人品牌建设
 - 《The Passionate Programmer》—— Chad Fowler 程序员成长
 - 《Working in Public》—— Nadia Eghbal 开源贡献
 - [Ch14 技术布道](../../14-leadership/05-tech-evangelism/05-tech-evangelism.md) —— 内外分享

@@ -48,9 +48,9 @@
 ## 工业案例（推荐主动引用）
 
 - **Netflix 自由与责任 + Keeper Test**—— P5 级别的面试官能力
-- **Google Project Oxygen**—— 8 项行为面试 / 招聘画像
+- **Google Project Oxygen**—— 好经理的 8 项行为
 - **Amazon Bar Raiser**—— 跨团队面试官机制
-- **阿里 P 序列 + 271 强制分布**—— 国内技术职级标准
+- **阿里 P 序列 + 361 强制分布**—— 国内技术职级标准
 - **字节职级体系 + 双月 OKR + 360**—— 国内最活跃的职级体系
 - **美团 L6-L9**—— 大厂技术通道
 - **Spotify Squad / Tribe / Chapter / Guild**—— 团队拓扑原型

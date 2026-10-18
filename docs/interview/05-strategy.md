@@ -70,4 +70,4 @@
 - 《Working Backwards》—— Colin Bryar & Bill Carr (Amazon)
 - [Ch13 技术战略](../../13-decision/05-tech-strategy/05-tech-strategy.md) —— 3-5 年路线图方法
 - [Ch13 风险评估](../../13-decision/04-risk-assessment/04-risk-assessment.md) —— 战略反例分析
-- [Ch99 未来趋势](../../99-outro/03-trends/03-trends.md) —— 7 大趋势
+- [Ch99 未来趋势](../../99-outro/03-trends/03-trends.md) —— 2025-2030 行业趋势
