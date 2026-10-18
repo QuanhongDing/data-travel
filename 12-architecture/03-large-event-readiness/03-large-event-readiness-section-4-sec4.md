@@ -1,267 +1,317 @@
-> 本文件是 **03-large-event-readiness.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](03-large-event-readiness.md)。
+> 本文件是 **03-large-event-readiness.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](03-large-event-readiness-section-3-sec3.md) 里的模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](03-large-event-readiness.md)。
 
 ## 4. 工程实现
 
+[§ 3](03-large-event-readiness-section-3-sec3.md) 回答的是「在你的约束下该用哪些模式」；本节回答下一件事：**这些模式在你的排期表、你的存量系统和你的值班表上具体长什么样**。同一个模式落在两家公司会变成完全不同的动作，差别不在模式，而在准备窗口有多长、哪些东西现在改不动、谁在当晚有权按下开关。
+
+本文件对两类读者写的：**第一次做大促的团队**按 4.1 的七步顺序走一遍即可，它就是一份可排期的备战时间轴；**已经有备战流程、但跑得不顺的团队**重点看 4.4（存量迁移）与 4.6（自检）——它们的瓶颈通常不是「没做」，而是「做了，但数字不是实测的」。
+
+一条前置约定贯穿全节：**所有「多少」都必须来自实测**。容量数字来自压测与容量台账，扩容生效时间来自秒表，限流阈值来自阈值标定。凡是只能引用文档承诺值或上一年经验值的量，都还没有成为本节的输入。
+
 ### 4.1 落地步骤
 
-#### 阶段 1：3 个月前——预案制定
+**Step 1：业务预测与容量分层建模（大促前约 3 个月启动；【经验】2–4 周，随业务线数量与营销活动复杂度变）**
 
-1. **业务预测**：与业务团队对齐大促计划（GMV、订单量、营销活动）。
-2. **峰值预估**：用 ARIMA/Prophet 预测峰值 QPS，叠加业务增量。
-3. **容量评估**：基于峰值预估，计算所需 Pod / DB / Cache / MQ / 带宽。
-4. **资源采购**：提前向云厂商提交扩容工单（特别是 GPU、带宽）。
-5. **架构评审**：识别单点、薄弱链路，制定改造计划。
+- 与业务团队对齐大促计划（GMV 目标、订单量、营销活动与开卖时点）。
+- **峰值预估**：用时间序列方法（ARIMA / Prophet / LSTM 一类）估基线峰值，再把营销活动的预期增量叠加成业务输入。
+- **容量评估**：把峰值**按业务漏斗分层**落到资源（Pod / DB / Cache / MQ / 带宽 / GPU），而不是全链路等比例乘一个倍数。
+- 每个峰值假设写成可否证的形式（写成「若某活动在此时点放量 X，则某层峰值是 Y」）。
+- **产物**：容量清单——「链路 × 资源层 × 峰值假设 × 假设来源 × 冗余系数」五列；附一张「不可通过扩容解决的层」名单。
+- **判据**：把清单交给一位没参加预测的人，他能否独立复算其中一层；抽 3 条核心链路，每个峰值数字能否回指到一个具体业务输入。答不出来即清单尚未成立。
+- **为什么必须这一步、为什么在最前**：后面全部动作都以它为输入——采购按它下单、压测按它定倍率、限流按它分级。清单不出，压测就没目标、阈值只能沿用上一年。分层的理由是各层的容量分母不同，等比例乘倍数会把钱花在不是瓶颈的那一层上。
 
-#### 阶段 2：1 个月前——封板 + 压测
+**Step 2：架构评审与单点识别（3 个月前；【经验】1–2 周）**
 
-1. **代码封板**：冻结非必要发布，只允许 P0 bug 修复。
-2. **全链路压测**：录制生产流量 → 影子表隔离 → 回放 → 观察系统表现。
-3. **限流策略调优**：按链路分级设定阈值。
-4. **降级开关演练**：每个开关由 owner 演练一遍。
-5. **预案演练**：DB 故障、缓存击穿、MQ 堆积等预案演练。
-6. **弹性扩容测试**：模拟流量激增，验证扩容时间 < 5 分钟。
+- 识别单点与薄弱链路；对每条给出**当前上限的实测值**（不是规格书值）。
+- 对「改造成本高于限流代价」的层，明确记为「峰值只能靠限流与降级承接」，并写清承接不住时的后果。
+- 把改造排期写进备战日历，要求在大促前完成。
+- **产物**：单点清单（含实测上限）+ 改造排期 + 「承接不了」的风险清单。
+- **判据**：任选一条单点，问「把峰值再乘 1.5 倍，它先在哪里断」，能给出具体判据（队列打满 / 连接耗尽 / 单池带宽封顶）才算数。
+- **为什么必须在采购之前**：采购单是按容量清单下的。若评审发现某层根本扩不到目标量级（单池上限被硬件与拓扑封死），那份采购是白花的；而形态改造有工期，越晚发现越只能靠当晚限流兜（跃迁判据见 [§ 3.6](03-large-event-readiness-section-3-sec3.md)）。
 
-#### 阶段 3：1 周前——预热 + 演练
+**Step 3：资源采购与配额确认（3→2 个月前；【经验】2–6 周，随云厂商配额与交付周期变）**
 
-1. **缓存预热**：把热点数据加载到缓存。
-2. **DB 连接池预热**：把连接池打满，避免冷启动。
-3. **JIT 预热**：让 JVM 把热点代码 JIT 编译好。
-4. **GPU 预热**：把模型加载到 GPU 显存。
-5. **GameDay**：全员故障演练日，模拟真实故障。
+- 提交扩容工单，把配额敏感项（GPU、带宽、公网 IP、机位）排在最前。
+- 确认三件事：配额是否批复、交付时点、可中断容量的规格与回收策略。
+- 为交付延误准备替代供给渠道。
+- **产物**：配额批复单 + 交付时间表 + 替代供给方案。
+- **判据**：核「批复的规格是否正是你要的规格」（被批成相邻规格是常见错误）；再做一次桌面推演：若某类资源延误一周，替代方案是什么。
+- **为什么必须与 Step 1/2 保持这个顺序**：这是备战里唯一一条「发现晚了就无法补救」的路径——代码可以连夜改，机器与配额不能连夜长出来。
 
-#### 阶段 4：当天——作战
+**Step 4：封板与全链路压测（1 个月前；【经验】2–4 周）**
 
-1. **值班就位**：7×24h 现场值班，明确升级路径。
-2. **实时监控**：大屏展示核心指标（QPS、RT、错误率、资源利用率）。
-3. **黄金 5 分钟**：任何故障必须 5 分钟内有人响应。
-4. **按预案执行**：严格执行 Runbook，避免临场发挥。
-5. **实时决策**：超出预案的决策由 PMO 拍板。
+- 代码封板：冻结非必要发布，只放 P0 修复。
+- 全链路压测：录制生产流量 → 入口打染色标 → 影子表 / 影子服务隔离 → 回放；压测数据要提前构造并覆盖真实业务路径。
+- **限流策略调优**：阈值按链路分级标定；弹性扩容计时（模拟流量激增，把扩容生效时间测出来，并与峰值上升时间比较）。
+- 明确隔离链路与压测数据的长期维护责任人。
+- **产物**：压测报告（峰值系数实测值 / 扩容生效时间 / 各层瓶颈次序 / 分级阈值的标定依据）+ 影子资产的责任人。
+- **判据**：三个可执行动作——① 抽 3 张影子表核其行数与生产表的差异，确认压测没写进生产数据；② 让执行人报出扩容生效时间的数字，并确认它来自秒表而非文档；③ 让标定人说出每条链路的阈值「是从哪一次压测的哪一段曲线上读出来的」。
+- **为什么必须排在封板之后、阈值下发之前**：压测会暴露需要改代码的问题，必须在「还改得动」的窗口内完成；阈值一旦下发就会被各链路使用，先下发再标定等于把上一年的经验值当成今年的答案。
 
-#### 阶段 5：1 周后——复盘
+**Step 5：预热与演练（1 周前；【经验】3–7 天）**
 
-1. **故障收集**：所有故障（包括"差点故障"）记录。
-2. **RCA（Root Cause Analysis）**：每个故障做根因分析。
-3. **行动项**：转化为可执行的改进项，明确 owner 和 deadline。
-4. **组织能力沉淀**：把经验固化为工具、文档、培训。
-5. **奖励与问责**：对优秀响应者奖励，对失职者问责。
+- 缓存预热（热点数据加载进缓存）、DB 连接池预热（把连接池打满，避免冷启动）、JIT 预热（让 JVM 把热点代码编译好）、GPU 预热（模型权重进显存 / 预热池）。
+- GameDay：全员故障演练日；预案演练（DB 故障、缓存击穿、MQ 堆积）；降级开关演练（每个开关由具名 owner 按一遍）；关键操作演练并计时（一键扩容、一键切流）。
+- **产物**：预热脚本与执行记录 + 开关清单（owner / 文档 / 最近演练日期）+ 关键操作耗时表 + 修订后的预案。
+- **判据**：抽 3 个开关核三件是否齐全；随机问一位值班同学「出问题找谁、怎么回滚」，能当场答出即合格；关键操作是否有人能背出耗时数字。
+- **为什么在这个位置、以及两类演练为什么不同序**：预热需要几天才生效（连接池、显存、JIT 都不是瞬时动作），不能留到当天。演练则分两类：**产物是代码改动的演练项（预案里暴露的缺陷）应排在封板之前**，否则发现问题已无修复窗口；**产物是操作熟练度与预案修订的演练项（GameDay、开关演练、关键操作计时）排在封板之后**，因为它们改的是人和预案，不是代码。
+
+**Step 6：当天作战（当天；【经验】持续数小时至数十小时）**
+
+- 值班就位：7×24h 现场，明确升级路径与拍板人。
+- 实时监控大屏：QPS、RT、错误率、资源利用率，且能区分核心与非核心链路。
+- 「黄金 5 分钟」：任何故障都必须在这个窗口内有人响应（这是组织约定，不是技术指标）。
+- 严格按 Runbook 执行，避免临场发挥；超出预案的决策由作战室指定的拍板人（PMO）决策并留痕。
+- **产物**：值班表 + 升级路径 + 每次临时决策的记录（谁拍的、依据什么信号）。
+- **判据**：抽查一位值班同学能否当场回答「出问题找谁、怎么回滚」；核大屏上是否有「每层限流生效量」这一栏——只有总量而看不到哪一层在丢，当晚就定位不了。
+- **为什么**：封板之后系统的可变项只剩两个——响应速度与决策归属。把决策权事前写下来，解决的不是能力问题，而是「谁来承担这次判断」。
+
+**Step 7：复盘与能力沉淀（1 周后；【经验】1–2 周）**
+
+- 故障收集（含所有「差点故障」——没造成损失的故障不会被自动记录）；RCA 根因分析。
+- 行动项转成可验证项（owner + deadline + 验证方式）；组织能力沉淀（工具、文档、培训）；奖励与问责。
+- **产物**：故障清单 + RCA + 行动项表 + 下一年的备战清单增量。
+- **判据**：抽 3 条行动项，看它是否写了「下一次大促前用什么动作验证它已完成」——写不出验证方式的行动项与没写等价；再核本次全部根因里有多少条在第二年备战日历上对应到了一个具体步骤。
+- **为什么**：本次复盘是下一轮备战清单的唯一真实输入；不把根因翻译成日历上的动作，「差点故障」会在下一年以真故障的形式重现。
+
+本步里**最常被跳过的是 Step 5 的降级开关演练**：它没有代码产出，演练一遍也看不到指标变化，于是最容易被压缩成「开关清单已建、文档已写」。跳过后第一个出问题的时点不是大促当晚，而是当晚**第一次按下开关之后的几分钟**——开关会同时改变流量形态（用户重试、入口文案、客服进线量），这些副作用只在真实执行时出现（[§ 3.5](03-large-event-readiness-section-3-sec3.md) 把它列为反模式，本节给的是它的落地形态与自查动作）。第二常被跳过的是 Step 7 判据的后半句：行动项只写到「加强监控」这个粒度。
 
 ### 4.2 关键技术点
 
-#### 限流实现（Sentinel）
+**分级限流**
 
-```java
-// Sentinel：定义资源 + 限流规则
-@SentinelResource(value = "createOrder", blockHandler = "createOrderBlockHandler")
-public Order createOrder(OrderRequest req) {
-    // 业务逻辑
-    return orderService.create(req);
-}
+- **做法**：按链路分桶设定阈值，每级独立配额；在入口（网关 / 应用层）与关键下游调用点各布一层；拒绝路径返回明确话术与重试提示。
+- **机制**：因为配额按链路独立，所以超载时非核心先被丢、核心的配额被保住——分级的价值不在「限了流」，而在「丢掉的这部分是不是可以丢的那部分」。
+- **失效条件**：**当核心与非核心共用同一个桶，或各层阈值来自同一个配置源时**，分级会同时退化成「一起被限」与「同源失效」；症状是当晚只看到「限流已生效」这条好消息，而核心链路先挂。观测信号：把阈值按链路拆开后，核心链路的拒绝数是否被独立统计。
+- **档位**：【经验】阈值必须逐链路标定，无通用值；示意值（如 1000 / 5000 QPS）不是标定结果。
 
-public Order createOrderBlockHandler(OrderRequest req, BlockException ex) {
-    // 限流后的降级逻辑
-    throw new OrderRateLimitException("下单太火爆，请稍后重试");
-}
+**熔断**
 
-// 配置规则：1000 QPS 限流，超过则触发降级
-FlowRule rule = new FlowRule("createOrder")
-    .setGrade(RuleConstant.FLOW_GRADE_QPS)
-    .setCount(1000);
-FlowRuleManager.loadRules(Collections.singletonList(rule));
+- **做法**：按错误率或慢调用比例触发（各实现的形态不同），半开探测的间隔与超时逐服务设定；对故障时允许「不接受」的调用配 fallback。
+- **机制**：因为下游故障时主动断开调用，线程与连接池不会被耗光，故障不沿调用链向上传染——这是它能替代「无限重试」的原因。
+- **失效条件**：**当熔断阈值设得比自身调用超时还宽时**，熔断永远不会触发（每次都在熔断生效前先超时返回），熔断器退化成日志；症状是超时率上升而状态始终是 CLOSED。第二个失效点是半开探测本身会周期性给已经故障的下游再压一次。
+- **档位**：【经验】阈值在压测中标定，没有通用最优值；Hystrix 已停止维护，新项目不要选。
+
+**弹性扩容**
+
+- **做法**：资源指标由 HPA 扩，外部指标（消息积压、队列长度）由 KEDA 扩，节点层由 Cluster Autoscaler 或云厂商伸缩组补；`minReplicas` / `maxReplicas` 与云配额一起对账；缩容加防抖窗口。
+- **机制**：因为扩缩信号来自已经发生的指标，而扩容动作需要时间才生效，所以弹性天然滞后一个「采集 + 调度 + 启动」周期——它买的是时间，不是现成的容量。
+- **失效条件**：**当峰值上升时间短于扩容生效时间时**，扩容永远慢一个周期；**当目标副本数超过云配额或节点池容量时**，控制面显示已扩而副本持续 Pending。另一个判据：扩容后 P99 不随实例数上升而下降，说明瓶颈不在实例数。
+- **档位**：扩容生效时间必须实测【经验】，随镜像大小、调度器负载与节点供给而变，不要用文档承诺值。
+
+**流量染色与影子隔离**
+
+- **做法**：入口按标记头（如 `X-Stress-Test`）识别压测流量，路由到影子服务、写入影子表；把标记**显式透传**到线程池、消息头与定时任务；压测结束后核对影子表与生产表差异。
+- **机制**：因为压测流量与生产流量携带同一标记、走同一条代码路径，所以能压出真实的上下游联动（缓存击穿、连接打满、消息堆积），而不是单链路的数字。
+- **失效条件**：**当标记在某个异步环节丢失时**（线程池换线程、消息未带 header、脚本任务直连库），压测流量会写进生产表；症状是压测跑完后生产数据出现异常增量，通常在几小时后才被业务发现。判据：抽 3 张影子表与对应生产表核行数差异，不为零即染色链路上有断点。
+- **档位**：【经验】隔离链路与压测数据需要长期维护，成本不随大促结束归零。
+
+**预热（缓存 / 连接池 / JIT / GPU）**
+
+- **做法**：峰值前把热点数据加载进缓存、把连接池打满、让热点代码被 JIT 编译、把模型权重加载进显存或预热池；每一项都写成脚本而不是手工步骤。
+- **机制**：因为冷启动的代价是「第一个请求付全部初始化成本」，所以把这笔成本从峰值窗口挪到峰值之前，峰值最初的几秒就不会因初始化而超时。
+- **失效条件**：**当预热与缩容策略冲突时**（无流量缩到零、或缓存淘汰速度快于预热到峰值的间隔），预热的成果在有用之前就被丢掉；症状是峰值开始后 RT 先出现一个尖峰再回落。观测信号就是这条曲线形状。
+- **档位**：【经验】预热到峰值的间隔越短越好，具体窗口随缓存容量与淘汰策略变。
+
+**Runbook 与开关 owner 制**
+
+- **做法**：每个降级开关有具名 owner、文档与演练记录；Runbook 写成「现象 → 定位 → 操作 → 回滚」四段；「谁有权关闭什么」写成一张表，超载时按表执行。
+- **机制**：因为超载现场的时间预算不允许做判断，判断必须前置到预案与演练里——写在纸上的是决策，现场只剩执行。
+- **失效条件**：**当开关数量超过一次演练能覆盖的数量时**（【经验】到几十个量级后，逐条演练会退化成抽检），未演练的开关在当晚重新变回文档。观测信号：临战时有人要临时读文档才敢按开关。
+- **档位**：监控一条运行时间指标并不能证明什么，判据只能是「三件是否齐全」。
+
+### 4.3 工具链与平台
+
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 全链路压测 | AHAS（阿里云应用高可用服务）、PTS（阿里云）、Locust、JMeter、Gatling、k6（Grafana Labs）、Vegeta | 判据是「能不能在生产环境发压并把流量隔离」：要生产环境全链路压测、且需要自带流量隔离与影子能力的，选 AHAS / PTS 这一族；只需单链路或组件级压测、团队已有脚本能力，选可编程的施压工具（Locust / k6 / Gatling / Vegeta）；已有大量 JMX 用例资产、以 GUI 维护用例的团队选 JMeter | 只买施压能力而自行做隔离：施压解决「发多少流量」，隔离解决「流量打到哪里」；两者缺一，压测要么污染生产数据、要么只能退回测试环境（而测试环境与生产的差异正是要压掉的东西） |
+| 限流降级熔断 | Sentinel、Resilience4j、Hystrix、Polly、Istio（服务网格层） | 判据是「控制点放在哪」+「语言栈」：Java 且要中文文档与系统自适应保护选 Sentinel；Java 8+ 要轻量与函数式组合选 Resilience4j；.NET 选 Polly；要「应用不改代码、在网格层统一熔断」选 Istio 这一族（前提是应用已全量接入网格） | 用 Hystrix 做新项目：已停止维护，后续没有修复与适配；用网格层熔断但应用未全量接入：被漏掉的调用仍会拖垮线程池 |
+| 弹性扩容 | Kubernetes HPA / VPA / CA、KEDA、阿里云 ESS、AWS Auto Scaling、Spot Ocean（原 Spotinst） | 判据是「触发信号从哪来」：CPU / 内存这类资源指标用 HPA；消息积压、队列长度这类外部指标用 KEDA；节点层由 CA 或云厂商伸缩组补；要按可中断容量省钱用 Spot 这一族的编排（必须先有中断通知与幂等兜底） | 只用 HPA + CPU：推理与有状态服务的瓶颈不在 CPU（在显存与就绪时间），目标副本数达到了而业务仍超时；只用可中断容量不做幂等：回收时点由供应商决定，中断会变成重复或丢失 |
+| 监控告警 | Prometheus + Grafana、阿里云 ARMS、Datadog、New Relic、OpenTelemetry | 判据是「自建还是托管」+「是否要统一跨云口径」：自建且要长期控成本选 Prometheus + Grafana；要一站式托管与跨云统一选 Datadog / New Relic 这一族；要避免被单一厂商绑定，先落 OpenTelemetry 作为采集与语义约定层 | 只做告警不做采集口径统一：多套 agent 各报一份，当晚同名指标在不同屏幕上给出不同数字；只采指标不采「每层限流生效量」：看得到被保护，看不到正在被哪一层丢 |
+
+这一类里**最容易被误选的是「把压测平台等同于全链路压测能力」**。施压能力解决的是「能不能发出足够大的流量」，而生产环境全链路压测真正难的两件——**染色能不能穿透异步链路**、**影子表与影子服务能不能长期维护**——没有任何工具替你解决。误选的典型后果是压测报告很漂亮（单链路数字达标），当晚仍在上下游联动处崩；或第一次生产压测就把压测数据写进了业务表。上表列出的是一族候选，不代表其中每一个都适合你的约束；各产品的具体能力与维护状态请以官方文档当前版本为准。
+
+### 4.4 存量迁移
+
+对绝大多数团队，问题不是从零搭建，而是**在已经跑了几年、当期还不能停的系统上把备战做进去**。
+
+**① 先做两件零风险、可回退的动作。** 一是把「每层限流生效量」与按链路分级的观测接进来（纯读侧，随时可撤）；二是把值班升级路径与 Runbook 写出来（纯文档，零代码改动）。两者的可回退性要写得具体：撤回的动作是关掉开关，而不是回滚一次发布。把这两件放在最前，是因为它们不依赖任何改造，且后面每一步都要用它们的输出做判断。
+
+**② 历史资产按四条路分类处理。**
+
+- **全部返工**：成本与服务数成正比，除核心链路不足十条的小系统外几乎不可行；
+- **只改本次要动的链路**：把「本次大促会动的链路」圈出来，先给它们接染色、分级限流与阈值标定（推荐起点）；
+- **打标挂账**：能识别压测流量的服务挂「已支持染色」，不能的挂「未支持」，并**把未支持者列入风险清单**——它们的容量只能靠限流兜，全链路压测也覆盖不到它们；
+- **明确不改**：把从不承接峰值的内部系统（ERP / CRM 一类）明确排除在本次范围外，避免把有限的备战窗口摊薄。
+
+判据（可执行）：列一张「服务 × 是否支持染色 × 是否已分级 × 峰值上限是否实测 × 负责人」的表，抽 5 行核对。如果**核心链路里仍有未支持染色的服务**，全链路压测的结论就是不完整的——压测没覆盖到它，而它可能正是瓶颈。
+
+**③ 双轨怎么维持、维持多久。** 迁移期同时存在两套处置方式：旧轨是「当晚上限流硬扛」（固定阈值、无降级分级、无染色），新轨是「分级限流 + 降级开关 + 影子压测 + 实测阈值」。双轨必须指定**唯一优先级**：同一链路两套都在时新轨优先，否则阈值会有两个来源，直接回到同源失效。维持时长【经验】至少一个完整的大促周期，或直到核心链路的染色覆盖与阈值标定双双达标；期间每条链路的归属必须写在清单上，不能出现「两套都以为对方在管」。
+
+**④ 什么信号说明可以退出双轨。** 四个信号同时具备才退：核心链路染色覆盖达标（压测能跑到它们）、每条链路阈值都有标定依据、全部降级开关有 owner 与演练记录、关键操作（扩容 / 切流）耗时已实测。任一不满足就把退出往后推。最常见的错误是**把「本次大促没出事」当退出信号**——没出事可能只是因为峰值没到，而不是因为能力具备了。
+
+**顺序理由**：这几类动作的可逆性不同。观测与文档可回退，分级限流与降级开关可回退（关掉即恢复），而**架构形态（单元化、异地多活）不可回退**（分片键与单元数是长期承诺）。所以存量系统的动手术顺序是：观测 → 入口控制 → 依赖梳理 → 最后才是形态改造，与 [§ 3.4](03-large-event-readiness-section-3-sec3.md) 的组合引入顺序一致。
+
+### 4.5 模板 / 示例
+
+**模板 1：备战通关表**
+
+| 时间点 | 阶段 | 产物 | 通关判据 |
+| --- | --- | --- | --- |
+| 大促前约 3 个月 | 预案制定 | 容量清单 / 单点清单 / 改造排期 | 任一层能被第三人独立复算 |
+| 大促前约 2 个月 | 采购与封板 | 配额批复单 / 封板公告 | 关键资源配额已批复且规格正确 |
+| 大促前约 1 个月 | 压测 | 压测报告 / 阈值标定依据 / 扩容耗时 | 影子表无污染、耗时来自秒表 |
+| 大促前约 1 周 | 预热与演练 | 预热脚本 / 开关清单 / 预案修订 | 抽 3 个开关，owner、文档、演练记录齐全 |
+| 当天 | 作战 | 决策记录 / 故障时间线 | 值班人可当场答出找谁与回滚 |
+| 大促后约 1 周 | 复盘 | RCA / 行动项表 | 每条行动项有可验证的完成判据 |
+
+**怎么用**：填「时间点」与「负责人」两列，「通关判据」按你的链路改写——判据要能被第三人执行，不要改成「评审通过」。阶段名与工期不要照抄，按你的备战窗口重排。
+
+**模板 2：容量台账（可复算的最小表）**
+
+```text
+链路 | 层（接入/应用/缓存/DB/MQ/带宽/GPU） | 峰值假设 | 假设来源 | 冗余系数 | 实测上限 | 状态
+下单 | 应用   | {QPS}   | {业务输入} | {系数} | {压测值} | 已实测
+下单 | DB 写  | {TPS}   | {业务输入} | {系数} | {待测}   | 待改造
 ```
 
-#### 熔断实现（Resilience4j）
+**怎么用**：`{...}` 是要你填的格子；「实测上限」留空的行走不到下一步——空白本身就是风险清单。冗余系数不要照抄别人的值，它随资源交付周期与故障恢复速度变。
+
+**示例 3：Sentinel 分级限流 + 熔断（示意配置）**
 
 ```java
-// Resilience4j：熔断器 + 重试 + 降级
-CircuitBreaker circuitBreaker = CircuitBreaker.ofDefaults("paymentService");
+// 分级限流：核心 / 非核心各一个桶（数值为示意，必须替换为压测标定值）
+FlowRule order = new FlowRule("createOrder")
+    .setGrade(RuleConstant.FLOW_GRADE_QPS).setCount(5000)
+    .setControlBehavior(RuleConstant.CONTROL_BEHAVIOR_REJECT);
+FlowRule recommend = new FlowRule("getRecommend")     // 非核心：可降级
+    .setGrade(RuleConstant.FLOW_GRADE_QPS).setCount(2000);
+FlowRuleManager.loadRules(Arrays.asList(order, recommend));
 
-Supplier<PaymentResult> decoratedSupplier = Decorators
-    .ofSupplier(() -> paymentService.charge(order))
-    .withCircuitBreaker(circuitBreaker)
-    .withFallback(List.of(CallNotPermittedException.class, 
-                          TimeoutException.class),
-                 e -> PaymentResult.deferred("支付繁忙，请稍后重试"))
+// 熔断：按异常数触发，窗口与时长按链路标定
+DegradeRule payment = new DegradeRule("callPaymentService")
+    .setGrade(RuleConstant.DEGRADE_GRADE_EXCEPTION_COUNT)
+    .setCount(50).setStatIntervalMs(1000).setTimeWindow(10);
+DegradeRuleManager.loadRules(Collections.singletonList(payment));
+```
+
+**怎么用**：三个 `setCount` 全部替换为压测标定值（示例值不是推荐值）；拒绝逻辑里必须给用户可读话术与重试提示。只改阈值不改分级结构，等于没做分级。
+
+**示例 4：Resilience4j 熔断 + fallback**
+
+```java
+CircuitBreaker cb = CircuitBreaker.ofDefaults("paymentService");
+Supplier<PaymentResult> call = Decorators.ofSupplier(() -> paymentService.charge(order))
+    .withCircuitBreaker(cb)
+    .withFallback(List.of(CallNotPermittedException.class, TimeoutException.class),
+                  e -> PaymentResult.deferred("支付繁忙，请稍后重试"))
     .decorate();
-
-PaymentResult result = decoratedSupplier.get();
+PaymentResult result = call.get();
 ```
 
-#### 弹性扩容（Kubernetes HPA + KEDA）
+**怎么用**：`ofDefaults` 只适合起步，生产必须显式配置失败率阈值、滑动窗口与半开探测间隔，并使它**比调用超时更早触发**（否则每次都在熔断前先超时）。fallback 返回的必须是业务上可接受的降级结果，不能是空对象。
+
+**示例 5：弹性扩容（HPA 按资源指标 + KEDA 按消息积压）**
 
 ```yaml
-# HPA：基于 CPU 的水平扩容
+# HPA
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
-metadata:
-  name: order-service-hpa
 spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: order-service
   minReplicas: 10
-  maxReplicas: 1000
+  maxReplicas: 1000      # 与云配额、节点池容量一起对账：超配额时副本会一直 Pending
   metrics:
   - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
+    resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
 ```
 
 ```yaml
-# KEDA：基于 Kafka Lag 的弹性扩容
+# KEDA：按消费积压扩缩
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
-metadata:
-  name: kafka-consumer-scaler
 spec:
-  scaleTargetRef:
-    name: order-consumer
   minReplicaCount: 5
   maxReplicaCount: 500
   triggers:
   - type: kafka
-    metadata:
-      bootstrapServers: kafka:9092
-      consumerGroup: order-consumer-group
-      topic: order-events
-      lagThreshold: '100'
+    metadata: { consumerGroup: order-consumer-group, topic: order-events, lagThreshold: '100' }
 ```
 
-#### 流量染色（全链路压测）
+**怎么用**：`maxReplicas` 是上限不是目标，先与配额对账；`lagThreshold` 必须用你自己的消费速率标定（它等价于「每条分区积压多少就扩一个实例」，与单实例处理能力挂钩）。扩容生效时间要单独计时，不能从这份 yaml 里推。
+
+**示例 6：流量染色（含异步透传提醒）**
 
 ```java
-// 压测流量染色：识别 + 路由
 public class TrafficColoringFilter implements Filter {
-    @Override
-    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) {
-        HttpServletRequest httpReq = (HttpServletRequest) req;
-        String stressTest = httpReq.getHeader("X-Stress-Test");
-        
-        if ("true".equals(stressTest)) {
-            // 压测流量：路由到影子服务
-            RequestContext.setShadow(true);
-            // 写到影子表
-            DataSourceContextHolder.set("shadowDS");
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
+            throws IOException, ServletException {
+        boolean stress = "true".equals(((HttpServletRequest) req).getHeader("X-Stress-Test"));
+        if (stress) {
+            RequestContext.setShadow(true);           // 路由到影子服务
+            DataSourceContextHolder.set("shadowDS");  // 写入影子表
         }
-        
-        chain.doFilter(req, resp);
+        try {
+            chain.doFilter(req, resp);
+        } finally {
+            RequestContext.clear();   // 线程复用：不清理会把标记串到下一个请求
+        }
     }
 }
 ```
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+**怎么用**：只照抄判读与路由两段；`RequestContext.clear()`、以及「把标记显式透传进线程池、消息头、定时任务」是这里最容易省掉的两行，而它们正是染色断点的来源。上线后立刻做一次「抽 3 张影子表核差异」。
 
-#### 全链路压测平台
-
-| 工具 | 出品方 | 特点 |
-| --- | --- | --- |
-| **AHAS**（应用高可用服务） | 阿里云 | 阿里内部 PTS 商业化，全链路压测 + 流量染色 + 影子表 |
-| **PTS**（Performance Testing Service） | 阿里云 | 云压测服务，支持百万级并发 |
-| **Locust** | 开源 | Python 编写，分布式压测，灵活 |
-| **JMeter** | Apache | 老牌压测工具，GUI + CLI |
-| **Gatling** | 开源 | Scala 编写，高性能，DSL 友好 |
-| **k6** | Grafana Labs（2024） | Go 编写，云原生压测，趋势上升 |
-| **Vegeta** | 开源 | Go 编写，简单 HTTP 压测 |
-
-#### 限流降级框架
-
-| 工具 | 出品方 | 特点 |
-| --- | --- | --- |
-| **Sentinel** | 阿里 | Java/Go/C++，流量控制 + 熔断降级 + 系统自适应保护，中文友好 |
-| **Resilience4j** | 开源 | Java 8+，轻量，函数式编程 |
-| **Hystrix** | Netflix | 已停止维护，不推荐新项目 |
-| **Polly** | 开源 | .NET 生态 |
-| **Istio** | 开源 | 服务网格层熔断，对应用透明 |
-
-#### 弹性扩容
-
-| 工具 | 出品方 | 特点 |
-| --- | --- | --- |
-| **Kubernetes HPA/VPA/CA** | CNCF | 编排层标准方案 |
-| **KEDA** | CNCF | 事件驱动弹性 |
-| **阿里云 ESS** | 阿里云 | 云厂商弹性伸缩 |
-| **AWS Auto Scaling** | AWS | 云厂商弹性伸缩 |
-| **Spotinst / Ocean** | Spot.io | Spot Instance 编排 |
-
-#### 监控告警
-
-| 工具 | 出品方 | 特点 |
-| --- | --- | --- |
-| **Prometheus + Grafana** | CNCF | 事实标准 |
-| **阿里云 ARMS** | 阿里云 | 阿里内部 EagleEye 商业化 |
-| **Datadog** | Datadog | SaaS 一体化监控 |
-| **New Relic** | New Relic | APM 老牌 |
-| **OpenTelemetry** | CNCF | 统一的可观测性标准 |
-
-### 4.4 代码 / 示例
-
-#### Sentinel + Spring Boot 大促配置
-
-```java
-// 大促期间的限流规则配置（动态下发）
-@Configuration
-public class SentinelConfig {
-    
-    @PostConstruct
-    public void initRules() {
-        // 核心链路：下单 5000 QPS
-        FlowRule orderRule = new FlowRule("createOrder")
-            .setGrade(RuleConstant.FLOW_GRADE_QPS)
-            .setCount(5000)
-            .setControlBehavior(RuleConstant.CONTROL_BEHAVIOR_REJECT);
-        
-        // 重要链路：商品详情 10000 QPS
-        FlowRule productRule = new FlowRule("getProduct")
-            .setGrade(RuleConstant.FLOW_GRADE_QPS)
-            .setCount(10000);
-        
-        // 非核心链路：推荐 2000 QPS（可降级）
-        FlowRule recommendRule = new FlowRule("getRecommend")
-            .setGrade(RuleConstant.FLOW_GRADE_QPS)
-            .setCount(2000)
-            .setControlBehavior(RuleConstant.CONTROL_BEHAVIOR_DEFAULT);
-        
-        FlowRuleManager.loadRules(Arrays.asList(orderRule, productRule, recommendRule));
-        
-        // 熔断规则：调用支付服务
-        DegradeRule paymentRule = new DegradeRule("callPaymentService")
-            .setGrade(RuleConstant.DEGRADE_GRADE_EXCEPTION_COUNT)
-            .setCount(50)  // 异常数
-            .setStatIntervalMs(1000)  // 统计窗口 1s
-            .setTimeWindow(10);  // 熔断时长 10s
-        
-        DegradeRuleManager.loadRules(Collections.singletonList(paymentRule));
-    }
-}
-```
-
-#### AI 时代的智能体链路降级（2024+ 新模式）
+**示例 7：智能体链路的降级链（大模型 → 中模型 → 小模型 → 规则）**
 
 ```python
-# 智能体链路降级：大模型 → 中模型 → 小模型 → 规则
 class AgentDegradationChain:
     def __init__(self):
-        self.primary = GPT4Service()       # 主链路
-        self.secondary = ClaudeService()    # 备链路（多模型路由）
-        self.tertiary = LocalLLMService()  # 本地小模型
-        self.fallback = RuleEngine()       # 规则兜底
-    
+        self.levels = [PrimaryModel(), SecondaryModel(), LocalSmallModel(), RuleEngine()]
+        self.timeouts = [800, 400, 200, 50]   # 毫秒，逐级缩短；示例值须按 SLO 重定
+
     async def invoke(self, prompt: str) -> str:
-        for level, service in enumerate([self.primary, self.secondary, 
-                                         self.tertiary, self.fallback]):
+        for level, service in enumerate(self.levels):
             try:
-                # 每一级都有超时控制
-                async with timeout(max_timeout_ms[level]):
-                    return await service.invoke(prompt)
+                async with timeout_ms(self.timeouts[level]):
+                    result = await service.invoke(prompt)
+                metrics.emit("degrade.level", level)   # 「当前在第几档」必须是指标
+                return result
             except (TimeoutError, ServiceUnavailable) as e:
-                logger.warning(f"Level {level} failed: {e}")
-                if level == len(self.services) - 1:
-                    return "服务繁忙，请稍后重试"
+                logger.warning("degrade level %s failed: %s", level, e)
                 continue
-        return "服务繁忙，请稍后重试"
+        return "服务繁忙，请稍后重试"   # 兜底话术：没有它，链末就是异常
 ```
 
----
+**怎么用**：`self.timeouts` 按链路 SLO 逐级分配（第一级给完整预算，后面几级只给剩余预算）；每一档降级都要事先单独验证质量，不能在当晚第一次使用。把「当前在第几档」做成指标，否则降级已经发生也没人知道。
+
+**模板 8：复盘行动项**
+
+```text
+行动项 | 根因 | 负责人 | 截止 | 完成判据（可执行） | 下次大促前的验证动作
+{...}  | {...} | {...}  | {...} | 例：扩容生效时间 ≤ {实测值} | 例：演练中秒表复测
+```
+
+**怎么用**：最后一列是这张表存在的理由——没有「下一次用什么动作验证」的行，等于没写行动项。
+
+### 4.6 自检清单
+
+- [ ] 抽 3 条核心链路，容量台账里每一层的峰值假设能否回指到一个具体业务输入？哪一层是空白？
+- [ ] 扩容生效时间的数字是秒表量的还是文档抄的？它比峰值上升时间长还是短？
+- [ ] 核心链路与非核心链路是否各有独立的限流桶？共用即分级尚未生效。
+- [ ] 抽 3 个降级开关，owner、文档、最近一次演练记录是否齐全？
+- [ ] 抽 3 张影子表核对与生产表的行数差异，是否为零？
+- [ ] 大屏上能否看到「每层限流生效量」，而不是只有一个「限流已生效」？
+- [ ] 随机问一位值班同学「出问题找谁、怎么回滚」，能否当场答出？
+- [ ] 关键操作（一键扩容 / 一键切流）有没有实测耗时，且写进了预案？
+- [ ] 承接不了峰值的层，是否写明了「靠什么降级、关掉之后业务看到什么」？
+- [ ] 推理链路与智能体链路是否进了同一份容量台账，且「实例就绪」与「模型就绪」是两个分别可观测的量？
+- [ ] 有没有一份「本次未覆盖范围」清单（哪些系统这次不管）？它是否被通知到了相关方？
+- [ ] 复盘行动项里，有多少条写了「下次用什么动作验证」？低于全部则复盘未完成。
+
+### 4.7 小结
+
+> 本节小结：备战里唯一那个决定成败的环节，是**在压测与演练中把每一个「多少」变成实测值**——峰值系数、扩容生效时间、每级限流阈值、开关按下后的副作用、关键操作耗时。
+>
+> 其余动作（采购、预热、值班、复盘）都只是把已知的量装到位；一旦这些量是抄来的，整条备战链就在同一处失真：阈值不知道定多少、容量不知道够不够、扩容不知道来不来得及，最后只能靠当晚的临场限流兜底。这也是为什么它的投入回报高于任何单点技术选型。
+>
+> 配合 [§ 2 核心原理](03-large-event-readiness.md)、[§ 3 设计模式与范式](03-large-event-readiness-section-3-sec3.md) 与 [§ 6 落地实践](03-large-event-readiness-section-6-sec6.md) 阅读。

@@ -1,279 +1,360 @@
-> 本文件是 **02-vector-lake.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](02-vector-lake.md)。
+> 本文件是 **02-vector-lake.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](02-vector-lake-section-3-sec3.md) 里的模式装进一个真实的语料与真实的机器预算里：顺序、判据、产物与存量迁移。完整章节请回到 [index](02-vector-lake.md)。
 
 ## 4. 工程实现
 
+本节按「落地步骤 → 关键技术点 → 工具链 → 存量迁移 → 模板 → 自检」组织，术语与主文件 [§ 2 核心原理](02-vector-lake.md) 和 [§ 3 设计模式与范式](02-vector-lake-section-3-sec3.md) 逐字一致：**索引驻留的介质**、**`model_version`**、**标量条件的参与深度（过滤位置）**、**重建窗口**、**段化与合并**这几个词，在本节里指的就是 §3 里那几条结构，不另立口径。模式被什么约束逼出来、代价与失效点见 §3；本节只回答「介质与版本定了之后，怎么把它装起来」。
+
+读者分两类，本节两栏都覆盖。**从零搭建**的团队直接按 4.1 的七步往下走，4.4 可以略读。**在存量上改造**的团队（库里已经有向量、已经有一套自建检索服务、已经换过一次 Embedding 模型）建议先读 4.4 再回到 4.1——因为存量团队最贵的成本不是把索引建起来，而是**在没有 `model_version` 的存量向量上把版本账补回来**，这件事的顺序与从零搭建完全不同。
+
 ### 4.1 落地步骤
 
-**Step 1：规模与 SLA 评估**
+**Step 1：规模与 SLA 评估（1-2 周【经验】，工时随语料源系统数量增长）**
 
-- 评估向量规模（百万 / 千万 / 亿 / 十亿）。
-- 召回延迟 SLA（10ms / 100ms / 1s）。
-- 召回精度 SLA（90% / 95% / 99%）。
-- 成本预算。
-- 输出：**向量湖需求说明书**。
+1. 把七个量落纸：向量条数 N（含图结构开销，规模按百万 / 千万 / 亿 / 十亿【经验】分档）、维度与精度、召回目标（必写 **Recall@K 的 K 与目标值**，常见分档 90% / 95% / 99%【经验】）、延迟 SLA（**P50 与 P99 分开写**，常见分档 10ms / 100ms / 1s【经验】）、标量过滤的选择性（过滤后剩余比例）、写入新鲜度要求、**成本预算**（按月给上限，并按计算 / 存储 / I/O 三项分列，与 4.2 #10 同一口径）。
+2. 先算**容量账**：N × 单向量字节数 ×（1 + 图结构开销比例）。768 维 FP32 时单向量 3072 字节【推算，推导链：768 维 × 4 字节/维 = 3072 字节】，1000 万条约 30.7 GB、1 亿条约 307 GB、10 亿条约 2.8 TiB，图结构按每向量约 256 字节另计【推算，同 [§7.5](02-vector-lake-section-7-sec7.md) 口径；换维度或精度时按比例换算】。
+3. 再算**延迟账**：单次查询的盘读次数 ≈ 跳数，而跳数由 `ef` / `search_list_size` 决定——这份账要在 Step 2 之前先有形状，否则引擎选型会退化成比产品文档。
 
-**Step 2：引擎选型**
+- **产物**：一份「向量湖需求说明书」，含容量账算式、延迟账算式、成本预算（计算 / 存储 / I/O 三项分列），以及七个量的取值与取值来源（语料统计 / 业务 SLA / 账单）。
+- **判据**：让另一个人**只拿这份说明书**把容量账重算一遍，结果与原作者一致；再追问「未量化时是多少、量化到 INT8 之后是多少」，两个数都要当场给出。算不一致或答不出，说明口径没写清，后面的介质选择都是在猜。
+- **为什么必须第一步**：§3.1 的第一条约束是**索引驻留介质**，它的取值就是「容量账 ÷ 可用内存」；跳过这一步，会拿功能清单比较两个不在同一族的实现，而它们的成本曲线形状本来就不同。
 
-- 选向量引擎（Milvus / Pinecone / Qdrant / Weaviate / Vespa / LanceDB）。
-- 选索引算法（HNSW / IVF / DiskANN / SPANN）。
-- 选压缩策略（FP32 / FP16 / INT8 / PQ）。
-- 输出：**技术选型 ADR**。
+**Step 2：引擎选型（2-4 周【经验】，随候选引擎的 POC 时长变）**
 
-**Step 3：存储架构**
+1. 先分族再选产品：判据是**这套部署里索引状态放在哪种介质上、由谁持有**，与品牌无关（同一个产品的单机形态与分布式形态常分属不同族）。
+2. 选索引算法（HNSW / IVF / DiskANN / SPANN），并写下选它的**介质前提**。
+3. 选压缩档位（FP32 / FP16 / INT8 / PQ；RaBitQ 一类较新的量化方案按 §2.2 的口径登记，是否可用以所用实现的官方文档为准），并记录该档位对应的召回损失目标。
+4. 输出 ADR：背景 / 决策 / 备选方案 / **不选它的代价** / 一条「重建演练多久跑一次」的运维约定。
 
-- 选对象存储（S3 / OSS / MinIO）。
-- 选元数据存储（MySQL / PostgreSQL）。
-- 选事件流（Kafka / Pulsar）。
-- 输出：**存储架构图**。
+- **产物**：一份 ADR + 一张「量化档位 × 容量 × 召回目标」对照表。
+- **判据**：拿 ADR 的「不选它的代价」一栏，问一句「如果查询里出现通过率 0.1%【经验】的标量过滤，这条路径会怎么坏」——答案必须落到「后置过滤会把 Top-K 筛空」这个机制上（§3.1 第三条约束），答成「性能会差一点」即说明选型没有走机制。
+- **为什么必须排在 Step 1 之后**：介质决定族的归属，族决定可比性。先看产品再看介质，会得到一份「A 支持的功能比 B 多」的比较，而这份比较对「装不装得下」这个真问题没有答案。
 
-**Step 4：Embedding Pipeline**
+**Step 3：存储架构（1-2 周【经验】）**
 
-- 选 Embedding 模型（BGE-M3 / OpenAI text-embedding-3）。
-- 选调度（Airflow / DolphinScheduler）。
-- 离线批量 + 实时流式双链路。
-- 输出：**向量化 ETL**。
+1. 选对象存储（S3 / OSS / MinIO 一类）、元数据存储（MySQL / PostgreSQL）、事件流（Kafka / Pulsar）。
+2. 写清**真相源在哪**：向量是权威数据还是派生索引（湖仓为真相源、向量库为派生索引是一种常见形态，见 §3.4 组合三）。
+3. `model_version`、源记录 id、生成时间三个字段进表结构，并在写入时就填，不靠事后补。
 
-**Step 5：索引构建**
+- **产物**：存储架构图 + 一份「可重建性声明」：丢掉索引之后，能否只从真相源全量重建，重建一次要多久。
+- **判据**：做一次**抽样重建演练**（重建一个分片即可），记录耗时；若耗时超过该集合的新鲜度容忍窗口，说明「重建窗口」这条约束没有满足，回到 Step 1 重算容量账与语料吞吐。
+- **为什么必须排在索引构建之前**：重建窗口由 Embedding 吞吐与真相源的扫描能力决定，不由向量库决定（§3.1 的次级约束）；先建索引再发现窗口不可行，等于把索引参数与召回目标全部重调一遍。
 
-- 配置分片数（按规模 / QPS）。
-- 配置副本数（通常 3）。
-- 配置压缩（INT8 / PQ）。
-- 配置冷热分层。
-- 输出：**可用向量湖**。
+**Step 4：Embedding Pipeline（2-6 周【经验】，随语料体量与重嵌入频率变）**
 
-**Step 6：检索服务**
+1. 选 Embedding 模型（BGE-M3 / OpenAI text-embedding-3 一类），并把**维度与归一化方式**写进契约。
+2. 选定 chunk 规则并给它一个**版本号**：同一份文档在两套 chunk 规则下产出的向量不可比，与换模型是同一类问题。
+3. 选调度（Airflow / DolphinScheduler）；离线批量与实时流式**双链路共用同一个 `model_version` 与 chunk 规则版本**。
+4. ETL 做成可重跑、幂等：同一批输入重跑两次，产出条数与版本标识一致。
 
-- API 化（REST / gRPC）。
-- 多路召回（向量 + BM25 + KG）。
-- 精排（Cohere Rerank / BGE-reranker）。
-- 输出：**检索 API**。
+- **产物**：向量化 ETL + 每批的元数据（模型版本、chunk 规则版本、语料快照 id、产出条数）。
+- **判据**：抽 3 个 chunk，看能否回答「它由哪份原始文档、哪个模型版本、哪套 chunk 规则产出」；再抽同一份文档的两个版本，看旧版本的向量是否已被清理或已打标。
+- **为什么必须排在索引构建之前**：索引里混入两个语义空间之后，**不报错、不变慢，只是召回静默下降**（§3.5「不分版本」），而唯一的修法是全量重嵌入——这是返工，不是调优。
 
-**Step 7：可观测与治理**
+**Step 5：索引构建（1-3 周【经验】）**
 
-- Prometheus / Grafana 监控（QPS / 延迟 / 命中率 / 成本）。
-- 数据血缘（向量 → Chunk → 文档）。
-- 分类分级 + 权限。
-- 输出：**可观测 + 可治理的向量湖**。
+1. 配置分片数（按规模与 QPS）与副本数（常见 3 副本【经验】）。
+2. 配置压缩档位与冷热分层规则；把「**单分片向量数上限**」写成配置项与监控项，而不是团队口头约定。
+3. 建一份**索引参数台账**：分片数、副本数、图参数（如 `m` / `ef_construction` / `search_list_size` 或 `max_degree`）、量化档位，以及每一档对应的召回下限。
+
+- **产物**：可用的向量湖 + 索引参数台账。
+- **判据**：用固定查询集跑一次 Recall@K，与台账里登记的下限逐项比对；低于下限的参数组合不得进入发布，且要写明是调参问题还是数据问题。
+- **为什么排在 Embedding Pipeline 之后、检索服务之前**：索引参数决定**召回上限**，检索层的精排只能在下游补偿、无法恢复被索引丢掉的候选；顺序反了会出现「精排调了很久，召回上不去」的长周期误工。
+
+**Step 6：检索服务（2-4 周【经验】）**
+
+1. API 化（REST / gRPC），把 `model_version` 与租户/时效等标量条件做进查询契约。
+2. 多路召回（向量 + BM25 + KG），并写清融合规则：各路取多少、怎么归并、以谁为准——常见形态是服务内并行 fan-out 再归并，或在统一查询网关里以自定义算子实现。
+3. 精排（Cohere Rerank / BGE-reranker 一类）放在召回之后，并明确**标量过滤的执行位置**（前置裁剪还是后置过滤）。
+4. 为「召回 + 精排」定义端到端指标，而不是只看召回层指标。
+
+- **产物**：检索 API + 一份多路召回融合规则（含各路配额与归并顺序）。
+- **判据**：构造一个过滤通过率很低的查询（例如通过率 0.1%【经验】），比较「先过滤后检索」与「先检索后过滤」两种实现的召回差——差值为零才说明过滤位置正确；差值明显则过滤位置错了，应换到支持预裁剪的结构（§3.1 第三条约束）。
+- **为什么必须排在索引定型之后才定**：过滤位置与索引结构耦合；索引定型后才发现过滤需要前置，往往要把索引重建为支持预裁剪的结构，成本高于一开始就选对。
+
+**Step 7：可观测与治理（持续，从第一次上线开始）**
+
+1. Prometheus / Grafana 监控四项基础量：QPS、延迟、命中率、成本。
+2. 数据血缘（**向量 → Chunk → 文档**），并让这三个字段成为可查询的字段，而不是文档里的一句话。
+3. 分类分级 + 权限；多租户场景下按租户出成本与用量。
+4. 补两项本主题特有的量：**单分片向量数**与**派生副本刷新滞后**（索引落后真相源多少）。
+
+- **产物**：按集合 / 租户出的成本报表（计算、存储、I/O 三项分开）+ 一条定期跑的 Recall@K 评测。
+- **判据**：抽一个集合，看能否回答「它的索引落后真相源多少」；抽一个租户，看能否拿出它的成本明细。两项都答不出即观测面不合格（成本项分散在三处，上线后再补归因，历史账无法追溯）。
+- **为什么必须与第一次上线同时做**：§3.5 的「无量化 / 全内存堆规模」暴露方式是**账单**，不是报错；而「无血缘」的暴露方式是出问题只能全量重建。
+
+**最常被跳过的是 Step 4 里的「版本字段进表」**（不是整条 pipeline）。它不产生当期可见的功能，因此被系统性推迟。跳过之后**第一个出问题的时点不是上线时，而是第一次换 Embedding 模型时**：库里同时存在两个语义空间的向量，召回下降被解读成「模型不行」或「数据质量差」，团队去调模型、补数据，而真正原因是索引里有两套不可比的向量（§3.5）。修它要按版本全量重嵌入，成本里已经包含一次误诊。
 
 ### 4.2 关键技术点
 
-1. **存算分离**：Milvus 2.x / Pinecone Serverless / Vespa 模式。
-2. **索引算法**：HNSW / IVF / DiskANN / SPANN。
-3. **压缩**：INT8 / PQ / RaBitQ。
-4. **Sharding**：按 ID Hash / 按向量聚类。
-5. **Replication**：3 副本 / Quorum。
-6. **冷热分层**：热数据内存 / SSD，温数据 SSD，冷数据归档。
-7. **实时更新**：CDC + 流式 Embedding + 增量索引。
-8. **多租户**：按业务分库 + 配额。
-9. **召回评估**：Recall@K / MRR / nDCG。
-10. **成本优化**：量化 + 冷热分层 + Serverless。
+**1. 存算分离**
+- **做法**：索引状态与计算节点解耦；图结构驻内存、向量本体驻 SSD 或对象存储；计算节点无状态、可弹性扩缩（Milvus 2.x / Pinecone Serverless / Vespa 这类形态）。
+- **机制**：因为搜索路径是「在内存图里导航、按需从磁盘取向量」，单次查询的盘读次数约等于跳数，所以容量不再受单机内存约束，成本从「常驻内存」变成「按实际读盘与对象存储计费」。
+- **失效条件**：当**单次查询的随机读次数 × QPS 超过介质 IOPS** 时失效。**症状是 P99 突然抬升而吞吐没变**，加计算节点无效（瓶颈在盘不在算力）。可观测信号：IOPS 利用率接近上限、cache miss 率同步上升。
+- **档位**：容量与 IOPS 账按 §7.5 的口径自行推算【推算】。
+
+**2. 索引算法**
+- **做法**：按「介质 + 规模 + 召回目标」选：内存 + 千万级【经验】选 HNSW；内存 + 亿级【经验】选 HNSW + SQ 或 IVF + PQ；SSD + 十亿级【经验】选 DiskANN；盘容量优先、可接受召回放宽时考虑 SPANN。
+- **机制**：HNSW 的代价是内存（图结构随向量数线性增长），DiskANN 的代价是盘延迟（每次跳转可能触发一次随机读）——两者的取舍点是「内存装不装得下」，不是一个延迟数字。
+- **失效条件**：当规模跨过单机内存线时失效（未量化时亿级【经验】即触及）。**症状是构建期 OOM 或成本阶跃，而不是查询变慢**。可观测信号：容量账的分子（向量数 × 单向量字节数 + 图开销）与可用内存的比值逼近 1。
+- **档位**：三条规模线（1000 万 / 1 亿 / 10 亿）为【推算】，口径见 [§7.5](02-vector-lake-section-7-sec7.md)。
+
+**3. 压缩**
+- **做法**：先定召回目标，再选量化档位（INT8 / PQ；RaBitQ 一类方案先在小集合上验证），最后算内存账——顺序不能反；每次升档都要跑一次固定查询集。
+- **机制**：量化直接缩小容量账的分子，从而**改变「能不能留在内存」这个结论**，而不只是省一点存储；代价是距离近似带来的召回损失，且这个损失在上线前不可见。
+- **失效条件**：当压缩档位照抄默认值、没做过召回评测时失效。**症状是延迟指标好看而答案质量静默下滑**，且无法区分是模型问题还是索引问题。
+- **档位**：压缩比与召回损失的对应关系见 [§ 2.2](02-vector-lake.md)【经验】。
+
+**4. Sharding**
+- **做法**：按 id 哈希分片以分散写热点，或按向量聚类分片让查询只走最近分片；无论哪种，先把「单分片向量数上限」写成配置与监控项。
+- **机制**：因为单节点的向量数与图结构都有实际上限（内存或 IOPS），分片把「容量上限」从系统上限降级为运维参数；代价是查询变成 fan-out 取 Top-K 再归并。
+- **失效条件**：当分片只按写入便利、不按查询模式划分时失效。**症状是 fan-out 数随规模增长**——每个查询要问的分片越来越多，延迟随规模劣化且没有拐点告警。
+- **档位**：分片数按规模与 QPS 定【经验】。
+
+**5. Replication**
+- **做法**：常见 3 副本【经验】；读写分离（写主读从），写一致性按实现可能是 Quorum 提交；把副本数写进容量账与成本账。
+- **机制**：副本是拿**容量与写入放大**换可用性与查询吞吐，所以每加一份，存储与构建成本同比例上升，而单查询延迟不变。
+- **失效条件**：当副本被当作延迟优化手段时失效。**症状是加副本后 P99 没降、存储账单涨了**；这是「副本解决吞吐与可用性」这条机制被误用的典型信号。
+- **档位**：副本数按可用性目标定【经验】。
+
+**6. 冷热分层**
+- **做法**：先有访问统计（按集合 / 租户的访问频次），再定分层规则（热：内存；温：SSD；冷：归档）；分层规则写进运维手册并定期复核。
+- **机制**：因为扩容拉起的新副本要**预热整个集合**（含大量从不被访问的向量），所以分层的价值不在省存储，而在让扩容收益与热点规模成正比，而不是与总量成正比。
+- **失效条件**：当没有访问统计就分层时失效。**症状是扩容收益递减**：按峰值扩容后延迟没有按预期下降，于是继续扩容。
+- **档位**：分层档位按访问分布定【经验】。
+
+**7. 实时更新**
+- **做法**：CDC 捕获源变更 → Embedding Worker → 写入增量段 → 定期与主索引合并；增量与全量两条链路共享同一个 `model_version` 与 chunk 规则版本。
+- **机制**：因为删除在图中通常只能标记、空间要靠合并回收，所以增量写入必然带来「段化 + 定期合并」的结构，**合并周期决定了空间回收与召回恢复的时间尺度**。
+- **失效条件**：当两条链路用了不同的模型版本或 chunk 规则时失效。**症状是同一份文档在新旧链路下检索结果不一致**，且差异集中在最近写入的数据上——这与「数据质量问题」的表现很像，判据是看差异是否与写入时间强相关。
+- **档位**：合并周期与新鲜度目标为【经验】。
+
+**8. 多租户**
+- **做法**：配额 + 优先级 + 关键租户物理隔离（分片 / 独立实例）；按租户出成本与用量账本。
+- **机制**：检索是**共享资源的近邻噪声来源**——一个租户的批量任务占用 IOPS 与 CPU，表现为其他租户的 P99 抖动，所以隔离层级必须与 SLA 承诺的粒度一致。
+- **失效条件**：当只做逻辑隔离、却按单租户承诺 SLA 时失效。**症状是邻居噪声无法归因**，SLA 无法对单租户兑现；可观测信号是其他租户的 P95 与出问题租户的任务时间窗高度重合。
+- **档位**：隔离层数按租户等级定【经验】。
+
+**9. 召回评估**
+- **做法**：固定一批查询与标注结果，把 Recall@K 纳入发布门禁；同时量出「带过滤的真实召回」与「无过滤召回」之差，用来验证过滤位置（MRR / nDCG 用于排序质量）。
+- **机制**：因为召回损失的暴露方式是「答案变差」而不是「报错」，所以唯一能在发布前发现它的是固定查询集上的指标变化。
+- **失效条件**：当标注集长期不更新时失效。**症状是指标稳定但用户投诉增加**——语料分布已经变了，标注集还停在过去。
+- **档位**：目标分档（如 90% / 95% / 99%）为【经验】，按业务定，不按「越高越好」定。
+
+**10. 成本优化**
+- **做法**：把计算、存储、I/O 三项**分开计费与监控**；稳态高频集合与长尾集合分开定价策略（预留 vs Serverless）。
+- **机制**：三条成本项随规模变化的斜率不同（存储随向量数线性、计算随 QPS、I/O 随跳数与 miss 率），所以「哪一项在涨」决定了该用哪一招；统一降配通常降的是不涨的那一项。
+- **失效条件**：当**按向量总量选 Serverless** 时失效——Serverless 的成本由请求单元驱动，不由数据量驱动。**症状是「数据量小但账单高」的集合被错判成省钱场景**，而稳态高频的集合反而该走预留。
+- **档位**：交叉点按自己的单价逐项核算，不引用通用数字。
 
 ### 4.3 工具链与平台
 
-**向量湖引擎**：
+工具表给的是**类别、候选与选型判据**，不是推荐组合。某产品当前是否支持某个索引类型或某个能力条目，以该项目或厂商官方文档与 release note 的当前版本为准。
 
-- **Milvus**（国产开源）——分布式、存算分离、ANN 丰富。
-- **Pinecone**（SaaS）——Serverless、基于 DiskANN。
-- **Weaviate**（开源 + SaaS）——模块化、Hybrid Search。
-- **Qdrant**（开源）——Rust 实现、高性能。
-- **Vespa**（Yahoo 开源）——支持向量 + 表达式 + Hybrid。
-- **LanceDB**（2024 开源）——列式向量库、DuckDB 集成。
-- **Marqo**（开源）——端到端向量 + 多模态。
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 向量引擎（分布式 / 存算分离形态） | Milvus、Pinecone、Weaviate、Qdrant、Vespa、LanceDB、Marqo | 索引状态放在哪级介质、由谁持有；标量过滤能否前置裁剪；是否需要与结构化数据 JOIN | 选到分析型路径（列式 / 嵌入式）去扛在线 SLA，查询模式与扫描路径不匹配，只能靠加机器掩盖 |
+| ANN 算法库 | FAISS、ScaNN、DiskANN、SPANN、HNSWlib、Annoy | 是否需要在自有服务里嵌一层索引：内存型（HNSWlib / Annoy）与盘型（DiskANN / SPANN）按介质选；FAISS 覆盖面最广，适合自建 PoC | 自研索引库等于把「索引布局 + 合并策略 + 崩溃恢复」一并自研 |
+| 湖仓 + 向量 | Apache Iceberg + 向量列、Delta Lake + Databricks Vector Search、Apache Hudi + 向量、LanceDB + Iceberg | 判据是**索引与表格式的关系**：索引是否随快照版本化、是否参与时间旅行与权限 | 索引成为表外的旁挂件时，会出现「检索到的向量在真相源里已删除」 |
+| 向量压缩 | PQ（FAISS / Milvus 内置）、SQ（Milvus / Qdrant 内置）、RaBitQ | 先定召回目标再选档位；新量化方案先在小集合上验，别直接上主索引 | 压缩档位照抄默认值时，召回损失无人评测，模型侧会替它背锅 |
+| Embedding 模型 | BGE-M3、OpenAI text-embedding-3 一类；多模态场景按「多套编码器 + 一套向量存储」组织 | 维度、归一化方式与显存/推理成本；**能否本地部署**决定离线批量全量重嵌入的成本结构 | 模型与推理形态绑死后，全量重嵌入的窗口可能超出新鲜度容忍窗口 |
+| 精排 / Rerank | Cohere Rerank、BGE-reranker 一类 | 需要 rerank 的候选规模、延迟预算、能否本地部署 | 精排缺失时，召回层的每一个百分点都要靠索引参数买，成本更贵 |
+| 调度 | Airflow、DolphinScheduler | 重嵌入是周期任务还是事件驱动；能否表达「按语料快照跑一次」 | 调度与版本标识脱节时，说不清某批向量是哪次运行产出的 |
+| 存储底座 | 对象存储 S3 / OSS / MinIO；元数据存储 MySQL / PostgreSQL；事件流 Kafka / Pulsar | 对象存储看首字节延迟与出网计费；元数据看与既有事务/权限体系是否复用；事件流看保留期与重放吞吐 | 元数据另建一套，等于把权限与一致性边界也另建一套 |
+| 可观测 | Prometheus + Grafana；Milvus Insight、Pinecone Console 一类引擎自带控制台 | 引擎自带的看集合内部（段、索引、加载状态），通用栈看跨集合与跨租户的账；两者职责不同 | 只有引擎自带控制台时，跨集合的容量账与成本归因做不出来 |
 
-**ANN 算法库**：
+**这一类里最容易被误选的是向量引擎那一行**：团队通常按「功能清单最长」选，而真问题是**这套部署里索引状态放在哪级介质**——同一个产品的单机形态与分布式形态常常分属不同族，品牌相同但成本曲线不同。误选的典型后果是容量账算错：按功能清单选了内存形态去扛亿级规模【经验】，到规模上去以后发现问题是「装不下」而不是「慢一点」，而此时数据模型、索引参数与召回目标都已按内存方案调好。判定方法只有一条：去该引擎的官方文档与 release note 里找「面向磁盘 / SSD 的索引类型」这一条目，找到再谈支持，不看博客与转述。
 
-- **FAISS**（Meta 开源）——最经典的 ANN 库。
-- **ScaNN**（Google 开源）——量化 + 各向异性。
-- **DiskANN**（Microsoft 开源）——SSD 上的 ANN。
-- **SPANN**（Microsoft 开源）——基于 SSD 的近似最近邻。
-- **HNSWlib**（开源）——HNSW 实现。
-- **Annoy**（Spotify 开源）——随机投影树。
+### 4.4 存量迁移
 
-**湖仓 + 向量**：
+存量迁移的目标不是「换一套向量库」，而是**让已有向量重新变得可解释**：能被回答出「它是哪个模型版本、从哪份数据生成、什么时候写的」。下面四步按「可回退 → 分类 → 双轨 → 收口」排，最后一组是最常见的三个错误。
 
-- **Apache Iceberg** + 向量列。
-- **Delta Lake** + 向量（Databricks Vector Search）。
-- **Apache Hudi** + 向量。
-- **LanceDB + Iceberg**（2024）。
+**① 先做一次只读盘点（1-2 周【经验】，完全可回退）**
 
-**向量压缩**：
+在不改动任何索引的前提下，用现有数据跑三张表：每个集合的**向量条数与 `model_version` 分布**（看有没有多版本混存、有多少向量没有版本标识）；当前介质与「容量账 ÷ 可用内存」的比值；**访问频次分布**（冷热比与单分片向量数）。这一步不产出架构，只产出一次**事实基线**；它可回退，是因为结论只作为设计输入，不触发任何重建。
 
-- **PQ**（FAISS / Milvus 内置）。
-- **SQ**（Milvus / Qdrant 内置）。
-- **RaBitQ**（2024 SOTA）。
+**判据**：拿三张表分别问两位互不相干的工程师「哪个集合最危险」，两人给出同一个集合，说明现有数据足以支撑讨论；给出不同答案，说明观测口径还没统一，先回到 Step 1。
 
-**可观测**：
+**② 历史资产分类处理（不要全部返工）**
 
-- **Prometheus + Grafana**。
-- **Vector Lake Observability**（Milvus Insight、Pinecone Console）。
+| 存量资产 | 处置 | 理由 |
+| --- | --- | --- |
+| 多版本混存的向量 | **打标挂账**：按 `model_version` 打标，并在查询条件里显式过滤；不做全量重嵌入 | 全量重嵌入是按语料体量的工程，等于重跑一次上线；打标能让召回先恢复到可解释的状态 |
+| 无 `model_version` 字段的老表 | 加列并回填（能从生成时间与语料快照推断的推断，推不出的标 `unknown`） | 缺这一列，换模型时说不清哪些向量是旧的，只能整表重做 |
+| 未量化的存量索引 | 只对「容量账逼近内存上限」的集合做量化，其余不动 | 量化会掉召回；无差别量化等于给每个集合重做一次召回评测 |
+| 存量自建检索服务 | 不回改，作为新体系的**对照组**：用同一批固定查询跑一次 Recall@K | 回改等于宣布过去的检索质量无效，而且失去对照基线 |
+| 已上线的索引参数 | 全部抄进台账（含当时没写下来的默认值） | 参数台账缺失时，「为什么召回是这个数」无法回答，调参只能从零试 |
 
-### 4.4 代码 / 示例
+**判据**：随机抽 3 个集合，看能否回答「它里面的向量是哪个模型版本、什么时候生成的」；答不出，先补字段再谈加索引。
 
-**示例 1：Milvus 分布式部署（Docker Compose）**
+**③ 双轨怎么维持、维持多久**
 
-```yaml
-# Milvus 分布式
-version: '3.5'
-services:
-  etcd:
-    image: quay.io/coreos/etcd:v3.5.0
-    environment:
-      ETCD_AUTO_COMPACTION_MODE: revision
-      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+双轨的形态是：**新索引承接新消费方，旧检索服务维持现有消费方**，两侧用同一批固定查询做对照。维持 **1-2 个重建周期**【经验，随全量重嵌入的耗时变】。
 
-  minio:
-    image: minio/minio:latest
-    environment:
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
-    command: minio server /minio_data
+双轨期有三条纪律：① 不比较两边的**绝对延迟**（介质不同，延迟本来就不同），只比较固定查询集上的 Recall@K 差异；② 写入以**真相源**为准，两侧的派生索引都必须能从真相源重建，不允许任一方向另一方向同步；③ 旧链路降级为**只读参考**，禁止新消费方接入。
 
-  pulsar:
-    image: apachepulsar/pulsar:2.8.2
+**④ 什么信号说明可以退出双轨**
 
-  proxy:
-    image: milvusdb/milvus:v2.4.0
-    command: ["milvus", "run", "proxy"]
-    ports:
-      - "19530:19530"
+三个可观测信号，同时出现两个即可收口：① 连续两个周期，固定查询集上两侧召回差落在目标以内；② **索引落后真相源的刷新滞后**稳定在业务容忍窗口内；③ **重建演练**做过一次，且耗时落在窗口内。
 
-  querynode:
-    image: milvusdb/milvus:v2.4.0
-    command: ["milvus", "run", "querynode"]
-    deploy:
-      replicas: 3
+若两个周期后三个信号全不成立，正确的动作是回到 Step 1 重取容量与新鲜度约束，而不是继续双轨：双轨的隐性成本是所有人都说不清「哪一份索引是权威的」，它比索引暂时落后更伤下游信任。
 
-  datanode:
-    image: milvusdb/milvus:v2.4.0
-    command: ["milvus", "run", "datanode"]
-    deploy:
-      replicas: 3
+**⑤ 迁移期最常见的三个错误**
 
-  indexnode:
-    image: milvusdb/milvus:v2.4.0
-    command: ["milvus", "run", "indexnode"]
+1. **先建索引、后补版本字段。** 换模型时无法按版本重建（§3.5「不分版本」），只能全量重嵌入，且期间无法解释召回为什么下降。
+2. **把灰度做成「两套索引都对外供数」。** 消费者各取其一，同一个问题在不同入口给出不同答案，而两侧没有对账——这比明说「有两个索引」更差，因为明说至少知道权威在哪。
+3. **只迁索引、不迁重建能力。** 索引迁完了才发现重建窗口超过新鲜度容忍窗口（§3.1 的次级约束），此时只能回头改 chunk 策略与 Embedding 吞吐，等于把 Step 4 重做一遍。
+
+### 4.5 模板 / 示例
+
+**模板 1：容量与索引参数台账**
+
+```text
+集合：{collection_name}      更新时间：{YYYY-MM-DD}
+规模与口径
+  条数 / 维度 / 精度      : {N} / {dim} / {FP32|FP16|INT8|PQ}（统计来源：{SQL/元数据表}）
+  单向量字节             : {dim × 字节数}      ← 768 维 FP32 = 3072 B【推算】
+  图结构开销 / 向量       : {约 256 B【推算】}   ← 随 M、层数、双向存储策略变
+  容量账合计             : {N × (单向量字节 + 图开销)}
+介质与索引
+  驻留介质 / 持有者       : {内存|SSD|对象存储} / {哪一层}
+  索引类型 / 图参数       : {HNSW|IVF|DiskANN|SPANN} / {m, ef_construction, search_list_size}
+  分片 / 副本             : {S} / {R}           单分片向量数上限：{cap}
+  量化档位               : {档位}              该档位召回下限：{Recall@K ≥ x}
+重建与新鲜度
+  全量重建耗时（实测）     : {T_rebuild}        新鲜度容忍窗口：{T_sla}
+  落后真相源 / 版本分布    : {lag} / {v1: x%, v2: y%, unknown: z%}
 ```
 
-**示例 2：Milvus 向量入库 + 检索**
+**怎么用**：只填数值，不填形容词；`{...}` 每格必须有值，「待补」要写进任务而不是留空。三格不要照抄：`图结构开销 / 向量`（随你的图参数变，要按自己的参数实测一次）、`单分片向量数上限`（由介质容量决定，不由引擎默认值决定）、`该档位召回下限`（必须来自你跑过的固定查询集）。最后一行的 `model_version` 分布是台账里唯一会随时间恶化的项，建议每季度重跑一次。
+
+**模板 2：向量入库与检索（含索引参数）**
 
 ```python
-from pymilvus import connections, Collection, FieldSchema, CollectionSchema, DataType, utility
-import numpy as np
+from pymilvus import connections, Collection, FieldSchema, CollectionSchema, DataType
 
-# 连接 Milvus
-connections.connect(host="milvus", port=19530)
-
-# 创建 Collection（十亿级配置）
+connections.connect(host="milvus", port="19530")
 fields = [
-    FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
-    FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=1024),
-    FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=2048),
-    FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=128),
+    FieldSchema(name="id",           dtype=DataType.INT64, is_primary=True, auto_id=True),
+    FieldSchema(name="embedding",    dtype=DataType.FLOAT_VECTOR, dim=1024),
+    FieldSchema(name="text",         dtype=DataType.VARCHAR, max_length=2048),
+    FieldSchema(name="source",       dtype=DataType.VARCHAR, max_length=128),
+    FieldSchema(name="model_version", dtype=DataType.VARCHAR, max_length=32),  # 必填，不是可选
 ]
-schema = CollectionSchema(fields=fields)
-collection = Collection("vector_lake", schema)
-
-# 创建 DiskANN 索引（SSD 上十亿级）
+collection = Collection("vector_lake", CollectionSchema(fields=fields))
 collection.create_index(
     field_name="embedding",
     index_params={
         "metric_type": "IP",
-        "index_type": "DISKANN",
-        "params": {
-            "max_degree": 56,        # 每节点最大邻居数
-            "search_list_size": 100, # 搜索时候选数
-            "PQ_code_budget_gb": 0   # 不使用 PQ
-        }
-    }
+        "index_type": "DISKANN",       # 面向 SSD 的索引：先核对你所用版本的 release note 是否列此类型
+        "params": {"max_degree": 56, "search_list_size": 100, "PQ_code_budget_gb": 0},
+    },
 )
-
-# 批量插入（百万级）
-embeddings = np.random.rand(1_000_000, 1024).astype('float32')
-texts = ["doc_" + str(i) for i in range(1_000_000)]
-sources = ["wiki", "ecommerce", "doc"] * (1_000_000 // 3 + 1)
-collection.insert([embeddings, texts[:1_000_000], sources[:1_000_000]])
-
-# 加载到内存（querynode）
+# 批量写入：每条记录都带 model_version
+collection.insert([embeddings, texts, sources, [MODEL_VERSION] * len(texts)])
 collection.load()
-
-# 检索
-query = np.random.rand(1, 1024).astype('float32')
 results = collection.search(
-    data=query,
+    data=query_vectors,
     anns_field="embedding",
     param={"metric_type": "IP", "search_list_size": 100},
     limit=10,
-    expr='source == "wiki"',
-    output_fields=["text", "source"]
+    # 标量条件与版本条件同时下发：过滤位置在这里就定了
+    expr=f'source == "wiki" && model_version == "{MODEL_VERSION}"',
+    output_fields=["text", "source", "model_version"],
 )
-for hit in results[0]:
-    print(f"id={hit.id}, distance={hit.distance}, text={hit.entity.get('text')[:50]}")
 ```
 
-**示例 3：LanceDB + DuckDB 湖仓集成**
+**怎么用**：`dim`、`index_type`、`params` 三格按自己的介质与 POC 结果改；`index_type` 与参数**不要照抄**——它们是介质决定的，换介质要重配。唯一不要改的是 `model_version`：它必须在 schema 里、在写入里、在检索的 `expr` 里各出现一次，三处缺一即等于没有版本管理（§3.5「不分版本」）。`expr` 里的版本条件与业务过滤条件写在同一处，是因为过滤位置必须与索引结构一起设计。
+
+**模板 3：分布式部署骨架（Docker Compose）**
+
+```yaml
+# 骨架：角色划分示意，副本数与镜像 tag 按自己的环境改（3 为【经验】值）
+services:
+  etcd:      { image: "quay.io/coreos/etcd:v3.5.0" }                                # 协调 / 元数据
+  minio:     { image: "minio/minio:latest", command: "minio server /minio_data" }   # 对象存储
+  pulsar:    { image: "apachepulsar/pulsar:2.8.2" }                                 # 日志流
+  proxy:     { image: "milvusdb/milvus:v2.4.0", command: ["milvus","run","proxy"],    ports: ["19530:19530"] }   # 接入层
+  querynode: { image: "milvusdb/milvus:v2.4.0", command: ["milvus","run","querynode"], deploy: { replicas: 3 } } # 检索执行：内存主要消耗在这里
+  indexnode: { image: "milvusdb/milvus:v2.4.0", command: ["milvus","run","indexnode"] }                          # 构建：CPU 峰值在这里
+  datanode:  { image: "milvusdb/milvus:v2.4.0", command: ["milvus","run","datanode"],  deploy: { replicas: 3 } } # 落盘
+```
+
+**怎么用**：这份骨架只用来确认**角色划分**（接入 / 检索执行 / 构建 / 落盘 / 协调 / 对象存储 / 日志流），不是生产部署清单：镜像 tag、资源 limit、持久卷、健康检查、密钥管理都要按自己的环境补。最该注意的两格是 `indexnode` 与 `querynode` ——构建与检索抢同一批机器时，一次全量重建会直接变成在线检索的 P99 抖动，因此**扩容要按峰值加和，或者把构建放在独立节点上**（§3.6 的「重建与在线检索抢机器」一行）。
+
+**模板 4：湖仓联合查询（向量 + 结构化）**
 
 ```python
-import lancedb
-import pyarrow as pa
-import duckdb
+import lancedb, pyarrow as pa, duckdb
 
-# 连接 LanceDB
 db = lancedb.connect("s3://lancedb-bucket/vector-lake")
-
-# 创建表（向量列 + 元数据列）
 data = pa.table({
-    "id": [1, 2, 3, 4, 5],
-    "text": ["hello", "world", "foo", "bar", "baz"],
-    "embedding": [[0.1]*1024, [0.2]*1024, [0.3]*1024, [0.4]*1024, [0.5]*1024],
-    "category": ["greeting", "greeting", "code", "code", "code"],
-    "timestamp": [1234567890, 1234567891, 1234567892, 1234567893, 1234567894]
+    "id": [1, 2, 3],
+    "text": ["hello", "world", "foo"],
+    "embedding": [[0.1] * 1024, [0.2] * 1024, [0.3] * 1024],
+    "category": ["greeting", "greeting", "code"],
+    "model_version": ["v2", "v2", "v2"],
+    "timestamp": [1234567890, 1234567891, 1234567892],
 })
 table = db.create_table("documents", data=data, mode="overwrite")
-
-# 向量检索
-results = table.search([0.15]*1024).limit(3).to_pandas()
-print(results)
-
-# DuckDB JOIN（向量 + 结构化）
-duck_con = duckdb.connect()
-duck_con.execute("INSTALL lance; LOAD lance;")
-result = duck_con.execute("""
+# 向量检索：结果里带上标量列，便于与结构化侧对齐
+hits = table.search([0.15] * 1024).limit(3).to_pandas()
+# 与结构化数据联合：向量条件 + 标量条件在同一份计划里
+con = duckdb.connect()
+con.execute("INSTALL lance; LOAD lance;")
+rows = con.execute("""
     SELECT d.id, d.text, d.category
-    FROM lance_scan('s3://lancedb-bucket/vector-lake/documents') d
-    WHERE d.category = 'code'
-    ORDER BY array_distance(d.embedding, [0.15]*1024) ASC
-    LIMIT 5
+    FROM   lance_scan('s3://lancedb-bucket/vector-lake/documents') d
+    WHERE  d.category = 'code'
+      AND  d.model_version = 'v2'
+    ORDER  BY array_distance(d.embedding, [0.15]*1024) ASC
+    LIMIT  5
 """).fetchall()
-print(result)
 ```
 
-**示例 4：DiskANN 索引构建**
+**怎么用**：这段的用途是演示**「向量列与标量列同表、条件写在同一个计划里」**这一形态，不是性能基线——列式扫描路径适合分析与批量，不适合高 QPS 在线检索（见 4.3 的判据与误选后果）。照抄时改三处：`model_version` 的值、`ORDER BY` 的距离函数（换度量方式时 `metric_type` 与函数要同时改）、以及 `LIMIT`（它是召回规模，不是最终返回条数）。若这条路线上还要接在线流量，先量一次「过滤通过率很低时的召回」，再决定是否前置过滤。
+
+**模板 5：DiskANN 索引构建**
 
 ```python
 import diskannpy as dap
+import numpy as np
 
-# 构建 DiskANN 索引（SSD 上十亿级）
-vectors = np.random.rand(100_000_000, 768).astype('float32')  # 1 亿向量
-
-# 索引构建参数
+vectors = np.random.rand(1_000_000, 768).astype("float32")   # 规模按自己的容量账填
 index = dap.build_memory_index(
     data=vectors,
-    distance_metric="mips",  # 内积
+    distance_metric="mips",
     index_directory="/ssd/diskann_index",
-    complexity=64,           # 图复杂度
-    graph_degree=32,         # 每个节点最大邻居数
-    num_threads=32
+    complexity=64,        # 搜索复杂度：影响召回与构建时间
+    graph_degree=32,      # 每节点最大邻居数：影响内存与召回
+    num_threads=32,
 )
-
-# 搜索
-query = np.random.rand(1, 768).astype('float32')
 ids, distances = dap.search(
-    query=query,
+    query=np.random.rand(1, 768).astype("float32"),
     index_path="/ssd/diskann_index",
-    num_neighbors=10,
-    l_search=100             # 搜索候选数
+    num_neighbors=10,     # 返回条数：形参名随版本而异（有版本写作 k），先跑 inspect.signature(dap.search) 核对本机签名
+    l_search=100,         # 搜索候选数：与召回 / 延迟直接相关
 )
-print(ids, distances)
 ```
 
----
+**怎么用**：三格参数是**起点不是结论**：先用固定查询集把 `l_search` 从 50 扫到 200，画出「召回 - 延迟」曲线，再确定生产线取值；`graph_degree` 与 `complexity` 的乘积决定构建时间与内存，构建期与在线期不要共用同一台机器。这段代码用随机向量演示 API 形状，**不要用它判断任何性能数字**——真实效果取决于你的向量分布与维度，且不同实现的参数名与语义并不一致，以所用库的官方文档当前版本为准。
+
+### 4.6 自检清单
+
+1. 抽 3 个集合，看能否回答「里面的向量是哪个 `model_version`、什么时候生成的」。答不出即版本账缺失。
+2. 每个集合的 `model_version` 分布拉一次：有没有多版本混存？混存的查询有没有显式按版本过滤？
+3. 容量账（N × 单向量字节 + 图开销）与可用内存的比值算过吗？比值逼近 1 的集合有几个？
+4. 索引参数台账存在吗？台账里的「该档位召回下限」是跑出来的还是估的？
+5. 固定查询集与标注结果还在维护吗？上一次跑 Recall@K 是什么时候、结果是多少？
+6. 构造一个过滤通过率很低的查询，比较「先过滤后检索」与「先检索后过滤」的召回差；差值不为零说明过滤位置错了。
+7. 单分片向量数有上限与监控吗？超过上限时是告警，还是继续长大？
+8. 删除是物理删除还是标记删除？标记的向量按什么周期回收（合并周期）？
+9. 有没有做过一次抽样重建演练？耗时与新鲜度容忍窗口的比值是多少？
+10. 「索引落后真相源多少」这个值能从监控直接读出来吗？
+11. 成本报表能按集合 / 租户分开，且计算、存储、I/O 三项能分开看吗？
+12. 多租户场景下，抽一个租户的批量任务时间窗，看其他租户的 P95 是否同步抖动。
+
+### 4.7 小结
+
+> 本节小结：七步里唯一不可替代的是 **Step 1 的容量账与 Step 4 的 `model_version`**——前者决定了索引该驻留在哪一级介质（它同时决定延迟下限与成本曲线的形状），后者决定了换一次模型时是重建还是返工。两者缺失时其余五步都不会立即报错：容量账不对，问题在规模上去以后才以「装不下」的形式出现；版本账不对，则是**不报错、只变差**，团队会先去调模型和补数据，而真正的原因在索引里。
+>
+> 配合 [§ 2 核心原理](02-vector-lake.md)、[§ 3 设计模式与范式](02-vector-lake-section-3-sec3.md) 与 [§ 6 落地实践](02-vector-lake-section-6-sec6.md) 阅读。存量改造的落地顺序以 4.4 为准；容量与成本的阈值推导见 [§7.5](02-vector-lake-section-7-sec7.md)。

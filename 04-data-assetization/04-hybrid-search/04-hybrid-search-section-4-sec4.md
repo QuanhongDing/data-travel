@@ -1,267 +1,306 @@
-> 本文件是 **04-hybrid-search.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](04-hybrid-search.md)。
+> 本文件是 **04-hybrid-search.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](04-hybrid-search-section-3-sec3.md) 里的做法装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](04-hybrid-search.md)。
 
 ## 4. 工程实现
 
+本文件主要写给**在存量检索栈上改造**的读者：手上多半已经有 Elasticsearch 或一个单路向量库，线上有搜索、推荐或 RAG 在跑，不能停机重来。从零起步的读者按同一顺序做，只是 4.4 的三类资产分类里第一类（可重建的）会变成全部。
+
+组织方式：4.1 给八步落地顺序与每步的判据；4.2 给十项关键技术点及各自的失效条件；4.3 给选型判据；4.4 讲存量索引与存量评测怎么迁移；4.5 给五个可直接套用的代码/配置模板；4.6 是自检清单。
+
 ### 4.1 落地步骤
 
-**Step 1：召回需求分析**
+这八步的顺序是**依赖顺序**：后一步的判据要读前一步的产物。整条链上只有一处「先做、且做完不可省」的前置约束——**评测集必须先于融合与精排建立**，否则后面每一步的改动都无法判断是变好还是变坏。
 
-- 评估数据集规模。
-- 评估查询类型（语义 / 精确 / 多跳）。
-- 评估 SLA（召回率 / 延迟）。
-- 输出：**混合检索需求说明书**。
+**Step 1：召回需求分析（1–2 周【经验】，随语料与查询形态的复杂度变化）**
 
-**Step 2：召回模型选型**
+- 评估数据集规模、查询类型（语义 / 精确 / 多跳）、以及 SLA（召回率目标与延迟预算）。
+- 明确回答 [§ 3.1](04-hybrid-search-section-3-sec3.md) 的第一条约束：**答案是否落在一处**——需要跨文档汇总或多跳才能拼出来的问题占比多少。
+- 统计语料变更频率与 QPS 量级，这两项决定晚交互与 KG 能不能上（[§ 3.1](04-hybrid-search-section-3-sec3.md) 约束表 3–4 行）。
+- **产物**：一份《混合检索需求说明书》，含四行硬信息——答案是否落在一处、多跳问题占比、语料日变更比例、QPS 与延迟预算。
+- **判据**：把说明书给一个没参与调研的人看，他能否据此判断「该不该建图」；判断不了，说明多跳占比与变更比例这两格填的是形容词而不是数。
+- **为什么必须这一步、为什么在第一位**：它划的是**能力边界**（[§ 3.1](04-hybrid-search-section-3-sec3.md)）：边界之外的问题不是「加路」能解决的，先建管线再发现要建图，等于把抽取流水线的成本推迟到最难返工的时候付。
 
-- Embedding 模型（BGE-M3 / OpenAI / Cohere）。
-- BM25 引擎（Elasticsearch / OpenSearch）。
-- KG 引擎（Neo4j / NebulaGraph）。
-- 输出：**技术选型**。
+**Step 2：召回模型选型（1–2 周【经验】）**
 
-**Step 3：召回 Pipeline**
+- Embedding 模型（BGE-M3 / OpenAI text-embedding-3 类服务 / Cohere Embed v3 类服务）、BM25 引擎（Elasticsearch / OpenSearch）、KG 引擎（Neo4j / NebulaGraph）各定一个主选与一个备选。
+- 每个选型写清**版本号**，并列出「升级一次要重建几套索引、跑几轮回归」。
+- 备选不是摆设：主选的许可证、语言覆盖或延迟不达标时要有一个已经评估过的替换路径。
+- **产物**：一份「编码模型 + 索引引擎 + 版本号」清单，以及随之确定的融合层接口形态。
+- **判据**：拿这份清单做一次纸面演练——把 Embedding 模型换成备选，数一数要重建的索引数与要跑的回归轮数。数不出具体数字，说明版本对齐关系还没理清。
+- **为什么必须这一步、为什么在 Step 3 之前**：评测集必须绑定「切分版本 + 编码模型版本 + 融合参数」这一整组（[§ 3.6](04-hybrid-search-section-3-sec3.md) 的迁移约束）；模型没定，冻出来的基线下一周就作废。
 
-- 向量召回（Milvus / Pinecone / pgvector）。
-- BM25 召回（Elasticsearch）。
-- KG 召回（Cypher / SPARQL）。
-- 元数据过滤。
-- 输出：**多路召回**。
+**Step 3：评测体系（2–6 周【经验】，主要成本是人工标注）**
 
-**Step 4：融合策略**
+- 构建评测集：初始规模按你能人工标注的量定，几百条量级起【经验】，稳态目标上千条量级【经验】——规模随语料规模与查询分布宽度变化，不要为凑数字降低标注质量。
+- 分层指标：召回层看 Recall@K 与并集 Recall@K，排序层看 MRR 与 nDCG，两者分开报，不要只报端到端。
+- 外加 A/B 测试：离线指标用来判断「该不该上」，线上 A/B 用来判断「上了有没有用」。
+- **产物**：一份冻结版本号的评测集 + 一个能一键跑出分层指标的脚本。
+- **判据**：跑一次「关掉精排」的对照，脚本能否分别报出召回层与排序层的变化；只能报端到端数字，说明分层还没做出来。第二个判据：漏召回样本能否按「语义理解失败 / 专有名词丢失 / 答案跨 chunk 未拼上 / 切分切断」分成四类（[§ 7](04-hybrid-search-section-7-sec7.md) 要求的分法）。
+- **为什么必须这一步、为什么排在选型之后、融合之前**：没有固定评测集，融合权重、K 与精排 K 的每一次调整都只能靠「感觉好了一点」，而检索质量下降**不报错**，只表现为「答得不对」。这一步跳过，后面五步就全部变成不可验证的投入。
 
-- 选融合算法（RRF / 加权）。
-- 设权重（初始等权，逐步调优）。
-- 输出：**融合 Pipeline**。
+**Step 4：召回 Pipeline（2–4 周【经验】）**
 
-**Step 5：精排**
+- 向量召回（Milvus / Pinecone / pgvector 等）、BM25 召回（Elasticsearch 等）、KG 召回（Cypher / SPARQL）分别接成可独立开关的一路。
+- 元数据过滤（时间 / 权限 / 来源）做成**前过滤**：先收缩候选集再近邻，而不是召回后再剔除。
+- 每一路的取数量独立配置，并在日志里分别记录各自返回的文档 ID，供 Step 3 的并集分析使用。
+- **产物**：多路召回链路 + 每路可单独开关与单独计量的能力。
+- **判据**：关掉任意一路，系统仍能返回答案（降级可用）；同时打印两路在 100 条真实查询上的分数分布，比较量级与方差——不可比就说明后面必须走排名融合而不是分数加权。
+- **为什么必须这一步、为什么在融合之前**：融合只能合并已经召回的候选，**它创造不出候选集里不存在的文档**（[§ 3.4](04-hybrid-search-section-3-sec3.md)）。先量并集上限，再谈融合参数。
 
-- 选 Reranker（Cohere Rerank 3 / BGE-reranker / ColBERT）。
-- 召回 Top-100 → 精排 Top-10。
-- 输出：**精排结果**。
+**Step 5：融合策略（1–2 周【经验】）**
 
-**Step 6：Query 理解**
+- 首选 RRF（倒数排名融合）：`score(d) = Σ 1/(k + rank_r(d))`，k 取 60 是原始论文的取值（【公开】Cormack、Clarke、Buettcher，SIGIR 2009）。
+- 需要表达「更信某一路」时，调该路的取数量，而不是改 k 或在公式里加权（[§ 3.2.1](04-hybrid-search-section-3-sec3.md)）。
+- 加权融合（需归一化）只在两路分数可归一到同一尺度时使用，且归一化方法要固化在文档里。
+- **产物**：一个融合层 + 一份「哪一路贡献了哪些结果」的路径级贡献日志。
+- **判据**：把两路的候选池并集与融合后的 Top-K 摆在一起，看融合结果里有没有出现两路都没召回的文档（不该有）；再看路径级贡献日志能不能回答「新增这一路带来了多少条独有命中」。
+- **为什么必须这一步**：融合的收益**完全来自两路错误的不相关**（[§ 7.3.1](04-hybrid-search-section-7-sec7.md)），没有贡献度量，你无法判断第二路是在抬高上限还是在重复劳动。
 
-- Query Rewrite（LLM）。
-- HyDE（LLM 假写答案再检索）。
-- Step-Back（抽象再检索）。
-- 输出：**优化后的查询**。
+**Step 6：精排（1–3 周【经验】，随候选数与模型大小变化）**
 
-**Step 7：评测体系**
+- 选 Reranker（Cross-Encoder 类 / Cohere Rerank 3 类服务 / BGE-reranker 类开源模型 / ColBERT 类晚交互），并对**召回的 Top-N 候选**做重排。
+- Top-100 → Top-10 是一个常见起点【经验】：两个数都要由延迟预算反推，而不是照抄。
+- 精排作为独立服务部署，配限流与超时，并保留「关掉精排」的降级开关。
+- **产物**：精排服务 + 一份「召回层指标不变、排序层指标变化」的前后对照。
+- **判据**：精排上线前后，召回层指标应当基本不动（若动了，说明精排被当成了召回用）；排序层 nDCG 应当改善。第二个判据：K 是被延迟预算反推出来的，还是为了补救召回不足一路调大的。
+- **为什么必须这一步、为什么在融合之后**：召回与排序是两个不可互相替代的阶段，投入必须先修召回、再修排序（[§ 3.5](04-hybrid-search-section-3-sec3.md) 的镜像反模式）。
 
-- 构建评测集（1000+ query + ground truth）。
-- Recall@K / MRR / nDCG 自动评测。
-- A/B 测试。
-- 输出：**评测报告**。
+**Step 7：Query 理解（2–4 周【经验】）**
 
-**Step 8：上线与监控**
+- Query Rewrite：把口语化、指代型的问题改写成适合检索的形式。
+- HyDE：让 LLM 先假写一段答案，再用它去检索。
+- Step-Back：先抽象成上位问题再检索。
+- 三项都应作为**可开关的查询改写链**，并在日志里记下改写前后的文本，便于归因。
+- **产物**：改写链 + 改写前后成对留存的查询日志。
+- **判据**：取 50 条改写前后都跑过的查询，看命中率提升的是哪一类问题；若提升集中在短查询而长查询变差，说明改写引入了语义漂移。
+- **为什么必须这一步、为什么排在精排之后**：它抬高的是召回并集的上限（[§ 3.5](04-hybrid-search-section-3-sec3.md)），属于召回侧的改进；在精排还没到位时先做改写，你会分不清改善来自哪一项。
 
-- 灰度发布。
-- 监控（召回率 / 延迟 / 成本）。
-- 持续优化。
-- 输出：**生产级混合检索**。
+**Step 8：上线与监控（持续）**
+
+- 灰度发布：按流量比例放量，保留快速回滚；新旧两路结果在灰度期并行记录。
+- 监控三类量：召回率类（并集 Recall@K）、延迟类（端到端 P99）、成本类（精排与 Agent 的前向次数）。
+- 持续优化：把每一次参数变更与评测集版本一起打版本号，可回放、可回滚。
+- **产物**：灰度开关 + 一张能同时看到效果、延迟、成本的监控面板。
+- **判据**：能否在 5 分钟内完成一次回滚演练；监控面板上的成本曲线是否与 QPS 曲线同形（不同形说明成本还有没被计入的部分）。
+- **为什么必须这一步**：「检索质量下降不报错」是本主题的基本性质，没有监控与灰度，回退只能靠用户投诉。
+
+**最常被跳过的是 Step 3（评测体系）。** 它的成本立刻可见（人工标注），收益却要等到第一次调参才显现。跳过之后第一个症状不是线上出事，而是**第一次有人问「新方案是不是更好」时，团队答不出来**——此后每次改动都靠印象，而检索召回缺失的表现只是「答得不太对」，精排还会把它掩盖得更深（[§ 3.3](04-hybrid-search-section-3-sec3.md)）。
 
 ### 4.2 关键技术点
 
-1. **BM25 引擎**：Elasticsearch / OpenSearch / Meilisearch。
-2. **向量引擎**：Milvus / Qdrant / Weaviate / pgvector。
-3. **KG 引擎**：Neo4j / NebulaGraph。
-4. **Embedding 模型**：BGE-M3 / OpenAI text-embedding-3 / Cohere Embed v3。
-5. **Reranker**：Cohere Rerank 3 / BGE-reranker / ColBERTv2。
-6. **融合算法**：RRF（首选）/ 加权 / Condorcet。
-7. **Query 理解**：Query Rewrite / HyDE / Step-Back。
-8. **元数据过滤**：时间 / 权限 / 来源。
-9. **评测**：Recall@K / MRR / nDCG。
-10. **缓存**：相同 query 缓存结果。
+每条给四件：做法、机制、失效条件（含症状）、档位。
+
+**1. BM25 引擎**
+
+- **做法**：用 Elasticsearch / OpenSearch 作为字面路；语料小、运维人手少时可用 Meilisearch 这类轻量引擎。
+- **机制**：因为词项精确匹配与语义相似是两类不同的错误来源，字面路补的正是稠密路漏掉的稀有 token（型号、单号、错误码）；代价是多一套索引与一次重建。
+- **失效条件**：**当语料几乎全是自然语言、且查询里几乎没有精确 token 时**，BM25 在你的语料上近乎无信号，等权融合会把噪声引进来。症状：融合后的 Top-10 里出现只靠字面撞上的无关结果。可观测信号：打印 BM25 分数分布，若分布极平（头部与尾部差距很小）即已失效。
+- **档位**【经验】。
+
+**2. 向量引擎**
+
+- **做法**：Milvus / Qdrant / Weaviate / pgvector 中选一；语料未超出单库舒适区时优先 pgvector，需要独立扩缩容时用专用向量库。
+- **机制**：因为 ANN 索引把「近邻」从全量比较变成近似取数，所以在线延迟与语料规模解耦；代价是近似性本身，以及过滤与近邻的相互作用（见第 8 条）。
+- **失效条件**：**当向量规模与 QPS 超过单库可承担的量级时**，事务写入、过滤查询与 ANN 扫描互相挤占（[§ 3.2.6](04-hybrid-search-section-3-sec3.md)）。症状：向量检索延迟尖峰同时影响在线写入。可观测信号：把写入 P99 与检索 P99 画在一起，两者同步尖峰即已挤占。
+- **档位**【经验】。
+
+**3. KG 引擎**
+
+- **做法**：Neo4j / NebulaGraph 承载实体关系，用 Cypher / SPARQL 做遍历；只在多跳占比可观时引入。
+- **机制**：因为图把「关系」显式存下来，所以打分式检索表达不了的多跳问题变成可遍历的路径；代价是建图本身就是一条数据加工流水线（抽取、实体对齐、社区摘要、失败重试）。
+- **失效条件**：**当语料每天大幅变更而多跳问题只占少数时**，图永远在重建而收益只落在那一小部分问题上。症状：建图流水线有排期、有重跑，但多跳问题的命中改善看不见。判据：多跳占比 ≲ 10–20%（【经验】）时先别建图。
+- **档位**：多跳占比阈值【经验】。
+
+**4. Embedding 模型**
+
+- **做法**：BGE-M3（一个 checkpoint 同时产出 dense / sparse / colbert 三种表示）、OpenAI text-embedding-3 类服务、Cohere Embed v3 类服务中选一；跨语言语料优先支持多语言的编码器。
+- **机制**：因为多路共用同一个编码器时，一次升级只需一次全量重建与一次回归，版本对齐成本从乘法变加法（[§ 3.2.3](04-hybrid-search-section-3-sec3.md)）；代价是三路共享同一份偏置，错误相关性高于异构两路。
+- **失效条件**：**当瓶颈是质量而不是运维时**（专有名词与型号召回仍然差、标注集上并集上限提不上去），「单模型一次升级」的优点反转成三路一起退化。症状：换模型后三路指标同向变化，而目标盲区没有任何改善。第二个失效条件：**当语料以低资源语言为主时**，多语言模型的参数预算被摊薄，每种语言都只是勉强够用（判据：在目标语言上跑一份单语小模型做对照）。
+- **档位**：BGE-M3 的 Multi-Linguality 支持 100+ 语言【公开】（BGE-M3 论文与模型卡，2024；请按论文当前版本核对具体语言列表）。
+
+**5. Reranker**
+
+- **做法**：Cross-Encoder 类（Cohere Rerank 3 类服务 / BGE-reranker 类开源模型）或晚交互类（ColBERT / ColBERTv2），只对召回的 Top-N 做重排。
+- **机制**：因为 query 与 doc 拼接过模型，交叉编码器能建模二者交互，精度高于双塔；代价是**每个候选一次前向、无法预计算**，成本 ∝ N；晚交互把 doc 侧表示预计算出来，把成本从查询侧挪到存储侧。
+- **失效条件**：**当 N 被一路调大用来补救召回不足时**，「精排提升排序质量」反转成「延迟与成本由精排阶段决定」。症状：端到端延迟随 N 线性上升，而召回层指标没变。可观测信号：N 从 100 提到 500 时，前向次数与延迟同步变为约 5 倍。晚交互的失效条件是**文档平均长度远大于预估、或语料每天大幅变更**——【推算】设每篇平均 128 token（【经验】量级）、每 token 128 维 fp16（256 B），则每篇约 32 KiB，而 1024 维双塔向量仅约 2 KiB，比值约 16×；ColBERTv2 报告通过残差压缩把存储降低 6–10 倍（【公开】ColBERTv2，NAACL 2022），把 16× 除以该倍数后仍约为双塔的 1.6–2.7 倍。
+- **档位**：晚交互存储放大【推算】（推导链如上）；压缩倍数【公开】。
+
+**6. 融合算法**
+
+- **做法**：首选 RRF；两路分数可归一到同一尺度时才用加权融合；需要更复杂的排序语义时再考虑 Condorcet 这类成对比较方法。
+- **机制**：因为 RRF 只消费排名、不消费分数，BM25 分数无上界与余弦相似度挤在窄区间这个量纲问题被彻底消掉（[§ 7.3.3](04-hybrid-search-section-7-sec7.md)）；代价是它丢弃了分数的间隔信息——「遥遥领先的第一名」与「勉强第一」在 RRF 里贡献相同。
+- **失效条件**：**当两路实际同源时**（共用同一个查询改写结果，或稀疏侧由稠密模型蒸馏而来），融合收益趋近零而成本照付。症状：并集 Recall@K 相对较优单路的提升落在标注噪声之内（几百条问题的标注集上大致 3–5 个百分点，【经验】即按高度重合处理）。
+- **档位**：k = 60【公开】（Cormack 等，SIGIR 2009）；噪声量级【经验】。
+
+**7. Query 理解**
+
+- **做法**：Query Rewrite（LLM 改写）、HyDE（LLM 先假写答案再检索）、Step-Back（先抽象再检索）串成一条可开关的改写链。
+- **机制**：因为用户提问与语料的表示不在同一分布上，改写抬高的是召回并集的上限，与加一路召回是同一类收益；代价是每次查询多一次 LLM 调用，且改写本身可能引入语义漂移。
+- **失效条件**：**当改写链被无差别地施加于所有查询时**，长查询与已经明确的查询会被改差。症状：短查询命中上升而长查询命中下降。可观测信号：按查询长度分桶看命中率，两个桶反向变化即已失效。
+- **档位**【经验】。
+
+**8. 元数据过滤**
+
+- **做法**：把时间、权限、来源做成**前过滤**——先收缩候选集，再在子集内做近邻。
+- **机制**：因为权限与时效是硬条件，正确答案本就落在被过滤掉的那部分之外，所以过滤缺失时加路与调融合都无效；代价是过滤条件与向量索引必须匹配，否则近邻搜索的候选会被静默截断。
+- **失效条件**：**当过滤条件的选择性很高时**，先取 Top-K 再套过滤会让满足条件的候选凑不满 K 个，表现为**召回静默变少而不是报错**。症状：加严过滤后返回条数下降，但没人知道少了什么。可执行判据：同一条查询跑「带过滤」与「不带过滤」两个版本，比返回条数与命中，再用执行计划确认过滤发生在索引扫描之前还是之后（[§ 3.2.6](04-hybrid-search-section-3-sec3.md)）。
+- **档位**【经验】。
+
+**9. 评测指标**
+
+- **做法**：召回层用 Recall@K 与并集 Recall@K，排序层用 MRR 与 nDCG；标注粒度必须与切分粒度一致。
+- **机制**：因为「召回漏了」与「排序错了」的修法完全不同，指标可分解是方案能被长期调优的前提；代价是评测集与切分版本绑定，切分一变旧标注就作废。
+- **失效条件**：**当切分策略被调整时**（chunk 大小、overlap 变化），按旧 chunk 标注的评测集全部作废，而这一点通常不会有人主动检查。症状：改切分后指标「突然变好或变差」，但漏召回样本的分类分布没有变化。判据：把「问题集 + 切分版本 + 编码模型版本 + 融合参数」作为一个整体打版本号（[§ 3.6](04-hybrid-search-section-3-sec3.md)）。
+- **档位**：评测集规模【经验】。
+
+**10. 缓存**
+
+- **做法**：对相同 query 缓存结果（含改写后的形态），缓存键包含融合参数与索引版本；热点 query 可缓存精排结果。
+- **机制**：因为检索的质量成本主要落在精排与改写这两处在线计算上，而这两处对同一 query 的结果稳定，所以缓存能直接削掉重复计算；代价是缓存键少带一个版本就会返回旧结果。
+- **失效条件**：**当索引或模型发生重建而缓存键未含版本号时**，用户会拿到上一个版本的检索结果，且没有任何报错。症状：重建后部分 query 的结果与评测集不一致，但只出现在重放过的热点 query 上。可执行判据：缓存键里必须同时含索引版本与编码模型版本，缺一不可。
+- **档位**【经验】。
 
 ### 4.3 工具链与平台
 
-**混合检索框架**：
+选型的第一判据不是「谁在榜单上更靠前」，而是 **你的语料盲区在哪一段**、以及**这套东西由谁维护**（[§ 3.1](04-hybrid-search-section-3-sec3.md) 的最后一条约束）。
 
-- **LangChain**（开源）—— 主流 LLM 编排，支持多路召回 + RRF。
-- **LlamaIndex**（开源）—— RAG 专用，支持混合检索。
-- **Haystack**（deepset 开源）—— 工业级 RAG。
-- **DSPy**（Stanford 开源）—— 自动 Prompt + 优化。
-- **Vespa**（Yahoo 开源）—— 一体化向量 + BM25 + Hybrid。
-- **Weaviate**（开源）—— 内置 Hybrid Search。
+| 类别 | 候选 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 混合检索框架 | LangChain / LlamaIndex / Haystack / DSPy / Vespa / Weaviate | 要在应用层编排多路召回（并保留自定义融合）选 LangChain 或 LlamaIndex；要工业级 RAG 组件的成熟度选 Haystack；要把 prompt 与管线交给自动优化选 DSPy；要一体化引擎（字面 + 向量 + 精排在同一个进程里）选 Vespa 或 Weaviate | 选了编排框架又要一体化能力，或反过来：多一层胶水，且融合层成为延迟与故障的新位置 |
+| 向量库 | Milvus / Qdrant / Weaviate / Pinecone / pgvector / LanceDB（详见 [02-vector-lake](../02-vector-lake/02-vector-lake.md)） | 已在 PostgreSQL 上且规模中等、要事务与检索共享一致性，选 pgvector；要独立扩缩容选 Milvus 或 Qdrant；要内置 hybrid 与过滤语义选 Weaviate；要托管、不想运维选 Pinecone；要本地文件式、低运维选 LanceDB | 独立向量库会引入两套数据的一致性问题；反过来，单库撑不住时会变成两类负载互相挤占 |
+| BM25 引擎 | Elasticsearch / OpenSearch / Meilisearch / Typesense | 已有 ES 集群就直接用（字面路多半已在里面，加路代价最低）；要在 AWS 生态内选 OpenSearch；语料小、要单机低运维选 Meilisearch 或 Typesense | 为一个字面路另起一套集群，多一份运维与一次重建 |
+| Embedding 服务 | BGE-M3 / OpenAI text-embedding-3 类服务 / Cohere Embed v3 类服务 / Jina Embeddings v3 类服务 / 通义 Embedding / 文心 Embedding | 要一个模型出三种表示、语料跨语言、想少维护几套版本，选 BGE-M3；英文通用语料 + 愿意用托管，选 OpenAI 类服务；中文语料且数据不出境，选国内服务 | 奔着榜单分数换模型，等于把历史评测数据整体作废（必须重冻基线） |
+| Rerank 服务 | Cohere Rerank 3 / BGE-reranker-v2 / Jina Rerank / ColBERTv2 / RankZephyr | 延迟预算买不起 N 次前向、但存储宽裕，选 ColBERTv2 这类晚交互（doc 侧可预计算）；中文开源选 BGE-reranker 系列；不想自托管选 Cohere 或 Jina 类服务 | 只按「谁更准」选，忽略交叉编码器的成本 ∝ N，上线后延迟由精排阶段决定 |
 
-**向量库**：
+表里最容易被误选的是**向量库这一类**：团队常按热度或榜单选，而不是按「需不需要内置 hybrid、过滤是前过滤还是后过滤」选。后果不是性能差一点，而是**过滤把召回静默截断**——返回的条数少了、命中低了，却没有任何报错，排查方向会被引到融合参数上，而真正的原因在索引与查询计划的匹配上。产品能力与许可证更新较快，具体请以各产品官方文档当前版本为准。
 
-- Milvus / Qdrant / Weaviate / Pinecone / pgvector / LanceDB（详见 [02-vector-lake](../02-vector-lake/02-vector-lake.md)）。
+### 4.4 存量迁移
 
-**BM25 引擎**：
+**① 立刻见效且可回退的一步：在现有单路上加另一路 + 排名融合。**
+已有 Elasticsearch 的组织先加向量路，已有单路向量库的组织先用引擎里现成的字面检索，融合用 RRF。可回退性来自结构：融合层能关掉任意一路，回退动作就是把开关拨回去，不需要动索引。它立刻见效的原因是**两路的失败模式互补**——专有名词与型号召回的改善通常在同一批查询上立刻可见。
 
-- **Elasticsearch**（开源）—— BM25 事实标准。
-- **OpenSearch**（AWS 开源）—— ES 分支。
-- **Meilisearch**（开源）—— 轻量 BM25。
-- **Typesense**（开源）—— 轻量 BM25。
+**② 历史资产（已建索引 / 已切分的语料）分三类处理。**
 
-**Embedding 服务**：
+- **高价值小集合：全量重建。** 例如被高频查询的业务域，重建代价可控，且能先把字段级/切分级评测跑通。
+- **长尾大集合：随下一次自然重建，不额外触发。** 不为了「统一版本」发起一次全量重跑——重跑的成本按语料量线性上升，而收益只体现在少数查询上。
+- **不可重建的：打标挂账。** 原始文本已丢失、切分参数不可复现的清洗产物，明确标记为「本路径覆盖不到」，并在并集 Recall@K 的报告里把这些查询单独列出来。**打标的意义是让评测样本集干净**：把覆盖不到的样本混进总体指标，「加路有没有用」这个问题永远算不清。
+- 返工全部历史索引是本主题最常见的一次浪费；把「新旧版本并存」当成可接受的常态，比强行统一版本便宜得多。
 
-- **BGE-M3**（BAAI 开源）—— 多功能 SOTA。
-- **OpenAI text-embedding-3**（商业）—— 通用。
-- **Cohere Embed v3**（商业）—— 多语言。
-- **Jina Embeddings v3**（商业）—— 多语言。
-- **通义 Embedding**（阿里商业）—— 中文。
-- **文心 Embedding**（百度商业）—— 中文。
+**③ 双轨怎么维持、维持多久。**
 
-**Rerank 服务**：
+- 离线双跑期：新路与旧路在固定问题集上并行跑，逐条记差异，不动线上。
+- 线上灰度期：按流量比例放量，新旧结果并行记录；两路若是两条摄入管线，**必须保证语料同版本**，否则融合的是两个不同快照的排名（[§ 3.4](04-hybrid-search-section-3-sec3.md) 组合二）。
+- 维持时长由判据决定而非日历：新路在固定问题集上的并集 Recall@K 与 nDCG 连续两次重建后都优于旧路，且线上灰度组业务指标同向（【经验】多在数周到一两个季度之间，随语料变更频率变化）。
 
-- **Cohere Rerank 3**（商业）—— 多语言 SOTA。
-- **BGE-reranker-v2**（BAAI 开源）—— 中文 SOTA。
-- **Jina Rerank**（商业）—— 多语言。
-- **ColBERTv2**（开源）—— 晚交互。
-- **RankZephyr**（开源）—— 学术 Rerank。
+**④ 什么信号说明可以退出双轨。**
 
-### 4.4 代码 / 示例
+- 新路在两个连续版本（编码模型或切分参数变更各算一次）上稳定优于旧路，而不是只在某一次评测上赢；
+- 灰度组的业务指标与对照组同向，且差异能落到具体查询类别上（不能归因的提升，下次会消失）；
+- 回滚演练能在一次发布窗口内完成，且回滚后旧路的评测集仍可复现；
+- 三条同时成立才退出。只满足第一条就切流，你会同时失去旧基线与判断依据（[§ 3.6](04-hybrid-search-section-3-sec3.md)）。
 
-**示例 1：LangChain + RRF 混合检索**
+### 4.5 模板 / 示例
+
+**示例 1：手写 RRF 融合（建议先写这一版，再决定要不要引入框架）**
 
 ```python
-from langchain.retrievers import BM25Retriever, EnsembleRetriever
-from langchain.retrievers.document_compressors import CohereRerank
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.embeddings import HuggingFaceBgeEmbeddings
-from langchain.vectorstores import Milvus
-from langchain.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+def rrf(rankings: dict[str, list[str]], k: int = 60) -> list[tuple[str, float]]:
+    """rankings: {retriever_name: [doc_id, ...按排名从高到低]}"""
+    scores: dict[str, float] = {}
+    for docs in rankings.values():
+        for rank, doc_id in enumerate(docs, start=1):
+            scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (k + rank)
+    return sorted(scores.items(), key=lambda x: -x[1])
 
-# 1. 加载 + Chunking
-loader = PyPDFLoader("company.pdf")
-docs = loader.load()
-splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=64)
-chunks = splitter.split_documents(docs)
-
-# 2. Embedding + 向量库
-embedding = HuggingFaceBgeEmbeddings(model_name="BAAI/bge-m3")
-vectorstore = Milvus.from_documents(chunks, embedding, connection_args={"host": "milvus"})
-
-# 3. 双路召回（向量 + BM25）
-vector_retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
-bm25_retriever = BM25Retriever.from_documents(chunks)
-bm25_retriever.k = 10
-
-# 4. RRF 融合
-ensemble_retriever = EnsembleRetriever(
-    retrievers=[vector_retriever, bm25_retriever],
-    weights=[0.6, 0.4]  # 加权融合，RRF 自动
-)
-
-# 5. Reranker（精排）
-compressor = CohereRerank(model="rerank-multilingual-v3.0", top_n=5)
-compression_retriever = ContextualCompressionRetriever(
-    base_compressor=compressor,
-    base_retriever=ensemble_retriever
-)
-
-# 6. 检索
-results = compression_retriever.get_relevant_documents("公司年假政策")
-for doc in results:
-    print(doc.page_content[:100])
+fused = rrf({"vector": ["doc1", "doc3", "doc2", "doc5"],
+             "bm25":   ["doc2", "doc1", "doc4", "doc5"]})
 ```
 
-**示例 2：BGE-M3 多功能 Embedding**
+**怎么用**：把它当成**判断融合有没有生效的最小工具**——先在手头的两路结果上跑一遍，看融合结果里有没有两路都没召回的文档（不该有）。`k` 不要为了「效果更好」反复调：要表达「更信某一路」应该改该路的取数量（[§ 3.2.1](04-hybrid-search-section-3-sec3.md)）。这段代码不含归一化，所以它只在排名空间工作，不要往里塞分数。
+
+**示例 2：BGE-M3 多功能 Embedding（一个模型三种表示）**
 
 ```python
 from FlagEmbedding import BGEM3FlagModel
 
-# 加载 BGE-M3
-model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=True)
-
-# 同时输出 dense / sparse / colbert 三种向量
-texts = ["hello world", "goodbye world"]
-output = model.encode(texts, return_dense=True, return_sparse=True, return_colbert_vecs=True)
-
-# dense 向量（语义检索）
-dense_vecs = output['dense_vecs']
-
-# sparse 向量（BM25-like）
-sparse_vecs = output['sparse_vecs']
-
-# colbert 向量（晚交互）
-colbert_vecs = output['colbert_vecs']
-
-# dense + sparse 融合检索
-from scipy.sparse import csr_matrix
-import numpy as np
-
-# sparse 转倒排索引
-def sparse_to_dict(sparse):
-    indices = sparse.nonzero()
-    return {idx: val for idx, val in zip(indices[1], sparse[indices])}
-
-# 融合分数
-def hybrid_score(dense_query, sparse_query, dense_doc, sparse_doc, alpha=0.5):
-    dense_score = np.dot(dense_query, dense_doc)
-    sparse_score = sum(
-        sparse_query.get(k, 0) * sparse_doc.get(k, 0)
-        for k in set(sparse_query) & set(sparse_doc)
-    )
-    return alpha * dense_score + (1 - alpha) * sparse_score
+model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True)
+out = model.encode(["hello world", "goodbye world"],
+                   return_dense=True, return_sparse=True, return_colbert_vecs=True)
+dense, sparse, colbert = out["dense_vecs"], out["sparse_vecs"], out["colbert_vecs"]
 ```
 
-**示例 3：Weaviate Hybrid Search**
+**怎么用**：三份输出分别喂给 ANN 索引、倒排索引与 MaxSim 打分，**共用同一次编码**——这正是它把「一次升级要重建几套索引」从三套压成一套的原因。两条不要照抄：`use_fp16` 与包名/接口签名都随库版本变化，请按官方文档当前版本核对；不要因为三路输出都来自同一个模型就省掉版本对齐表——三路仍然要同时升级、同时回归。
+
+**示例 3：Weaviate 内置 Hybrid Search**
 
 ```python
 import weaviate
 
 client = weaviate.Client("http://weaviate:8080")
-
-# Hybrid Search（内置 RRF 融合）
 result = (
-    client.query
-    .get("Document", ["title", "content", "source"])
-    .with_hybrid(
-        query="公司年假政策",
-        alpha=0.6,  # 向量权重（0=纯 BM25，1=纯向量）
-        fusion_type="relativeScore"  # RRF / relativeScore
-    )
+    client.query.get("Document", ["title", "content", "source"])
+    .with_hybrid(query="公司年假政策", alpha=0.6, fusion_type="relativeScore")
     .with_limit(10)
     .do()
 )
-
-for doc in result["data"]["Get"]["Document"]:
-    print(f"{doc['title']}: {doc['content'][:100]}")
 ```
 
-**示例 4：Vespa 混合检索 + Late Interaction**
+**怎么用**：适合「不想自己维护融合层」的中小规模场景。**`alpha` 不要照抄 0.6**：它是两路的相对权重，取值应由你自己的并集测量决定，而不是沿用示例；`fusion_type` 的可选值与客户端类名随版本变化，请按官方文档当前版本核对。
+
+**示例 4：Vespa 一体化检索（字面 + 近邻 + 精排在一个查询里）**
 
 ```python
 from vespa.application import Vespa
-from vespa.io import VespaQueryResponse
 
 app = Vespa(url="http://vespa:8080")
-
-# Vespa 同时支持 BM25 + ColBERT + Rerank
 result = app.query(
-    yql="select * from documents where ({targetHits:100}nearestNeighbor(embedding,q)) or ({targetHits:100}userQuery())",
+    yql=("select * from documents where "
+         "({targetHits:100}nearestNeighbor(embedding,q)) or ({targetHits:100}userQuery())"),
     ranking="hybrid_colbert_rerank",
     query="公司年假政策",
-    hits=10
+    hits=10,
 )
-print(result.hits)
 ```
 
-**示例 5：手写 RRF 融合**
+**怎么用**：适合已经决定把融合、精排与过滤都放进同一个引擎的团队。**照抄前先做两件事**：把 `targetHits` 与 `hits` 改成由你的延迟预算反推的值（100/10 只是示例起点）；确认 `ranking` 那个 profile 已经在你自己的应用包里定义好（它是名字，不是内置功能）。YQL 与 client 的导入路径随版本变化，请按官方文档当前版本核对。
+
+**示例 5：LangChain 视角的多路编排（对照用，不推荐直接照抄）**
 
 ```python
-def rrf(rankings, k=60):
-    """rankings: {retriever_name: [doc_id, ...]}"""
-    scores = {}
-    for retriever, docs in rankings.items():
-        for rank, doc_id in enumerate(docs, start=1):
-            scores[doc_id] = scores.get(doc_id, 0) + 1 / (k + rank)
-    return sorted(scores.items(), key=lambda x: -x[1])
+from langchain.retrievers import BM25Retriever, EnsembleRetriever
 
-# 示例：向量召回 + BM25 召回
-vector_ranking = ["doc1", "doc3", "doc2", "doc5"]  # 向量召回的排名
-bm25_ranking = ["doc2", "doc1", "doc4", "doc5"]    # BM25 召回的排名
+vector_retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
+bm25_retriever = BM25Retriever.from_documents(chunks)
+bm25_retriever.k = 10
 
-rankings = {
-    "vector": vector_ranking,
-    "bm25": bm25_ranking
-}
-
-fused = rrf(rankings)
-print(fused)  # [(doc1, 0.032), (doc2, 0.031), ...]
+ensemble = EnsembleRetriever(
+    retrievers=[vector_retriever, bm25_retriever],
+    weights=[0.6, 0.4],
+)
 ```
 
----
+**怎么用**：它的价值是让你用二十行验证「多路 + 融合」在你的语料上是否成立，然后再决定自建还是引入框架。**三处不要照抄**：包路径（LangChain 的模块结构在版本间变动较大，请按所用版本的官方文档核对导入路径）；`weights` 的具体取值；以及两路 `k` 不一致的情况——两路取数量差得太多时，融合结果会被取数多的那一路主导，这与权重无关。
+
+### 4.6 自检清单
+
+- [ ] 我有没有量过**两路并集的 Recall@K 上限**？如果这个上限都不达标，加路与调融合都是白花钱。
+- [ ] 评测集有没有绑定「切分版本 + 编码模型版本 + 融合参数」？只绑了 query 与答案的，下次换模型就作废。
+- [ ] 标注粒度与切分粒度是否一致？切分变了，按旧 chunk 标的评测集是否已经作废并重标？
+- [ ] 漏召回样本是否分过类？「答案跨 chunk 未拼上」「切分把答案切断」占多数时，该修的是切分而不是加路。
+- [ ] 两路的分数分布有没有打印出来对比量级与方差？不可比时是否已改用 RRF 而非加权求和？
+- [ ] 精排的候选数 N 是由延迟预算反推的，还是为了补救召回不足被一路调大的？
+- [ ] 关掉精排、关掉 KG 路、关掉 Agent 之后，系统还能不能返回答案？能返回的是增强项，不能返回的是路径项。
+- [ ] 两条摄入管线（例如向量库与搜索引擎）是否保证语料同版本？能否指出同版本是怎么校验的？
+- [ ] 多跳 / 汇总类问题的占比是多少？低于 10–20%（【经验】）时，是否真的需要建图？
+- [ ] 元数据过滤是前过滤还是后过滤？有没有跑过「带过滤 / 不带过滤」的对照并看过执行计划？
+- [ ] 缓存键里有没有同时含索引版本与编码模型版本？
+- [ ] 精排与改写链的成本是否随 QPS 增长到需要缓存、路由或抽样开关？降级形态能不能一句话说清？
+
+这 12 条里只有第 1、4、5、10 条需要真的动手测（标注并集、打印分数分布、跑带过滤对照、看执行计划），其余八条翻一遍配置与日志就能回答。**先做那四条要动手的**：它们回答的是「该不该继续往里投」；只做翻配置的那八条，你会得到一份看起来健康、却不知道上限在哪的清单。
+
+### 4.7 小结
+
+> 本节小结：整个落地过程里唯一决定成败的环节是 **Step 3 的评测体系**——检索质量下降不报错，只有固定问题集上的分层指标能把「召回漏了」和「排序错了」分开。其余七步都在改动系统，只有它让改动可被结算；它也是最容易被砍的一步，因为成本立刻可见而收益要等到第一次调参。
+>
+> 与之配套的硬约束只有一条：**先修召回、再修排序**。融合只能抬高候选并集的上限，精排只能在已召回的集合里重排——顺序反了，投入会落在拿不回收益的那一段上（[§ 3.8](04-hybrid-search-section-3-sec3.md)）。
+>
+> 配合 [§ 2 核心原理](04-hybrid-search.md)、[§ 3 设计模式与范式](04-hybrid-search-section-3-sec3.md) 与 [§ 6 落地实践](04-hybrid-search-section-6-sec6.md) 阅读。

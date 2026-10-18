@@ -1,279 +1,341 @@
-> 本文件是 **01-data-warehouse.md** 的子文件（§4. 工程实现）。完整章节请回到 [index](01-data-warehouse.md)。
+> 本文件是 **01-data-warehouse.md** 的子文件（§4. 工程实现）。本节讲怎么把 [§ 3](01-data-warehouse-section-3-sec3.md) 里的七个模式装进一个真实组织：顺序、判据、产物与存量迁移。完整章节请回到 [index](01-data-warehouse.md)。
 
 ## 4. 工程实现
 
+§3 回答「你的约束下该用哪种形态」，本节回答另外三个问题：**先做哪一步、做完怎么知道做对了、已经在跑的存量数仓怎么改**。三个问题里，只有最后一个与多数读者直接相关——新建一套数仓的机会很少，接手一套已经在出报表、已经有下游、已经有人在上面写 SQL 的数仓才是常态。
+
+因此本节分两种读者写：**§4.1–§4.3 面向从零搭建者**（分层顺序、每步判据、引擎与工具选型；已有数仓的读者可只读 §4.3 的选型判据）。**§4.4–§4.5 面向存量改造者**（历史表怎么分类、双轨维持多久、拿什么模板开工）。两类读者的第一步完全不同：从零搭建者先定粒度，存量改造者先给已有的表补粒度声明——顺序不能对调，因为前者的粒度决定后面所有决定，后者的粒度是补记，补记的判据是「它现在是不是真的这样」。
+
 ### 4.1 落地步骤
 
-**Step 1：业务调研与建模设计（4-6 周）**
+**Step 1：业务调研与建模设计（4–6 周，【经验】，随业务过程数量上浮）**
 
-- 梳理业务过程（Process）：每个业务线有哪些核心事件？
-- 选定粒度（Granularity）：最细粒度是什么（如订单行 item）？
-- 确定维度（Dimension）：客户、产品、时间、地区...
-- 确定度量（Measure）：金额、数量、时长...
-- 输出 ER 图 + 维度模型（星型图）。
+- 按 Kimball 四步走：选定业务过程 → **声明粒度** → 确定维度 → 确定度量（[§2.3](01-data-warehouse.md)）。同时立一致性维度（客户 / 产品 / 时间），它们是跨业务过程复用的那部分。
+- 输出 ER 图 + 星型图，并且**把粒度声明写进表注释与设计文档**——粒度不能只存在于建模会上。
+- **产物**：ER 图 + 星型图 + 一张「粒度声明表」（每张事实表一行，写明「一行代表什么」与分区键）。
+- **判据**：抽 3 张事实表，逐张问「一行代表什么」，答案能否一句话说清、且与分区键一致；再抽 1 个维度（如客户），看它在多个业务过程里是否用同一套编码。两问里任一答不出，说明模型还停在图上看不出问题的阶段。
+- **为什么必须这一步 / 为什么在第一位**：粒度是后面全部决定的输入——它决定 Step 2 要采哪些字段、决定分区键怎么切、决定 DWS 能汇总到什么粒度。粒度改了，Step 2–5 全部返工；反过来，先接数再定粒度，会得到一堆「按源库表结构长出来」的贴源表，之后每一次口径争议都要回到源头重查。
 
-**Step 2：数据源接入（2-4 周）**
+**Step 2：数据源接入（2–4 周，【经验】，随源系统数量线性上浮）**
 
-- 业务库：CDC（Debezium / Flink CDC）。
-- 日志：Flume / Filebeat / Vector → Kafka。
-- 第三方 API：DataX / Airflow 定时抽取。
-- 文件：OSS / S3 增量同步（OSS 事件 / SQS）。
+- 业务库走 CDC（Debezium / Flink CDC）；日志走 Flume / Filebeat / Vector → Kafka；第三方 API 走 DataX / Airflow 定时抽取；文件走 OSS / S3 增量同步（OSS 事件 / SQS）。
+- 每接一个源，同时登记四件事：源表的业务含义、主键、更新方式（**有没有物理删除**）、时区。
+- **产物**：接入清单（源系统 → 通道 → 落地表 → 更新方式）+ ODS 命名对照表。
+- **判据**：抽 3 个源，问「这张源表有没有物理删除，删除动作怎么进仓」。答不出，说明接入只做完了「能抽到」这一半；再抽 1 个源对比它昨天的行数与今天的差异，能否解释差值的来源（新增 / 更新 / 删除）。
+- **为什么必须这一步 / 为什么在第二位**：它必须在建模之后——采哪些字段由粒度与维度决定，而不是由源表列数决定；必须在 ODS 之前——ODS 的表结构与增量策略由源表的更新方式决定，先建 ODS 表再接源，等于用猜的更新方式去接真实的数据。
 
-**Step 3：ODS 层建设（2-3 周）**
+**Step 3：ODS 层建设（2–3 周，【经验】，随接入表数量与增量策略复杂度上浮——全量 + binlog 双写、跨源时区对齐会把它推到区间上沿）**
 
-- 贴源存储，几乎不转换。
-- 表命名：`ods_<source_system>_<table>`。
-- 增量策略：binlog 全量 + 增量 / 分区表 + 滚动。
+- 贴源存储，几乎不做转换；命名 `ods_<source_system>_<table>`。
+- 增量策略二选一写死：binlog 全量 + 增量，或分区表 + 滚动。
+- **保留周期必须写死**（保留多久、超期归档到哪）——ODS 全量保留是分层里最贵的一层（§3.2.1 的代价一节）。
+- **产物**：ODS 表 + 保留与归档策略（含触发条件：时间 / 大小）。
+- **判据**：抽 1 张 ODS 表，问「在保留期内，能否用它重算任意一天的下游」。答不出，说明它是临时落地区而不是可回溯层——而下游一旦出错，这一层是唯一的重建输入。
+- **为什么必须这一步 / 为什么在第三位**：它是「可重算」这条性质的载体。放在 DWD 之后建，意味着 DWD 出问题时没有干净输入可以重跑，只能靠修补下游结果——口径修正从此变成打补丁。
 
-**Step 4：DWD 层建设（4-8 周）**
+**Step 4：DWD 层建设（4–8 周，【经验】，是七步里最重的一步，随事实表数量与需要做 SCD 的维度个数上浮）**
 
-- 维度建模，建立事实表 + 维度表。
-- 数据清洗：去重、空值处理、类型转换。
-- 维度填充（维表查找 + 缓慢变化维处理）。
-- 表命名：`dwd_<domain>_<process>`。
+- 维度建模落地：事实表 + 维度表；清洗（去重、空值处理、类型转换）；维度填充（维表查找 + 缓慢变化维处理）；命名 `dwd_<domain>_<process>`。
+- 每个字段登记它的来源映射（这一列来自哪个 ODS 表的哪一列、经过什么变换）。
+- **产物**：DWD 事实表与维度表 + 字段级来源映射。
+- **判据**：抽 1 个字段，能否沿映射回到 ODS 的具体列；抽 3 个维度，其 SCD 类型是否写明，且生效区间的处理方式一致（都用 `9999-12-31`，或都用 `NULL`，不混用）。
+- **为什么必须这一步 / 为什么在第四位**：它必须在 ODS 之后（需要贴源数据做输入），必须在 DWS 之前（汇总口径依赖明细粒度已经固定）。跳过字段级映射，后续所有口径争议都无法定位到源，只能回到「两条链路各查一遍 SQL」——这正是 §3.5 里烟囱式数仓最费时间的暴露方式。
 
-**Step 5：DWS 层建设（4-6 周）**
+**Step 5：DWS 层建设（4–6 周，【经验】，随公共查询模式（被两个以上下游共用的粒度组合）的个数上浮，不随数据量上浮）**
 
-- 按主题轻度聚合。
-- 1 天 / 1 周 / 1 月的公共汇总。
-- 表命名：`dws_<domain>_<time_window>_<summary>`。
+- 按主题轻度聚合；1 天 / 1 周 / 1 月的公共汇总；命名 `dws_<domain>_<time_window>_<summary>`。
+- 只建**真实的公共查询模式**（被两个以上下游用到的粒度），不按猜测建。
+- **产物**：DWS 汇总表 + 每张表的粒度与固化指标清单（哪些指标在这一层被算死）。
+- **判据**：抽 1 张 DWS 表，数它的下游报表有几个——只有一个，说明它其实是 ADS 的内容被放错了层；再抽 1 个指标，看它的定义是否只出现在一处（多处出现即口径必然漂移，§3.7）。
+- **为什么必须这一步 / 为什么在第五位**：它必须建立在 DWD 粒度已定之后（否则聚合口径要重来），并且必须与 Step 7 的指标定义对齐——DWS 是指标定义的物化位置。顺序倒了（先建汇总再回头改明细粒度），结果是汇总表整批返工。
 
-**Step 6：ADS 层建设（按需迭代）**
+**Step 6：ADS 层建设（按需迭代，不设固定工期）**
 
-- 面向具体应用：报表 / 标签 / 推荐 / 风控。
-- 通常宽表 + Cube。
+- 面向具体应用：报表 / 标签 / 推荐 / 风控；形态通常是宽表 + Cube。
+- 允许冗余，但每张 ADS 表要标注它服务的应用，以及它复用的是哪一层粒度。
+- **产物**：ADS 表 + 消费方清单（用于日后判断能不能下线）。
+- **判据**：抽 1 张 ADS 表，能否说出消费方是谁、下线它会影响哪些应用；答不出说明这一层已经开始反向耦合了（§3.7 的血缘检查项）。
+- **为什么必须这一步 / 为什么在最后**：它允许为单一应用定制与冗余，因此必须建立在 DWS 之上——把顺序反过来（先按应用建宽表、再回头补公共层），得到的就是一叠各自算口径的报表，而 §3.5 把这类形态列为最容易被归错因的反模式：数字对不上时团队会去查 SQL，而真实原因是两处同名指标本来就是两个定义。
 
-**Step 7：指标治理 + 数据质量**
+**Step 7：指标治理 + 数据质量（与 Step 5–6 并行启动，之后长期运行）**
 
-- 指标统一（OneMetric）。
-- 数据质量监控（Great Expectations / Datafold / 自研）。
-- 血缘追踪（Apache Atlas / DataHub / OpenLineage）。
+- 指标统一（OneMetric）；数据质量监控（Great Expectations / Datafold / 自研）；血缘追踪（Apache Atlas / DataHub / OpenLineage）。
+- 质量校验分两层放：**入仓门禁**（不合格不放行）与**下游告警**（进了仓要能发现）。两层的作用不同，缺一层就会出现「要么拦住所有人、要么错误静默进报表」。
+- **产物**：指标定义清单（每条含 Owner 与口径）+ 质量规则清单 + 血缘覆盖情况。
+- **判据**：抽 1 个指标，看它在几处被定义；抽 1 条链路，能否在改动前列出它的下游。后者答不出，说明血缘没有跑通，管道形状只存在于人的记忆里。
+- **为什么必须这一步 / 为什么和 DWS 并行**：它不能等到最后——DWS 决定了指标物化在哪一层，质量规则只有在源头接入时就挂上去才拦得住；放到项目收尾做，前面每一层都已经按未经校验的口径产出了历史数据。
+
+七步里最常被跳过的是 **Step 1 的「粒度声明表」与 Step 4 的「字段级来源映射」**。跳过它们不会立刻报错：报表照样出得来。第一个出问题的时点是**第一次口径争议**——两个部门报同一个指标、数字不一致，团队会去逐条对比两条链路的 SQL；而真实原因往往是两条链路的粒度声明从来就不一致（一条按订单行、一条按订单头），SQL 怎么查都查不出来，因为差异不在 SQL 里，在粒度的定义里。
 
 ### 4.2 关键技术点
 
-**1. 维度建模（核心）**
+**维度建模与粒度声明（写在表定义里，不写在文档里）**
+
+- **做法**：把「一行代表什么」写进表注释或列注释；分区键必须与粒度声明一致（按天分区的表，粒度不能是「一行 = 一个订单」这种跨天实体）。
 
 ```sql
--- 订单事实表（DWD）
-CREATE TABLE dwd_order_order (
-  order_id        BIGINT,         -- 订单号
-  user_id         BIGINT,         -- 用户 ID（外键）
-  product_id      BIGINT,         -- 商品 ID（外键）
-  order_time      TIMESTAMP,      -- 下单时间
-  pay_time        TIMESTAMP,      -- 支付时间
-  order_amount    DECIMAL(18,2),  -- 订单金额
-  pay_amount      DECIMAL(18,2),  -- 实付金额
-  coupon_amount   DECIMAL(18,2),  -- 优惠金额
-  order_status    STRING,         -- 订单状态
-  -- ... 度量字段
-  PRIMARY KEY (order_id, order_time)  -- 注意：复合主键，包含时间用于分区
-) PARTITIONED BY (dt DATE)
-STORED AS PARQUET;
+CREATE TABLE dwd_order_detail (            -- 一行 = 一个订单明细行（最细粒度）
+  order_id     STRING   COMMENT '订单号，同一订单多行',
+  user_id      STRING   COMMENT '用户 ID（已完成 OneID 归一）',
+  sku_id       STRING   COMMENT '商品 ID',
+  amount       DECIMAL(18,2) COMMENT '该明细行金额，非订单总额',
+  order_status STRING   COMMENT '已标准化枚举：PAID/REFUND/...',
+  dt           STRING   COMMENT '业务日期（与粒度一致：明细行发生日）'
+) PARTITIONED BY (dt);
 ```
 
-**2. SCD Type 2 实现（缓慢变化维）**
+- **机制**：因为粒度被写成了可被机器和人同时读取的元数据，所以「这张表能不能回答某个问题」不再依赖某个人的记忆——上游改动前能判断，下游取数前也能判断，而这正是口径一致性的前提。
+- **失效条件**：**当粒度声明与实际数据不一致时**（表注释写「一行一单」，实际因为退款产生了重复行），基于它的汇总会静默翻倍，且不报错。症状：同一指标从明细直接算与从汇总算，结果差一个整数倍。修法是加一条唯一性校验（见本文「质量校验的放置」），而不是改注释。
+- **档位**：本条的建模方法论出处是 Kimball 的维度建模（【公开：Ralph Kimball《The Data Warehouse Toolkit》初版, 1996】）与企业级范式建模、自顶向下的 Inmon（【公开：《Building the Data Warehouse》初版, 1992】），论述见 [§3.2.1 的「真实使用」段](01-data-warehouse-section-3-sec3.md)，此处不重复展开。
+
+**缓慢变化维（SCD Type 2）**
+
+- **做法**：维度表加三列（生效时间、失效时间、是否当前版本），并在同一套体系里**只选一种「当前版本」表示法**（`9999-12-31` 或 `NULL`，不混用）；每次装载先关旧行、再插新行。
 
 ```sql
--- 客户维度表
-CREATE TABLE dim_user (
-  user_id        BIGINT,
-  user_name      STRING,
-  age            INT,
-  city           STRING,
-  vip_level      STRING,
-  -- SCD Type 2 字段
-  effective_dt   DATE,    -- 生效时间
-  expire_dt      DATE,    -- 失效时间（9999-12-31 表示当前有效）
-  is_current     BOOLEAN  -- 是否当前版本
-) STORED AS PARQUET;
+-- 1) 关掉旧版本（只对发生变化的键）
+UPDATE dim_user SET expire_dt = DATE '${biz_date}', is_current = FALSE
+WHERE user_id IN (SELECT user_id FROM ods_user WHERE dt = '${biz_date}')
+  AND is_current = TRUE
+  AND (user_name, city, vip_level) IS DISTINCT FROM
+      (SELECT user_name, city, vip_level FROM ods_user WHERE dt = '${biz_date}' AND user_id = dim_user.user_id);
 
--- 插入新版本
+-- 2) 插入新版本
 INSERT INTO dim_user
 SELECT user_id, user_name, age, city, vip_level,
-       current_date AS effective_dt,
-       DATE '9999-12-31' AS expire_dt,
-       TRUE AS is_current
-FROM ods_user
-WHERE dt = '${biz_date}';
+       DATE '${biz_date}' AS effective_dt, DATE '9999-12-31' AS expire_dt, TRUE AS is_current
+FROM ods_user WHERE dt = '${biz_date}';
 ```
 
-**3. 增量 MERGE（UPSERT）**
+- **机制**：因为属性变更被表达成「区间」而不是「覆盖」，所以历史事实表可以按**事实发生时点的维度版本**去关联，得到「当时他是银卡」而不是「现在他是金卡」——这一条正是数仓「时变」特征在表结构上的落地。
+- **失效条件**：**当维表更新频率高于事实表刷新频率时**（用户等级每天变、事实表每周重刷），区间会碎成大量极短区间，JOIN 后的结果随重跑时间不同而不同。症状：同一份历史报表今天和昨天跑出来不一样。修法是给维度属性分级——变化快的属性不要进 SCD Type 2，放进事实表或在查询期取当前值。
+- **档位**：SCD 三种类型的定义见 [§2.1](01-data-warehouse.md)；落地时最常用 Type 2（【经验】）。
+
+**增量 MERGE 的幂等性**
+
+- **做法**：用 MERGE（UPSERT）按业务主键合并，并且**保证同一批数据重复执行结果一致**——主键必须在源端唯一，或先在源侧去重后再 MERGE。
 
 ```sql
--- Iceberg / Hudi / Delta Lake 通用语法
-MERGE INTO dwd_order_order tgt
+-- Iceberg / Hudi / Delta Lake 通用形态
+MERGE INTO dwd_order_detail tgt
 USING (SELECT * FROM ods_order WHERE dt = '${biz_date}') src
 ON tgt.order_id = src.order_id
 WHEN MATCHED THEN UPDATE SET *
 WHEN NOT MATCHED THEN INSERT *;
 ```
 
-**4. 数据质量监控**
+- **机制**：因为写入变成「按主键对齐」而不是「追加」，所以任务重跑、回溯补数、上游重发都不会产生重复行——这条性质是调度重试与补数能安全进行的前提。
+- **失效条件**：**当源侧主键不唯一时**（一个订单号在多张源表里各出现一次），MERGE 会按最后一个到达的行更新，结果依赖执行顺序。症状：同一个补数任务两次执行得到不同结果。修法是 MERGE 前先对源侧做主键聚合（明确取值规则），并把规则写进加工说明。
+- **档位**：MERGE 对表格式的事务能力有要求，具体支持范围以各表格式（Iceberg / Hudi / Delta Lake）官方文档当前版本为准。
+
+**质量校验的放置（入仓门禁 vs 下游告警）**
+
+- **做法**：同一套规则（非空、唯一、枚举、区间、波动）挂两个位置——ODS→DWD 的入仓口做**门禁**（不合格阻断本次产出），DWD→DWS 之后做**告警**（发现即通知但不阻断）。
 
 ```python
-# Great Expectations 示例
 import great_expectations as gx
 
 context = gx.get_context()
-batch = context.get_batch(
-    {"datasource_name": "iceberg", "table_name": "dwd_order_order"}
-)
+batch = context.get_batch({"datasource_name": "iceberg", "table_name": "dwd_order_detail"})
 
-# 校验规则
 batch.expect_column_values_to_not_be_null("order_id")
-batch.expect_column_values_to_be_unique("order_id")
-batch.expect_column_values_to_be_between("order_amount", 0, 1000000)
-batch.expect_column_value_lengths_to_be_between("order_status", 1, 20)
+batch.expect_column_values_to_be_unique("order_id")          # 粒度声明的一致性校验
+batch.expect_column_values_to_be_between("amount", 0, 1000000)
+batch.expect_column_values_to_be_in_set("order_status", ["PAID", "REFUND", "CANCEL"])
 
 validation_result = batch.validate()
 ```
 
-### 4.3 工具链与平台（含 2024-2025 新工具）
+- **机制**：因为门禁拦在数据进入下一层之前，错误不会向下游传播；而告警放在下游，是因为不是所有异常都该阻断产出（大促期间金额分布本就会异常）。两类规则的区别是**「这条规则错了要不要停当天产出」**，不是「重要程度」。
+- **失效条件**：**当规则把「业务合法值」判成违规时**（新上线一个订单状态、新开一个地区），门禁会阻断正常产出。症状：大促或新功能上线当天产出失败，且失败原因是枚举校验。修法是把枚举类规则改成「集合外值告警 + 人工确认后入库」，只有主键与粒度类规则留在门禁上。
+- **档位**：工具可选 Great Expectations / Datafold / 自研，也可用云数仓自带的数据质量能力（如云厂商的 Data Metric Functions 一类），具体能力以各产品官方文档当前版本为准（【经验】参照：多数团队的规则数以「每张核心表 3–10 条」起步，随事故增补）。
 
-**离线数仓工具链**：
+**分区、保留与小文件治理**
 
-| 组件 | 主流工具 | 2024-2025 新趋势 |
-| --- | --- | --- |
-| 存储 | Hive / MaxCompute / Greenplum | Iceberg / Hudi / Paimon 湖仓 |
-| 计算 | Spark SQL / HiveQL / Tez | Spark 4.0、DuckDB 内嵌 |
-| 调度 | Airflow / DolphinScheduler / DataWorks | Argo Workflows（K8s 原生） |
-| 元数据 | Apache Atlas / DataHub / OpenMetadata | Unity Catalog（Databricks）、Snowflake Open Catalog |
-| 数据质量 | Great Expectations / Datafold / Monte Carlo | Soda Core 3.x、Snowflake DMF |
-| 血缘 | OpenLineage / Apache Atlas | DataHub GMS、Atlan |
+- **做法**：分区键按查询模式定（按天最常见），并配三件事——**保留周期**（写死天数）、**归档触发条件**（时间 / 大小 / 访问频率）、**compaction 与快照过期作业**。
+- **机制**：因为扫描量由「命中的分区数 × 分区内文件数」共同决定，所以只设分区不做小文件治理，读取仍会被文件打开次数拖住——写入侧省下的每一次小提交，都会在读取侧还回来。
+- **失效条件**：**当写入频率高、每次落盘文件很小时**（分钟级微批写同一分区），「开放 + 治理」的湖仓形态反转成读放大与元数据压力（§3.2.5 的失效点）。症状：查询耗时随写入次数缓慢上升，而数据总量没怎么变。判据：抽一个分区，数其中的文件数与平均文件大小，对比查询耗时曲线。
+- **档位**：【经验】——小文件的目标大小与 compaction 频率随表格式与引擎不同，应按各自的运维文档实测确定，不要照搬默认值。
 
-**实时数仓工具链**：
+### 4.3 工具链与平台
 
-| 组件 | 主流工具 | 2024-2025 新趋势 |
-| --- | --- | --- |
-| 消息队列 | Kafka / Pulsar / RocketMQ | AutoMQ（云原生）、Confluent Warpstream |
-| 流计算 | Flink / Spark Streaming | Flink 2.0、Decodable（流批一体 SaaS） |
-| 流式存储 | Kafka / Pravega | Apache Fluss（原 Flink Table Store） |
-| 表格式 | Iceberg / Hudi / Delta | Paimon 1.0（流式原生） |
-| 实时 OLAP | ClickHouse / Doris / StarRocks | SelectDB Cloud、StarRocks 3.x |
+**离线数仓**
 
-**云原生数仓（2024-2025）**：
+| 组件 | 主流工具 | 选型判据（在什么约束下选哪个） | 不选它的代价 |
+| --- | --- | --- | --- |
+| 存储 | Hive / MaxCompute / Greenplum；Iceberg / Hudi / Paimon 湖仓表格式 | 判据是「读写是否并发、schema 会不会演进、要不要时间旅行」：三者都要 → 表格式 + 对象存储；只要有 SQL 与稳定 schema → 传统 MPP / 云数仓更省运维 | 选表格式但不上 compaction 与快照过期 → 小文件与快照堆积，读取被元数据拖垮 |
+| 计算 | Spark SQL / HiveQL / Tez；Spark 新版 / DuckDB 内嵌 | 判据是「数据规模」与「是否需要调度编排」：PB 级批处理用 Spark 一类分布式引擎；单机可放下的分析（GB–TB）用 DuckDB 内嵌，省掉集群与调度 | 小数据上大引擎 → 集群启动与 shuffle 开销高于计算本身 |
+| 调度 | Airflow / DolphinScheduler / DataWorks；Argo Workflows | 判据是「运行在什么之上」与「谁维护」：已在 K8s 上用 K8s 原生编排降低组件面；已用云平台则用平台自带调度以减少自建 | 调度与加工引擎各自独立演进 → 补数、重跑、依赖管理要在两处对齐 |
+| 元数据 | Apache Atlas / DataHub / OpenMetadata；Unity Catalog / Snowflake Open Catalog | 判据是「是否要托管多引擎」：单引擎用云厂商目录即可；多引擎共存必须有引擎中立的目录 | 目录绑死单一引擎 → 换引擎时元数据（尤其权限与血缘）要重做一遍 |
+| 数据质量 | Great Expectations / Datafold / Monte Carlo；Soda Core / 云数仓内置质量能力 | 判据是「规则谁写、在哪执行」：规则由数据团队写在仓库里 → 代码化框架；希望零开发 → 云平台内置能力 | 质量只挂在最终产物上 → 错误已经穿过整条链路，定位要回溯每一层 |
+| 血缘 | OpenLineage / Apache Atlas；DataHub GMS / Atlan | 判据是「血缘从哪里采」：能从作业与查询日志自动解析的优先；纯人工登记三个月后就不可信 | 只做表级血缘 → 字段改名仍会引爆下游，且门禁粒度太粗被绕过 |
+
+**实时数仓**
+
+| 组件 | 主流工具 | 选型判据 | 不选它的代价 |
+| --- | --- | --- | --- |
+| 消息队列 | Kafka / Pulsar / RocketMQ；AutoMQ / Confluent Warpstream | 判据是「是否要保留长历史 + 是否接受托管」：需要按时间回溯消费 → 保留策略可配的队列；云上成本敏感 → 存算分离的托管形态 | 队列只当传输、不留历史 → 实时链路无法重放，口径修正只能打补丁 |
+| 流计算 | Flink / Spark Streaming；Flink 新版本 / Decodable（流批一体 SaaS） | 判据是「有没有状态与 exactly-once 需求」：有窗口与状态就用有状态引擎；只做无状态转换可用更轻的方案 | 用无状态方式拼窗口 → 乱序与重复要自己在应用层补，最终一致性无人兜底 |
+| 流式存储 | Kafka / Pravega；Apache Fluss（原 Flink Table Store） | 判据是「数据要不要被 SQL 直接查询」：只做管道用队列；要被流式 SQL 查询用流式存储 | 把明细长期压在队列里做查询 → 查询能力与保留成本都不划算 |
+| 表格式 | Iceberg / Hudi / Delta；Paimon | 判据是「写入形态」：以流式 CDC 写入为主、需要流式更新 → 面向流式更新的表格式；以批写为主 → 三者差异在事务与演进能力 | 表格式与写入模式不匹配 → 只能靠更频繁的 compaction 硬撑，运维负担转移到人身上 |
+| 实时 OLAP | ClickHouse / Doris / StarRocks；SelectDB Cloud / StarRocks 3.x | 判据是「点查多还是扫描多」「要不要强 JOIN」：高并发点查与大宽表扫描倾向不同引擎；需要多表 JOIN 与物化视图改写则另选 | 把 OLAP 同时当成实时明细存储与报表服务 → 写入侧和查询侧互相挤占，两边都不稳 |
+
+**云原生数仓与近年能力演进**
 
 - **Snowflake**：存算分离、Cloud Services 层、Snowpark（Python / Java UDF）、Iceberg Tables、Streamlit 集成。
 - **BigQuery**：Serverless、Omni（跨云）、Vector Search、Embedded BI。
 - **Redshift**：Serverless、RA3 存算分离、Zero-ETL 集成（与 RDS / Aurora）。
 - **Databricks**：Lakehouse Platform、Unity Catalog、Databricks SQL、MLflow 集成。
-- **阿里云 MaxCompute 2.0**：Hologres 实时数仓、DataWorks 一站式开发、OneData 体系。
-- **腾讯云 TCHouse**：ClickHouse 增强版。
-- **华为云 DWS**：GaussDB(DWS) 实时数仓。
+- **阿里云 MaxCompute**：Hologres 实时数仓、DataWorks 一站式开发、OneData 体系（案例见 [§6](01-data-warehouse-section-6-sec6.md)）。
+- **腾讯云 TCHouse**：ClickHouse 增强版；**华为云 DWS**：GaussDB(DWS) 实时数仓。
 
-**2024-2025 新工具亮点**：
+近年的能力演进方向：**Apache Paimon**（流式表格式，CDC 与流式摄取一体）、**Apache Doris 2.x / 3.x**（存算分离、向量化执行）、**StarRocks 3.x**（存算分离、物化视图增强、湖上外表查询）、**DuckDB 1.x**（内嵌式 OLAP，直接读 Parquet 做本地分析）、**ClickHouse**（共享存储形态、轻量更新、Kafka 表引擎增强）、**SelectDB Cloud**（云原生实时数仓）。这些产品的具体能力边界与版本差异，请以其官方文档当前版本为准。
 
-- **Apache Paimon 1.0**（2024 毕业）：Flink 生态原生的流式表格式，CDC + 流式摄取一体。
-- **Apache Doris 2.1 / 3.0**（2024-2025）：存算分离架构、Lightning Hash Join、向量化 3.0。
-- **StarRocks 3.x**：存算分离 Cloud Native、Materialized View 增强、Iceberg 外表查询。
-- **DuckDB 1.x**：内嵌式 OLAP（类似 SQLite），Python/R 直接集成，AI 时代新宠。
-- **ClickHouse 24.x**：SharedMergeTree 分布式增强、Lightweight updates、Kafka 表引擎增强。
-- **SelectDB Cloud**：云原生实时数仓，对标 Snowflake + ClickHouse。
+这一类里最容易被误选的是**实时 OLAP**：团队按「谁的 benchmark 快」来选，而忽略了自己的写入形态——如果写入是高频微批更新，那么查询侧的向量化优势会被写入侧的合并压力抵消；误选的后果不是「查得慢」，而是**同一份数据要维护两套**（一套给写入、一套给查询），分层设计被这一次选型悄悄推翻。判据只有一条：先量出你的写入频率与单批行数，再去看候选引擎在同样写入形态下的表现。
 
-### 4.4 代码 / 示例
+### 4.4 存量迁移
 
-**示例 1：基于 Flink + Iceberg 搭建实时数仓**
+**① 先做什么，立刻见效且可回退**
+
+给现有表**补元数据**：粒度声明、Owner、更新方式（是否含物理删除）、保留周期。这一步不改表结构、不改加工逻辑、不动调度，因此可以整体回退。它立刻见效的原因是它改变了日常沟通的输入——补上粒度声明之后，「这个指标怎么算的」从「去问写这张表的人」变成「读表注释」。存量数仓最大的成本从来不是存储，是口径问题每次都要重新讨论一遍。
+
+**② 历史资产怎么分类处理**
+
+三分类，判据是**下游数量 × 最近改动时间**：
+
+- **口径稳定且被多个下游复用**：纳入公共层（DWD / DWS），按新规范补齐粒度与命名，属于「只改动的部分」这一档——**不重写数据**，只补元数据与规范。
+- **单下游的烟囱表**：冻结新增（不再往上加列），随消费方下线而作废；在下线前只登记不派工。不要试图把它「规范化」，它本来就是为了服务一个应用长出来的。
+- **口径未定 / 无人认领**：打标挂账。只在它下次被改动时触发治理（改哪张治哪张），避免为了统一口径而全量返工。
+
+层数收敛（例如 7–8 层收到 4 层）**必须一次收一层**，每层收敛后观察一个完整产出周期；一次收两层，出问题时无法判断是哪次合并导致的。
+
+**【推算】** 全覆盖一轮要多久：设存量表 5000 张，按「只治理被改动的表」策略，若每月实际被改动约 5%（250 张/月），则覆盖一轮约 20 个月。推导链是「存量表数 ÷ 每月被改动表数」，其中 5% 是示例系数，**必须用你自己的版本历史或调度记录跑出真实值**——它的用途是回答「要不要全量返工」：按改动驱动，20 个月自然覆盖；按全量返工，同样的人力要一次性投入且中途不能停。
+
+**③ 迁移期的双轨怎么维持、维持多久**
+
+- **双轨的含义是「新旧口径并行、且明确以哪一条为准」**：实时与离线并存时，**核心指标以离线口径为准，实时结果用于监控与快速响应**（§3.2.3 的真实使用）。
+- 双轨期必须做的三件事：旧链路打上「将下线」标记并写下线条件；新链路的下游要逐个切换并登记；两边的口径差异要有对账作业，而不是靠人眼比对。
+- 双轨期以**季度**为观察单位（【经验】）；每个季度看一次「旧链路的下游还剩几个」。
+
+**④ 什么信号说明可以退出双轨**
+
+三个信号同时出现才收口：① 旧链路的下游清单里的应用**连续一个季度不再新增**；② 对账作业连续多个周期差异为零（或差异可被固定规则解释）；③ 核心指标定义在语义层或指标清单里只剩一处。任一不满足就继续双轨——提前下线旧链路的代价是「某个没人记得的下游突然没有数了」。
+
+**迁移期有一件事不要做**：**不要为了迁移而先改指标口径**。口径与链路同时变，出问题时无法判断是新链路的问题还是新口径的问题（§3.6 的跃迁表把「口径不变 / 口径可重放」写进了「迁移的代价」列）。正确顺序是：口径先冻结在旧链路上并跑通对账，再迁移实现。
+
+### 4.5 模板 / 示例
+
+**示例 1：Flink + Iceberg 搭建实时 DWD**
 
 ```java
-// Flink CDC 写入 Iceberg（实时 DWD）
 StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-env.enableCheckpointing(60000); // 1 分钟 Checkpoint
+env.enableCheckpointing(60000);            // checkpoint 间隔决定重放粒度，不是越大越好
 
-// MySQL CDC 源
 MySqlSource<String> source = MySqlSource.<String>builder()
-    .hostname("mysql-host")
-    .port(3306)
-    .databaseList("orders")
-    .tableList("orders.order_info")
-    .username("cdc_user")
-    .password("cdc_pass")
+    .hostname("mysql-host").port(3306)
+    .databaseList("orders").tableList("orders.order_info")
+    .username("cdc_user").password("cdc_pass")
     .deserializer(new JsonDebeziumDeserializationSchema())
     .build();
 
 DataStream<String> stream = env.fromSource(
-    source, WatermarkStrategy.noWatermarks(), "MySQL CDC"
-);
+    source, WatermarkStrategy.noWatermarks(), "MySQL CDC");
 
-// 解析 + 转换
-DataStream<RowData> parsed = stream
-    .map(json -> parseOrder(json))
-    .returns(Types.ROW(/*...*/));
+DataStream<RowData> parsed = stream.map(json -> parseOrder(json)).returns(Types.ROW(/* ... */));
 
-// 写入 Iceberg（Hive Catalog）
-TableLoader tableLoader = TableLoader.fromHadoopTable(
-    "hdfs:///warehouse/iceberg/dwd_order_order"
-);
-
-FlinkSink.forRowData(parsed)
-    .tableLoader(tableLoader)
-    .overwrite(false)
-    .append()
-    .build();
+TableLoader tableLoader = TableLoader.fromHadoopTable("hdfs:///warehouse/iceberg/dwd_order_detail");
+FlinkSink.forRowData(parsed).tableLoader(tableLoader).overwrite(false).append().build();
 
 env.execute("Realtime DWD Order");
 ```
 
-**示例 2：DuckDB 内嵌分析（2024 新工具）**
+**怎么用**：`.tableList(...)` 与 checkpoint 间隔换成你自己的源表与可接受的故障重放窗口；`parseOrder` 里必须完成 OneID 归一与枚举标准化（否则 DWD 的粒度声明不成立，见 §4.2 第一条）。这段代码给出的是骨架，不是可直接上线的实现——生产环境还要补：源表增量的起点（先全量后增量）、写入主键（幂等）、以及延迟监控。
+
+**示例 2：DuckDB 内嵌分析**
 
 ```python
 import duckdb
 
-# 直接读取 Parquet 文件进行分析（无需数据库）
 result = duckdb.query("""
-    SELECT
-        region,
-        SUM(order_amount) AS gmv,
-        COUNT(DISTINCT user_id) AS users
-    FROM read_parquet('s3://datalake/dwd_order_order/dt=2025-01-01/*.parquet')
-    WHERE order_status = 'paid'
-    GROUP BY region
-    ORDER BY gmv DESC
+    SELECT region, SUM(order_amount) AS gmv, COUNT(DISTINCT user_id) AS users
+    FROM read_parquet('s3://datalake/dwd_order_detail/dt=2025-01-01/*.parquet')
+    WHERE order_status = 'PAID'
+    GROUP BY region ORDER BY gmv DESC
 """).to_df()
-
 print(result)
 ```
+
+**怎么用**：这条路径适合「不需要产出正式表的一次性核对」——例如验证上面那条 MERGE 是否产生了重复行。不要在它上面搭长期链路：没有调度、没有血缘、没有权限隔离，跑通很容易，但三个月后没人记得这个数字是怎么来的（§3.7 的自检项里「新建一张表时能否回答它的下游」对这类脚本同样成立）。
 
 **示例 3：指标语义层（MetricFlow）**
 
 ```yaml
-# metrics/orders.yml
+# metrics/gmv.yml —— 一个指标一个文件
 metric:
   name: gmv
   type: simple
-  type_params:
-    measure: total_order_amount
-  description: 商品交易总额
-  filter: |
-    {{ Dimension('order__is_paid') }} = 'true'
+  type_params: { measure: total_order_amount }
+  description: 商品交易总额（退款前）
+  filter: "{{ Dimension('order__is_paid') }} = 'true'"
+```
 
+```yaml
+# metrics/paid_orders.yml
 metric:
   name: paid_orders
   type: simple
-  type_params:
-    measure: count_orders
-  filter: |
-    {{ Dimension('order__is_paid') }} = 'true'
+  type_params: { measure: count_orders }
+  filter: "{{ Dimension('order__is_paid') }} = 'true'"
+```
 
+```yaml
+# metrics/arpu.yml
 derived_metric:
-  name: arpu  # 单用户平均收入
+  name: arpu                        # 单用户平均收入
   type: ratio
-  type_params:
-    numerator: gmv
-    denominator: paid_users
+  type_params: { numerator: gmv, denominator: paid_users }
 ```
 
 ```python
-# 自然语言查询 + 指标层
 from metricflow import MetricFlowClient
-client = MetricFlowClient()
 
-# 查询 GMV
-df = client.query(
-    metrics=["gmv"],
-    group_by=["region"],
-    start_time="2025-01-01",
-    end_time="2025-01-31"
-)
+client = MetricFlowClient()
+df = client.query(metrics=["gmv"], group_by=["region"],
+                  start_time="2025-01-01", end_time="2025-01-31")
 ```
 
----
+**怎么用**：`description` 与 `filter` 是这份定义里最该花时间的两格——它们就是口径本身（`filter` 换成你自己的口径表达式，不要照抄这里的 `order__is_paid`）。`derived_metric` 用于把「比率类指标」定义在语义层而不是下游报表里，否则同一个 ARPU 会在每个看板里被重新实现一遍；注意上例的 `denominator: paid_users` 指向一个此处未列出的指标，套用时要把它一并定义出来。上面三段是**示意结构**，**各自单独成文件**——多个指标挤进同一个 YAML 文件的同一个顶层键下时，后一个会静默覆盖前一个（`gmv` 会消失，而 `arpu` 的 numerator 正指向它）；`metric` / `derived_metric` 的键名、层级与包名、客户端 API 均以 dbt Semantic Layer / MetricFlow 官方文档与 spec 的当前版本为准。MetricFlow 由 Transform 开源、其后被 dbt Labs 收购并整合进 dbt Semantic Layer（时间线以 dbt 官方公告为准，另见 [§3.2.4](01-data-warehouse-section-3-sec3.md)）。
+
+**示例 4：存量表治理批次表**
+
+| 表名 | 层 | 下游数 | 最近改动 | 处置 | 退出条件 |
+| --- | --- | --- | --- | --- | --- |
+| dwd_order_detail | DWD | 多 | 本周 | 纳入公共层，补粒度声明与 Owner | 元数据补齐即完成 |
+| ads_mkt_wide | ADS | 1 | 3 个月前 | 冻结新增 | 消费方下线后作废 |
+| dws_user_old | DWS | 0（疑似） | 1 年前 | 打标挂账，先核实下游 | 核实无下游 → 归档 |
+| ods_legacy_x | ODS | 多 | 未记录 | 补更新方式与保留周期 | 保留策略写死即完成 |
+
+**怎么用**：每行只填四个可核实的量（层、下游数、最近改动、退出条件），**不要填工时估算**——这批表的处置是由「还会不会被改动」决定的，不是由「改起来多麻烦」决定的。第三行的「疑似 0 下游」必须核实：下游数为 0 而仍被查询的情况，在只有人工登记的系统里很常见。
+
+### 4.6 自检清单
+
+- [ ] 抽 3 张事实表，粒度声明是否写在表注释里，且与分区键一致？
+- [ ] 抽 1 个维度（如客户），它在多个业务过程里是否用同一套编码？
+- [ ] 问「这张源表有没有物理删除、删除怎么进仓」，接入清单上有没有答案？
+- [ ] 抽 1 张 ODS 表，在保留期内能否用它重算任意一天的下游？
+- [ ] 抽 1 个 DWD 字段，能否沿来源映射回到 ODS 的具体列？
+- [ ] 抽 3 个维度，SCD 类型是否写明、「当前版本」的表示法是否统一（不混用 `9999-12-31` 与 `NULL`）？
+- [ ] 同一个补数任务跑两次，结果是否完全一致（幂等）？源侧主键是否唯一？
+- [ ] 抽 1 张 DWS 表，数出它的下游报表数并把该数字写进表注释——下一次口径争议能否不靠人问、直接读注释判定？（「粒度是否对应真实的公共查询模式」这一原始判据见 [§3.7](01-data-warehouse-section-3-sec3.md)）
+- [ ] 迁移期有没有链路绕过中间层、直接从 ODS 出报表？有则它必须进「旧链路」下线清单，否则退出双轨时它会突然断数（原判据见 [§3.7](01-data-warehouse-section-3-sec3.md)）。
+- [ ] 质量规则里有几条挂在入仓门禁、几条只做告警？枚举类规则挂错位置会在新功能上线当天阻断产出。
+- [ ] 抽一个分区，数文件数与平均文件大小；查询耗时曲线是否随写入次数缓慢上升？
+- [ ] 抽 1 个指标，它的定义是否只出现在一处？抽 1 条链路，改动前能否列出下游？
+
+这 12 条里，前 6 条是**建模与输入项**（决定数据能不能被正确理解），第 7–9 条是**加工与产出项**（决定重跑是否安全、层是不是真的被用起来了），第 10–12 条是**质量、成本与治理项**（决定错误能不能被拦住、成本会不会悄悄转移、口径能不能收敛）。前 6 条性价比最高：它们不需要任何新工具，只需要翻一次表定义和注释，却能一次性回答「这套数仓的口径到底有没有定义」。
+
+### 4.7 小结
+
+> 本节小结：七步可以并行、引擎可以换，但**「每张事实表的粒度能用一句话说清、并与分区键一致」不能省**——它是整条链路上唯一那个决定成败的环节：粒度定了，接入采什么、分区怎么切、汇总到哪一层、指标物化在哪，全是它的下游结果；粒度没定，后面每一层都在替它做一次隐式假设，而这些假设会在某次口径争议里同时暴露。它比其余环节更值得投入，因为它不花工具预算、不需要新增人手，唯一的成本是建模阶段多写一张表，而它一旦缺失，返工面覆盖 Step 2–5 的全部产出。
+>
+> 配合 [§ 2 核心原理](01-data-warehouse.md)、[§ 3 设计模式与范式](01-data-warehouse-section-3-sec3.md) 与 [§ 6 落地实践](01-data-warehouse-section-6-sec6.md) 阅读。
