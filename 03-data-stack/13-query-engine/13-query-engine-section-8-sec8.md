@@ -265,7 +265,7 @@ Trino 把内存分为**三层 Pool**：
 - 《Presto: SQL on Everything》（ICDE 2019）——Connector 抽象的原始论述。
 - Apache Iceberg 官方文档 Time Travel 与 Statistics 章节——Iceberg Connector 如何利用 manifest 提供 CBO 统计信息。
 - Starburst 关于 JDBC Connector、Elasticsearch Connector、Kafka Connector 的官方文档——各 Connector 的能力差异与生产经验。
-- **Netflix 自研 Iceberg Connector 的演进** —— Netflix 在 Hive Connector 基础上扩展 Iceberg 支持，绕过 HMS 瓶颈，实现 EB 级 Iceberg 表的联邦查询。
+- **Netflix 自研 Iceberg Connector 的演进** —— Netflix 在 Hive Connector 基础上扩展 Iceberg 支持，绕过 HMS 瓶颈，实现 PB 级 Iceberg 表的联邦查询。
 - **Uber 自研 Connector 接入 AresDB** —— Uber 通过自研 Connector 把内部 AresDB（时序 OLAP）接入 Presto，统一跨源查询入口。
 - **字节跳动自研 Kafka Connector 流式查询** —— 字节扩展 Trino 的 Kafka Connector，支持精确一次流式拉取 + 自定义 partition 切分，对应国内大厂流式联邦查询的代表。
 - **LinkedIn Presto 与 Pinot 联邦** —— LinkedIn 通过自定义 Connector 让 Presto 既能查湖又能查 Pinot（实时 OLAP），是 Presto 跨源 CBO 的工业代表。
