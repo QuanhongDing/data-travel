@@ -166,7 +166,7 @@ CultureHealth = PsychologicalSafety × Trust × Ownership × CustomerFocus
   - Trust: 信任度（1-5）
   - Ownership: 担当（1-5）
   - CustomerFocus: 客户至上（1-5）
-  - 总分 ≥ 60：健康文化
+  - 乘积分 ≥ 60：健康文化
 ```
 
 **强文化 vs 弱文化的形式化**：
@@ -176,7 +176,7 @@ CultureStrength = ValueConsistency × BehaviorConsistency × DecisionConsistency
   - ValueConsistency: 价值观一致性（理想 ≥ 4）
   - BehaviorConsistency: 行为一致性（理想 ≥ 4）
   - DecisionConsistency: 决策一致性（理想 ≥ 4）
-  - 总分 ≥ 10：强文化
+  - 乘积分 ≥ 64：强文化（三因子取「理想 ≥ 4」时，4 × 4 × 4 = 64）
 ```
 
 **Schein 三层模型**：

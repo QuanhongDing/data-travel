@@ -109,7 +109,7 @@
 **1. 考察点**
 
 - 是否理解「湖上 ACID」为什么难——文件可被任意覆盖、并发写入无中心协调、对象存储的 list 与 rename 都是 eventual；这就要求表格式自己实现乐观并发 + 原子提交。
-- 能否说清 Iceberg **snapshot 隔离**的具体实现：原子 rename manifest list、snapshot 引用计数、commit retry。
+- 能否说清 Iceberg **snapshot 隔离**的具体实现：**原子替换表指针**（写新的 metadata.json 再条件写入 / CAS 切换）、manifest list 与 snapshot 引用计数、commit retry。
 - 是否能讲清 Hudi Timeline 的**动作语义**（commit / clean / delta / rollback）以及它和 Iceberg 的本质区别——前者是「时间线上一系列动作」，后者是「一份快照引用一组文件」。
 - 加分项：理解 ACID 在湖上的"够用就行"——READ_COMMITTED 已经能满足 90% 场景，Iceberg 的 snapshot 隔离比真正可串行化更宽松。
 

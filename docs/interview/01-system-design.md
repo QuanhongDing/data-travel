@@ -34,8 +34,8 @@
 
 - **Netflix 实时数据管道**（Keystone / Flink / Iceberg 迁移）
 - **Uber Hudi 起源**（增量处理 vs 全量重算）
-- **阿里 OneData / 飞鸽 / 银翼**（数据中台 + 指标平台）
-- **字节 DataFinder**（抖音推荐实时特征）
+- **阿里 OneData / OneID / OneService / OneMetric**（四位一体的数据中台）
+- **字节 DataFinder**（数据中台套件 / 指标平台）
 - **Databricks Lakehouse Platform**（Delta Lake / Unity Catalog / Photon）
 - **Snowflake Cortex**（AI 原生云数仓）
 - **招行 / 微众 / 平安**（金融级实时风控 / 反欺诈）

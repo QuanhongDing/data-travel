@@ -114,7 +114,7 @@
 - 2020：Kafka Tiered Storage（KIP-405）。
 - 2021：Pulsar 分层存储成熟（支持 S3/OSS）。
 - 2022：Kafka KRaft（去 ZooKeeper）。
-- 2023：AutoMQ、Warpstream（云原生无 Kafka 协议）。
+- 2023：AutoMQ、Warpstream（云原生无服务器，兼容 Kafka 协议）。
 - 2024：Apache Fluss 流式存储。
 - 2025：Kafka 4.0（KIP-1030、KIP-1080）、流批一体存储成熟。
 
@@ -225,7 +225,7 @@
 
 - **Kafka Tiered Storage（KIP-405, 2020）**：本地存最近 Segment，远端对象存冷 Segment。
 - **Pulsar Tiered Storage**：所有数据存 BookKeeper + 异步卸载到 S3。
-- **优势**：突破单集群存储上限（PB → EB）、冷数据成本降低 80%。
+- **优势**：保留期可拉长而不必按本地盘单价付费、冷数据成本降低 80%。
 
 **6. 流批一体存储（Streaming + Lakehouse）**：
 
