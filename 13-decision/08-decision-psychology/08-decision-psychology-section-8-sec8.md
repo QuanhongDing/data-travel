@@ -1128,7 +1128,7 @@ Prompt 设计必须解决三个问题：**防幻觉、防漏检、防误导**。
 - Anthropic 公开发表的 Constitutional AI 论文（2022 提出、2024 迭代）——把人类准则显式编码进 AI 推理的范式来源。
 - Daniel Kahneman / Olivier Sibony / Richard Sunner《Noise: A Flaw in Human Judgment》（2021）——"用规则替代部分人判断"降低决策噪声的理论依据。
 - 斯坦福 HAI（Human-Centered AI）研究院关于 LLM 决策辅助与人类审阅的公开研究——AI 不可作决策 Owner 的学术支撑。
-- 本书第 13 章决策心理学章节 §4.4"AI 辅助识别偏误（Python / Claude）"示例——可落地代码模板。
+- 本书第 13 章决策心理学章节 §4.5"AI 辅助识别偏误（Python / Claude）"示例——可落地代码模板。
 - OpenAI / Google 公开的模型能力文档中关于 structured outputs 的章节——结构化输出在偏误检测系统里的工程实现。
 - **丁香园** —— 丁香园的医学知识图谱——药品、疾病、症状、指南的多跳查询与推理。
 - **平安好医生** —— 平安好医生的医疗 AI 特征平台——电子病历、影像、问诊文本向量化，支撑辅助诊断与用药推荐。

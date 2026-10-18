@@ -4,6 +4,8 @@
 
 > 本主题覆盖 Spark 与 Delta Lake / Iceberg / Hudi 等湖格式的集成方式，以及在 Lambda 架构下的角色。OneService 站在消费端，湖与 Lambda 提供"数据可服务化"的存储与计算底座——这一主题的 7 道题回答"底座稳不稳"。
 
+> **断言强度说明**：本文件参考答案与参考资料中，凡以「具体企业名 + 年份 / 结论」形式给出、仅给出人名 / 平台 / 博客名 + 主题（如「某公司 Tech Blog 关于 X 的系列文章」）、或只有编者自拟的主题描述而无确定题名的表述（含其中的规模量级），本节都拿不出可核验的文档名与链接，请按【经验】档理解——以量级与方向读，不当作可引用的单点数字，引用时请自行查证；给出确定书名 / 篇名（含白皮书题名）的条目、给出论文名 + 会议 / 年份的条目、以及点名了产品 / 项目的官方文档条目，可按条目名称或产品名自行检索核验（本节不给精确链接），且并不因此视为已经核实；个别条目的作者 / 会议归属或出处存疑之处已就地加注，以就地注为准。
+
 #### §6.6.1 请描述在将 Spark 应用与 Delta Lake 集成时，为了保证数据的一致性和可靠性，应该采用哪些关键技术（如 ACID 事务、时间旅行、Schema 强制等），并说明这些技术在 OneService 数据服务化场景中如何支撑指标查询的可靠性。
 
 **1. 考察点**
@@ -28,7 +30,7 @@
 - **Schema 强制（Enforcement）**：写入时若列类型/数量不匹配，直接拒绝而非默默允许。这避免了上游 schema 漂移污染 DWS/ADS 层的连锁故障——是 OneService 指标稳定的第一道闸门。
 - **Schema Evolution**：允许加列、修改列类型（受限），让 OneService API 能平滑迭代而不是"加一个字段就迁移全表"。
 
-**第三层：在 OneService 场景中的映射。** 指标平台（如 dbt Semantic Layer、Cube）通常把 Delta Lake 作为最终落盘——指标定义版本化（code as config）+ 湖表快照化（按 dt 分区的版本化）形成"指标可回溯"的物理基础。Databricks 的《Delta Lake and Delta Engine》——官方文档对 ACID / 时间旅行的内部机制有完整论述；阿里云 DataWorks 的湖仓一体方案同样把 Delta/Iceberg 作为 OneService 的存储底座。
+**第三层：在 OneService 场景中的映射。** 指标平台（如 dbt Semantic Layer、Cube）通常把 Delta Lake 作为最终落盘——指标定义版本化（code as config）+ 湖表快照化（按 dt 分区的版本化）形成"指标可回溯"的物理基础。据 Databricks 公开文档，其对 ACID / 时间旅行的内部机制有完整论述（本节无法给出该文档的可核验名称与链接，引用时请以 Databricks 官方文档为准）；阿里云 DataWorks 的湖仓一体方案同样把 Delta/Iceberg 作为 OneService 的存储底座。
 
 **第四层：常见误用与代价。**
 
@@ -51,7 +53,7 @@
 
 **5. 参考资料**
 
-- Delta Lake 官方文档（Databricks 维护）——ACID、时间旅行、Schema 演进的权威出处。
+- Delta Lake 官方文档站点（Databricks 维护，按站点名即可检索）——ACID、时间旅行、Schema 演进的权威出处。
 - Michael Armbrust 等人发表于 VLDB 2020 的论文《Delta Lake: High-Performance ACID Table Storage over Cloud Object Stores》——Delta 设计的原始论文。
 - Apache Iceberg / Apache Hudi 官方文档的并发控制章节——横向对比不同湖格式的并发模型。
 - Databricks Engineering Blog 关于 Delta Live Tables 的系列——湖表之上的 ETL 与数据服务化范式。
@@ -69,7 +71,7 @@
 - **网易雷火** —— 网易雷火《永劫无间》《逆水寒》的实时反作弊与日志血缘——Flink + 图查询识别异常账号链路。
 - **腾讯互娱** —— 腾讯互娱的玩家行为分析平台——日均 PB 级日志走 Flink+Kafka 入湖，下游 BI 与推荐共用。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料分三类理解——（1）给出论文名 + 会议 / 年份的学术条目、给出确定书名 / 篇名（含白皮书题名）的图书与文章条目，以及点名了产品 / 项目的官方文档条目（如 Delta Lake、Apache Iceberg、Apache Hudi、Spark Structured Streaming 的官方文档），可按条目名称或产品名自行检索核验（本节无法给出精确链接），但并不因此视为已经核实；（2）以「具体企业名 + 结论」或规模量级（PB 级、亿级等）形式出现的条目，以及仅给出人名 / 平台 / 博客名 + 主题、无具体文章标题（或题名在库内写法不一、或只有编者自拟的主题描述而无确定题名）的「系列文章 / 公开分享」类条目（如 Databricks Engineering Blog、Netflix Tech Blog、Uber Engineering 的系列文章），本节均无法给出可核验的文档名与链接，请按【经验】档理解（以量级与方向读，不当作可引用的单点数字），引用时请自行查证；（3）个别条目的作者 / 会议归属或出处存疑之处已就地加注，以就地注为准。
 
 ---
 
@@ -144,7 +146,7 @@
 
 - Nathan Marz《Big Data》——Lambda 架构的原始定义。
 - Databricks Delta Live Tables 官方文档——湖格式 + 流批一体的产品化范式。
-- Netflix Tech Blog《Iceberg at Netflix》系列公开文章——头部流媒体公司在湖仓一体的真实实践。
+- Netflix Tech Blog《Iceberg at Netflix》系列公开文章【出处待核验：仅有平台与标题，缺作者、年份与链接；该文题名在本库他处另有《Migrating to Iceberg at Netflix》《Iceberg at Netflix: Trillion-Scale Use Cases》等写法】——头部流媒体公司在湖仓一体的真实实践。
 - Uber Engineering 关于 Apache Hudi 的系列文章——湖格式在大规模 ETL 中的工程权衡。
 - 阿里云《MaxCompute 湖仓一体白皮书》——国内端到端数据平台的工业参考。
 - **宁德时代在电池质检场景的工业大数据平台** —— 基于湖格式 + Lambda 架构承载电芯缺陷数据，端到端暴露为质检应用 API。
@@ -160,7 +162,7 @@
 - **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
 - **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料分三类理解——（1）给出论文名 + 会议 / 年份的学术条目、给出确定书名 / 篇名（含白皮书题名）的图书与文章条目，以及点名了产品 / 项目的官方文档条目（如 Delta Lake、Apache Iceberg、Apache Hudi、Spark Structured Streaming 的官方文档），可按条目名称或产品名自行检索核验（本节无法给出精确链接），但并不因此视为已经核实；（2）以「具体企业名 + 结论」或规模量级（PB 级、亿级等）形式出现的条目，以及仅给出人名 / 平台 / 博客名 + 主题、无具体文章标题（或题名在库内写法不一、或只有编者自拟的主题描述而无确定题名）的「系列文章 / 公开分享」类条目（如 Databricks Engineering Blog、Netflix Tech Blog、Uber Engineering 的系列文章），本节均无法给出可核验的文档名与链接，请按【经验】档理解（以量级与方向读，不当作可引用的单点数字），引用时请自行查证；（3）个别条目的作者 / 会议归属或出处存疑之处已就地加注，以就地注为准。
 
 ---
 
@@ -183,7 +185,7 @@
 
 **第二层：转化为 OneService 的收益。**
 
-- **查询性能**：min/max 索引让 `WHERE event_dt BETWEEN ... AND ...` 走分区裁剪；列存压缩让冷查询的扫描 IO 下降 5~10 倍。Databricks 的 Photon 引擎在 Delta 上能进一步利用这些统计信息。
+- **查询性能**：min/max 索引让 `WHERE event_dt BETWEEN ... AND ...` 走分区裁剪；列存压缩让冷查询的扫描 IO 明显下降（【经验】档：幅度随列存编码、压缩算法与查询涉及的列宽而异，本节无法给出可溯源的统一倍数）。Databricks 的 Photon 引擎在 Delta 上能进一步利用这些统计信息。
 - **一致性**：ACID 让 API 服务层不必担心"读到一半被写入"——尤其是指标重算与实时 upsert 并发时。
 - **可治理**：每个版本都有快照，OneService 的指标血缘、回溯查询、问题定位都能精确到 snapshot id。
 
@@ -224,7 +226,7 @@
 **5. 参考资料**
 
 - Delta Lake / Apache Iceberg 官方文档——两种湖格式的权威对比。
-- Ryan Blue 等人发表于 VLDB 2017 的 Iceberg 论文《Iceberg: A Fast Table Format for the Cloud》——Iceberg 设计原理。
+- Ryan Blue 等人发表于 VLDB 2017 的 Iceberg 论文《Iceberg: A Fast Table Format for the Cloud》——Iceberg 设计原理（本书他处另有 Iceberg 论文条目分别记为 VLDB 2020 的《Iceberg: An Open Table Format for Giant Datasets》与 ACM SIGMOD 2023 的《Optimizing Iceberg Metadata for Petabyte-Scale Data Lakes》；本节的会议与年份以会议官方论文库为准）。
 - Databricks Photon 引擎相关技术博客——列存向量化与谓词下推的最新实践。
 - dbt Semantic Layer / Cube.js 官方文档——OneService 指标层如何利用湖表的能力。
 - **美的集团美擎工业互联网平台采用湖格式 + 列存压缩** —— 把设备遥测数据查询性能提升数倍，统一设备画像查询 API。
@@ -240,7 +242,7 @@
 - **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
 - **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料分三类理解——（1）给出论文名 + 会议 / 年份的学术条目、给出确定书名 / 篇名（含白皮书题名）的图书与文章条目，以及点名了产品 / 项目的官方文档条目（如 Delta Lake、Apache Iceberg、Apache Hudi、Spark Structured Streaming 的官方文档），可按条目名称或产品名自行检索核验（本节无法给出精确链接），但并不因此视为已经核实；（2）以「具体企业名 + 结论」或规模量级（PB 级、亿级等）形式出现的条目，以及仅给出人名 / 平台 / 博客名 + 主题、无具体文章标题（或题名在库内写法不一、或只有编者自拟的主题描述而无确定题名）的「系列文章 / 公开分享」类条目（如 Databricks Engineering Blog、Netflix Tech Blog、Uber Engineering 的系列文章），本节均无法给出可核验的文档名与链接，请按【经验】档理解（以量级与方向读，不当作可引用的单点数字），引用时请自行查证；（3）个别条目的作者 / 会议归属或出处存疑之处已就地加注，以就地注为准。
 
 ---
 
@@ -287,7 +289,7 @@
 
 **第四层：行业实践参考。**
 
-- **Netflix** 在 2023 年公开文章《Iceberg at Netflix》中讨论过 Iceberg 表小文件治理的工程经验，强调"**监控 + 自动 compaction 调度**"是核心。
+- **Netflix** 在公开文章《Iceberg at Netflix》中讨论过 Iceberg 表小文件治理的工程经验，强调"**监控 + 自动 compaction 调度**"是核心【出处待核验：仅有平台与标题，缺作者、年份与链接；该文题名在本库他处另有《Migrating to Iceberg at Netflix》《Iceberg at Netflix: Trillion-Scale Use Cases》等写法】。
 - **Uber** 在 Apache Hudi 的 commit 机制上做过详细分析，提出了 **`Compactor` 服务与写入器解耦**的架构。
 - **阿里云 MaxCompute** 对小文件治理有专门的 compaction 调度工具（`SmartCompaction`），按表热度分组合并。
 
@@ -325,7 +327,7 @@
 - **中国石油** —— 中国石油勘探数据湖——地震、测井、钻井多源异构数据入湖 + AI 油气识别。
 - **南方电网** —— 南方电网营销数据中台——客户、电价、计费、服务的统一数据底座。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料分三类理解——（1）给出论文名 + 会议 / 年份的学术条目、给出确定书名 / 篇名（含白皮书题名）的图书与文章条目，以及点名了产品 / 项目的官方文档条目（如 Delta Lake、Apache Iceberg、Apache Hudi、Spark Structured Streaming 的官方文档），可按条目名称或产品名自行检索核验（本节无法给出精确链接），但并不因此视为已经核实；（2）以「具体企业名 + 结论」或规模量级（PB 级、亿级等）形式出现的条目，以及仅给出人名 / 平台 / 博客名 + 主题、无具体文章标题（或题名在库内写法不一、或只有编者自拟的主题描述而无确定题名）的「系列文章 / 公开分享」类条目（如 Databricks Engineering Blog、Netflix Tech Blog、Uber Engineering 的系列文章），本节均无法给出可核验的文档名与链接，请按【经验】档理解（以量级与方向读，不当作可引用的单点数字），引用时请自行查证；（3）个别条目的作者 / 会议归属或出处存疑之处已就地加注，以就地注为准。
 
 ---
 #### §6.6.5 请解释在 Lambda 架构实践中，如何利用 Spark Structured Streaming 来构建和优化速度层，并说明其与批处理层在数据服务化出口处的统一方式。
@@ -409,7 +411,7 @@
 - **滴滴** —— 滴滴实时订单与司机画像——万级 Flink 作业 + Iceberg 增量读下的冲突与 compaction 治理。
 - **货拉拉** —— 货拉拉城配实时调度——Flink 实时订单分发 + Spark 离线对账 + 路径优化。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料分三类理解——（1）给出论文名 + 会议 / 年份的学术条目、给出确定书名 / 篇名（含白皮书题名）的图书与文章条目，以及点名了产品 / 项目的官方文档条目（如 Delta Lake、Apache Iceberg、Apache Hudi、Spark Structured Streaming 的官方文档），可按条目名称或产品名自行检索核验（本节无法给出精确链接），但并不因此视为已经核实；（2）以「具体企业名 + 结论」或规模量级（PB 级、亿级等）形式出现的条目，以及仅给出人名 / 平台 / 博客名 + 主题、无具体文章标题（或题名在库内写法不一、或只有编者自拟的主题描述而无确定题名）的「系列文章 / 公开分享」类条目（如 Databricks Engineering Blog、Netflix Tech Blog、Uber Engineering 的系列文章），本节均无法给出可核验的文档名与链接，请按【经验】档理解（以量级与方向读，不当作可引用的单点数字），引用时请自行查证；（3）个别条目的作者 / 会议归属或出处存疑之处已就地加注，以就地注为准。
 
 ---
 
@@ -503,7 +505,7 @@
 - **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
 - **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
-> 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料分三类理解——（1）给出论文名 + 会议 / 年份的学术条目、给出确定书名 / 篇名（含白皮书题名）的图书与文章条目，以及点名了产品 / 项目的官方文档条目（如 Delta Lake、Apache Iceberg、Apache Hudi、Spark Structured Streaming 的官方文档），可按条目名称或产品名自行检索核验（本节无法给出精确链接），但并不因此视为已经核实；（2）以「具体企业名 + 结论」或规模量级（PB 级、亿级等）形式出现的条目，以及仅给出人名 / 平台 / 博客名 + 主题、无具体文章标题（或题名在库内写法不一、或只有编者自拟的主题描述而无确定题名）的「系列文章 / 公开分享」类条目（如 Databricks Engineering Blog、Netflix Tech Blog、Uber Engineering 的系列文章），本节均无法给出可核验的文档名与链接，请按【经验】档理解（以量级与方向读，不当作可引用的单点数字），引用时请自行查证；（3）个别条目的作者 / 会议归属或出处存疑之处已就地加注，以就地注为准。
 
 ---
 
@@ -543,13 +545,13 @@
 
 **第五层：架构级应对——增量替代全量。** 在 PB 级数据下，每日全量重算的成本是灾难性的。Hudi / Iceberg 的增量读能力让"只重算变更部分"成为标准做法：
 
-- **Copy-on-Write**：每次变更写新文件，读取时合并。
+- **Copy-on-Write**：每次变更重写受影响的数据文件，读取时不需要再做合并（代价是写放大）。
 - **Merge-on-Read**：基础文件 + 增量日志文件，读取时合并。
 - **增量物化**：DWS 层只对变化分区的维度做聚合重建。
 
 **第六层：行业参考。**
 
-- **Meta（Facebook）** SIGMOD 2013《Scaling the Facebook Data Warehouse to 300 PB》——超大规模数仓的真实工程权衡。
+- **Meta（Facebook）** SIGMOD 2013《Scaling the Facebook Data Warehouse to 300 PB》——超大规模数仓的真实工程权衡（该论文的作者等完整著录信息本节无法核实；本书他处另将一批「Meta 300 PB」表述记为 SIGMOD 2022，是否同一篇本节无法离线判定；本节的会议与年份以会议官方论文库为准）。
 - **Uber** Apache Hudi 系列文章——增量处理在大规模 ETL 中的工程实践。
 - **阿里 MaxCompute** / ODPS 的 Fuxi 调度系统——万节点集群的调度范式。
 
@@ -568,7 +570,7 @@
 
 **5. 参考资料**
 
-- Meta（Facebook）SIGMOD 2013 论文《Scaling the Facebook Data Warehouse to 300 PB》——超大规模数仓权威工业案例。
+- Meta（Facebook）SIGMOD 2013 论文《Scaling the Facebook Data Warehouse to 300 PB》——超大规模数仓权威工业案例（该论文的作者等完整著录信息本节无法核实；本书他处另将一批「Meta 300 PB」表述记为 SIGMOD 2022，是否同一篇本节无法离线判定；本节的会议与年份以会议官方论文库为准）。
 - Apache Spark 官方文档中 AQE、动态资源分配章节。
 - Apache Hudi / Iceberg 官方文档的 compaction 与增量读章节。
 - 阿里 MaxCompute / ODPS 公开技术材料与《大数据之路》。
@@ -586,6 +588,6 @@
 - **宁德时代** —— 宁德时代电池研发数据湖——材料、电芯、PACK 三层研发数据入湖 + Schema 演进 + 时间旅行。
 - **富士康** —— 富士康「关灯工厂」的工业视觉与质量检测数据流——边缘端实时推理、云端批量训练、模型版本回滚。
 
-> 注：以上参考资料均指向公开论文、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。
+> 注：以上参考资料分三类理解——（1）给出论文名 + 会议 / 年份的学术条目、给出确定书名 / 篇名（含白皮书题名）的图书与文章条目，以及点名了产品 / 项目的官方文档条目（如 Delta Lake、Apache Iceberg、Apache Hudi、Spark Structured Streaming 的官方文档），可按条目名称或产品名自行检索核验（本节无法给出精确链接），但并不因此视为已经核实；（2）以「具体企业名 + 结论」或规模量级（PB 级、亿级等）形式出现的条目，以及仅给出人名 / 平台 / 博客名 + 主题、无具体文章标题（或题名在库内写法不一、或只有编者自拟的主题描述而无确定题名）的「系列文章 / 公开分享」类条目（如 Databricks Engineering Blog、Netflix Tech Blog、Uber Engineering 的系列文章），本节均无法给出可核验的文档名与链接，请按【经验】档理解（以量级与方向读，不当作可引用的单点数字），引用时请自行查证；（3）个别条目的作者 / 会议归属或出处存疑之处已就地加注，以就地注为准。
 
 ---

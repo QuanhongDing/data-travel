@@ -124,7 +124,7 @@ Docstore 的本质是**用一个统一的文档模型（JSON / BSON）+ 多种�
 **第一层：三家表格式的起源与目标差异。**
 
 - **Apache Hudi**：2016 年 Uber 内部立项（最初叫"Hoodie"），2020 年成为 Apache 顶级项目。核心目标——**CDC 友好 + 增量处理 + Upsert / Delete 原生支持**。Vinoth Chandar 在 Uber 内部为解决「Hive 表无法 upsert」这一痛点而起。
-- **Apache Iceberg**：2018 年 Netflix 发起，2020 年进入 Apache 孵化，2021 年成为顶级项目。核心目标——**隐藏分区（Hidden Partitioning）+ 多引擎兼容（Spark / Flink / Trino / Hive 都能读）+ 元数据可演进**。起点是 Netflix 在 S3 上做大规模 PB 级分析。
+- **Apache Iceberg**：2017 年在 Netflix 内部立项、2018 年开源并进入 Apache 孵化，2020 年成为顶级项目。核心目标——**隐藏分区（Hidden Partitioning）+ 多引擎兼容（Spark / Flink / Trino / Hive 都能读）+ 元数据可演进**。起点是 Netflix 在 S3 上做大规模 PB 级分析。
 - **Delta Lake**：2019 年 Databricks 开源。核心目标——**Spark 生态内的 ACID + 时间旅行 + Schema 演进**，后逐步扩展到 Flink / Trino。商业上是 Databricks 产品的核心数据格式。
 
 **第二层：六维度横向对比。**
