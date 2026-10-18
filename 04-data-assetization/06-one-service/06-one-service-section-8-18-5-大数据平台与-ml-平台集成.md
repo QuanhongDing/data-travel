@@ -296,7 +296,7 @@ feature:
 
 1. **队列隔离**：
    - YARN 队列：`etl`, `ml-training`, `ml-serving`。
-   - K8s Namespace + ResourceQuota 同理。
+   - K8s Namespace + ResourceQuota 同理：`etl` / `ml-training` / `ml-serving` 各占一个 Namespace，配额与网络策略一起上——共享集群上的资源争抢靠 Namespace + ResourceQuota + NetworkPolicy 这三件套约束。
 2. **优先级**：ML 推理 > ML 训练 > 离线 ETL。抢占策略允许高优先级抢占低优先级。
 3. **错峰调度**：ETL 任务调度在大促低峰期；ML 训练优先占用低峰期 GPU。
 4. **拓扑感知**：ML 训练需要 GPU + 高速网络（如 NVLink / InfiniBand），调度器按节点拓扑绑定。
