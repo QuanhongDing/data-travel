@@ -23,7 +23,7 @@
 
 ### 1.1 是什么
 
-**学术定义**：Anchor Modeling 是由瑞典 OLTP 专家 Olle Regardt 于 2007 年提出、并在 2010 年代逐步成熟的一种**第 6 范式（6NF）**建模方法。它把每个业务实体拆解为 4 类原子构件：
+**学术定义**：Anchor Modeling 是一种**第 6 范式（6NF）**建模方法，2000 年代末由瑞典的建模者提出、并在 2010 年代逐步成熟（提出者与规范年份的归属在公开资料中说法不一，见 §5.1）。它把每个业务实体拆解为 4 类原子构件：
 
 - **Anchor**：业务实体的唯一标识（如客户 ID）
 - **Attribute**：实体的一个描述性属性（如客户的姓名、生日）
@@ -116,7 +116,7 @@ Anchor Modeling 在数据架构栈中的位置：
 
 #### 1.4.1 传统阶段（2007–2015）
 
-- 2007：Olle Regardt 提出 Anchor Modeling 论文
+- 2000 年代末：Anchor Modeling 方法提出（提出者归属在公开资料中说法不一，见 §5.1）
 - 2010：Anchor Modeling 1.0 规范发布，主要在瑞典、欧洲电信 / 金融行业落地
 - 2013：anchor_modeling gem 发布（Ruby 实现），适合 PostgreSQL
 - 2014：bitemporal 时态支持成熟
@@ -391,7 +391,7 @@ WHERE valid_to = CURRENT_TIMESTAMP;
 | 维度 | 本体建模（RDF / OWL） | Anchor Modeling |
 |---|---|---|
 | 形态 | 三元组（Subject-Predicate-Object） | Anchor + Attribute + Tie + Knot |
-| 标准化 | 高（W3C） | 中（Olle Regardt 规范） |
+| 标准化 | 高（W3C） | 中（方法自有规范，非 W3C 标准） |
 | 推理 | 强（推理机） | 弱（SQL JOIN） |
 | 工程落地 | 难（图数据库） | 易（关系数据库） |
 | 时态 | 弱（需 RDF 1.2 / Stardog 等扩展） | 强（原生 bitemporal） |

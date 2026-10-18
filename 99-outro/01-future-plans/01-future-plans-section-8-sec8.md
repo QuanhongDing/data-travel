@@ -78,7 +78,7 @@
 
 - Anthropic 公开的 AI 演进方向（2024-2025）—— 围绕 Computer Use / Tool Use 协议，把"模型使用工具"作为下一代模型的核心能力，直接决定了"数据必须可被工具调用"的栈形态。
 - OpenAI 公开的 Function Calling 与 Assistants API 文档 —— Agent 时代数据 API 必须设计成"模型友好的函数"，而非"BI 友好的 SQL"。
-- Meta（Facebook）公开的 Data Mesh 实践 —— Zhamak Dehghani 加盟 Meta 后推进的数据网格化转型，是 Data Mesh 在超大互联网公司落地的最权威案例。
+- Meta（Facebook）公开的 Data Mesh 实践 —— 数据网格在超大互联网公司落地的公开材料线索（具体采纳形态与来源请按公司名与「data mesh」自行检索核验）。
 - Snowflake 与 Databricks 在 2024-2025 公开的技术演进 —— 均把向量检索、语义层、AI 函数作为主线，体现"数据栈正在向 AI 原生方向收敛"。
 - 阿里巴巴《大数据之路》——OneData 体系下"业务架构 → 数据架构"的映射逻辑，是判断"中国数据栈下一步"的对标基准。
 - **字节跳动 DataFinder** —— 字节跳动 DataFinder 把"业务过程→数据资产"做成可检索、可推理的资产平台，对应"AI 原生数据栈"的工程化形态。
