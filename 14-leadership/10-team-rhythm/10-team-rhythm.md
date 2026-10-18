@@ -115,7 +115,7 @@
 - 2010：Scrum 在互联网普及。
 - 2014：阿里巴巴「**361 + 双月绩效**」节奏。
 - 2019：字节跳动「**双月绩效 + Weekly OKR**」节奏。
-  > **一处需说明的口径分歧**：字节这套「双月」实践的**起始年，本书内四处写法不同**——本节记 2019、[03-performance-management.md](03-performance-management.md) 记 2016、[08-upward-management.md](08-upward-management.md) 记 2017、[08-upward-management-section-6-sec6.md](08-upward-management-section-6-sec6.md) 记 2014。**四处都没有具名出处**，故此处不锁定年份：本行保留 2019（作为「现行节奏」的时点），但请把它读作**量级与时点方向**，不要当作可引用的成立年。
+  > **一处需说明的口径分歧**：字节这套「双月」实践的**起始年，本书内四处写法不同**——本节记 2019、[03-performance-management.md](../03-performance-management/03-performance-management.md) 记 2016、[08-upward-management.md](../08-upward-management/08-upward-management.md) 记 2017、[08-upward-management-section-6-sec6.md](../08-upward-management/08-upward-management-section-6-sec6.md) 记 2014。**四处都没有具名出处**，故此处不锁定年份：本行保留 2019（作为「现行节奏」的时点），但请把它读作**量级与时点方向**，不要当作可引用的成立年。
 - 2019：远程 / 异步节奏标准化。
 
 **AI 原生阶段（2020+，LLM + Agent 驱动）**：
