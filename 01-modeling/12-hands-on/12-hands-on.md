@@ -10,11 +10,11 @@
 
 | 你将解决的问题 | 直接跳到 |
 | --- | --- |
-| 阿里 DataWorks 全家桶到底怎么搭数仓 | §1.1、§4.1 |
-| MaxCompute / Hologres / PAI 怎么配合 | §4.2 |
-| 字节 / 美团 / 华为等大厂的中台工具链长什么样 | §6.1 |
-| Iceberg / Hudi / Paimon 湖仓怎么落地建模 | §4.3 |
-| OneData / OneID / 指标平台端到端怎么搭 | §4.4、§6.2 |
+| 阿里 DataWorks 全家桶到底怎么搭数仓 | §1.1、§4.5 |
+| MaxCompute / Hologres / PAI 怎么配合 | §4.5 |
+| 字节 / 美团 / 华为等大厂的中台工具链长什么样 | §2.3 |
+| Iceberg / Hudi / Paimon 湖仓怎么落地建模 | §4.5 |
+| OneData / OneID / 指标平台端到端怎么搭 | §2.1、§4.5 |
 | AI 增强建模实战（Copilot 辅助建模） | §5.1—§5.4 |
 
 ---

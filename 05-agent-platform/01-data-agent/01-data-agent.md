@@ -15,20 +15,20 @@
 | Data Agent 在 AI 时代数据架构里的位置 | §1.3 |
 | Data Agent 的演进：从 BI → NL2SQL → Agent → Multi-Agent | §1.4 |
 | Text2SQL 的关键原理、链路与失败模式 | §2.x |
-| Data Agent 的设计模式（ReAct / Plan-Execute / Reflexion） | §3.1 |
-| 不同场景怎么选模式？决策表 | §3.2 |
-| 反模式与陷阱（最常踩的 8 个坑） | §3.3 |
+| Data Agent 的设计模式（ReAct / Plan-Execute / Reflexion） | §3.2 |
+| 不同场景怎么选模式？决策表 | §3.3 |
+| 反模式与陷阱（最常踩的 8 个坑） | §3.5 |
 | 从 0 到 1 怎么落地 Data Agent？8 步走 | §4.1 |
 | 关键技术点（指标语义层、SQL 校验、沙箱、可观测） | §4.2 |
-| 工具链与平台（BIRD/Spider 2.0、LangChain、LangGraph、阿里 QuickBI、网易 Code Interpreter） | §4.3 |
-| 代码示例（指标语义层 + LangGraph + SQL 沙箱） | §4.4 |
+| 工具链与平台（BIRD/Spider 2.0、LangChain、LangGraph、阿里 QuickBI、网易有数 AI） | §4.3 |
+| 代码示例（指标语义层 + LangGraph + SQL 沙箱） | §4.5 |
 | AI 时代演进方向（Self-Correction、Multi-Agent Data、GraphRAG） | §5.1、§5.2 |
-| 2024-2025 学术工业进展 | §5.3 |
-| 未来 3-5 年趋势 | §5.4 |
-| 真实案例（阿里瓴羊、字节豆包、Salesforce Tableau GPT） | §6.1 |
-| 踩坑经验（指标口径不一致、SQL 注入、幻觉、权限越界） | §6.2 |
-| 0→1 / 1→10 / 10→100 落地路径 | §6.3 |
-| ROI 评估（怎么向 CFO 证明价值） | §6.4 |
+| 2024-2025 学术工业进展 | §5.4 |
+| 未来 3-5 年趋势 | §5.6 |
+| 真实案例（阿里瓴羊、字节豆包、Salesforce Tableau GPT） | §6 落地实践 §1.1–§1.4 |
+| 踩坑经验（指标口径不一致、SQL 注入、幻觉、权限越界） | §6 落地实践 §1.6 |
+| 0→1 / 1→10 / 10→100 落地路径 | §6 落地实践 §1.5 |
+| ROI 评估（怎么向 CFO 证明价值） | §6 落地实践 §1.7 |
 | Data Agent 与 ChatBI / 传统 BI / Copilot 对比 | §7.1、§7.2、§7.3 |
 
 ---
@@ -83,11 +83,11 @@
 **痛点**：
 
 1. **业务不会 SQL**：90% 业务人员不会 SQL，依赖数据团队。
-3. **自助分析门槛高**：Tableau / PowerBI 学习成本高，新员工需要 1-2 周才能上手。
-4. **ChatBI 准确率低**：传统 ChatBI 在预设问题集外准确率 < 30%。
-5. **指标口径混乱**：财务 / 运营 / 业务对同一指标各算各的，决策打架。
-6. **数据安全风险**：开放自然语言查询容易越权、拖库、注入。
-7. **没有多轮精修**：用户问"GMV"，ChatBI 直接给一个数字，无法回答"为什么""怎么涨的""和上周比"。
+2. **自助分析门槛高**：Tableau / PowerBI 学习成本高，新员工需要 1-2 周才能上手。
+3. **ChatBI 准确率低**：传统 ChatBI 在预设问题集外准确率 < 30%。
+4. **指标口径混乱**：财务 / 运营 / 业务对同一指标各算各的，决策打架。
+5. **数据安全风险**：开放自然语言查询容易越权、拖库、注入。
+6. **没有多轮精修**：用户问"GMV"，ChatBI 直接给一个数字，无法回答"为什么""怎么涨的""和上周比"。
 
 **AI 时代的新诉求**：
 
@@ -244,7 +244,7 @@ Text2SQL 在数学上是「**结构化预测（Structured Prediction）**」问�
 
 - **dbt Semantic Layer**（2023）：dbt 推出，基于 YAML 定义指标。
 - **Cube.js**：前端友好，REST/GraphQL API。
-- **MetricFlow**：Airbnb 开源，与 dbt 集成。
+- **MetricFlow**：dbt Semantic Layer 的指标定义引擎，与 dbt 集成（归属与版本以 dbt 官方文档为准）。
 - **阿里 QuickBI 指标中台**：国内最大实践，统一指标定义。
 - **网易有数指标库**：游戏行业广泛使用。
 
