@@ -259,7 +259,7 @@ GROUP BY user_id;
 
 ```sql
 -- 1) 收集统计信息：CBO 的全部依据
-ANALYZE iceberg.orders;
+ANALYZE iceberg.sales.orders;
 
 -- 2) 让引擎自行决定 Join 分发方式（广播还是分区）
 SET SESSION join_distribution_type = 'AUTOMATIC';
@@ -269,7 +269,7 @@ SET SESSION query_max_run_time = '10m';
 
 -- 4) 核对计划：用 JSON 格式才能看到基数估计与分发方式
 EXPLAIN (FORMAT JSON)
-SELECT * FROM iceberg.orders WHERE user_id = 12345;
+SELECT * FROM iceberg.sales.orders WHERE user_id = 12345;
 ```
 
 **怎么用**：把这四步当一次**回归**跑，而不是当调优技巧。第 1 步之后必须回看第 4 步的基数估计有没有变化——只看到耗时变短不算证据，因为缓存与数据分布都会影响耗时。第 3 步容易被误当成「自适应执行的开关」：它是超时兜底；联邦引擎上与运行时自适应对应的是「可用统计 + 动态过滤 + 运行时决定 Join 分发」这几项的逐条确认，而不是找一个叫 AQE 的开关（那类机制名属于 Spark 侧）。参数名与可取值以当前版本文档为准。
