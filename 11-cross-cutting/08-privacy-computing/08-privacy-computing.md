@@ -2,7 +2,7 @@
 
 > **一句话定位**：用联邦学习、安全多方计算、可信执行环境、差分隐私、同态加密等"数据可用不可见"的技术组合，让数据在不出域的前提下完成价值释放——是 AI 时代跨域协作的核心基础设施。
 
-> 本文是 data-travel 项目 [Ch11 · 横切工程](../../README.md) 的子章节（**08 隐私计算**）。覆盖 **R7 横切能力（质量 / 可观测 / 成本 / 安全）** 中「隐私计算」的联邦学习（FL）、安全多方计算（MPC）、可信执行环境（TEE）、差分隐私（DP）、同态加密（HE），以及 FATE / SecretFlow / PrimiHub / PySyft / OpenMined / Intel SGX / AMD SEV / NVIDIA H100 CC 等关键工具与 2024-2025 工业落地。
+> 本文是 data-travel 项目 [Ch11 · 横切工程](../../README.md) 的子章节（**08 隐私计算**）。覆盖 **横切能力（质量 / 可观测 / 成本 / 安全）** 中「隐私计算」的联邦学习（FL）、安全多方计算（MPC）、可信执行环境（TEE）、差分隐私（DP）、同态加密（HE），以及 FATE / SecretFlow / PrimiHub / PySyft / OpenMined / Intel SGX / AMD SEV / NVIDIA H100 CC 等关键工具与 2024-2025 工业落地。
 
 ## 0. 本章速读地图
 

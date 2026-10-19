@@ -2,7 +2,7 @@
 
 > **一句话定位**：把"数据从哪里来、到哪里去、被谁消费"沉淀为可查询、可视化、可推理的血缘图谱——它既是数据治理的"地图"，也是故障定位与变更管理的"导航仪"。
 
-> 本文是 data-travel 项目 [Ch11 · 横切工程](../../README.md) 的子章节（**05 数据血缘与影响分析**）。覆盖 **R7 横切能力（质量 / 可观测 / 成本 / 安全）** 中「数据血缘」的自动采集、字段级血缘、影响分析、根因分析、与 RAG / GraphRAG 的结合，以及 DataHub / Apache Atlas / OpenLineage / Unity Catalog / Marquez / 字节 DataFinder 等关键工具。
+> 本文是 data-travel 项目 [Ch11 · 横切工程](../../README.md) 的子章节（**05 数据血缘与影响分析**）。覆盖 **横切能力（质量 / 可观测 / 成本 / 安全）** 中「数据血缘」的自动采集、字段级血缘、影响分析、根因分析、与 RAG / GraphRAG 的结合，以及 DataHub / Apache Atlas / OpenLineage / Unity Catalog / Marquez / 字节 DataFinder 等关键工具。
 
 ## 0. 本章速读地图
 

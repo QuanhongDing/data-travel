@@ -22,7 +22,7 @@
 ## 本章要回答的核心问题
 
 1. **多源异构数据怎么统一清洗？** 文档（PDF / Word / Markdown）/ 代码（Python / Java / SQL）/ 报表（Excel / 仪表盘）/ 音视频——不同模态的预处理链路？
-2. **向量化与语义编码怎么选型？** OpenAI text-embedding-3 / BGE / M3E / CLIP / Whisper——不同模态的 Embedding 选型？
+2. **向量化与语义编码怎么选型？** OpenAI text-embedding-3 / BGE / M3E / CLIP / CLAP——不同模态的 Embedding 选型？
 3. **Chunking 策略怎么设计？** 固定窗口 / 滑动窗口 / 语义切分 / 结构感知切分——如何平衡召回率与上下文完整度？
 4. **向量数据库 vs AI 原生数据库怎么选？** 专有向量库（Milvus / Pinecone / Weaviate / Qdrant）vs PostgreSQL + pgvector / DuckDB VSS？
 5. **RAG 架构怎么演进？** 朴素 RAG → 高级 RAG（Query Rewrite / Reranker / HyDE）→ Agentic RAG——什么时候用哪个？

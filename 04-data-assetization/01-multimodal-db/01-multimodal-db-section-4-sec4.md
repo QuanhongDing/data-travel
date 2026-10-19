@@ -26,7 +26,7 @@
 
 **Step 3：Embedding 模型选型（2–4 周【经验：随候选模型数量与成对样本的获取难度而变】）**
 
-- 按模态选候选：图文 CLIP / OpenCLIP / BGE-VL；音文 CLAP / Whisper Embedding；文档 ColPali / LayoutLMv3；视频 VideoCLIP / InternVideo。
+- 按模态选候选：图文 CLIP / OpenCLIP / BGE-VL；音文 CLAP / AudioCLIP；文档 ColPali / LayoutLMv3；视频 VideoCLIP / InternVideo。
 - 显式规定**统一维度与坐标系**，并用成对样本做一次跨模态召回验证。
 - **产物**：多模态向量库（含编码器名称与版本、维度记录）+ 召回率基线。
 - **判据**：用同一份固定查询集在候选模型上各跑一遍 Recall@K，择优再上线。**换编码器意味着全库重算**，所以必须先比完再写第一批数据。

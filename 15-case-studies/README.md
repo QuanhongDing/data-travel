@@ -38,8 +38,8 @@
 2. **双 11 稳定性保障** 的全链路方案如何设计？全链路压测、单元化、限流降级、值班机制的工程范式？
 3. **字节跳动 / 美团 / Netflix / Uber / Airbnb** 的数据架构演进，各自走了什么不同的路？
 4. **AI 智能体平台**（字节扣子 / 腾讯元宝 / 华为盘古 / 百度文心）的架构差异与共性？
-5. **海外数据栈**（Databricks / Snowflake / Fivetran / dbt）的产品演进与商业模式？
-6. **失败案例**（被废弃的中台、过度设计的湖仓、失败的 AI 项目）给我们什么反思？
+5. **海外数据栈**（Databricks / Snowflake / Stripe / LinkedIn）的产品演进与商业模式？
+6. **失败案例**（大规模宕机、数据丢失、架构争议、AI 项目失败）给我们什么反思？
 
 ## 子主题
 
@@ -47,12 +47,12 @@
 - [ ] **[双 11 稳定性保障](./02-double-11-stability/README.md)**：全链路压测、单元化、限流降级、值班机制
 - [ ] **[字节跳动数据架构](./03-byte-data-architecture/README.md)**：Lakehouse + 实时 + AI 原生的实践
 - [ ] **[美团特征平台](./04-meituan-feature-store/README.md)**：Feature Store 从 0 到 1 的建设
-- [ ] **[Netflix 数据架构](./05-netflix-data-stack/README.md)**：Keystone → Metaflow 的演进
+- [ ] **[Netflix 数据架构](./05-netflix-data-stack/README.md)**：Iceberg + Spark/Flink + Maestro 的演进
 - [ ] **[Uber 数据架构](./06-uber-data-architecture/README.md)**：Schemaless → Docstore → 实时分析
 - [ ] **[Airbnb 数据架构](./07-airbnb-data-architecture/README.md)**：Minerva + Dataportal 的元数据治理
 - [ ] **[从 0 到独角兽的数据栈](./08-startup-evolution/README.md)**：早期、初创期、成长期的演进路径
-- [ ] **[失败案例](./09-failure-cases/README.md)**：被废弃的中台、过度设计的湖仓、失败的 AI 项目
-- [ ] **[海外案例](./10-overseas-cases/README.md)**：Databricks / Snowflake / Fivetran / dbt 的产品演进
+- [ ] **[失败案例](./09-failure-cases/README.md)**：大规模宕机、数据丢失、架构争议、AI 项目失败
+- [ ] **[海外案例](./10-overseas-cases/README.md)**：Databricks / Snowflake / Stripe / LinkedIn / OpenAI 的产品演进
 
 > 文件命名建议：`alibaba-data-middle-platform.md` / `double-11-stability.md` / `byte-data-architecture.md` / `meituan-feature-store.md` / `netflix-data-stack.md` / `uber-data-architecture.md` / `airbnb-data-architecture.md` / `startup-evolution.md` / `failure-cases.md` / `overseas-cases.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 
@@ -77,8 +77,8 @@
 - **横向对比头部架构**：阿里中台 / 字节数据架构 / Netflix / Uber / Airbnb——理解不同公司为何走出不同的演进路径
 - **理解大促稳定性的工程范式**：双 11 全链路压测、单元化、限流降级——把"老板最怕的事"变成可控的事
 - **识别 AI 智能体平台的共性与差异**：字节扣子 / 腾讯元宝 / 华为盘古 / 百度文心——理解国内 AI 智能体平台的多样性
-- **从失败案例中学习**：被废弃的中台、过度设计的湖仓、失败的 AI 项目——少走别人走过的坑
-- **追踪海外前沿**：Databricks / Snowflake / Fivetran / dbt——理解湖仓一体与现代化数据栈的产品演进
+- **从失败案例中学习**：大规模宕机、数据丢失、架构争议、AI 项目失败——少走别人走过的坑
+- **追踪海外前沿**：Databricks / Snowflake / Stripe / OpenAI——理解湖仓一体、数据共享与 AI 平台的产品演进
 - **建立面试弹药库**：资深数据架构师面试要的是"你研究过真实的工业级问题"——案例库是面试答题的素材
 
 ## 推荐资料
