@@ -36,7 +36,7 @@
 - [ ] **[Lakehouse](03-lakehouse/03-lakehouse.md)**：Iceberg / Hudi / Paimon / Delta Lake——融合湖与仓的优势
 - [ ] **[流式存储](04-streaming-store/04-streaming-store.md)**：Kafka / Pulsar / RocketMQ——消息中间件与流式存储
 - [ ] **[冷热分层](05-cold-hot-tiering/05-cold-hot-tiering.md)**：OSS 冷热分层、生命周期管理、成本与性能平衡
-- [ ] **[Schema 与 Time Travel](06-schema-and-time-travel/06-schema-and-time-travel.md)**：Schema Evolution、版本回滚、Time Travel 查询
+- [ ] **[Schema 演进与 Time Travel](06-schema-and-time-travel/06-schema-and-time-travel.md)**：Schema Evolution、版本回滚、Time Travel 查询
 - [ ] **[架构决策](07-architecture-decisions/07-architecture-decisions.md)**：Lambda / Kappa / 湖仓一体的架构选型方法论
 - [ ] **[离线计算](08-offline-compute/08-offline-compute.md)**：Spark / Hive / MapReduce——批处理核心引擎
 - [ ] **[实时计算](09-realtime-compute/09-realtime-compute.md)**：Flink / Spark Streaming——流处理核心引擎

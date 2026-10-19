@@ -2,7 +2,7 @@
 
 > **一句话定位**：让表的 Schema 在不中断业务的前提下灵活演进、保留历史快照可回溯查询，是 Lakehouse 与现代数据栈的"数据治理 + 时光倒流"双重能力。
 
-> 本文是 data-travel 项目 [Ch3 · 数据全栈基础设施](../../README.md) 的子章节（**06 Schema 与 Time Travel**）。覆盖 **R4 数据全栈协同** 能力领域中「Schema 管理、Schema Registry、Time Travel 实现原理、AI 时代演进」相关的核心能力。
+> 本文是 data-travel 项目 [Ch3 · 数据全栈基础设施](../../README.md) 的子章节（**06 Schema 演进与 Time Travel**）。覆盖 **R4 数据全栈协同** 能力领域中「Schema 管理、Schema Registry、Time Travel 实现原理、AI 时代演进」相关的核心能力。
 
 ---
 

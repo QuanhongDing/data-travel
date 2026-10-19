@@ -47,7 +47,7 @@
 - [ ] **[双 11 稳定性保障](./02-double-11-stability/README.md)**：全链路压测、单元化、限流降级、值班机制
 - [ ] **[字节跳动数据架构](./03-byte-data-architecture/README.md)**：Lakehouse + 实时 + AI 原生的实践
 - [ ] **[美团特征平台](./04-meituan-feature-store/README.md)**：Feature Store 从 0 到 1 的建设
-- [ ] **[Netflix 数据架构](./05-netflix-data-stack/README.md)**：Iceberg + Spark/Flink + Maestro 的演进
+- [ ] **[Netflix 数据栈](./05-netflix-data-stack/README.md)**：Iceberg + Spark/Flink + Maestro 的演进
 - [ ] **[Uber 数据架构](./06-uber-data-architecture/README.md)**：Schemaless → Docstore → 实时分析
 - [ ] **[Airbnb 数据架构](./07-airbnb-data-architecture/README.md)**：Minerva + Dataportal 的元数据治理
 - [ ] **[从 0 到独角兽的数据栈](./08-startup-evolution/README.md)**：早期、初创期、成长期的演进路径
