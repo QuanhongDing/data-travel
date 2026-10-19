@@ -103,7 +103,7 @@
 
 **云原生阶段（2018-2023）**：
 
-- 2019：阿里"三地五中心"（杭州 / 上海 / 深圳 + 两个异地）。
+- 2019：阿里"三地五中心"（三个城市 / 五个机房：杭州 2 + 上海 2 + 深圳 1）。
 - 2020：CockroachDB 20.1 实现跨 Region 强一致。
 - 字节跳动"春晚红包"：多机房联动，扛住极端瞬时洪峰（活动年份与峰值量级本书内各节口径不一，不锁定，以字节公开技术材料为准）。
 - 2022：Pulsar 多地域复制成熟。
@@ -141,7 +141,7 @@
 - **向量时钟（Vector Clock）**：记录每个数据在每个 Region 的版本号，用于检测冲突。
 - **CRDT（Conflict-free Replicated Data Types）**：无需冲突解决的数据类型，数学上保证最终一致。
 - **Global Database**：全球数据库，如 Spanner、CockroachDB、TiDB。
-- **TrueTime**：Google Spanner 的核心 API，提供全球同步时钟。
+- **TrueTime**：Google Spanner 的核心 API——返回的是一个**带不确定区间的时刻**（`TT.now()` 给 [earliest, latest]，见 §2.2），Spanner 靠「等到 earliest 超过上一事务的 latest」取得线性一致，而不是靠把全球时钟同步到某个精度。
 - **跨 Region 延迟（Cross-Region Latency）**：Region 间网络延迟（同城 1-3ms，跨城 10-30ms，跨国 100-200ms）。
 - **跨 Region 带宽（Cross-Region Bandwidth）**：Region 间网络带宽，通常昂贵。
 - **异地容灾（Remote DR）**：异地机房作为灾备中心。

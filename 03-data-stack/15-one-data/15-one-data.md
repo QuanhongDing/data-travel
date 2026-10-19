@@ -281,7 +281,7 @@ metric:
 
 derived_metric:
   name: arpu
-  description: 单用户平均收入
+  description: 单付费用户平均收入（ARPPU）
   type: ratio
   numerator: gmv
   denominator: paid_users

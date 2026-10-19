@@ -165,7 +165,7 @@ for batch in chunks(1024):
 ```
 原查询：SELECT * FROM users WHERE age > 30 AND city = 'Beijing'
 下推：SELECT * FROM users WHERE age > 30 AND city = 'Beijing'  -- 整条下推到 MySQL
-不部分下推：SELECT age, city FROM users  -- 只投影下推，filter 上拉
+部分下推：SELECT age, city FROM users  -- 只投影下推，filter 上拉
 ```
 
 **CBO 的数学**：
@@ -182,7 +182,7 @@ cost(plan) = Σ_{operator} rows_processed × cpu_cost_per_row + io_cost + networ
 
 1. **RBO（Rule-Based Optimizer）**：基于规则的优化。
 2. **CBO（Cost-Based Optimizer）**：基于成本的优化（Trino 默认）。
-3. **Adaptive Query Execution**：运行时自适应（Spark / Trino 21+）。
+3. **Adaptive Query Execution**：运行时自适应（Spark / Trino 420+）。
 
 **查询下推策略**：
 

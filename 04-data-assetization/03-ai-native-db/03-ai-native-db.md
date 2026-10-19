@@ -184,7 +184,7 @@ WITH (m = 16, ef_construction = 64);
 | float16（halfvec） | 0.7+ | 2× |
 | bit（binary） | 0.7+ | 32× |
 
-**AI 原生查询（Snowflake Cortex Analyst）**：
+**AI 原生查询（Snowflake Cortex 的 LLM 函数）**：
 
 ```
 SELECT SNOWFLAKE.CORTEX.COMPLETE(

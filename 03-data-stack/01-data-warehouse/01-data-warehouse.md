@@ -111,10 +111,10 @@
 **第二阶段：云原生数仓（2012-2020）**
 
 - 2012：Amazon Redshift 发布，引领云数仓潮流。
+- 2012：Google BigQuery 作为全托管分析服务可用（2010 年 Dremel 论文、2011–2012 产品化，见 10-overseas-cases §7）。
 - 2014：Snowflake 公开亮相（2012 成立 / 2020 IPO / 2024 营收 35 亿美元）。
-- 2016：Google BigQuery 正式商用，serverless 数仓落地。
-- 2018：Azure Synapse（原 SQL Data Warehouse）发布。
 - 2019：阿里云 MaxCompute、Hologres 商业化。
+- 2020：Azure Synapse Analytics 发布（前身 Azure SQL Data Warehouse 为 2015–2016；见 10-overseas-cases §7「不取更早的年份」）。
 
 **第三阶段：实时 + Lakehouse 融合（2020-至今）**
 
