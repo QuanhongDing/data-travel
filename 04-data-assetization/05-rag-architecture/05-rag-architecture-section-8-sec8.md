@@ -155,7 +155,7 @@ Overlap 的作用是**减少边界切断的召回损失**——一段话被切�
 **第四层：多模态文档的 Chunking 选型。**
 
 - **PDF**：经典做法是按页切，但页大小不一、跨页表格被切断。进阶做法是「结构感知 + 表格单独处理」——正文按章节切、表格用 Camelot / pdfplumber 抽出来后按行 / 列单独 Embedding。ColPali（2024）更进一步，直接对 PDF 页面做多模态 Embedding，跳过文本提取阶段。
-- **Word / Markdown**：最友好——按标题层级递归切，代码块按 ``` 边界切。
+- **Word / Markdown**：最友好——按标题层级递归切，代码块按围栏边界切。
 - **代码（Python / Java / SQL）**：用 tree-sitter 做 AST 切分，按函数 / 类 / 方法边界。LlamaIndex 的 `CodeSplitter` 是工业级实现。
 - **表格**：特殊处理——把表格转成自然语言摘要（"X 类目下 Y 商品销量为 Z"）+ 原始表格分别 Embedding。
 - **图像 / 视频 / 音频**：用多模态 Embedding（CLIP / ImageBind / Qwen-VL）直接对图像做 Embedding；视频抽帧后 Embedding；音频用 Whisper 转文本后再 Embedding。
