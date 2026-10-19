@@ -179,7 +179,7 @@ $$\mathcal{L}_{BCE} = -\frac{1}{N}\sum_{i=1}^N \left[y_i \log \hat{y}_i + (1-y_i
 
 $$\min_{w, b} \frac{1}{2}\|w\|^2 + C \sum_{i=1}^N \max(0, 1 - y_i(w^T x_i + b))$$
 
-其中第一项是间隔最大化，第二项是 Hinge Loss。核函数（Kernel）可将 SVM 扩展到非线性：
+其中第一项是间隔最大化，第二项是 Hinge Loss（该式要求标签取 ±1；本节 §2.2 开头的二分类框架把 $y_i$ 定为 {0, 1}，代入前需先把 0 映射为 −1）。核函数（Kernel）可将 SVM 扩展到非线性：
 
 $$K(x_i, x_j) = \phi(x_i)^T \phi(x_j)$$
 

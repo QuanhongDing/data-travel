@@ -217,7 +217,7 @@
 **4. Pulsar 的计算存储分离**：
 
 - **Broker**：无状态计算节点（读写）。
-- **BookKeeper**：有状态存储节点（Ackermann 协议，Ledger 存储）。
+- **BookKeeper**：有状态存储节点（Ledger 存储 + 写 quorum 复制）。
 - **ZooKeeper**：元数据管理。
 - **优势**：独立扩展计算 / 存储、故障恢复快（Broker 挂了无需复制数据）。
 

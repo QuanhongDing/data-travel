@@ -199,6 +199,7 @@ Source EOS + Checkpoint + Sink Two-Phase Commit = End-to-End EOS
 
 - 滚动窗口：W(t) = [t, t + window_size)
 - 滑动窗口：W(t) = [t - window_slide, t + window_size - window_slide)
+  （两式的 t 含义不同：滚动式锚窗口左端，滑动式锚窗口右端——不是同一个 t。）
 
 ### 2.3 关键算法 / 方法
 

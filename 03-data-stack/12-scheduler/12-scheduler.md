@@ -91,7 +91,7 @@
 **第四阶段：云原生 + AI 原生（2020-至今）**
 
 - 2020：Argo Workflows、KubeFlow。
-- 2022：Apache Airflow 2.x（TaskFlow API）。
+- 2022：Apache Airflow 2.x。
 - 2023：DataWorks 智能升级、Airflow 2.6+。
 - 2024：DolphinScheduler 3.x、Airflow 2.9+。
 

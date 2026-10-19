@@ -151,7 +151,7 @@
 **CAP 理论**（Eric Brewer, 2000）：
 
 ```
-分布式系统三选二：
+分布式系统三个属性（不是「三选二」）：
 - C（Consistency）：强一致性
 - A（Availability）：可用性
 - P（Partition Tolerance）：分区容忍

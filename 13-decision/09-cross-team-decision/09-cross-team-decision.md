@@ -153,7 +153,7 @@
 7. **Nominal Group Technique（NGT）**：名义群体法——独立思考 + 集中讨论。
 8. **Delphi Technique**：多轮匿名专家评估。
 9. **Multi-Criteria Decision Analysis（MCDA）**：多准则决策分析（详见 02-tradeoff-frameworks）。
-10. **Roman Voting（罗马投票）**：每个团队一票，部分反对制。
+10. **Roman Voting（罗马投票）**：每方一票，分「支持 / 有保留地支持 / 反对」三档。
 11. **Steering Committee Escalation**：升级到指导委员会。
 12. **Working Backwards（PR/FAQ）**：逆向工作法。
 13. **AI-assisted Consensus Building**：AI 协调员 + 共识构建。

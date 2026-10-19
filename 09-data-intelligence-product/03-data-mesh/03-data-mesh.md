@@ -148,12 +148,12 @@
 **概念萌芽（2019）**：
 
 - 2019 年 6 月：Zhamak Dehghani 在 ThoughtWorks 发表 "How to Move Beyond a Monolithic Data Lake to a Distributed Data Mesh"。
-- 2019 年 9 月：Zhamak 在 O'Reilly 发表 "Data Mesh Principles and Logical Architecture"。
+- 2019 年 9 月：Zhamak 在 martinfowler.com 发表 "Data Mesh Principles and Logical Architecture"。
 
 **体系化（2020-2021）**：
 
 - 2020：Data Mesh 在欧洲、加拿大企业开始 PoC（荷兰 ING 银行、加拿大 Shopify）。
-- 2021 年 3 月：Zhamak Dehghani 出版《Data Mesh: Delivering Data-Driven Value at Scale》（O'Reilly），成为 Data Mesh 圣经。
+- 2022 年：Zhamak Dehghani 出版《Data Mesh: Delivering Data-Driven Value at Scale》（O'Reilly），成为 Data Mesh 圣经。
 - 2021：Data Mesh 社区成立，starflux、data mesh learning 联盟。
 
 **标准化（2022-2023）**：

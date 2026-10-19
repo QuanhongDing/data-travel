@@ -102,7 +102,7 @@
 - 1980s：HR 招聘时代，凭简历 + 印象 + 主管一句话。
 - 1995：**结构化面试（Structured Interview）** 理论成熟（McDaniel et al.）。
 - 2000：**STAR 法则**（Situation-Task-Action-Result）成为面试标准。
-- 2004：Google 成立 People Analytics 团队，开始用数据驱动招聘。
+- （年份本书内口径不一，不锁定）：Google 成立 People Analytics 团队，开始用数据驱动招聘（见 §7）。
 - 2008：**行为锚定评分（BAR, Behaviorally Anchored Rating Scale）** 落地。
 
 **大数据 / 互联网阶段（2010-2020）**：

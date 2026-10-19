@@ -102,7 +102,7 @@
 
 **与其他横切能力的关系**：
 
-- **可观测性**（§4-observability）：数据可观测性是数据质量的高级形态，把"质量指标 + Schema + 血缘 + 时延"打包成统一的"可观测三件套"（freshness / volume / quality）。
+- **可观测性**（§4-observability）：数据可观测性是数据质量的高级形态，把"质量指标 + Schema + 血缘 + 时延"打包成统一的"可观测"视图（freshness / volume / quality 等维度）。
 - **血缘**（§05 / §09）：血缘是质量问题的**定位工具**——上游谁变了？下游谁受影响？影响范围多大？
 - **安全**（§2）：脱敏 / 加密如果出错，本身就是数据质量问题（"明明是手机号字段，加密后变 null"）。
 - **成本**（§3）：脏数据导致重算，回刷任务消耗计算资源；质量治理能直接降低无效算力。
@@ -130,7 +130,7 @@
 
 - 2021：Monte Carlo 提出 "Data Reliability" 概念，挑战传统 DQ 边界。
 - 2022：Anomalo、Mona、Bigeye 三家 AI-first 数据质量平台融资过亿；Gartner 将 "Data Observability" 列入 Hype Cycle。
-- 2023：数据契约（Data Contract）由 Monte Carlo、Bytecode 推动成为业界共识。
+- 2023：数据契约（Data Contract）由 Monte Carlo 等厂商与 Bitol / ODCS 一类开放规范推动成为业界共识。
 - 2024：LLM 介入 DQ 规则生成（自然语言生成规则）、异常归因解释；Mona 推出"AI Quality Copilot"。
 - 2025：数据质量与 LLM/RAG 深度融合——RAG 输出质量自动评估、训练数据漂移自动检测成为新场景。
 

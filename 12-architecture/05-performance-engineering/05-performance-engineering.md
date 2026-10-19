@@ -245,7 +245,7 @@ C2 编译：高级 JIT（OSR / Escape Analysis）
    - **数据结构**：Hash 表代替 List、二叉树代替线性查找。
 
 7. **AI 推理优化**：
-   - **量化（Quantization）**：FP32 → INT8 / INT4，模型缩小 2-4 倍。
+   - **量化（Quantization）**：FP32 → INT8 / INT4，模型缩小约 4 倍（INT8）/ 约 8 倍（INT4）。
    - **剪枝（Pruning）**：去除不重要的参数。
    - **蒸馏（Distillation）**：大模型 → 小模型。
    - **连续批处理（Continuous Batching）**：vLLM 的核心优化。

@@ -170,7 +170,7 @@
 - **MAB（Multi-Armed Bandit）**：多臂老虎机，EE 问题经典解。
 - **Bandit 推荐**：用 Bandit 做探索-利用平衡。
 - **多任务推荐**：同时优化 CTR / CVR / GMV 等多个目标。
-- **ESMM / MMoE / PLE**：多任务学习架构。
+- **ESSM / MMoE / PLE**：多任务学习架构。
 - **MMoE（Multi-gate Mixture-of-Experts）**：多任务专家网络。
 - **PLE（Progressive Layered Extraction）**：分层多任务。
 - **ESSM（Entire Space Multi-task Model）**：全空间多任务 CVR。

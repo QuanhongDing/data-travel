@@ -160,7 +160,7 @@
 - **检查点（Checkpoint）**：训练过程中的模型 / 优化器状态快照。**断点续训**、**故障恢复**的基础。
 - **实验管理（Experiment Tracking / Tracking）**：记录每次训练的参数、指标、产物，便于对比与复现。代表：MLflow、W&B、TensorBoard。
 - **模型注册表（Model Registry）**：模型版本管理 + 阶段（Staging / Production / Archived）+ 元数据（训练数据 / 评估指标 / Owner）。
-- **特征平台 / Feature Store（Feature Store）**：把特征作为「一等公民」统一管理，统一离线 / 在线一致性。代表：Feast、Tecton、阿里特征平台（PAI FeatureStore）、字节 ByteFG。
+- **特征平台 / Feature Store（Feature Store）**：把特征作为「一等公民」统一管理，统一离线 / 在线一致性。代表：Feast、Tecton、阿里特征平台（PAI FeatureStore）、字节 ByteFS。
 - **样本库（Sample Store）**：管理训练样本的数据湖，支持版本管理、特征对齐、样本拼接。代表：PAI SampleStore、Tecton。
 - **AutoML / AutoML 平台**：自动特征工程、自动模型选择、自动超参调优。代表：FLAML、AutoGluon、NNI、H2O、阿里 PAI AutoML。
 - **推理服务（Inference Serving）**：把训练好的模型封装为可调用的 API。代表：TorchServe、Triton Inference Server、TF Serving、BentoML、Seldon Core。
@@ -247,7 +247,7 @@ AI 计算平台的「核心数学」在不同子系统各异：
 
 - **自动化特征工程**：Featuretools（DFS 深度特征合成）、AutoFE。
 - **特征选择**：基于重要性（XGBoost SHAP）、基于相关性、基于嵌入式模型。
-- **特征平台**：Feast（开源）、Tecton（商业）、阿里 PAI FeatureStore、字节 ByteFG、腾讯 TI FeatureStore。
+- **特征平台**：Feast（开源）、Tecton（商业）、阿里 PAI FeatureStore、字节 ByteFS、腾讯 TI FeatureStore。
 
 **6. 资源调度算法：**
 
