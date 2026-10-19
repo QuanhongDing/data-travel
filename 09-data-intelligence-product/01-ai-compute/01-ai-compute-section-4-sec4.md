@@ -162,7 +162,7 @@
 | 训练框架 | PyTorch / TensorFlow / JAX / MindSpore / PaddlePaddle | 生态与团队技能优先：PyTorch 是事实标准；JAX 适合 TPU 与函数式研究；MindSpore、PaddlePaddle 在国产硬件栈上是原生路径 | 选一个团队没人用过的框架，等于把平台第一个交付变成一次学习项目 |
 | 分布式训练 | DeepSpeed / Megatron-LM / FSDP / Horovod / Ray | 单机多卡从 DDP + FSDP 起步；跨节点大模型用 DeepSpeed ZeRO + Megatron TP/PP；要把训练纳入统一任务图用 Ray | 在互联带宽不足的集群上先上 TP，通信会成为第一成本而不是算力 |
 | AutoML | FLAML / AutoGluon / NNI / Optuna / H2O.ai | 表格轻量搜索用 FLAML；多模态端到端用 AutoGluon；要 NAS 与平台化用 NNI；只调超参用 Optuna | 把 AutoML 当效果来源而不是效率工具，产出低于同等投入做特征 |
-| Feature Store | Feast / Tecton / 阿里 PAI FeatureStore / 字节 ByteFG / 腾讯 TI FeatureStore | 要自建可控选 Feast；要托管与一致性 SLA 选 Tecton；已在某云生态内优先该云原生特征平台 | 不上平台直接拼两份实现，代价在首次 A/B 才显形（§3.5「特征不一致」） |
+| Feature Store | Feast / Tecton / 阿里 PAI FeatureStore / 字节 ByteFS / 腾讯 TI FeatureStore | 要自建可控选 Feast；要托管与一致性 SLA 选 Tecton；已在某云生态内优先该云原生特征平台 | 不上平台直接拼两份实现，代价在首次 A/B 才显形（§3.5「特征不一致」） |
 | Model Registry / MLOps | MLflow / W&B / Neptune.ai / DVC / SageMaker / Vertex AI / Azure ML / 阿里 PAI / 腾讯 TI-One / 华为 ModelArts | 要可迁移选 MLflow 一类开源件；用托管换运维人力选云厂商端到端平台；只管数据与模型版本用 DVC | 用「Git + 共享目录」当注册表，版本一多就回答不出线上跑的是哪一版 |
 | 推理服务 | TorchServe / TensorFlow Serving / NVIDIA Triton / BentoML / Seldon Core / KServe | 多框架混合用 Triton；要 K8s 原生与弹性语义用 KServe；只要打包简单用 BentoML | 每个模型自带一套服务实现，网关形同不存在（§3.5「推理裸奔」） |
 | LLM 推理引擎 | vLLM / TensorRT-LLM / TGI / SGLang / LMDeploy / DeepSpeed-MII / MLC LLM | 通用高吞吐用 vLLM；NVIDIA 单栈极致优化用 TensorRT-LLM；结构化生成用 SGLang；国产硬件优先国内实现（如 LMDeploy）；端侧用 MLC LLM | 拿通用推理服务跑 LLM，显存利用率低、QPS 上限被单卡锁死 |

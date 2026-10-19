@@ -90,7 +90,7 @@
 **传统阶段（2000s-2010s）**：
 
 - 2006：AWS 推出 EC2，开启按需计算时代。
-- 2006：Google 论文《BigTable》开启大数据时代，Hadoop 出现。
+- 2006：Google 论文《BigTable》发表，开启宽列存储一系（HBase 的源头）；Hadoop 一系出自 HDFS + MapReduce（见 [02-data-lake §1.4](../../03-data-stack/02-data-lake/02-data-lake.md)）。
 - 2008：ARIMA 模型被广泛应用于 IT 资源预测。
 
 **云原生阶段（2010-2020）**：
