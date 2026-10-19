@@ -53,7 +53,7 @@
 
 1. 先定实时指标清单：哪些指标真的要分钟级或秒级，其余留在离线，避免「什么都实时」。
 2. Hologres 宽表按主键（`user_key` 一类）建，只放**需要被点查或实时更新的属性 + 窗口指标**，不做全量镜像。
-3. Flink 作业从 Kafka 消费，按事件时间做滚动窗口，写入 Hologres 主键表。
+3. Flink 作业从 Kafka 消费，按事件时间做**滑动窗口**（累计最近 30 天），写入 Hologres 主键表。
 4. 离线与实时同源：同一份指标定义生成两套 SQL（§3.5「忽略实时」的修法就是这条）。
 
 - **产物**：实时宽表 DDL + Flink 作业 + 一张「实时指标 ↔ 离线指标」对照表（含允许偏差与比对频率）。
@@ -98,7 +98,7 @@
 
 **4. 实时宽表的窗口语义**
 
-- **做法**：Flink 按事件时间开滚动窗口（模板 2 的 30 天窗口），Hologres 侧按主键整行更新；窗口边界与离线口径在指标定义里写明。
+- **做法**：Flink 按事件时间开**滑动窗口**（模板 2 的 RANGE 30 天累计帧，不是 TUMBLE 桶），Hologres 侧按主键整行更新；窗口边界与离线口径在指标定义里写明。
 - **机制**：因为实时链路是「按事件到达持续重算」，而离线是「按分区一次性算」，两者的**同一指标在窗口边界附近必然出现差异**；把这个差异显式写进对照表，它才是可验收的偏差，而不是数据质量问题。
 - **失效条件**：**当实时作业上线后不再比对、或窗口长度被单方面调整时，这条失效**。症状是实时值与离线值的差异随时间缓慢扩大，且没人知道从哪天开始；可观测信号是比对任务停跑超过一个调度周期。
 - **档位**：【经验】。
@@ -244,7 +244,7 @@ CREATE TABLE holo_user_profile_realtime (
     channel_key        INT,
     update_time        TIMESTAMP
 );
--- Flink 实时 ETL：按事件时间开 30 天滚动窗口，写入 Hologres 主键表（列清单必须与宽表 12 列一一对应）
+-- Flink 实时 ETL：按事件时间开 30 天**滑动窗口（RANGE 累计帧）**，写入 Hologres 主键表（列清单必须与宽表 12 列一一对应）
 INSERT INTO holo_user_profile_realtime (user_key, user_id, user_name, register_date,
        last_30d_pv, last_30d_order_cnt, last_30d_gmv, risk_score, fraud_label, city_key, channel_key, update_time)
 SELECT user_key, user_id, user_name, register_date,

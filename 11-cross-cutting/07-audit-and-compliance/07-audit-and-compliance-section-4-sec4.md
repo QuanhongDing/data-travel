@@ -189,8 +189,8 @@ class AuditCollector:
                  "resource": resource, "action": action, "resource_cls": classification,
                  "source_system": CURRENT_SOURCE, "outcome": "OK"}
         if classification in ("秘密", "机密"):
-            self.alert_high_sensitivity_access(entry)   # 立即告警，不等批量
-        self.write_immutable(entry)
+            self.write_immutable(entry)                 # 先落盘（见本节「怎么用」：顺序不能颠倒）
+            self.alert_high_sensitivity_access(entry)   # 再告警，不等批量
         return entry
 ```
 
