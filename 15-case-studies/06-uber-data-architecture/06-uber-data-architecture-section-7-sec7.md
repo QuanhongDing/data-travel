@@ -137,7 +137,7 @@
 | --- | --- | --- | --- |
 | **Uber** | Schemaless / Docstore / Hudi / Michelangelo | Hudi 捐入 Apache 并成为主流格式之一 | 当时无成熟解 |
 | **Airbnb** | Airflow / Minerva / Dataportal | Airflow 捐入 Apache，成为最流行的调度系统之一 | 当时无成熟解 |
-| **Netflix** | Iceberg / Metaflow / Maestro | 三者均开源（Iceberg 捐入 Apache） | 当时无成熟解 |
+| **Netflix** | Iceberg / Metaflow / Maestro | Iceberg、Metaflow 开源（Iceberg 捐入 Apache）；Maestro 为 2022 年公开、本书未给出开源仓库 | 当时无成熟解 |
 | **美团** | 业务侧全栈自研能力 | 以业务落地为主 | 视具体问题而定 |
 
 - **这个差异由什么约束导致**：因为 Uber 2016 年要解决的问题（「在 Hadoop / 对象存储上做增量处理与 upsert」）在当时**没有可用方案**，自研是唯一路径；一旦自研成果被开源并被比自己更大的社区使用，维护成本就被分摊出去，同时获得标准话语权——**这正是「自研内核」从纯成本项变成资产项的条件：问题足够通用，且当时确实无解**。反过来，当同一问题已经有 ≥2 个活跃开源实现、且被非同源公司大规模在生产中使用时，自研内核的净收益为负：维护成本归自己，生态与人材供给归社区。

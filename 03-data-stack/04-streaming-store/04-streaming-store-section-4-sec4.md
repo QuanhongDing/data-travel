@@ -201,7 +201,7 @@ advertised.listeners=PLAINTEXT://kafka-1:9092
   "fields": [
     {"name": "order_id", "type": "long"},
     {"name": "user_id", "type": "long"},
-    {"name": "amount", "type": "decimal", "precision": 18, "scale": 2},
+    {"name": "amount", "type": "bytes", "logicalType": "decimal", "precision": 18, "scale": 2},
     {"name": "order_time", "type": "long", "logicalType": "timestamp-millis"}
   ]
 }
