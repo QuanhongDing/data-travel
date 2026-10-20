@@ -227,7 +227,7 @@ Hudi 的 **Copy-on-Write（COW）/ Merge-on-Read（MOR）** 双模式恰好覆�
 - **DWS 轻度汇总层**：用 COW 表，Spark 批作业小时级回刷（写入量小、可重写），下游 BI 报表读 COW 表获得最佳查询性能。
 - **ADS 应用层**：同样用 COW 表，按报表粒度物化，每日更新一次。
 
-Compaction 调度使用 Uber 自研的"Maestro + Hudi Cleaner"组合：
+Compaction 调度使用自研调度器 + Hudi Cleaner 的组合：
 
 - **频率**：MOR 表每 15 分钟做一次 minor compaction（合并小 delta），每 4 小时做一次 major compaction（合并回 base）。
 - **资源隔离**：compaction 跑在独立的 K8s namespace，避免与在线业务争抢资源。
