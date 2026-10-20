@@ -816,9 +816,9 @@ Pros/Cons 段 Good / Bad / Neutral 三栏必须都填且 Bad 不能敷衍。
 **5. 参考资料**
 
 - Anthropic Claude 3.5 / Claude 4 官方文档中「Prompt Engineering for Long-Form Generation」章节——MADR 这种长文档生成的 prompt 设计参考。
-- Anthropic / OpenAI / 阿里 / 字节公开发布的「AI-assisted ADR」工具/论文——GitHub Copilot ADR 插件、AdrGPT 等。
+- Anthropic / OpenAI / 阿里 / 字节在「AI-assisted ADR」方向上的公开材料——**本书不逐一列名与篇名**：具体工具与其能力声称在写作时未取得可引用的一手来源（处理口径见本章 [§4.3](01-adr-section-4-sec4.md) 与 [§5.4](01-adr-section-5-ai.md) 的「未能核验」条），引用前请自行检索。
 - Microsoft Research 2024 年关于 LLM 辅助 ADR 评审的论文——LLM 辅助 ADR 评审的学术框架（本节无法核验其确切篇名与作者，引用时请自行查证）。
-- ThoughtWorks Technology Radar 2024 年条目「AI-Assisted Architecture Decision Records」——明确「AI 起草 + 人 review」的工业范式。
+- ThoughtWorks Technology Radar 历年归档（含 AI-assisted ADR 相关条目）——四环分类可在归档页逐年核验；**具体期号与环位以归档页为准**：本章 [§5.4](01-adr-section-5-ai.md) 已把「2024 年标为 Trial」这一结论移入「未能核验」，本节据此不再把它当作事实引用。
 - Anthropic / OpenAI / 阿里 / 字节官方发布的 Agent / Prompt Engineering 最佳实践——私有化部署与 RAG 增强的具体实现方案。
 
 > 注：以上参考资料均指向公开出版物、官方文档或企业公开技术博客。精确链接请按条目名称自行检索核验。

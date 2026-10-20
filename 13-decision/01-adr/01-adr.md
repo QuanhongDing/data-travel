@@ -85,7 +85,7 @@
 - **2018**：Y-statements（"In the context of ... facing ... we decided for ... to achieve ... accepting ..."）结构化模板流行。
 - **2020**：GitHub / GitLab 把 ADR 模板（`.github/adr-template.md` / `docs/adr/`）纳入工程实践标准。
 - **2022**：CNCF TAG App Delivery 把 ADR 列为推荐实践。
-- **2023-2024**：AI 辅助 ADR 起草 / 评审工具出现（如 ADR-Assistant、AdrGPT、GitHub Copilot for ADR）。
+- **2023-2024**：AI 辅助 ADR 起草 / 评审工具出现——**本书不逐一列名**：这批工具名与其中的能力声称在写作时未取得可引用的一手来源，处理口径见 [§4.3](01-adr-section-4-sec4.md) 与 [§5.4](01-adr-section-5-ai.md) 的「未能核验」条。
 - **2025**：组织级 ADR 库 + AI 决策助手（Decision Intelligence）+ 自动化 supersede 检测成为前沿。
 
 ---
