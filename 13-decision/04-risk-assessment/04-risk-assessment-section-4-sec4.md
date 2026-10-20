@@ -250,12 +250,14 @@ import numpy as np
 # 分布参数必须来自你自己的历史事故频率与损失记录，不要照抄
 rng = np.random.default_rng(42)
 
-# 每季度故障次数（泊松），每次故障影响金额（对数正态）
-faults_per_quarter = rng.poisson(lam=2, size=10_000)
+# 年度故障次数：4 个季度各自独立（每季度 λ=2）⇒ 全年仍服从泊松，λ = 8
+# 不要写成「季度次数 × 4」——那等于假定四个季度的故障数完全相同，
+# 方差被放大 4 倍，P90 / P99 会系统性偏高，而这段代码的用途正是读分位
+faults_per_year = rng.poisson(lam=8, size=10_000)
 impact_per_fault = rng.lognormal(mean=2.0, sigma=1.0, size=10_000)
 
-# 年度总影响 = 4 个季度 × 单次影响
-annual_impact = faults_per_quarter * 4 * impact_per_fault
+# 年度总影响 = 全年故障次数 × 单次影响
+annual_impact = faults_per_year * impact_per_fault
 
 for p in (50, 90, 99):
     print(f"年度总影响 P{p}: {np.percentile(annual_impact, p):.2f}")
