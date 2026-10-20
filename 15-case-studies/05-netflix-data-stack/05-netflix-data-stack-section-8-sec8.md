@@ -97,7 +97,7 @@
 
 **第一层：HMS 的架构与瓶颈根源。** HMS 本质是「Thrift 服务 + 一张 `PARTITIONS` 表 + 一张 `TABLE_PARAMS` 表」。每次 `list_partitions` 都是一次 `SELECT ... FROM PARTITIONS WHERE ...`；每次 ALTER TABLE ADD PARTITION 是一次 INSERT；每次统计信息更新是一次 UPDATE。在百万级 partition 下：
 
-- **单表行数爆炸**：一张订单事实表按「年-月-日-小时-业务线-地域」分区，1 年就是 5×365×24 = 43,800 partition，3 年 13 万，叠加业务线与地域后很快突破百万。HMS 的 `PARTITIONS` 表行数随之上行。
+- **单表行数爆炸**：一张订单事实表按「年-月-日-小时-业务线-地域」分区，仅「小时 × 业务线（5 类）」这一层，1 年就是 5×365×24 = 43,800 partition，3 年 13 万，再叠加地域后很快突破百万。HMS 的 `PARTITIONS` 表行数随之上行。
 - **索引失效**：HMS 的 primary key 是 `(TBL_ID, PART_NAME)`，范围查询常走全表扫；亿级 partition 下单次 `list_partitions` 几十秒。
 - **写锁粒度粗**：HMS 的 DDL 是表级锁，频繁 ADD/DROP partition 的调度会阻塞所有读取。
 - **统计信息收集慢**：HMS 收集 partition 级别的 min/max / numRows / numFiles，每次都是对 RDBMS 的批量写，代价与 partition 数线性相关。
