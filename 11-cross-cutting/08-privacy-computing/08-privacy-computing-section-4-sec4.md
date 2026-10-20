@@ -65,7 +65,7 @@
 - **做法**：把训练拆成「各方本地多步 + 周期性交换更新量」，用框架的作业配置编排角色（发起方 / 参与方）；横向用样本分拆，纵向先 PSI 对齐再按特征拆分。骨架见 §4.5 模板一。
 - **机制**：因为框架把「本地步数」与「交换轮次」拆成作业配置里两个可独立调的参数，所以带宽不够时先动的是本地步数、延迟敏感时先动的是轮次，而不必去改模型结构；代价是这两个数一动，收敛轨迹与通信量同时变，同一份配置在参与方数量变化后必须重新标定（通信量为什么由参数量而非样本量决定、代价为什么落在轮次与掉线上，见 [§3.2.1](08-privacy-computing-section-3-sec3.md) 的机制与代价，本节不复述）。
 - **失效条件**：**当作业配置里的参与方角色与集合被写死时**，这条会失效——新增一方要改配置、重发密钥、重跑一轮联调，扩展成本变成每方一次的固定开销。症状：接入第二、三个参与方的周期与接入第一个一样长。
-- **档位**：FedAvg 由 Google 于 2016 年提出【公开：McMahan 等，可按标题 "Communication-Efficient Learning of Deep Networks from Decentralized Data" 检索核验】；FATE 与 SecretFlow 的正式版本条目以各自官方发布页为准。
+- **档位**：FedAvg 由 Google 提出、论文发表于 AISTATS 2017【公开：McMahan 等，可按标题 "Communication-Efficient Learning of Deep Networks from Decentralized Data" 检索核验】；FATE 与 SecretFlow 的正式版本条目以各自官方发布页为准。
 
 **安全多方计算（SecretFlow）**
 
