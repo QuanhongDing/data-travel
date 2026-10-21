@@ -34,6 +34,7 @@
 
 - [ ] **[多模态 AI](./01-multimodal-ai/README.md)**：文 / 图 / 音 / 视频 / 3D——多模态理解与生成的工程化
 - [ ] **[行业情报智能体](02-industry-intelligence-agent/02-industry-intelligence-agent.md)**：7×24 情报链路——信源清单与授权边界、增量与断供检测、事件簇去重、带引用回指的摘要、频控与个性化分发、反馈回流
+- [ ] **[代码智能助手](03-code-intelligence-assistant/03-code-intelligence-assistant.md)**：以仓库为语料——补全的延迟与接受率、符号与引用索引、上下文预算、审查的规则与模型分工、沙箱验证、私有代码不出域
 
 > 文件命名建议：`multimodal-ai.md` / `industry-intelligence-agent.md` / `code-intelligence-assistant.md` / `office-automation.md` / `industry-knowledge-graph.md` / `industry-prompt-engineering.md` / `industry-evaluation.md` / `multi-agent-collaboration.md` / `hands-on.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 
