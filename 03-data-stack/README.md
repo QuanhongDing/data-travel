@@ -6,7 +6,7 @@
 
 本章对应 **R4 数据全栈协同** 能力（招聘要求第 4 条）：
 
-- 深刻理解数据全栈协同体系：采集 / 集成、数据流转、样本库建设、评估、反馈
+- 深刻理解数据全栈协同体系：采集 / 集成、数据流转、样本库建设、评估、反馈（**样本库**见 [§16](./16-sample-library/16-sample-library.md)）
 - 离线 / 实时 / 流批一体的架构选型
 - 治理（Ch8 重点）、可观测（Ch11 重点）的基础底座
 
@@ -25,7 +25,7 @@
 2. **数据湖 / 数据仓库 / Lakehouse 三种架构怎么选？** Iceberg / Hudi / Paimon / Delta Lake 的能力差异与场景适配？
 3. **离线 vs 实时 vs 流批一体怎么取舍？** Spark / Flink / Flink + Iceberg 的工程边界与一致性保障？
 4. **数据流转怎么设计？** 双向同步、binlog 订阅、Schema Evolution、Time Travel——如何保证"上游改表，下游不爆炸"？
-5. **样本库怎么搭？** Label Studio / 自研标注平台——特征回填、样本血缘、版本管理？
+5. **样本库怎么搭？** Label Studio / 自研标注平台——特征回填、样本血缘、版本管理？（见 [§16 样本库](./16-sample-library/16-sample-library.md)）
 6. **OLAP 引擎怎么选？** ClickHouse / Doris / StarRocks / Trino / Presto——不同查询模式下的最优引擎？
 7. **数据漂移、特征穿越、效果下降怎么归因？** 全链路的可观测、可追溯能力如何构建？
 
@@ -46,6 +46,7 @@
 - [ ] **[查询引擎](13-query-engine/13-query-engine.md)**：Trino / Presto / Impala——跨源联邦查询
 - [ ] **[查询优化器](14-optimizer/14-optimizer.md)**：CBO / RBO、统计信息、代价模型——慢查询治理
 - [ ] **[OneData 思想](./15-one-data/README.md)**：阿里中台统一数据标准与模型方法论
+- [ ] **[样本库](16-sample-library/16-sample-library.md)**：训练与评测样本的资产化——标注工程（口径载体 / 一致性诊断 / 弱监督 / 主动学习）· **点时特征回填**（防穿越）· 切分与快照（防三种泄漏）· 污染检查与数据来源台账
 
 > 文件命名建议：`data-warehouse.md` / `data-lake.md` / `lakehouse.md` / `streaming-store.md` / `cold-hot-tiering.md` / `schema-and-time-travel.md` / `architecture-decisions.md` / `offline-compute.md` / `realtime-compute.md` / `stream-batch-unified.md` / `olap-engine.md` / `scheduler.md` / `query-engine.md` / `optimizer.md` / `one-data.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 
@@ -58,7 +59,7 @@
 - 区分离线、实时、流批一体三种计算范式的工程边界
 - 用 Flink CDC + Iceberg + Airflow 搭建完整的数据全链路
 - 选型合适的 OLAP 引擎（ClickHouse / Doris / StarRocks / Trino），并做查询优化
-- 搭建样本库与特征回填机制，应对数据漂移、特征穿越、效果下降
+- 搭建样本库与特征回填机制，应对数据漂移、特征穿越、效果下降——[§16](./16-sample-library/16-sample-library.md)
 - 把数据全栈设计为"可治理、可观测、可计量、可演进"的系统
 
 ## 推荐资料
