@@ -241,8 +241,8 @@ flowchart TB
 
 ## 下一步
 
-- [AI 智能体平台架构师 / 路径 A] → 进入 [Ch1 · 建模方法论](../01-modeling/) → [Ch4 · 数据资产化与智能检索](../04-data-assetization/) → [Ch5 · AI 智能体平台架构](../05-agent-platform/)
-- [数据科学家 / 路径 B] → 进入 [Ch2 · 数据科学与算法](../02-data-science/) → [Ch4 · 数据资产化与智能检索](../04-data-assetization/)
+- [AI 智能体平台架构师 / 路径 A] → 进入 [Ch1 · 建模方法论](../01-modeling/) → [Ch4 · 企业级数据资产化与智能检索](../04-data-assetization/) → [Ch5 · AI 智能体平台架构](../05-agent-platform/)
+- [数据科学家 / 路径 B] → 进入 [Ch2 · 数据科学与算法](../02-data-science/) → [Ch4 · 企业级数据资产化与智能检索](../04-data-assetization/)
 - [数据全栈架构师 / 路径 C] → 进入 [Ch3 · 数据全栈基础设施](../03-data-stack/) → [Ch5 · AI 智能体平台架构](../05-agent-platform/)
 - [团队负责人 / 准资深架构师 / 路径 D] → 进入 [Ch13 · 决策与权衡](../13-decision/) → [Ch14 · 团队管理与领导力](../14-leadership/)
 - 或回到 [根目录](../README.md) 选择你的角色路径
