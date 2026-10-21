@@ -357,7 +357,7 @@ rules:
 - **京东** —— 多机房单元化电商架构——同城双活 + 异地灾备的工程模板。
 - **美团** —— 同城双活 + 单元化——到店与外卖业务的多机房高可用参考。
 - **Netflix** —— Multi-Region Cell——按 Region × Cell 双维度切分，AWS 跨区域故障切换经验。
-- **Amazon** —— Cell-based DR（Disaster Recovery）——把 Cell 抽象为故障切换的最小单元。
+- **Amazon** —— Cell-Based DR（Disaster Recovery）——把 Cell 抽象为故障切换的最小单元。
 - **AWS** —— 跨区域 Cell Reference Architecture（2024）——官方推荐的 Cell 多区域模板。
 - **Google** —— Spanner Cell 模式——地理隔离的 Cell + TrueTime 的强一致多活。
 - **招行 / 平安** —— 同城双活 + 异地灾备——金融场景"两地三中心"代表，单元化与监管要求深度结合。

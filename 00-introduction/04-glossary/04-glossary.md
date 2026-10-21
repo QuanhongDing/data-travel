@@ -125,7 +125,7 @@
 | **Saga / 2PC / TCC** | — | 分布式事务模式 |
 | **CQRS** | Command Query Responsibility Segregation | 命令查询分离 |
 | **Event Sourcing** | — | 事件溯源 |
-| **Cell-based Architecture** | — | 单元化架构 |
+| **Cell-Based Architecture** | — | 单元化架构 |
 | **Service Mesh** | — | 服务网格（Istio / Linkerd）|
 | **SLO / SLI / SLA** | — | 服务质量目标 / 指标 / 协议 |
 | **SRE** | Site Reliability Engineering | 站点可靠性工程 |
