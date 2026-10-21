@@ -288,16 +288,37 @@ clicks.keyBy(e -> e.userId)
 **模板 5：一致性校验（常驻抽样比对）**
 
 ```python
+import numpy as np
 import pandas as pd
 
 FEATURES = ["user_stats:user_click_7d", "user_stats:user_purchase_30d"]
 
 def sample_keys(n: int, seed: int) -> pd.DataFrame:
     """抽样：n 个实体 + 每个实体 1 个 event_time；两侧使用同一份清单"""
-    ...
+    rng = np.random.default_rng(seed)                    # 固定种子 ⇒ 两侧可复现
+    keys = entity_store.sample(n=n, random_state=seed)   # (entity_id,)
+    # 只取"最近的、且已过物化滞后"的 event_time：
+    # 比到尚未物化的时间点，会把正常的写入延迟误报成不一致
+    ts = entity_store.last_event_time(keys, before=now() - MATERIALIZE_LAG)
+    return pd.DataFrame({"entity_id": keys, "event_time": ts})
+
 def compare(offline_df, online_df, tol) -> pd.DataFrame:
     """逐特征比对，输出明细：特征、实体、event_time、两侧值、差值"""
-    ...
+    m = offline_df.merge(online_df, on=["entity_id", "event_time"],
+                         suffixes=("_off", "_on"), how="outer")
+    rows = []
+    for f in FEATURES:                                   # 列名形如 user_stats:xxx_off / _on
+        off, on = m[f"{f}_off"], m[f"{f}_on"]
+        diff = (off - on).abs()
+        # 三分类而不是二分类：「一侧缺失」与「值不等」的根因与修法完全不同，
+        # 混进同一个"差异率"会让告警无法定位
+        rows.append(pd.DataFrame({
+            "feature": f, "entity_id": m["entity_id"], "event_time": m["event_time"],
+            "offline": off, "online": on, "diff": diff,
+            "kind": np.where(off.isna() | on.isna(), "missing",
+                     np.where(diff > tol, "mismatch", "ok"))}))
+    return pd.concat(rows, ignore_index=True)
+
 # 差异率与差异实体写进时序库，供告警与趋势查询
 ```
 

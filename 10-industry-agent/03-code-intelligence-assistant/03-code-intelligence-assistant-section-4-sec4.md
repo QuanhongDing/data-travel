@@ -116,8 +116,17 @@ def handle(user, repo, branch, request):
     dom = visibility(user, repo, branch)     # 先确定可见域（接企业权限系统）
     if not dom: raise Denied(reason="no_visibility")
     ctx = retrieve(request, within=dom)      # 只在可见集合内检索
-    ...
-    audit.write(user, repo, branch, request.kind, dom, accepted=None)
+    if not ctx.hits:                         # 空结果要显式：不回退为"不过滤"
+        return Answer(text="你的可见域内无匹配内容", citations=[])
+    # 上下文预算：按"边际收益 < 阈值"截断，而不是塞到上限为止
+    ctx = budget.trim(ctx, until=lambda c: marginal_gain(c) < MIN_GAIN)
+    out = model.complete(prompt=build(ctx), max_tokens=request.max_tokens)
+    # 审计在调用之后写，但**字段取自调用前冻结的输入**——
+    # 否则回溯时拿到的是"事后状态"，无法复现它当时看到了什么
+    audit.write(user, repo, branch, request.kind, dom,
+                accepted=None,               # 采纳与否由后续反馈回填
+                inputs_hash=ctx.hash, model_version=MODEL_VERSION)
+    return Answer(text=out, citations=ctx.citations)
 ```
 
 **判据**：**用一次越权尝试做演练**（无权账号请求私有仓库，验证被拒且原因可查）；依赖库源码是否可见要有明确定义。

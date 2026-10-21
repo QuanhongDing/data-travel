@@ -214,7 +214,13 @@ model, optimizer, data_loader = privacy_engine.make_private(
     noise_multiplier=1.0,   # 噪声倍率：越大越私密，效果损失越大；示例值【经验】
     max_grad_norm=1.0,      # 梯度裁剪阈值；示例值【经验】
 )
-# …训练循环本身不变…
+# 训练循环：DP-SGD 改变的是「梯度怎么加噪」，不改变循环结构本身
+for epoch in range(EPOCHS):
+    for x, y in data_loader:               # DataLoader 必须由 make_private 包装过，
+        optimizer.zero_grad()              # 否则采样器不做泊松采样，隐私记账不成立
+        loss = criterion(model(x), y)
+        loss.backward()                    # 反向传播期间逐样本裁剪 + 加噪
+        optimizer.step()                   # 这一步用的是加噪后的梯度
 epsilon = privacy_engine.get_epsilon(delta=1e-5)   # delta 为示例值【经验】，取值以官方文档为准
 print(f"本环节消耗 ε = {epsilon:.2f}")
 # 验收要的是「全链路累计 ε」，不是每个环节各报一个值

@@ -270,8 +270,19 @@ def search_knowledge_base(query: str) -> str:
 
 @tool
 def query_database(sql: str) -> str:
-    """查询企业数据库"""
-    ...
+    """查询企业数据库（只读账号 + 表白名单 + 行数上限）"""
+    # 三道护栏缺一不可：
+    #   ① 只读连接 —— 账号没有 DDL/DML 权限，误生成写语句也执行不了
+    #   ② 表白名单 —— 不在名单里的表**直接拒绝**，而不是执行后报错
+    #      （执行后才报错时，数据已经被读出来了）
+    #   ③ 行数上限 —— 避免一句 SELECT 把全表拉回应用内存
+    tables = parse_tables(sql)
+    if not tables <= ALLOWED_TABLES:
+        return f"拒绝：{sorted(tables - ALLOWED_TABLES)} 不在白名单内"
+    rows = readonly_engine.connect().execute(
+        text(sql).execution_options(stream_results=True)   # 流式取，不整表落内存
+    ).fetchmany(ROW_LIMIT)
+    return json.dumps([dict(r._mapping) for r in rows], ensure_ascii=False)
 
 @tool
 def search_web(query: str) -> str:
