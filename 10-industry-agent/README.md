@@ -33,6 +33,7 @@
 ## 子主题
 
 - [ ] **[多模态 AI](./01-multimodal-ai/README.md)**：文 / 图 / 音 / 视频 / 3D——多模态理解与生成的工程化
+- [ ] **[行业情报智能体](02-industry-intelligence-agent/02-industry-intelligence-agent.md)**：7×24 情报链路——信源清单与授权边界、增量与断供检测、事件簇去重、带引用回指的摘要、频控与个性化分发、反馈回流
 
 > 文件命名建议：`multimodal-ai.md` / `industry-intelligence-agent.md` / `code-intelligence-assistant.md` / `office-automation.md` / `industry-knowledge-graph.md` / `industry-prompt-engineering.md` / `industry-evaluation.md` / `multi-agent-collaboration.md` / `hands-on.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 
