@@ -436,7 +436,7 @@ Compaction 调度使用自研调度器 + Hudi Cleaner 的组合：
 
 - **「特征平台怎么支持上万维特征的存储？」** 答：用 embedding 降维 + 分片 KV + 冷热分层。Uber 的实践是把高基数类别特征做 embedding 后存为低维稠密向量。
 - **「特征平台和模型注册中心怎么联动？」** 答：特征版本与模型版本绑定；模型上线时锁定特定特征版本，避免"模型 v2 用了特征 v3 但生产只更新到 v2"。
-- **「Uber 为什么不直接用 Tecton / Feast 等开源特征平台？」** 答：Uber 在 Michelangelo 之前（约 2014 年）就自研了 FeatureStore，2017 年 Feast 才开源；自研能更好地匹配 Uber 业务模型。
+- **「Uber 为什么不直接用 Tecton / Feast 等开源特征平台？」** 答：Uber 在 Michelangelo 之前（约 2014 年）就自研了 FeatureStore，2019 年 Feast 才开源；自研能更好地匹配 Uber 业务模型。
 
 **5. 参考资料**
 
