@@ -32,6 +32,7 @@
 ## 子主题
 
 - [ ] **[Data Agent](01-data-agent/01-data-agent.md)**：面向数据分析的智能体（Text2SQL + 数据可视化 + 指标解读），AI 时代数据架构师的核心交付物
+- [ ] **[企业级智能体平台架构](02-agent-platform-architecture/02-agent-platform-architecture.md)**：把 Agent 收进平台——运行时、状态与检查点、多租户与配额、工具出口治理、发布灰度回滚、私有化交付与平台级成本归因
 
 > 文件命名建议：`data-agent.md` / `agent-architecture.md` / `langchain-framework.md` / `mcp-protocol.md` / `multi-agent-orchestration.md` / `function-calling.md` / `prompt-engineering.md` / `reliability-and-observability.md` / `hands-on.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 
