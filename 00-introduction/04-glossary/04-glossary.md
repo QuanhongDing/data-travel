@@ -93,7 +93,7 @@
 | **Vector DB** | — | 向量数据库（Milvus / Qdrant / Weaviate / pgvector） |
 | **Hallucination** | — | 幻觉，模型生成不真实内容 |
 | **Fine-tuning** | — | 微调，在小数据上调整模型参数 |
-| **RLHF** | RL from Human Feedback | 基于人类反馈的强化学习 |
+| **RLHF** | Reinforcement Learning from Human Feedback | 基于人类反馈的强化学习 |
 | **DPO** | Direct Preference Optimization | 直接偏好优化 |
 | **Function Calling** | — | 模型调用外部函数 / 工具 |
 | **Chain-of-Thought (CoT)** | — | 思维链推理 |
