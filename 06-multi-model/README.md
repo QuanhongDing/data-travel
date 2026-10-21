@@ -26,7 +26,7 @@
 1. **多模型怎么统一接入？** LiteLLM / One-API / 自研统一网关——抽象层、能力映射、API 兼容性？
 2. **路由策略怎么设计？** 基于成本 / 延迟 / 能力 / 合规的动态路由——什么时候用 GPT-4，什么时候用 Claude，什么时候用国产模型？
 3. **Function Calling / Tool Use 怎么标准化？** JSON Schema 协议、参数校验、错误处理、流式响应？
-4. **Prompt 工程怎么做？** 系统提示 / Few-shot / CoT / ReAct——把业务诉求转化为稳定的 Prompt？
+4. **Prompt 工程怎么做？** 系统提示 / Few-shot / CoT / ReAct——把业务诉求转化为稳定的 Prompt？（见 [§04 Prompt 工程](./04-prompt-engineering/04-prompt-engineering.md)）
 5. **Token 成本怎么控制？** 上下文压缩、缓存、批处理、模型分级（小模型做预处理 / 大模型做精排）？
 6. **模型降级与限流怎么做？** 多模型容灾、API 限流、配额管理、灰度发布？
 7. **模型效果怎么评估？** LLM-as-a-Judge / 人类反馈 / A/B 实验——怎么持续迭代 Prompt 与选型？
@@ -36,6 +36,7 @@
 - [ ] **[Embedding 与检索](./01-embedding-and-retrieval/README.md)**：Embedding 模型选型（OpenAI / BGE / M3E）、向量检索与重排
 - [ ] **[LLM in SQL](02-llm-in-sql/02-llm-in-sql.md)**：在 SQL 引擎中嵌入 LLM（MotherDuck / Snowflake Cortex / Databricks AI Functions）——让数据不出仓
 - [ ] **[多模型统一网关与工具协议](03-model-gateway/03-model-gateway.md)**：把"调模型"收成一层——归一化、路由与降级链、凭证托管与出网合规、计量与配额、工具调用标准化、缓存与影子对比
+- [ ] **[Prompt 工程](04-prompt-engineering/04-prompt-engineering.md)**：把"业务诉求"翻译成稳定的模型输入——四段结构（判据 / 推理引导 / 示例 / 输出契约）· 分组评测门禁 · 版本与按档位分版本 · 注入防御三层 · 与微调 / RAG 的分工
 
 > 文件命名建议：`embedding-and-retrieval.md` / `llm-in-sql.md` / `unified-model-gateway.md` / `routing-strategy.md` / `function-calling.md` / `prompt-engineering.md` / `cost-control.md` / `model-evaluation.md` / `hands-on.md` / `summary.md` / `refs.md`。作者可按需合并、拆分或重命名。
 
@@ -46,7 +47,7 @@
 - 搭建多模型统一接入网关（LiteLLM / One-API / 自研），屏蔽厂商差异
 - 设计路由策略（成本 / 延迟 / 能力 / 合规），实现按需调度
 - 标准化 Function Calling / Tool Use（JSON Schema / 参数校验 / 错误处理）
-- 用系统提示 / Few-shot / CoT 等 Prompt 工程技巧提升模型稳定性
+- 用系统提示 / Few-shot / CoT 等 Prompt 工程技巧提升模型稳定性——[§04](./04-prompt-engineering/04-prompt-engineering.md)
 - 控制 Token 成本（上下文压缩 / 缓存 / 批处理 / 模型分级），把单次成本降低 50%+
 - 设计模型降级与限流方案，让系统在大模型故障时仍可用
 - 建立 LLM 评估体系（LLM-as-a-Judge / 人类反馈 / A/B），持续迭代 Prompt 与选型
