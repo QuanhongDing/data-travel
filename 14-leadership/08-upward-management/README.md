@@ -16,9 +16,9 @@
 | 6. 落地实践 | [08-upward-management-section-6-sec6.md](08-upward-management-section-6-sec6.md) |
 | 7. 与其他方法对比 | [08-upward-management-section-7-sec7.md](08-upward-management-section-7-sec7.md) |
 | 8. 面试真题集 | [08-upward-management-section-8-sec8.md](08-upward-management-section-8-sec8.md) |
-| 9. 预期 ROI | [08-upward-management-section-4-roi.md](08-upward-management-section-4-roi.md) |
-| 10. Q4 计划 | [08-upward-management-section-5-q4.md](08-upward-management-section-5-q4.md) |
-| 11. 双向输入（2 分钟） | [08-upward-management-section-5-sec5.md](08-upward-management-section-5-sec5.md) |
+| 9. 预期 ROI | [08-upward-management-section-9-sec9.md](08-upward-management-section-9-sec9.md) |
+| 10. Q4 计划 | [08-upward-management-section-10-sec10.md](08-upward-management-section-10-sec10.md) |
+| 11. 双向输入（2 分钟） | [08-upward-management-section-11-sec11.md](08-upward-management-section-11-sec11.md) |
 
 ## 返回
 

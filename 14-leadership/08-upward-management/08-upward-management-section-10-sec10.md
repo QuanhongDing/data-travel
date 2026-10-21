@@ -91,7 +91,7 @@
 
 **该带什么材料进来**：① 上一季的数字，每个都带口径与来源；② 四类资源的清单，每类写清周期与释放时点；③ 坏消息清单，逐条带影响面与选项；④ 跨团队资源的**具体人名或团队名**——写「某业务方」等于没写。缺 ①，对方一定会绕开你的论点去追口径；缺 ④，跨团队资源那一类会被当场改写成「你去协调一下」。
 
-材料本身还有三条纪律（展开见 [§9 预期 ROI](08-upward-management-section-4-roi.md)）：每一层都要写清分母；折算系数必须署名来源，或用区间加推导链；核不实的量一律给区间不给单点。
+材料本身还有三条纪律（展开见 [§9 预期 ROI](08-upward-management-section-9-sec9.md)）：每一层都要写清分母；折算系数必须署名来源，或用区间加推导链；核不实的量一律给区间不给单点。
 
 同一份材料要准备三个版本，按在场的人递哪一版【经验：版本数随在场角色数而变】：给预算人的版本第一屏是钱与周期，给技术上级的版本第一屏是风险与单点，给非预算上级的版本第一屏是一句话定位与影响面。用错版本的代价不是难看，而是对方在第一屏找不到他要的东西，于是他的结论是「我再看一下」。
 
@@ -136,7 +136,7 @@
 
 ### 10.5 接口
 
-本节只给台词与判据，材料在别处：一页纸、三档方案与资源申请模板见 [§4 工程实现](08-upward-management-section-4-sec4.md) 的模板 5；ROI 的收益 / 成本 / 门槛与敏感性见 [§9 预期 ROI](08-upward-management-section-4-roi.md)；资源论证模式与坏消息三段式见 [§3 设计模式与范式](08-upward-management-section-3-sec3.md) 的 §3.2.8 与 §3.2.9；AI 辅助汇报的能力边界与「数字不外包」见 [§5 前沿演进（AI 时代）](08-upward-management-section-5-ai.md)；本章四个案例给出的口径（风险前置 < 24h、资源争取 75%+ 等）见 [§6 落地实践](08-upward-management-section-6-sec6.md) §6.5【经验：案例口径】。资源当场被砍价之后的谈判边界与退让顺序，见 [§8 面试真题集](08-upward-management-section-8-sec8.md) 的 §14.8.3。
+本节只给台词与判据，材料在别处：一页纸、三档方案与资源申请模板见 [§4 工程实现](08-upward-management-section-4-sec4.md) 的模板 5；ROI 的收益 / 成本 / 门槛与敏感性见 [§9 预期 ROI](08-upward-management-section-9-sec9.md)；资源论证模式与坏消息三段式见 [§3 设计模式与范式](08-upward-management-section-3-sec3.md) 的 §3.2.8 与 §3.2.9；AI 辅助汇报的能力边界与「数字不外包」见 [§5 前沿演进（AI 时代）](08-upward-management-section-5-ai.md)；本章四个案例给出的口径（风险前置 < 24h、资源争取 75%+ 等）见 [§6 落地实践](08-upward-management-section-6-sec6.md) §6.5【经验：案例口径】。资源当场被砍价之后的谈判边界与退让顺序，见 [§8 面试真题集](08-upward-management-section-8-sec8.md) 的 §14.8.3。
 
 同一章里，导师制（§07）管的是职业成长、绩效管理（§03）管的是激励口径、跨团队协作（§04）管的是资源在团队之间怎么流转、团队拓扑（§11）决定你的汇报路径有几跳、团队节奏（§10）决定这份计划该在哪个会上讲、技术布道（§05）决定你在没有汇报关系的人那里有多少可信度——这六者都会改变本脚本的参数（谁在场、在哪讲、要不要借外部可见度），但都不改变骨架。
 
@@ -146,4 +146,4 @@
 
 > 💡 **思考锚点**：翻出你上一次季度计划会，把第六段承诺的 30/60/90 天复查点逐个对照判据「有没有一个人被指派了一件带日期的事」；如果第一个复查点（30 天）就查不到人名，那么当场你递给对方的是第五段那三档 A/B/C 选择题，还是被一句「再想想」退回了审批题？
 >
-> 配合 [§3 设计模式与范式](08-upward-management-section-3-sec3.md)、[§4 工程实现](08-upward-management-section-4-sec4.md)、[§9 预期 ROI](08-upward-management-section-4-roi.md)、[§5 前沿演进（AI 时代）](08-upward-management-section-5-ai.md)、[§6 落地实践](08-upward-management-section-6-sec6.md) 阅读。
+> 配合 [§3 设计模式与范式](08-upward-management-section-3-sec3.md)、[§4 工程实现](08-upward-management-section-4-sec4.md)、[§9 预期 ROI](08-upward-management-section-9-sec9.md)、[§5 前沿演进（AI 时代）](08-upward-management-section-5-ai.md)、[§6 落地实践](08-upward-management-section-6-sec6.md) 阅读。

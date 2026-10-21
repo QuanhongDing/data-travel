@@ -132,7 +132,7 @@
 
 这套脚本不是独立动作：议程的前四段（一句话定位 / 我的判断 / 影响与风险 / 请对方校准方向）与 30 分钟的计时见 [§8 面试真题集](08-upward-management-section-8-sec8.md) 的 §14.8.4；1:1 议程模板、周报与资源申请一页纸见 [§4 工程实现](08-upward-management-section-4-sec4.md)；「结论先行 + SCQA」的结构见 [§3 设计模式与范式](08-upward-management-section-3-sec3.md) 的 §3.2.3，风险怎么讲见 §3.2.9；跨级之后要把成果沉淀成可被他人引用的材料，见 [§7 与其他方法对比](08-upward-management-section-7-sec7.md) 里关于可转述性的讨论。
 
-本节与同章的 [§10. Q4 计划](08-upward-management-section-5-q4.md) 是同一套材料的两端：那一段解决「怎么让资源落到你手上」，这 2 分钟解决「怎么让上层的判断落到你手上」。两者共用的是底层的数字口径，材料结构并不相同：那一段的对应物是 [§4 工程实现](08-upward-management-section-4-sec4.md) 模板 5 的资源申请一页纸（现状 → 不投入的后果 → 推荐方案与成本 → 决策点），这一节的 brief 是结论 / 判断 / Ask 三块；差别还在结尾要的东西不同：一个要决定，一个要建议与站台——所以两份材料可以一起准备，但**不要在同一个会上先要资源再要建议**：对方给完决定之后，注意力已经花完了。
+本节与同章的 [§10. Q4 计划](08-upward-management-section-10-sec10.md) 是同一套材料的两端：那一段解决「怎么让资源落到你手上」，这 2 分钟解决「怎么让上层的判断落到你手上」。两者共用的是底层的数字口径，材料结构并不相同：那一段的对应物是 [§4 工程实现](08-upward-management-section-4-sec4.md) 模板 5 的资源申请一页纸（现状 → 不投入的后果 → 推荐方案与成本 → 决策点），这一节的 brief 是结论 / 判断 / Ask 三块；差别还在结尾要的东西不同：一个要决定，一个要建议与站台——所以两份材料可以一起准备，但**不要在同一个会上先要资源再要建议**：对方给完决定之后，注意力已经花完了。
 
 可以直接按名称检索核验的来源：Gabarro & Kotter《Managing Your Boss》（HBR，1980；篇名与年份请按 HBR 官网 / 数据库核验）、Patty McCord《Powerful》、Keith Ferrazzi《Who's Got Your Back》（出版年份以版权页为准）、Reed Hastings《No Rules Rules》（calibrated questions）、华为「向上五项管理」（《华为管理内训书》）、阿里巴巴「向上三板斧」中的「揪头发 / 闻味道」、字节跳动「Context, not Control」、Chris Argyris 的 Ladder of Inference、Dave Ulrich《Leadership Brand》，以及 Meta / Google 等公司公开的工程师手册 / 职业发展文档中涉及 Skip-Level 1:1 的章节（按「公司名 + skip-level 1:1」自行检索核验）。这些材料的版本与表述会变，引用时请以你查到的当前版本为准。
 
