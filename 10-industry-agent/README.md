@@ -6,10 +6,10 @@
 
 本章对应 **核心职责⑤ 行业情报智能体与精准分发** + **加分项（行业 AI 智能体 / 代码智能助手 / 自动化办公平台）**：
 
-- 7×24h 自动化情报采集 / 清洗 / 语义分类 / AI 摘要 / 个性化推送
-- 行业知识图谱、行业 Prompt 工程、行业评估体系
-- 行业 Agent 协作（Multi-Agent）
-- 代码智能助手（类似 Cursor / Copilot）、自动化办公平台
+- 7×24h 自动化情报采集 / 清洗 / 语义分类 / AI 摘要 / 个性化推送 —— 见 [§02 行业情报智能体](02-industry-intelligence-agent/02-industry-intelligence-agent.md)
+- 代码智能助手（类似 Cursor / Copilot）、自动化办公平台 —— 见 [§03 代码智能助手](03-code-intelligence-assistant/03-code-intelligence-assistant.md) 与 [§04 办公自动化智能体](04-office-automation-agent/04-office-automation-agent.md)
+- 行业知识图谱、行业 Prompt 工程、行业评估体系 —— 本章不单列主题，做法分别落在 [Ch1 §06 知识图谱构建](../01-modeling/06-knowledge-graph/06-knowledge-graph.md)、各主题 §4 的模板与提示示例、[Ch2 §07 效果评估](../02-data-science/07-eval/07-eval.md)
+- 行业 Agent 协作（Multi-Agent）—— 本章不单列主题：多 Agent 仲裁在本书按判据评为 L3（无通行做法），见 [Ch5 §02 平台架构的前沿演进一节](../05-agent-platform/02-agent-platform-architecture/02-agent-platform-architecture-section-5-ai.md)
 
 > P7 会"做 Agent"，P8 会"做垂直 Agent"，**资深架构师会"做行业智能体平台"**——把通用能力变成行业生产力。
 
