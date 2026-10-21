@@ -2,7 +2,7 @@
 
 > **一句话定位**：从 Agent 行为日志中自动提取可复用的 Skill / Procedure——让 Agent 自己总结"经验"，让组织能力沉淀为 Agent 能力。
 
-> 本文是 data-travel 项目 [Ch7 · AI 资产沉淀与自进化](../../README.md) 的子章节（04-agent-skill-extraction）。覆盖核心职责④ 中"自进化 / Skill 自动发现"核心能力。
+> 本文是 data-travel 项目 [Ch7 · AI 资产沉淀与自进化](../../README.md) 的子章节（04 Agent 技能提取）。覆盖核心职责④ 中"自进化 / Skill 自动发现"核心能力。
 
 ---
 

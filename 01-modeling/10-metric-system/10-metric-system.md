@@ -2,7 +2,7 @@
 
 > **一句话定位**：把"业务想看的数"翻译成"指标定义 + 口径 + 派生规则"的标准化体系——数仓侧的事实之锚，AI 时代一切智能 BI 与 Agent 决策的基础设施。
 
-> 本文是 data-travel 项目 [Ch1 · 建模方法论](../../README.md) 的子章节（10-metric-system）。覆盖 **R3 数据建模** 能力域中 **指标体系（Metric System）** 相关的核心能力：原子指标 / 派生指标 / 复合指标的建模方法、口径管理、OSCAR 指标法（阿里）、命名规范、指标平台（Metric Platform）、Metric 语义层（dbt Semantic Layer / Cube / Airbnb Minerva）、MetricQL、自然语言查询指标、LLM 指标生成、AI 原生指标平台，以及 2024-2025 年的工业级演进。
+> 本文是 data-travel 项目 [Ch1 · 建模方法论](../../README.md) 的子章节（10 指标体系：原子指标 + 业务修饰 + 时间周期 = 派生指标）。覆盖 **R3 数据建模** 能力域中 **指标体系（Metric System）** 相关的核心能力：原子指标 / 派生指标 / 复合指标的建模方法、口径管理、OSCAR 指标法（阿里）、命名规范、指标平台（Metric Platform）、Metric 语义层（dbt Semantic Layer / Cube / Airbnb Minerva）、MetricQL、自然语言查询指标、LLM 指标生成、AI 原生指标平台，以及 2024-2025 年的工业级演进。
 
 ---
 

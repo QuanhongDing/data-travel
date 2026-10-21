@@ -2,7 +2,7 @@
 
 > **一句话定位**：让 Prompt、Agent 模板、Skill、Workflow 成为可版本化、可复用、可交易的企业级资产——AI 时代的数据资产化新形态。
 
-> 本文是 data-travel 项目 [Ch7 · AI 资产沉淀与自进化](../../README.md) 的子章节（03-asset-management）。覆盖核心职责④ AI 资产沉淀与自进化系统中"资产层"核心能力。
+> 本文是 data-travel 项目 [Ch7 · AI 资产沉淀与自进化](../../README.md) 的子章节（03 AI 资产管理）。覆盖核心职责④ AI 资产沉淀与自进化系统中"资产层"核心能力。
 
 ---
 

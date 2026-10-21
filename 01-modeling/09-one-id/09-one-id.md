@@ -2,7 +2,7 @@
 
 > **一句话定位**：跨业务、跨设备、跨域的"同一实体识别"——数仓侧的主数据底座，AI 时代一切个性化与图推理的前置条件。
 
-> 本文是 data-travel 项目 [Ch1 · 建模方法论](../../README.md) 的子章节（09-one-id）。覆盖 **R3 数据建模** 能力域中 **OneID（Entity Resolution）** 主数据管理相关的核心能力：跨域用户打通、ID-Mapping 算法、设备指纹、主数据建模、概率匹配、Embedding-based 实体解析、LLM 辅助实体识别、隐私计算下的 ID 打通，以及 2024-2025 年的工业级 OneID 平台演进。
+> 本文是 data-travel 项目 [Ch1 · 建模方法论](../../README.md) 的子章节（09 OneID 主数据：跨域用户打通与 ID-Mapping）。覆盖 **R3 数据建模** 能力域中 **OneID（Entity Resolution）** 主数据管理相关的核心能力：跨域用户打通、ID-Mapping 算法、设备指纹、主数据建模、概率匹配、Embedding-based 实体解析、LLM 辅助实体识别、隐私计算下的 ID 打通，以及 2024-2025 年的工业级 OneID 平台演进。
 
 ---
 

@@ -2,7 +2,7 @@
 
 > **一句话定位**：用图结构承载关系、用图神经网络与图算法进行可解释推理，把"实体-关系-属性"变成业务可用的判别与生成能力。
 
-> 本文是 data-travel 项目 [Ch1 · 建模方法论](../../README.md) 的子章节（07-graph-reasoning）。覆盖 R3 数据建模能力领域中"图数据推理"相关的核心能力——GNN、路径推理、子图匹配、推荐与风控，以及它们在 AI 时代的演进方向（GFM、GraphRAG、LLM-as-Reasoner over KG）。
+> 本文是 data-travel 项目 [Ch1 · 建模方法论](../../README.md) 的子章节（07 图数据推理）。覆盖 R3 数据建模能力领域中"图数据推理"相关的核心能力——GNN、路径推理、子图匹配、推荐与风控，以及它们在 AI 时代的演进方向（GFM、GraphRAG、LLM-as-Reasoner over KG）。
 
 ---
 

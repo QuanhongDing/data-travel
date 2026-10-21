@@ -2,7 +2,7 @@
 
 > **一句话定位**：把 15 章主体按难度分 5 档，给出 4 类读者的推荐阅读路径——是路径 A/B/C/D 的「地图」。
 
-> 本文是 data-travel 项目 [序章](../README.md) 的子章节（03-difficulty-and-paths），覆盖 [README](../../README.md) 中「难度梯度表 + 推荐角色」的具体展开。
+> 本文是 data-travel 项目 [序章](../README.md) 的子章节（03 难度梯度），覆盖 [README](../../README.md) 中「难度梯度表 + 推荐角色」的具体展开。
 
 ## 0. 本章速读地图
 
