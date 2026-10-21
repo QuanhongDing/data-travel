@@ -116,7 +116,7 @@ Sample = (entity, event_time, features_ref, label, label_source, label_meta,
 - **样本（Sample）**：一条带标签的观测（§1.1 的最小充分定义）。**它必须能回答"当时看到了什么"**。
 - **标注口径（Labeling Guideline）**：什么算正例、什么算负例的**可判定描述 + 边界案例**。**判据**：它是可判定的句子与示例，而不是"大家凭经验"。
 - **标注一致性（Inter-Annotator Agreement）**：多个标注者对同一输入的一致性（如 Cohen's / Fleiss' Kappa）。**它衡量的是标注口径的清稀程度，不是标注者的水平**——一致性低时，第一反应应当是**改口径**，而不是换人。
-- **弱监督（Weak Supervision）**：用多个**标注函数**（规则、启发式、外部知识库）产生带噪声的标签，再聚合。**它的价值在于把"人工标注"换成"标注函数的维护"**，且每个函数可审计（[Snorkel 一类](03-sample-library-section-6-sec6.md)）。
+- **弱监督（Weak Supervision）**：用多个**标注函数**（规则、启发式、外部知识库）产生带噪声的标签，再聚合。**它的价值在于把"人工标注"换成"标注函数的维护"**，且每个函数可审计（[Snorkel 一类](16-sample-library-section-6-sec6.md)）。
 - **主动学习（Active Learning）**：用当前模型挑出"最不确定 / 最可能改变决策"的样本给人标。**它改变的是标注的分配策略**——把人力投到信息量大的样本上。
 - **预标注 + 人审（Pre-annotation + Human Review）**：模型先给候选标签，人只做确认与修正。**判据**：修正比例要监控——**修正比例接近零时，要么模型已经很好，要么人在点"同意"**。
 - **特征回填（Feature Backfill）**：按样本的 `event_time` 取那一刻的特征值。**它是防穿越的唯一工程手段**（§3.2.6）。
@@ -273,11 +273,11 @@ QUALIFY ROW_NUMBER() OVER (
 
 本章按写作约定拆分到以下子文件（每文件 200-800 行，专注一个主题）：
 
-- [§3. 设计模式与范式](03-sample-library-section-3-sec3.md)
-- [§4. 工程实现](03-sample-library-section-4-sec4.md)
-- [§5. 前沿演进（AI 时代）](03-sample-library-section-5-ai.md)
-- [§6. 落地实践](03-sample-library-section-6-sec6.md)
-- [§7. 与其他方法对比](03-sample-library-section-7-sec7.md)
-- [§8. 面试真题集](03-sample-library-section-8-sec8.md)
+- [§3. 设计模式与范式](16-sample-library-section-3-sec3.md)
+- [§4. 工程实现](16-sample-library-section-4-sec4.md)
+- [§5. 前沿演进（AI 时代）](16-sample-library-section-5-ai.md)
+- [§6. 落地实践](16-sample-library-section-6-sec6.md)
+- [§7. 与其他方法对比](16-sample-library-section-7-sec7.md)
+- [§8. 面试真题集](16-sample-library-section-8-sec8.md)
 
 ---
