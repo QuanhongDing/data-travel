@@ -211,15 +211,26 @@ CREATE TABLE cross_cloud_skeleton (
   "column_map": [{"from": "amount", "to": "gmv", "transform": "sum"}],
   "origin": "llm_inferred",
   "evidence": {
-    "kind": "job_script",                 // 依据来自哪段文本
+    "kind": "job_script",
     "ref": "job:etl_trade_daily.py@sha256:...",
-    "excerpt_hash": "..."                 // 只留指纹，不留原文
+    "excerpt_hash": "..."
   },
-  "confidence": 0.0,                      // 由谁校准、校准样本多少，必须说明
-  "verified_by": null,                    // null 表示尚未被任何证据确认
-  "usable_in_gate": false                 // 未验证的边不得参与门禁判定
+  "confidence": 0.0,
+  "verified_by": null,
+  "usable_in_gate": false
 }
 ```
+
+**上面每个字段为什么必须存在**（这段是结构，不是注释——JSON 不认注释，故写在块外）：
+
+| 字段 | 为什么不能省 |
+| --- | --- |
+| `origin` | 区分「人工登记 / 自动解析 / LLM 推断」——三者的可信度与复核方式都不同，混在一起则无法分级 |
+| `evidence.kind` / `ref` | 依据来自哪段文本（脚本 / 注释 / 配置）；**没有 ref 的边等于没有依据** |
+| `evidence.excerpt_hash` | **只留指纹、不留原文**——证据里如果存了原文，这份血缘图自己就成了敏感数据副本 |
+| `confidence` | 必须说明**由谁校准、校准样本多少**；只有一个 0–1 的数而无校准口径，等于没有 |
+| `verified_by` | `null` 表示尚未被任何证据确认——**它决定了这条边能不能参与影响面计算** |
+| `usable_in_gate` | 未验证的边**不得参与门禁判定**（这条是硬约束：让推测参与门禁，等于把推断当成事实） |
 
 ```text
   候选边生成            证据绑定              分级入库

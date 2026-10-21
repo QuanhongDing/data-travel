@@ -183,9 +183,9 @@ shadow:
 }
 ```
 
-**模板 2：统一流式事件（把各家分片归一）**
+**模板 2：统一流式事件（把各家分片归一）**——下面是**事件序列**（一行一个事件，即 NDJSON；不是单个 JSON 文档，故围栏标 `text`）：
 
-```json
+```text
 {"type": "text_delta",  "text": "上月 GMV"}
 {"type": "tool_delta",  "tool": "warehouse.query_readonly", "args_delta": "{\"sql\":\"SELECT"}
 {"type": "usage",       "tokens_in": 1280, "tokens_out": 96, "cache_hit": false}

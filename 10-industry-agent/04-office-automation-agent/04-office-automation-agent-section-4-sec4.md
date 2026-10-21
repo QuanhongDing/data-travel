@@ -47,9 +47,11 @@ fallback:
     "supplier":    {"type": "string", "required": true,  "normalize": "alias_lookup"},
     "purpose":     {"type": "string", "required": false}
   },
-  "provenance": {"span": "page+bbox", "keep_text": true}     // 原文位置必须保留
+  "provenance": {"span": "page+bbox", "keep_text": true}
 }
 ```
+
+> **`provenance` 为什么是必填**：`span` 给出定位方式（页码 + 区域），`keep_text` 决定是否保留原文——**没有它，人工核对要自己回原文里找，核对成本会高到让人凭印象通过**（转人工因此退化成橡皮图章）。
 
 **判据**：每个字段都能定位回原文（页码 + 区域）；**金额 / 日期 / 主体三个字段必须有归一规则**（否则同一事实会有多种写法）。
 

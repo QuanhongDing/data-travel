@@ -158,9 +158,9 @@ audit: {capture_args: true, capture_result_summary: true, retention_days: 180}
 
 ### 4.5 模板 / 示例
 
-**模板 1：平台控制面 API 草案**（只列语义，不绑框架）
+**模板 1：平台控制面 API 草案**（只列语义，不绑框架；下面是接口清单，**不是可解析的 YAML**）
 
-```yaml
+```text
 POST /agents/{agent}/versions        # 发布：body 为版本四元组，返回 version_id
 POST /agents/{agent}/rollback        # 回滚：body 为 version_id（改指针，不动执行体）
 POST /sessions                       # 发起会话：body 含 tenant、agent、input、idempotency_key

@@ -235,22 +235,64 @@ $$
 **2. 字段血缘算法**：
 
 ```python
-# 简化版 SQL 解析示例
 import sqlparse
-from sqlparse.sql import Identifier, Function, Parenthesis
+from sqlparse.sql import Identifier, IdentifierList, Function, Parenthesis
+from sqlparse.tokens import Keyword, DML
+
+def _names(tokens, tables, out_cols, alias_map):
+    """递归遍历 token：把 FROM/JOIN 后的表名收进 tables，
+       把 SELECT 投影里的 来源列 -> 输出列 收进 out_cols。"""
+    after_from = False
+    for tok in tokens:
+        # 1) FROM / JOIN 之后紧跟的实体名是表名
+        if tok.ttype is Keyword and tok.normalized in ("FROM", "JOIN", "INNER JOIN",
+                                                      "LEFT JOIN", "RIGHT JOIN"):
+            after_from = True
+            continue
+        if after_from and tok.ttype in (Keyword, DML):      # 进入下一个子句，收尾
+            after_from = False
+        if after_from and isinstance(tok, Identifier):
+            table = tok.get_real_name() or str(tok)
+            alias_map[tok.get_alias() or table] = table     # 别名 -> 真表名
+            tables.add(table)
+        elif after_from and tok.ttype is Keyword:
+            continue
+        # 2) 投影项：`表达式 AS 输出列` —— 来源列写在表达式里
+        if isinstance(tok, Identifier):
+            src = tok.get_parent_name()                     # 如 t1.b 里的 t1
+            col = tok.get_real_name()                        # 如 t1.b 里的 b
+            out = tok.get_alias() or col or str(tok).strip() # AS 之后的名字
+            if col:
+                out_cols.setdefault(out, []).append(
+                    f"{alias_map.get(src, src)}.{col}" if src else col)
+            if isinstance(tok.tokens[-1], Function):         # 聚合函数：函数体里的列也是来源
+                inner = tok.tokens[-1]
+                while isinstance(inner, Parenthesis):
+                    inner = inner.tokens[1]
+                for sub in getattr(inner, "tokens", []):
+                    if getattr(sub, "get_real_name", None):
+                        out_cols.setdefault(out, []).append(sub.get_real_name())
+        elif isinstance(tok, IdentifierList):                # 逗号分隔的投影列表
+            _names(tok.tokens, tables, out_cols, alias_map)
+        elif isinstance(tok, Parenthesis):                   # 子查询：递归
+            _names(tok.tokens, tables, out_cols, alias_map)
 
 def extract_column_lineage(sql: str) -> dict:
+    """提取字段血缘。
+    input:  SELECT a, b AS c FROM t1 JOIN t2 ON t1.id = t2.id
+    output: {"output_columns": {"a": ["t1.a"], "c": ["t2.b"]},
+             "input_tables": ["t1", "t2"]}
+    注意：本函数只处理单层 SELECT；子查询靠 Parenthesis 递归下钻，
+    但「输出列 -> 下游表」的跨语句串接不在本函数内（那是血缘图的边，见下文影响分析）。
     """
-    提取字段血缘：
-    input: SELECT a, b AS c FROM t1 JOIN t2 ON ...
-    output: {
-        "output_columns": {"c": ["t1.b"]},
-        "input_tables": ["t1", "t2"]
-    }
-    """
-    parsed = sqlparse.parse(sql)[0]
-    # ... 简化逻辑
-    pass
+    stmt = sqlparse.parse(sql)[0]
+    tables, out_cols, alias_map = set(), {}, {}
+    _names(stmt.tokens, tables, out_cols, alias_map)
+    return {"output_columns": out_cols, "input_tables": sorted(tables)}
+
+# 三段式的可核查性：同一份 SQL 跑两次结果必须一致（确定性），
+# 且 out_cols 的每个来源列都必须能在 input_tables 里找到归属表——
+# 找不到归属的来源列 = 解析盲区，必须进「解析不了的盲区」清单，不能静默丢弃。
 
 # 业界主流方案：
 # - Apache Spark SQL Lineage

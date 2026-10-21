@@ -87,19 +87,20 @@
 # 一个「机器可读」的指标定义：AI 取数的最小输入
 metric: trade_order_paid_cnt
 display_name: 已支付订单数
-definition: 统计已支付订单数；含全渠道；不含已退款订单   ← 口径要写成可判定的句子，不是形容词
+definition: 统计已支付订单数；含全渠道；不含已退款订单
 measure: count(order_id)
 source: dwd_trade_order
 source_fields: [order_id, order_status, pay_time]
 filters: order_status = 'PAID'
 granularity: [1d, 1h]
 time_semantics: {event_time: pay_time, timezone: Asia/Shanghai, late_window: 2d}
-owner: trade-analytics@            ← 具体到人 / 组，不是「数据团队」
+owner: trade-analytics@
 version: 3
-
-判定方法：把上面十一项逐一标注「有 / 没有」——标注为「没有」的项，
-         就是模型接下来一定会猜的那一项（猜错的后果见 5.2.2 的失败类型表）
 ```
+
+**两条写法本身也是判据**（它们不能写成注释，因为注释不会被执行）：`definition` 要写成**可判定的句子**（"含全渠道、不含已退款"可判真假），而不是形容词（"准确的、高质量的"无法判定）；`owner` 要**具体到人 / 组**，不是「数据团队」——前者能在出问题时被找到，后者不能。
+
+**判定方法**：把上面十一项逐一标注「有 / 没有」——标注为「没有」的项，**就是模型接下来一定会猜的那一项**（猜错的后果见 §5.2.2 的失败类型表）。
 
 #### 5.2.2 自然语言查询：入口变了，口径没变
 

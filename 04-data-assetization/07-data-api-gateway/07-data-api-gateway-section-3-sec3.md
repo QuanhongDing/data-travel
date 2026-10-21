@@ -161,9 +161,9 @@ routes:
     upstream: semantic-api
     policy: {auth: agent-token, on_behalf_of: end-user, rate: {qps: 20}}
     meter:  {unit: tokens, audit: full}   # Token 计量 + 全量审计留痕
-关键：计量单位从「请求数」变成「行数 / Token」；
-      鉴权主体从「一个」变成「Agent + 它代表的人」两个
 ```
+
+**这份描述里最关键的两格**（它们解释了"为什么需要一层路由描述"）：`meter.unit` —— **计量单位从「请求数」变成「行数 / Token」**（同一个网关要同时服务人取数与 Agent 调用，两者的成本形状不同）；`policy.auth` —— **鉴权主体从「一个」变成「Agent + 它代表的人」两个**（Agent 调用必须带 `on_behalf_of`，否则审计只能回答"哪个 Agent"，回答不了"它代表谁"）。
 
 **为什么这样设计有效**：因为两种调用共享同一份策略与计量管道，所以「Agent 用了多少、代表谁用、读了什么」与人调用走的是同一套账本，口径不会分裂；因为鉴权模型里显式带上「代表谁」（on-behalf-of），Agent 越权可以被定位到具体的人与具体的一次工具调用。
 
