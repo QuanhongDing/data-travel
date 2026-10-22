@@ -25,7 +25,7 @@
 1. **AI 资产怎么分级分类？** 公开 / 内部 / 机密 / 绝密——四级分类法与对应保护措施？（见 [§01](01-ai-data-governance/01-ai-data-governance.md)）
 2. **数据脱敏与加密怎么做？** 静态脱敏 / 动态脱敏 / 差分隐私 / 同态加密——不同场景下的取舍？（见 [§02 的「四种脱敏形态与选择顺序」](02-data-security-and-compliance/02-data-security-and-compliance-section-3-sec3.md)）
 3. **细粒度权限怎么设计？** RBAC / ABAC / 字段级权限 / 行级权限——如何在 RAG 召回与 LLM 生成中落地？（见 [§02 的「权限模型」与「召回期权限裁剪」](02-data-security-and-compliance/02-data-security-and-compliance-section-3-sec3.md)）
-4. **Prompt 注入与越狱怎么防御？** 输入侧过滤 / 系统提示加固 / 输出侧校验——构建纵深防御？（见 [§01](01-ai-data-governance/01-ai-data-governance.md)）
+4. **Prompt 注入与越狱怎么防御？** 入向检测 / 出向过滤 / **动作层授权**——构建纵深防御？**本书的一条结论是：只靠内容过滤根治不了**（注入的结果是「指令被服从」，属动作层问题），所以三层里最硬的是第三层（见 [§01 §7](01-ai-data-governance/01-ai-data-governance-section-7-sec7.md)，OWASP LLM01 与 MCP 的授权原语）。
 5. **DLP（数据防泄露）怎么设计？** 输出端关键词检测、敏感实体识别（身份证 / 银行卡 / 手机号）、二次确认机制？（见 [§02 的「DLP 三件套」](02-data-security-and-compliance/02-data-security-and-compliance-section-3-sec3.md)）
 6. **等保 2.0/3.0 合规怎么落地？** 安全管理中心 / 安全通信网络 / 安全区域边界 / 安全计算环境——「一个中心、三重防护」怎么落到 AI 系统上（现行有效的对照是等保 2.0，GB/T 22239-2019）？（见 [§02 的「等保对照与国产化适配」，以及工程实现一节的「等保控制点映射表」模板](02-data-security-and-compliance/02-data-security-and-compliance-section-3-sec3.md)）
 7. **全链路审计怎么做？** 访问日志、调用日志、生成日志、用户反馈——可追溯、可回放、可定责？（见 [§01](01-ai-data-governance/01-ai-data-governance.md)）
@@ -44,7 +44,7 @@
 - 设计 AI 资产的分级分类体系（公开 / 内部 / 机密 / 绝密）——[§01](01-ai-data-governance/01-ai-data-governance.md)
 - 选型数据脱敏方案（静态 / 动态 / 差分隐私 / 同态加密），并落地工程链路——[§02 的「四种脱敏形态」与「选型决策树」](02-data-security-and-compliance/02-data-security-and-compliance-section-3-sec3.md)
 - 设计细粒度权限控制（RBAC / ABAC / 字段级 / 行级），在 RAG 召回与 LLM 生成中落地——[§02 的「权限模型」与「召回期权限裁剪」](02-data-security-and-compliance/02-data-security-and-compliance-section-3-sec3.md)
-- 防御 Prompt 注入与越狱（输入过滤 / 系统提示加固 / 输出校验）——[§01](01-ai-data-governance/01-ai-data-governance.md)
+- 防御 Prompt 注入与越狱（入向检测 / 出向过滤 / **动作层授权**——三层里最硬的是第三层）——[§01 §7](01-ai-data-governance/01-ai-data-governance-section-7-sec7.md)
 - 设计 DLP（数据防泄露）方案，识别敏感实体、检测输出端——[§02 的「DLP 三件套」](02-data-security-and-compliance/02-data-security-and-compliance-section-3-sec3.md)
 - 落地等保 2.0/3.0 合规（安全管理中心 + 安全通信网络 / 安全区域边界 / 安全计算环境——「一个中心、三重防护」）——[§02 的「等保对照」、工程实现一节的「存量迁移」与「落地实践」的测评案例](02-data-security-and-compliance/02-data-security-and-compliance-section-3-sec3.md)
 - 搭建全链路审计（访问 / 调用 / 生成 / 反馈），可追溯、可回放、可定责——[§01](01-ai-data-governance/01-ai-data-governance.md)
