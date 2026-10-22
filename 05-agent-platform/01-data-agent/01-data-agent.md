@@ -273,7 +273,7 @@ Text2SQL 在数学上是「**结构化预测（Structured Prediction）**」问�
 ### 2.4 与相邻概念的关系
 
 - **Text2SQL vs Data Agent**：Text2SQL 是"SQL 生成"这一子能力，Data Agent 是含 Text2SQL + 沙箱 + 多轮精修 + 工具调用的完整智能体。**会 Text2SQL 是入门，做 Data Agent 是工程**。
-- **Data Agent vs ChatBI**：ChatBI 是"预设问题 + 模板查询"，Data Agent 是"任意自然语言 + 自主规划 + 多轮精修"。ChatBI 准确率天花板 50-70%，Data Agent 可达 80-90%+。
+- **Data Agent vs ChatBI**：ChatBI 是"预设问题 + 模板查询"，Data Agent 是"任意自然语言 + 自主规划 + 多轮精修"。**上限的高低不是两者的固有属性，而是「任务 × 约束」的函数**：问题集合封闭、库与口径都小时，模板映射是确定性映射，集合覆盖内没有生成误差——机制上，**问题集合封闭且高频时反而是 ChatBI 更稳**（§7.3.1）；同一批模型换到开放问题 + 大库，执行准确率就逐级下降（数值证据见 §7.1 的三个公开基准）。Data Agent 的相对增量因此在**开放问法上仍有答案**——它的天花板在开放问法上比预设式 ChatBI 高，而不是在任何处境下都高出固定的若干个百分点；这个差距随领域、评测集的构造方式、有没有工具与语义层可调用而整体平移。
 - **Data Agent vs Code Interpreter**：Code Interpreter 是"个人版 Data Agent"（ChatGPT 的），Data Agent 是"企业版"——含多用户隔离、数据连接、权限管控、审计合规。
 - **Data Agent vs Copilot（Excel / Office）**：Copilot 是"被动辅助"（补全公式、建议图表），Data Agent 是"主动完成"（理解需求 + 自动生成 SQL + 执行 + 解读 + 可视化）。
 - **Data Agent vs BI 工具（Tableau / PowerBI）**：BI 工具是"专家模式"，Data Agent 是"自然语言模式"。两者不是替代，而是互补——BI 工具做深度分析，Data Agent 做自助分析。
@@ -281,7 +281,7 @@ Text2SQL 在数学上是「**结构化预测（Structured Prediction）**」问�
 - **指标语义层 vs Data Agent**：指标语义层是 Data Agent 的"基础设施"，没有指标语义层，Data Agent 准确率永远上不去（口径混乱）。
 - **RAG vs Data Agent**：RAG 擅长"非结构化文档问答"，Data Agent 擅长"结构化数据查询"。两者组合形成"Hybrid 智能体"。
 
-> 💡 **思考锚点**：对照 §1.1 的 5 层能力栈给现状点一遍座——数据连接、指标语义层、NL2SQL、沙箱执行、多轮精修，你缺的是哪一层？若缺的正是「指标语义层」，按 §2.4 你的准确率天花板就仍停在 ChatBI 的 50-70%（在预设问题集外，按 §1.2 还会更低），再强的沙箱与多轮自检都补不回口径混乱——你先补哪一层？
+> 💡 **思考锚点**：对照 §1.1 的 5 层能力栈给现状点一遍座——数据连接、指标语义层、NL2SQL、沙箱执行、多轮精修，你缺的是哪一层？若缺的正是「指标语义层」，按 §2.4 你的准确率天花板就仍停在 ChatBI 那一档（只有集合内的问法才有映射精度；集合外，按 §1.2 还会更低），再强的沙箱与多轮自检都补不回口径混乱——你先补哪一层？
 
 ---
 
