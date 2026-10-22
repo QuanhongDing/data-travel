@@ -45,7 +45,7 @@
 **5. 参考资料**
 - 本主题内部（逐条可核）：§2.2（分组判据与影响面 `k`）、§3.2.8（版本化与评测门禁的代价与失效点）、§4.2（2）（门禁样本组织与分组报告样例）、§4.5 模板 2（放行条件：无任何分组的违例数上升）、§6.3（无门禁导致的失败：一次反向优化存活一周）、§7.3.1（评测口径归谁 = 判断力的边界）。
 - 外部可核验入口（能力形态，不引效果数字）：`02-data-science/07-eval` 的 §4.3 把 **HELM（Stanford，2022 起）/ OpenAI Evals（2023，开源框架）/ Anthropic Evals / lm-evaluation-harness（EleutherAI）** 列在"LLM 评估框架"一行，判据是"你要的是横向可比，还是自己的任务画像"——**这一行给出的判据里没有任何一条是"通过率有多高"**，恰好说明这个领域可核验的能力只到"能不能按你的口径分组、能不能进门禁"这一层。【公开】（来源：`02-data-science/07-eval/07-eval-section-4-sec4.md` 的 §4.3 工具链表；本主题 §5.3.7 的证据行引的是同一行）
-- 提示资产侧的具名落点：`07-agent-evolution/03-asset-management` 的主文件把 **LangChain Hub（2023-06）/ Dust.tt（2023-11）/ PromptLayer（2024-01）** 记为 **Prompt Library 阶段（2023–2024）的三条条目**；`07-agent-evolution/02-feedback-loop` 的 §4.3 把 **Langfuse / Helicone / Arize Phoenix** 列在 Eval / 监控位，判据是"**能不能按模型 / prompt 版本分桶看指标**"与"**能不能接 CI**"——两条判据都可按各自官方文档当前版本核验。【公开】（来源：`07-agent-evolution/03-asset-management/03-asset-management.md` 的 §1.3 演进历程阶段表（L65 的阶段行与 L74–76 的三条条目）与 §2.6 关键工具（L259）；`07-agent-evolution/02-feedback-loop/02-feedback-loop-section-4-sec4.md` 的 §4.3 工具链表的 Eval / 监控行）
+- 提示资产侧的具名落点：`07-agent-evolution/03-asset-management` 的主文件在 §1.3 记了 **LangChain Hub（2023-06）/ Dust.tt（2023-11）/ PromptLayer（2024-01）** 三条——**其中 Dust、PromptLayer 落在该节 L65 的 2023–2024 Prompt Library 阶段行，LangChain Hub（2023-06，形态"Prompt 模板仓库"）是 L74 的一条节点行、不带阶段标签**；`07-agent-evolution/02-feedback-loop` 的 §4.3 把 **Langfuse / Helicone / Arize Phoenix** 列在 Eval / 监控位，判据是"**能不能按模型 / prompt 版本分桶看指标**"与"**能不能接 CI**"——两条判据都可按各自官方文档当前版本核验。【公开】（来源：`07-agent-evolution/03-asset-management/03-asset-management.md` 的 §1.3 演进历程（L65 的阶段行只含 Dust、PromptLayer；L74–76 的三条节点行不带阶段标签）与 §2.6 关键工具（L259）；`07-agent-evolution/02-feedback-loop/02-feedback-loop-section-4-sec4.md` 的 §4.3 工具链表的 Eval / 监控行）
 - 一条口径提醒：**本主题的效果数据（分组通过率、换代前后对照）在全书范围内都是建设方自述**（§5.2 的②栏全部为"核不到"），上述外部条目只用于核"能力形态"，**不用于引"效果数字"**。
 
 ---
@@ -200,8 +200,8 @@
 
 **5. 参考资料**
 - 本主题内部（逐条可核）：§2.1（CoT 的机制与代价）、§2.2（收益条件与 `p^s` 直觉）、§3.2.5（结构、代价与失效点）、§3.4（CoT 与 ReAct 的组合规则）、§5.3.1（推理主体换位）、§5.5（过度宣传的第 1、4 条）。
-- 外部可核验入口（论文级，逐条可按题名与会议年份检索）：**Chain-of-Thought 由 Wei 等在 NeurIPS 2022 提出**；同族的 **Self-Consistency 由 Wang 等在 ICLR 2023 提出**、**Tree-of-Thoughts 由 Yao 等在 NeurIPS 2023 提出**——三条都在 `09-data-intelligence-product/02-decision-intelligence` 的 §5 证据与来源段并列登记，可按该段给出的题名核验。【公开】（来源：`09-data-intelligence-product/02-decision-intelligence/02-decision-intelligence-section-5-ai.md` 的 §5.2.1 证据与来源行（L84）与 §5.4 公开进展与文献的参考条目（L188）；本主题 §3.4 与 §5.3.1 引的是同一族）
-- 一条口径提醒：**"CoT 带来多少提升"这类幅度数字在本书范围内一律不给**——它只对"你自己的任务 + 你自己的门禁样本"成立；凡看到有人引用一个跨任务的统一提升幅度，先问它的评测集与任务分布。**上一行的三条论文条目也只用于核"题名与会议年份"，不用于引效果数字**——论文里的提升幅度随任务与基座变化，不是可以搬到本节正文的数。
+- 外部可核验入口（论文级，逐条可按题名与会议年份检索）：**Chain-of-Thought 由 Wei 等在 NeurIPS 2022 提出**；同族的 **Self-Consistency 由 Wang 等在 ICLR 2023 提出**、**Tree-of-Thoughts 由 Yao 等在 NeurIPS 2023 提出**——三条都在 `09-data-intelligence-product/02-decision-intelligence` 的 §5 证据与来源段并列登记，可按该段给出的作者与会议年份核验。【公开】（来源：`09-data-intelligence-product/02-decision-intelligence/02-decision-intelligence-section-5-ai.md` 的 §5.2.1 证据与来源行（L84）与 §5.4 公开进展与文献的参考条目（L188）；本主题 §3.4 与 §5.3.1 引的是同一族）
+- 一条口径提醒：**"CoT 带来多少提升"这类幅度数字在本书范围内一律不给**——它只对"你自己的任务 + 你自己的门禁样本"成立；凡看到有人引用一个跨任务的统一提升幅度，先问它的评测集与任务分布。**上一行的三条论文条目也只用于核"作者、方法名与会议年份"，不用于引效果数字**——论文里的提升幅度随任务与基座变化，不是可以搬到本节正文的数。
 
 ---
 

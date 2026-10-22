@@ -45,7 +45,7 @@
 - 本主题 §2.2（点时正确的形式化与 `f_latest` 反例）、§2.3④（回填 SQL 的对 / 错两种形态）、§3.2.6（点时连接的机制、代价、失效点与判定方法）、§4.2（3）（回填两种实现及其边界）、§4.7（回填脚本被绕过时的降级与演练动作）。
 - 本主题 §6.3（改造后离线指标下降的案例：窗口类特征差异最大、快照类几乎不受影响；处置按"记录 + 更正"走；常备投入量级为 0.3–0.6 人年，【经验】）。
 - `02-data-science/01-feature-store/01-feature-store.md:112`（把 2017 年记为"Uber 提出 Michelangelo Palette——公开披露最早的生产级特征存储"，【公开】）与同目录 `01-feature-store-section-3-sec3.md` 的 `真实使用`（Feast 的离线存储 + `materialize`、Tecton 两个具名实现）；`01-feature-store-section-7-sec7.md`（"Point-in-Time 是取数协议，不是平台功能"）。
-- `02-data-science/01-feature-store/01-feature-store-section-6-sec6.md` 的失败教训行（"只做在线、不做 Point-in-Time"的案例：离线 AUC 0.85 而线上只有 0.65，倒逼补 Point-in-Time 正确性）——**该处的 0.85 → 0.65 是案例自报数、无可复算口径**，按方向读而不是按幅度读。
+- `02-data-science/01-feature-store/01-feature-store-section-6-sec6.md` 的失败教训行（"只做在线、不做 Point-in-Time"的案例：离线 AUC 0.85 而线上只有 0.65，倒逼补 Point-in-Time 正确性）（【经验：该处的 0.85 → 0.65 是案例自报数、无可复算口径】）——按方向读而不是按幅度读。
 - 核验入口：把上述连接条件改动在你自己的评测上重跑一次；先用本主题 §4.2（3）的两种实现判断你的样本跨度落在哪一侧，再决定"改条件"还是"先谈保留期"。
 
 ---

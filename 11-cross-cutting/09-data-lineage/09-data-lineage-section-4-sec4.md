@@ -277,6 +277,89 @@ async def lineage_query_with_cache(query: str, params: dict):
 
 **怎么用**：`TTL_SECONDS` 与「门禁不吃缓存」是同一个决策的两半 —— 展示路径可以吃 5 分钟缓存，门禁路径必须直查；`sort_keys=True` 不能省，参数顺序不同会让同一个查询变成两个缓存键，缓存命中率会无解释地掉一半。
 
+**模板 5：采集器 → OpenLineage 事件（联邦口径，对应 §4.1 Step 3）**
+
+```python
+# 示意：每个引擎一个采集器，统一转成 OpenLineage 事件再上报
+# 事件模型（RunEvent / Dataset / Job / Run，START / RUNNING / COMPLETE / FAIL / ABORT 五态）见 §8；
+# 客户端类名、字段名与上报方式以所用 provider 的当前文档为准，不要照抄本段。
+from openlineage.client.run import (
+    RunEvent, RunState, Run, Job, Dataset, InputDataset, OutputDataset,
+)
+
+
+def emit_run_event(domain, job_name, inputs, outputs, sql_text):
+    """domain 直接当 OpenLineage namespace；name 用域内标识，不在这里拼全局 URN。"""
+    return RunEvent(
+        eventType=RunState.COMPLETE,
+        eventTime=now_iso(),            # 用域内时钟：跨域时钟偏移会让合并出的链路顺序是错的
+        run=Run(runId=new_run_id()),
+        job=Job(
+            namespace=domain,
+            name=job_name,
+            # SQL 正文是 job 级 facet（§8：facets 承载 schema / SQL 文本 / 运行时统计），
+            # 不是 RunEvent 的字段；facet 的类名与键名以所用客户端当前版本为准
+            facets={"sql": {"query": sql_text}} if sql_text else {},
+        ),
+        inputs=[InputDataset(dataset=Dataset(namespace=domain, name=n)) for n in inputs],
+        outputs=[OutputDataset(dataset=Dataset(namespace=domain, name=n)) for n in outputs],
+        producer=INTEGRATION_URI,       # 发事件的集成标识（规范里是 URI），不是采集器类型枚举
+    )
+
+
+# 采集器类型（parser / hook / runtime / manual）不进事件字段，由采集端在旁路带上，
+# 落库时写进 lineage_edge.collector（§3.2.2）。
+# 一个引擎只写一个采集点，不改作业正文：
+#   调度侧 —— Airflow 走 provider 装饰器 / 监听器（形态见 05 §4.5 模板 2）；
+#   引擎侧 —— Spark 采执行计划（同处模板 6），Flink 在 Source / Sink 的 open / close 发事件
+#             （schema 在运行期才确定，编译期拿不到，只能在那里采）。
+```
+
+**怎么用**：三处不能省。① `namespace` 填**域名**、`name` 填**域内标识**，不要在这一层拼全局 URN —— 全局名一旦写进采集端，某个域改名就等于重挂它的全部历史边，而映射本来可以在联邦层改（模板 6）。② 采集器类型必须能区分开：`source_sys` / `collector` 这两列（§3.2.2）分别是覆盖率与可信度的依据 —— `source_sys` 用来算覆盖率、`collector` 决定一条边的可信度，解析器采的与人工补登记的在图里必须能区分开，否则「`manual` 边占比」这个分母根本算不出来。③ SQL facet 拿不到正文就留空，不要自己拼一段看起来完整的事件 —— 编出来的边不报错，只会让影响面少一段（§4.2「OpenLineage 联邦采集」失效条件）。这段是形态示意、不是 API 文档：provider 的装饰器 / 监听器名称与参数随版本调整过，落地前按所用 provider 当前文档核一次。
+
+**模板 6：联邦层的对齐记录与桥接边（写入 + 一致性检查）**
+
+```sql
+-- 联邦层只写三样：路由、对齐、桥接边。列口径见 §3.2.1（entity_alignment / bridge_edge）。
+-- ① 对齐记录：谁判定的必须留痕，否则未对齐清单没有对应的责任人
+INSERT INTO entity_alignment (global_urn, domain, local_id, confidence, decided_by)
+VALUES ('urn:li:dataset:(hive,prod.orders,PROD)', 'warehouse', 'dwd.orders',
+        'exact', 'rule:table_name_map')
+ON CONFLICT (global_urn, domain) DO UPDATE
+   SET local_id   = EXCLUDED.local_id,
+       confidence = EXCLUDED.confidence,
+       decided_by = EXCLUDED.decided_by;
+
+-- ② 桥接边：数量应当很少，每条都要带依据与产生方式（桥接不是永久事实）
+--    valid_from 是主键的一部分，必须用运行间稳定的值（这里取当天）：
+--    用 now() 的话每次重跑都算一条新边，同一条桥接边会被追加成多行
+INSERT INTO bridge_edge (src_urn, dst_urn, evidence, valid_from)
+VALUES ('urn:li:dataset:(kafka,ods_orders,PROD)',
+        'urn:li:dataset:(hive,prod.orders,PROD)',
+        'manual:etl_orders_daily 的写入配置 / warehouse 值班确认',
+        date_trunc('day', now()))
+ON CONFLICT (src_urn, dst_urn, valid_from) DO UPDATE
+   SET evidence = EXCLUDED.evidence;
+
+-- ③ 一致性检查（周期任务），两类问题各查一次，输出就是未对齐清单
+--    a. 同名不同实体：同一个域里一个 local_id 对到了不止一条 global_urn
+SELECT domain, local_id, count(*) AS urn_count
+FROM entity_alignment
+GROUP BY domain, local_id
+HAVING count(*) > 1;
+
+--    b. 同实体不同名（候选）：两个 global_urn 之间挂着一条「身份类」桥接边
+--       依据前缀由你们自己定，关键是它能被机器筛出来，而不是靠人回忆
+SELECT src_urn, dst_urn, evidence, valid_from
+FROM bridge_edge
+WHERE evidence LIKE 'manual:identity%'
+ORDER BY valid_from DESC;
+```
+
+**怎么用**：`confidence` 与 `decided_by` 两列都要填，`decided_by` 写不出裁决人或规则时这条映射就不该入库（§3.2.1 把对齐表定义成唯一能被人工引入错误的地方）。`bridge_edge` 带 `valid_from` 而不是当成永久事实 —— 一次性的域间同步作业结束后那条桥接边就过期了，但它不会自己消失；这张表只有 `valid_from` 没有到期列，所谓「过期」是巡检拿 `valid_from` 与当前时间比出来的老化判定，判到就撤。`evidence` 的前缀要同时承担**依据与产生方式**两类信息（`rule:` / `runtime:` / `manual:` / `manual:identity:`）—— 这张表只有这一列字符串能承载它们，§4.1 Step 3 要求的「每条桥接边打上采集器类型」落库时就标在这里。查出来的未对齐清单要落到「实体 / 问题类别 / 依据 / 裁决人 + 到期日 / 未裁决期间是否参与跨域影响面计算」这几栏上，并进月度治理例会；只输出一个数字，没有人会去认领（§4.2「URN 对齐的运营」）。门禁侧只信 `confidence = exact` 的边。
+
+**采集侧还有一组模板**：SQL 解析器侧（其模板 1）、Airflow provider 挂载侧（其模板 2）、Spark 执行计划侧（其模板 6）见 [05-lineage-and-impact §4.5](../05-lineage-and-impact/05-lineage-and-impact-section-4-sec4.md)——那三个是**域内视角**的采集写法，本节模板 5 / 6 只写它们没有的联邦口径：域内命名 vs 全局 URN、桥接边与对齐记录的落库。
+
 ### 4.6 成本：这套东西的账单
 
 血缘的账单形状是反直觉的：**大头不在存储和图库里，而在「让这张图保持诚实」的运营人力上**。图本身很小——按 §4.2 的推算，十万级实体、平均出度 3–5，边数在 30 万–50 万量级【推算：10 万 × 3–5；实体数量级取自 §6 案例的「十万级数据集」，平均出度按【经验】假定】，这点边在 Neo4j 或一张边表里都算轻量；贵的是维持它不腐。

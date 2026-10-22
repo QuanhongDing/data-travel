@@ -201,6 +201,8 @@ def summarize_with_citation(doc, facts):
     return summary
 ```
 
+**怎么用**：前提是 §4.2(4) 的抽取 Schema 已经带上片段位置（`引用.span_start/span_end/source_id`）——没有它，`locate_spans()` 无从下手，整段伪代码都是空转。要按自己情况换的是四个**占位函数**：`locate_spans()` 接你的抽取产物、`llm_summarize()` 接你的摘要链路、`value_appears_in_span()` 接你的存储形态、`cluster_sources()` 读的是 §4.2(3) 的事件簇。其中 `value_appears_in_span()` 必须做归一化（千分位、全角半角、单位与币种写法），否则回查会大面积误杀——这是"回查不通过一律剔除"（§4.2(6) 硬规则①）最常见的执行故障。跑不出结果时先查三处：`spans[f.tid]` 的 tid 是否与摘要返回的事实编号对齐、`doc.cluster_id` 是否真的存在、以及 span 偏移量是**原文**偏移还是清洗后偏移（两者混用会让回查稳定失败）。
+
 **模板 2：断供检测（SQL 判据）**
 
 ```sql
@@ -212,6 +214,8 @@ GROUP BY s.source_id, s.owner, s.no_data_alert_after
 HAVING now() - max(i.ingested_at) > s.no_data_alert_after;
 ```
 
+**怎么用**：要换的只有两格——每行信源的 `no_data_alert_after`（按 §4.2(1) 的分级给不同值：A 级流式与 C 级试探不该共用同一个阈值）与时间列的列名。**这段 SQL 自带一个反直觉的坑**：`LEFT JOIN` 下，"已登记但一条数据都没抓到过"的信源 `max(i.ingested_at)` 为 NULL，`now() - NULL` 求值为 NULL，而 `NULL > 阈值` 不是 true——于是**从没成功抓过的信源恰恰不会告警**，而它最该告警。所以补一条 `max(i.ingested_at) IS NULL` 的分支是**必须的**，不是可选项；补完可以再用演练验收，但要认清 §4.7「信源断供」那一行的演练（关掉某信源的抓取）**只覆盖"曾经抓到过、后来停了"这一支**——那种信源的 `max(i.ingested_at)` 非 NULL，告警照常触发，**演练通过不代表 NULL 这一支被修好**。要覆盖 NULL 支，得另做一个动作：登记一个（临时的）信源并让它一条数据都抓不到，看 `no_data_alert_after` 内是否告警，或直接在 SQL 里注入一条无 `intel_items` 行的信源。验收口径始终是"到底有没有告警"，而不是查询能跑出行数。
+
 **模板 3：一条分发的完整留痕（复盘入口）**
 
 ```sql
@@ -221,6 +225,8 @@ SELECT i.item_id, i.source_id, i.cluster_id, i.priority,
 FROM intel_items i LEFT JOIN intel_delivery d USING (item_id)
 WHERE i.cluster_id = $1 ORDER BY i.published_at;
 ```
+
+**怎么用**：这段的每一列都对应 §4.2 里已定义的字段，落地时换表名即可、**不要改列义**：`cluster_id` 是 §4.2(3) 的事件簇键（按簇查，才能把同一事件的多条来源一次看全，而不是一条条看）；四个时间戳 `published_at / ingested_at / summarized_at / delivered_at` 只是模板 3 选出来的查询列，**不等于 §4.2(8) 的四段延迟**——四段要相减得到，得在视图里把 `enriched_at` 一并选出来（§4.2(8) 的 `intel_sla` 落的是**五个**时间戳，少一个就凑不出四段）：采集 = `ingested_at - published_at`、处理 = `enriched_at - ingested_at`、摘要 = `summarized_at - enriched_at`、分发 = `delivered_at - summarized_at`。省掉 `enriched_at` 后处理段无从计算，且只剩 `ingested_at → summarized_at` 一格时，"处理慢"会被记成"摘要慢"——而复盘摘要问题时恰恰最需要这一格把处理段与摘要段分开（这两段的修法不同：计算资源 vs 模型档位）；`suppressed_reason` 来自 §4.2(7) 的 `suppression_log: true`——**没开这个开关，这一列永远是空，复盘时就看不出"这条曾经被频控挡过"**，而"被挡条数"正是本节反复强调的那个指标。查不出东西时按顺序查三件事：被挡下的条目是否同样写了 `intel_delivery` 行、`delivered_at` 为空而 `channel` 有值时回写链路是否断在分发端点、以及复盘窗口是否按 `published_at` 而不是 `ingested_at` 划的（后者会把回溯补齐的旧闻算成新事件）。
 
 ### 4.6 成本：这条链路的账单
 
